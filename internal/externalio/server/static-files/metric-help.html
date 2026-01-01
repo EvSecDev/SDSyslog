@@ -1,0 +1,64 @@
+<h1>Metric Query API Help</h1>
+
+<p>This API allows you to discover available metrics and retrieve metric data from the local server. All endpoints are
+  HTTP GET requests.</p>
+
+<h2>Root Help Page</h2>
+<p>URL: <code>/</code></p>
+<p>Returns this help page in HTML format.</p>
+<pre>
+curl http://localhost:18514/
+</pre>
+
+<h2>Metric Discovery</h2>
+<p>URL: <code>/discover/</code> or <code>/discover/namespace/path</code></p>
+<p>Returns a JSON array of available metrics matching optional filters.</p>
+<p>Query Parameters:</p>
+<ul>
+  <li><code>name</code> — Metric name filter (substring match).</li>
+  <li><code>description</code> — Filter by metric description.</li>
+  <li><code>unit</code> — Filter by metric unit.</li>
+  <li><code>type</code> — Filter by metric type: <code>counter</code>, <code>gauge</code>, <code>summary</code>.</li>
+</ul>
+<pre>
+# Example: discover all gauges containing "depth"
+curl "http://localhost:18514/discover/?type=gauge&name=depth"
+
+# Example: discover metrics under a namespace
+curl "http://localhost:18514/discover/Receiver/Ingest"
+</pre>
+
+<h2>Metric Data</h2>
+<p>URL: <code>/data</code> or <code>/data/namespace/path</code></p>
+<p>Returns a JSON array of metric values within a time window.</p>
+<p>Query Parameters:</p>
+<ul>
+  <li><code>name</code> — Metric name filter.</li>
+  <li><code>starttime</code> — Start of time window. Supports:</li>
+  <ul>
+    <li>RFC3339 timestamp, e.g. <code>2025-12-31T16:00:00Z</code></li>
+    <li>Relative duration, e.g. <code>-2h</code>, <code>-30m</code> (relative to now)</li>
+  </ul>
+  <li><code>endtime</code> — End of time window. Default is now. RFC3339 format only.</li>
+</ul>
+<pre>
+# Example: get last 2 hours of "depth" metric
+curl "http://localhost:18514/data/?name=depth&starttime=-2h"
+
+# Example: get metrics from a specific timestamp
+curl "http://localhost:18514/data/?name=depth&starttime=2025-12-31T16:00:00Z&endtime=2025-12-31T17:00:00Z"
+
+# Example: query metrics under a namespace (case sensitive)
+curl "http://localhost:18514/data/Receiver/Ingest?name=usage"
+</pre>
+
+<h2>Notes</h2>
+<ul>
+  <li>All endpoints respond with JSON arrays. If no results are found, a JSON error message is returned.</li>
+  <li>Namespaces are specified in the URL path and are case sensitive, e.g., <code>/discover/Receiver/Ingest</code>.
+  </li>
+  <li>Discovery metric values are not provided intentionally and are usually nil</li>
+  <li>Relative times in <code>starttime</code> use standard Go duration strings (<code>-30s</code>, <code>-5m</code>,
+    <code>-2h</code>).
+  </li>
+</ul>

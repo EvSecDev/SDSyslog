@@ -1,0 +1,34 @@
+### Apparmor Profile for the Secure Diode System Logger
+## This is a very locked down profile made for Debian systems
+## Variables - add/modify if required
+@{exelocation}=$executableFilePath
+@{config}=$configurationFilePath
+@{privKey}=$privateKeyFilePath
+
+## Profile Begin
+profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
+  # Receive signals
+  signal receive set=(stop term kill quit int urg exists cont),
+  # Send signals to self
+  signal send set=(exists) peer=SDSyslog,
+
+  # Capabilities
+  network inet dgram,
+  network inet6 dgram,
+  network inet stream,
+  network inet6 stream,
+  network unix stream,
+  network unix dgram,
+
+  ## Configurations needed
+  @{config} r,
+  @{privKey} r,
+
+  ## Program Accesses
+  /dev/null r,
+  owner /proc/*/mountinfo r,
+  owner /proc/*/cgroup r,
+  /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
+  /sys/fs/cgroup/system.slice/*.service/cpu.max r,
+  /usr/share/zoneinfo/** r,
+}

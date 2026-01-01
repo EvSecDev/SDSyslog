@@ -1,0 +1,17 @@
+[Unit]
+Description=Secure Diode System Logger (SDSyslog) Receiver
+Documentation=https://github.com/EvSecDev/SDSyslog
+After=systemd-journald.service
+
+[Service]
+User=root
+Group=adm
+StandardOutput=journal
+StandardError=journal
+ExecStart=/usr/local/bin/sdsyslog receive --config /etc/sdsyslog.json
+Type=exec
+RestartSec=60
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

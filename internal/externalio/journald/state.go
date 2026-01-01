@@ -1,0 +1,78 @@
+package journald
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+func GetLastPosition(stateFilePath string) (cursor string, err error) {
+	stateDirectory := filepath.Dir(stateFilePath)
+
+	_, err = os.Stat(stateDirectory)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(stateDirectory, 0700)
+		if err != nil {
+			err = fmt.Errorf("failed to create missing state directory '%s': %v", stateDirectory, err)
+			return
+		}
+	} else if err != nil {
+		err = fmt.Errorf("unable to access state directory: %v", err)
+		return
+	}
+
+	stateFile, err := os.OpenFile(stateFilePath, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
+		err = fmt.Errorf("failed to open state file: %v", err)
+		return
+	}
+	defer stateFile.Close()
+
+	// Retrieve cached data
+	data := make([]byte, 256)
+	n, err := stateFile.Read(data)
+	if err != nil && err.Error() != "EOF" {
+		err = fmt.Errorf("unable to read position file: %v", err)
+		return
+	} else {
+		err = nil
+	}
+	cursor = string(data[:n])
+	cursor = strings.TrimSuffix(cursor, "\n")
+
+	return
+}
+
+func SavePosition(cursor string, stateFilePath string) (err error) {
+	stateDirectory := filepath.Dir(stateFilePath)
+
+	_, err = os.Stat(stateDirectory)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(stateDirectory, 0700)
+		if err != nil {
+			err = fmt.Errorf("failed to create missing state directory '%s': %v", stateDirectory, err)
+			return
+		}
+	} else if err != nil {
+		err = fmt.Errorf("unable to access state directory: %v", err)
+		return
+	}
+
+	stateFile, err := os.OpenFile(stateFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		err = fmt.Errorf("failed to open state file: %v", err)
+		return
+	}
+	defer stateFile.Close()
+
+	_, err = fmt.Fprintf(stateFile, "%s", cursor)
+	if err != nil {
+		err = fmt.Errorf("failed to write current log position to state file: %v", err)
+		return
+	}
+	return
+}

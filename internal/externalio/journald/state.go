@@ -42,12 +42,17 @@ func GetLastPosition(stateFilePath string) (cursor string, err error) {
 		err = nil
 	}
 	cursor = string(data[:n])
-	cursor = strings.TrimSuffix(cursor, "\n")
+	cursor = strings.Trim(cursor, "\n")
 
 	return
 }
 
 func SavePosition(cursor string, stateFilePath string) (err error) {
+	// Don't nuke existing cursor
+	if cursor == "" {
+		return
+	}
+
 	stateDirectory := filepath.Dir(stateFilePath)
 
 	_, err = os.Stat(stateDirectory)

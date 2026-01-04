@@ -3,12 +3,15 @@ package ingest
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/sender/listener"
+	"strings"
+	"time"
 )
 
 // Create journal ingest instance
@@ -42,7 +45,7 @@ func (manager *InstanceManager) AddJrnlInstance(stateFile string) (err error) {
 
 	if readPosition != "" {
 		// Add the cursor flag to resume from the last position
-		cmdArgs = append(cmdArgs, "--cursor", readPosition)
+		cmdArgs = append(cmdArgs, "--after-cursor", readPosition)
 	}
 
 	// Journal command
@@ -50,6 +53,11 @@ func (manager *InstanceManager) AddJrnlInstance(stateFile string) (err error) {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		err = fmt.Errorf("failed to create stdout pipe for journalctl command: %v", err)
+		return
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		err = fmt.Errorf("failed to create stderr pipe for journalctl command: %v", err)
 		return
 	}
 
@@ -79,6 +87,34 @@ func (manager *InstanceManager) AddJrnlInstance(stateFile string) (err error) {
 		return
 	}
 
+	// Assert to file to set a deadline
+	errFile := stderr.(*os.File)
+	defer errFile.Close()
+	err = errFile.SetReadDeadline(time.Now().Add(25 * time.Millisecond))
+	if err != nil {
+		err = fmt.Errorf("failed to set deadline on stderr reader: %v", err)
+		return
+	}
+
+	buf := make([]byte, 4096)
+	bytesRead, err := errFile.Read(buf)
+	if err != nil {
+		if !os.IsTimeout(err) {
+			err = fmt.Errorf("failed to read journalctl stderr: %v", err)
+			return
+		}
+		err = nil
+	}
+
+	// Check stderr for potential stop errors, treat any stderr as fatal
+	journalError := strings.ToLower(string(buf[:bytesRead]))
+	if journalError != "" {
+		err = fmt.Errorf("found fatal error after journald watch startup: %s", journalError)
+		return
+	}
+
+	// Remove deadline for future blocking reads (just in case)
+	errFile.SetReadDeadline(time.Time{})
 	return
 }
 

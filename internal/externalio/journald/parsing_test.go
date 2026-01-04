@@ -29,7 +29,7 @@ func TestExtractEntry(t *testing.T) {
 			name:           "empty entry",
 			input:          bufio.NewReader(strings.NewReader("")),
 			expectedFields: map[string]string{},
-			expectedErr:    true, // Expecting error because no fields are found
+			expectedErr:    false, // Should trigger EOF, no error reported
 		},
 		{
 			name: "binary field",
@@ -114,80 +114,6 @@ func TestExtractEntry(t *testing.T) {
 
 			if len(expectedFieldsCpy) > 0 {
 				t.Errorf("expected additional fields in test output, but output did not contain them. Missing %d fields: \n%v\n", len(expectedFieldsCpy), expectedFieldsCpy)
-			}
-		})
-	}
-}
-
-func TestExtractCursor(t *testing.T) {
-	tests := []struct {
-		name           string
-		fields         map[string]string
-		expectedCursor string
-		expectedErr    bool
-	}{
-		{
-			name:           "no fields",
-			fields:         map[string]string{},
-			expectedCursor: "",
-			expectedErr:    true,
-		},
-		{
-			name: "valid cursor",
-			fields: map[string]string{
-				"__CURSOR": "s=373c352f9c524db6b8fee1bed92a65d3;i=6aafc3;b=0813e623df9b403886bdca2f0ff32aa9;m=2202c79af;t=646f4d80c4c69;x=1e6b6a93e9890234",
-			},
-			expectedCursor: "373c352f9c524db6b8fee1bed92a65d3",
-			expectedErr:    false,
-		},
-		{
-			name: "missing cursor main field",
-			fields: map[string]string{
-				"__CURSOR": "d=373c352f9c524db6b8fee1bed92a65d3;i=6aafc3;b=0813e623df9b403886bdca2f0ff32aa9;m=2202c79af;t=646f4d80c4c69;x=1e6b6a93e9890234",
-			},
-			expectedCursor: "",
-			expectedErr:    true,
-		},
-		{
-			name: "missing cursor field",
-			fields: map[string]string{
-				"MESSAGE": "hello",
-			},
-			expectedCursor: "",
-			expectedErr:    true,
-		},
-		{
-			name: "empty cursor main field",
-			fields: map[string]string{
-				"__CURSOR": "s=;i=6aafc3;b=0813e623df9b403886bdca2f0ff32aa9;m=2202c79af;t=646f4d80c4c69;x=1e6b6a93e9890234",
-			},
-			expectedCursor: "",
-			expectedErr:    true,
-		},
-		{
-			name: "cursor different order",
-			fields: map[string]string{
-				"__CURSOR": "i=6aafc3;b=0813e623df9b403886bdca2f0ff32aa9;m=2202c79af;s=373c352f9c524db6b8fee1bed92a65d3;t=646f4d80c4c69;x=1e6b6a93e9890234",
-			},
-			expectedCursor: "",
-			expectedErr:    true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cursor, err := ExtractCursor(tt.fields)
-			if err != nil && !tt.expectedErr {
-				t.Fatalf("expected no error, but got '%s'", err)
-			}
-			if err == nil && tt.expectedErr {
-				t.Fatalf("expected error, but got no error")
-			}
-			if err != nil && tt.expectedErr {
-				return
-			}
-			if cursor != tt.expectedCursor {
-				t.Errorf("expected cursor '%s', but got cursor '%s'", tt.expectedCursor, cursor)
 			}
 		})
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 )
 
 // Reads a journald export entry until complete entry (double newline).
@@ -18,13 +19,12 @@ func ExtractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
 		line, err = reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				// EOF with no fields is error
-				if len(fields) == 0 {
-					err = fmt.Errorf("encountered empty entry with EOF")
-					return
-				}
-				// EOF with fields is fine
 				err = nil
+				// EOF means journal did not start properly
+				// Sleeping longer than stderr check read timeout
+				//   so if there was an error, we will return from this when the daemon is shutting down
+				time.Sleep(30 * time.Millisecond)
+				return
 			} else {
 				// Any other error
 				err = fmt.Errorf("failed initial line read: %v", err)
@@ -98,33 +98,5 @@ func ExtractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
 		return
 	}
 
-	return
-}
-
-// Extracts main cursor string position from cursor field (if present)
-func ExtractCursor(allFields map[string]string) (cursor string, err error) {
-	fullCursor, ok := allFields["__CURSOR"]
-	if !ok {
-		err = fmt.Errorf("entry did not contain cursor field")
-		return
-	} else {
-		cursorFields := strings.Split(fullCursor, ";")
-		rawCursorPosition := cursorFields[0]
-		positionFields := strings.Split(rawCursorPosition, "=")
-		if len(positionFields) > 1 {
-			if positionFields[0] != "s" {
-				err = fmt.Errorf("first cursor field is not main identification string")
-				return
-			}
-			if positionFields[1] == "" {
-				err = fmt.Errorf("main cursor field is empty")
-				return
-			}
-			cursor = positionFields[1]
-		} else {
-			err = fmt.Errorf("no 's' field inside string '%s'", fullCursor)
-			return
-		}
-	}
 	return
 }

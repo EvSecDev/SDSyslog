@@ -58,7 +58,7 @@ func (instance *JrnlInstance) Run(ctx context.Context) {
 			// Grab an entry from journal
 			fields, err := journald.ExtractEntry(reader)
 			if err != nil {
-				if err.Error() == "encountered empty entry with EOF" && ctx.Err() != nil {
+				if err.Error() == "encountered empty entry" && ctx.Err() != nil {
 					// Shutdown
 					return
 				}
@@ -68,8 +68,9 @@ func (instance *JrnlInstance) Run(ctx context.Context) {
 			}
 
 			// Mark current cursor after successful entry retrieval
-			readPosition, err = journald.ExtractCursor(fields)
-			if err != nil {
+			var fieldPresent bool
+			readPosition, fieldPresent = fields["__CURSOR"]
+			if !fieldPresent {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
 					"failed cursor extraction: %v\n", err)
 			}
@@ -132,8 +133,7 @@ func extractFields(fields map[string]string) (message ParsedMessage, err error) 
 	// HOSTNAME
 	message.Hostname, ok = fields["_HOSTNAME"]
 	if !ok {
-		err = fmt.Errorf("journal entry has no hostname field")
-		return
+		message.Hostname = global.Hostname
 	}
 
 	// PRIORITY

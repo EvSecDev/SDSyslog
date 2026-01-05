@@ -20,7 +20,7 @@ import (
 var webFiles embed.FS
 
 // Sets up HTTP listener configuration for metric querying
-func SetupListener(ctx context.Context, search DataSearcher, discover Discoverer) (server *http.Server) {
+func SetupListener(ctx context.Context, port int, search DataSearcher, discover Discoverer) (server *http.Server) {
 	requestMultiplexer := http.NewServeMux()
 
 	// Root help page
@@ -66,7 +66,7 @@ func SetupListener(ctx context.Context, search DataSearcher, discover Discoverer
 
 	// Server configuration
 	server = &http.Server{
-		Addr:         global.HTTPListenAddr + ":" + strconv.Itoa(global.HTTPListenPort),
+		Addr:         global.HTTPListenAddr + ":" + strconv.Itoa(port),
 		Handler:      requestMultiplexer,
 		ReadTimeout:  global.HTTPReadTimeout,
 		WriteTimeout: global.HTTPWriteTimeout,
@@ -79,10 +79,9 @@ func SetupListener(ctx context.Context, search DataSearcher, discover Discoverer
 
 // Starts the metric HTTP server and waits for requests
 func Start(ctx context.Context, server *http.Server) {
-	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Metric query server starting on %s (http://%s:%d/)\n",
+	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Metric query server starting on %s (http://%s/)\n",
 		server.Addr,
-		global.HTTPListenAddr,
-		global.HTTPListenPort,
+		server.Addr,
 	)
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {

@@ -68,7 +68,7 @@ These metrics include:
 
 To access the internal metric registry, set `enableHTTPQueryServer` under `metrics` in the JSON configuration to `true`.
 When the daemon is started, a limited HTTP server will also be started on localhost (default port is `18514`).
-To get started with this API, grab the HTML docs by querying the root path `curl http://localhost:18514/`
+To get started with this API, grab the HTML docs by querying the root path `curl http://localhost:18514/` for the sender or `curl http://localhost:28514/` for the receiver.
 
 ## Notes
 

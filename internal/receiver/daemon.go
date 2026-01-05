@@ -144,7 +144,10 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		serverCtx = logctx.AppendCtxTag(serverCtx, global.NSMetric)
 		serverCtx = logctx.AppendCtxTag(serverCtx, global.NSMetricSrv)
 
-		daemon.MetricServer = server.SetupListener(serverCtx, daemon.MetricDataSearcher, daemon.MetricDiscoverer)
+		daemon.MetricServer = server.SetupListener(serverCtx,
+			daemon.cfg.MetricQueryServerPort,
+			daemon.MetricDataSearcher,
+			daemon.MetricDiscoverer)
 		daemon.wg.Add(1)
 		go func() {
 			defer daemon.wg.Done()

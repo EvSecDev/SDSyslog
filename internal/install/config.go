@@ -139,6 +139,7 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 
 	newCfg.Metrics.MaxAge = "72h"
 	newCfg.Metrics.Interval = "5s"
+	newCfg.Metrics.QueryServerPort = global.HTTPListenPortSender
 
 	newCfg.Network.Address = "[::1]"
 	newCfg.Network.Port = global.DefaultReceiverPort
@@ -188,6 +189,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 
 	newCfg.Metrics.MaxAge = "72h"
 	newCfg.Metrics.Interval = "5s"
+	newCfg.Metrics.QueryServerPort = global.HTTPListenPortReceiver
 
 	newCfg.Network.Address = "[::1]"
 	newCfg.Network.Port = global.DefaultReceiverPort

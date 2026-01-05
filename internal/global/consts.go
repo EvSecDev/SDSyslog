@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.5.1"
+	ProgVersion string = "v0.5.2"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
@@ -45,11 +45,12 @@ const (
 	SendShutdownTimeout    time.Duration = 5 * time.Second
 
 	// Metric HTTP server
-	HTTPListenPort   int           = 10000 + DefaultReceiverPort // Default listen port
-	HTTPListenAddr   string        = "localhost"                 // Metric queries only exposed to local machine
-	HTTPReadTimeout  time.Duration = 30 * time.Second
-	HTTPWriteTimeout time.Duration = 10 * time.Second
-	HTTPIdleTimeout  time.Duration = 180 * time.Second
+	HTTPListenPortSender   int           = 10000 + DefaultReceiverPort // Default listen port
+	HTTPListenPortReceiver int           = 20000 + DefaultReceiverPort // Default listen port
+	HTTPListenAddr         string        = "localhost"                 // Metric queries only exposed to local machine
+	HTTPReadTimeout        time.Duration = 30 * time.Second
+	HTTPWriteTimeout       time.Duration = 10 * time.Second
+	HTTPIdleTimeout        time.Duration = 180 * time.Second
 
 	// Namespacing Name Components
 	NSMetric    string = "Metrics"

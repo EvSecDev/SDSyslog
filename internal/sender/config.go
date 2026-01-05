@@ -56,6 +56,7 @@ func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
 
 	// Metric settings
 	config.MetricQueryServerEnabled = cfg.Metrics.EnableQueryServer
+	config.MetricQueryServerPort = cfg.Metrics.QueryServerPort
 	config.MetricMaxAge, err = time.ParseDuration(cfg.Metrics.MaxAge)
 	if err != nil {
 		err = fmt.Errorf("failed to parse metric max age time: %v", err)
@@ -118,6 +119,9 @@ func (cfg *Config) setDefaults() {
 	// Metrics
 	if cfg.MetricMaxAge == 0 {
 		cfg.MetricMaxAge = 1 * time.Hour
+	}
+	if cfg.MetricQueryServerPort == 0 {
+		cfg.MetricQueryServerPort = global.HTTPListenPortSender
 	}
 	if cfg.MetricCollectionInterval == 0 {
 		cfg.MetricCollectionInterval = time.Duration(15 * time.Second)

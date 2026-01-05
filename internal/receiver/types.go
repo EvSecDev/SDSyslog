@@ -24,6 +24,7 @@ type JSONConfig struct {
 		Interval          string `json:"collectionInterval"`
 		MaxAge            string `json:"maximumRetention,omitempty"`
 		EnableQueryServer bool   `json:"enableHTTPQueryServer"`
+		QueryServerPort   int    `json:"HTTPQueryServerPort"`
 	} `json:"metrics"`
 	AutoScaling struct {
 		Enabled          bool   `json:"enabled"`
@@ -69,6 +70,7 @@ type Config struct {
 
 	// Metrics
 	MetricQueryServerEnabled bool
+	MetricQueryServerPort    int
 	MetricCollectionInterval time.Duration
 	MetricMaxAge             time.Duration
 }

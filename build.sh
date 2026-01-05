@@ -72,26 +72,41 @@ function compile_program_prechecks() {
 }
 
 function compile_program() {
-	local GOARCH GOOS buildFull replaceDeployedExe deployedBinaryPath buildVersion
+	local GOARCH GOOS buildFull replaceDeployedExe deployedBinaryPath buildVersion skipTests intenseTests
 	GOARCH=$1
 	GOOS=$2
 	buildFull=$3
 	replaceDeployedExe=$4
 	skipTests=$5
+	intenseTests=$6
 
 	if [[ $skipTests != 'true' ]]; then
 		# Run tests (excludes unimportant info)
 		echo "[*] Running all tests..."
 		set +e
 
+		local testArgs
+		testArgs=(
+			"-timeout=4m"
+			"-count=1"
+		)
+
+		if [[ $intenseTests == 'true' ]]; then
+			testArgs+=(
+				"-race"
+				"-bench=."
+			)
+		fi
+
 		# Performance benchmark notes:
 		#  Dev Hardware (bare metal): AMD Ryzen 7 7840HS (Debian Stable)
 		#  MPMC queue: min=16.9ns/op, max=60ns/op (battery)
 		#  Shard queue: min=300ns/op_max=1000ns/op, min=400ns/op, max=2000ns/op (battery)
-		go -C "$repoRoot/$SRCdir" test -timeout 4m -count=1 -bench=. ./... | grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: "
+
+		go -C "$repoRoot/$SRCdir" test "${testArgs[@]}" ./... | grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: "
 		internalExitCode=${PIPESTATUS[0]}
 
-		go -C "$repoRoot/pkg" test -timeout 4m -count=1 -bench=. ./... | grep -Ev "\[no test files\]|^PASS$"
+		go -C "$repoRoot/pkg" test "${testArgs[@]}" ./... | grep -Ev "\[no test files\]|^PASS$"
 		pkgExitCode=${PIPESTATUS[0]}
 
 		set -e
@@ -156,6 +171,7 @@ Program Build Script and Helpers
 Options:
   -b           Build the program using defaults
   -n           Skip tests
+  -f           Run intense tests (-race -bench)
   -r           Replace binary in path with updated one
   -a <arch>    Architecture of compiled binary (amd64, arm64) [default: amd64]
   -o <os>      Which operating system to build for (linux, windows) [default: linux]
@@ -170,9 +186,10 @@ Options:
 architecture="amd64"
 os="linux"
 skipTests='false'
+intenseTests='false'
 
 # Argument parsing
-while getopts 'a:o:P:bunprh' opt; do
+while getopts 'a:o:P:bfunprh' opt; do
 	case "$opt" in
 	'a')
 		architecture="$OPTARG"
@@ -182,6 +199,9 @@ while getopts 'a:o:P:bunprh' opt; do
 		;;
 	'n')
 		skipTests='true'
+		;;
+	'f')
+		intenseTests='true'
 		;;
 	'r')
 		replaceDeployedExe='true'
@@ -211,7 +231,7 @@ done
 
 if [[ $prepareRelease == true ]]; then
 	compile_program_prechecks
-	compile_program "$architecture" "$os" 'true' 'false'
+	compile_program "$architecture" "$os" 'true' 'false' 'true'
 	tempReleaseDir=$(prepare_github_release_files "$fullNameProgramPrefix")
 	create_release_notes "$repoRoot" "$tempReleaseDir"
 elif [[ -n $publishVersion ]]; then
@@ -220,7 +240,7 @@ elif [[ $updatepackages == true ]]; then
 	update_go_packages "$repoRoot" "$SRCdir"
 elif [[ $buildmode == true ]]; then
 	compile_program_prechecks
-	compile_program "$architecture" "$os" 'false' "$replaceDeployedExe" "$skipTests"
+	compile_program "$architecture" "$os" 'false' "$replaceDeployedExe" "$skipTests" "$intenseTests"
 else
 	echo -e "${RED}ERROR${RESET}: Unknown option or combination of options" >&2
 	exit 1

@@ -29,11 +29,8 @@ func (instance *Instance) Run(ctx context.Context) {
 			// Assembler
 			scaleAssembler(ctx, instance.MetricStore, instance.PollInterval, instance.Managers.Assem)
 
-			// Output (TODO)
-			// DEBUG
-
-			// Output Queue
-			instance.Managers.Out.InQueue.ScaleCapacity(ctx)
+			// Output
+			scaleOutput(ctx, instance.MetricStore, instance.PollInterval, instance.Managers.Out)
 		}
 	}
 }

@@ -17,8 +17,8 @@ type JSONConfig struct {
 		Port    int    `json:"port"`
 	} `json:"network"`
 	Outputs struct {
-		FilePath       string `json:"filePath,omitempty"`
-		JournalEnabled bool   `json:"journalEnabled,omitempty"`
+		FilePath    string `json:"filePath,omitempty"`
+		JournaldURL string `json:"journaldURL,omitempty"`
 	} `json:"outputs"`
 	Metrics struct {
 		Interval          string `json:"collectionInterval"`
@@ -66,7 +66,7 @@ type Config struct {
 
 	// Outputs
 	OutputFilePath string
-	JournalEnabled bool
+	JournaldURL    string
 
 	// Metrics
 	MetricQueryServerEnabled bool

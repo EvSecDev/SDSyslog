@@ -183,7 +183,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	newCfg.AutoScaling.MaxDefrags = 16
 
 	newCfg.Outputs.FilePath = "/var/log/all.log"
-	newCfg.Outputs.JournalEnabled = true
+	newCfg.Outputs.JournaldURL = global.DefaultJournaldURL
 
 	newCfg.PrivateKeyFile = global.DefaultPrivKeyPath
 

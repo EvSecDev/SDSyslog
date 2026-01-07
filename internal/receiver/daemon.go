@@ -19,6 +19,7 @@ import (
 	"sdsyslog/internal/receiver/metrics"
 	"sdsyslog/internal/receiver/scaling"
 	"sdsyslog/pkg/protocol"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -51,13 +52,27 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	wrappers.SetupDecryptInnerPayload(serverPriv)
 	daemon.cfg.setDefaults()
 
+	global.Hostname, err = os.Hostname()
+	if err != nil {
+		err = fmt.Errorf("failed to determine local hostname: %v", err)
+		return
+	}
+	global.PID = os.Getpid()
+
+	data, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
+	if err != nil {
+		err = fmt.Errorf("failed to determine local boot id: %v", err)
+		return
+	}
+	global.BootID = strings.TrimSpace(string(data))
+
 	// Stage 4 - Output Manager
 	daemon.Mgrs.Output, err = out.NewInstanceManager(daemon.ctx, daemon.cfg.MinOutputQueueSize)
 	if err != nil {
 		err = fmt.Errorf("failed creating output instance manager: %v", err)
 		return
 	}
-	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath, daemon.cfg.JournalEnabled)
+	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath, daemon.cfg.JournaldURL)
 	if err != nil {
 		err = fmt.Errorf("failed starting output: %v", err)
 		return

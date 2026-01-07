@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.5.3"
+	ProgVersion string = "v0.6.0"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
@@ -34,7 +34,7 @@ const (
 	DefaultMinPacketDeadline time.Duration = 50 * time.Millisecond
 	DefaultMaxPacketDeadline time.Duration = 1 * time.Second
 
-	JournalSocket = "/run/systemd/journal/socket"
+	DefaultJournaldURL = "http://localhost:19532"
 
 	// Parsing defaults
 	DefaultFacility string = "daemon"

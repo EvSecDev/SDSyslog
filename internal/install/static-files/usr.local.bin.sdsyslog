@@ -36,6 +36,8 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   owner /proc/*/mountinfo r,
   owner /proc/*/cgroup r,
   /proc/sys/net/core/somaxconn r,
+  # Required for journald output
+  /proc/sys/kernel/random/boot_id r,
   /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
   /sys/fs/cgroup/system.slice/*.service/cpu.max r,
   /usr/share/zoneinfo/** r,

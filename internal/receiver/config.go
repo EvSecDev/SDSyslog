@@ -33,7 +33,7 @@ func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
 	config.ListenPort = cfg.Network.Port
 
 	// Output settings
-	config.JournalEnabled = cfg.Outputs.JournalEnabled
+	config.JournaldURL = cfg.Outputs.JournaldURL
 	config.OutputFilePath = cfg.Outputs.FilePath
 
 	// Scaling settings

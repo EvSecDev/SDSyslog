@@ -4,6 +4,7 @@ var (
 	CmdOpts         *CommandSet // Holds CLI command definition
 	LogicalCPUCount int         // For max workers
 	Hostname        string      // local machine name
+	BootID          string      // UUID of system for current runtime 
 	PID             int         // self
 
 	// Integer for printing increasingly detailed information as program progresses

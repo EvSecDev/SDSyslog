@@ -72,4 +72,6 @@ To get started with this API, grab the HTML docs by querying the root path `curl
 
 ## Notes
 
+- Journal output requires the installation of `systemd-journal-remote` and uses the HTTP configuration of the socket.
+  - Logs are written to their own journal file (separate from the main system journal), usually located under `/var/log/journal/remote/`.
 - Maximum individual log message size is 4GB

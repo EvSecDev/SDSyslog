@@ -3,7 +3,10 @@ package output
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"net/http"
+	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
@@ -90,11 +93,11 @@ func flushFileBuffer(lineBuffer *[]string, file io.Writer) (err error) {
 }
 
 // Writes log message and associated metadata to systemd journald
-func writeJrnl(ctx context.Context, msg protocol.Payload, jrnl io.Writer) (err error) {
+func writeJrnl(ctx context.Context, msg protocol.Payload, jrnl *http.Client, jrnlURL string) (err error) {
 	severityInt, err := protocol.SeverityToCode(msg.Severity)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"Invalid severity %s: %v : message: host id %d, log id %d, hostname %s, application name %s\n",
+			"Invalid severity %s: %v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
 			msg.Severity, err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
 		severityInt = 6 // info
 	}
@@ -102,40 +105,51 @@ func writeJrnl(ctx context.Context, msg protocol.Payload, jrnl io.Writer) (err e
 	facilityInt, err := protocol.FacilityToCode(msg.Facility)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"Invalid facility %s: %v : message: host id %d, log id %d, hostname %s, application name %s\n",
+			"Invalid facility %s: %v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
 			msg.Severity, err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
-		severityInt = 1 // user
+		facilityInt = 1 // user
 	}
 
 	pid := strconv.Itoa(msg.ProcessID)
 
-	fields := map[string]string{
-		"MESSAGE":           string(msg.LogText),
-		"PRIORITY":          strconv.Itoa(int(severityInt)),
-		"SYSLOG_FACILITY":   strconv.Itoa(int(facilityInt)),
-		"SYSLOG_IDENTIFIER": msg.ApplicationName,
-		"SYSLOG_PID":        pid,
-		"OBJECT_PID":        pid,
-		"_HOSTNAME":         msg.Hostname,
-		"SYSLOG_TIMESTAMP":  msg.Timestamp.Format(time.RFC3339Nano),
+	// Build ordered list of fields
+	type field struct {
+		key string
+		val string
+	}
+	fields := []field{
+		{key: "__REALTIME_TIMESTAMP", val: fmt.Sprintf("%d", time.Now().UnixMicro())}, // Required field
+		{key: "_BOOT_ID", val: global.BootID},                                         // Required field
+		{key: "PRIORITY", val: strconv.Itoa(int(severityInt))},
+		{key: "SYSLOG_IDENTIFIER", val: msg.ApplicationName},
+		{key: "MESSAGE", val: string(msg.LogText)}, // Required field
+		{key: "SYSLOG_FACILITY", val: strconv.Itoa(int(facilityInt))},
+		{key: "SYSLOG_PID", val: pid},
+		{key: "OBJECT_PID", val: pid},
+		{key: "HOSTNAME", val: msg.Hostname},
+		{key: "SYSLOG_HOSTNAME", val: msg.Hostname},
+		{key: "SYSLOG_TIMESTAMP", val: msg.Timestamp.Format(time.RFC3339Nano)},
 	}
 
+	// Key=val\n Format
 	var buf bytes.Buffer
-	for k, v := range fields {
-		if k == "" {
+	for _, field := range fields {
+		if field.key == "" || field.val == "" {
 			continue
 		}
-		buf.WriteString(k)
+		buf.WriteString(field.key)
 		buf.WriteByte('=')
-		buf.WriteString(v)
+		buf.WriteString(field.val)
 		buf.WriteByte('\n')
 	}
+	// Terminate with double newline
+	buf.WriteByte('\n')
 
-	_, err = jrnl.Write(buf.Bytes())
+	err = journald.SendJournalExport(jrnl, jrnlURL, buf.Bytes())
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-			"Failed sending message to journal: %v : message: host id %d, log id %d, hostname %s, application name %s\n",
+		err = fmt.Errorf("%v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
 			err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
+		return
 	}
 
 	return

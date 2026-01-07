@@ -1,18 +1,21 @@
 package out
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/output"
+	"time"
 )
 
 // Create and start new output instance
-func (manager *InstanceManager) AddInstance(filePath string, journalEnabled bool) (err error) {
-	if filePath == "" && !journalEnabled {
+func (manager *InstanceManager) AddInstance(filePath string, journaldURL string) (err error) {
+	if filePath == "" && journaldURL == "" {
 		err = fmt.Errorf("no outputs enabled/configured")
 		return
 	}
@@ -38,25 +41,45 @@ func (manager *InstanceManager) AddInstance(filePath string, journalEnabled bool
 
 		instance.Worker.FileOut = file
 	}
-	if journalEnabled {
-		_, err = os.Stat(global.JournalSocket)
-		if err != nil {
-			err = fmt.Errorf("journal socket not available: %v", err)
-			return
+	if journaldURL != "" {
+		transport := &http.Transport{
+			MaxIdleConns:          10,
+			MaxIdleConnsPerHost:   10,
+			IdleConnTimeout:       90 * time.Second,
+			DisableKeepAlives:     false,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: -1, // Not supported by journal remote server
 		}
 
-		addr := &net.UnixAddr{
-			Name: global.JournalSocket,
-			Net:  "unixgram",
-		}
-
-		var conn *net.UnixConn
-		conn, err = net.DialUnix("unixgram", nil, addr)
+		var baseURL *url.URL
+		baseURL, err = url.Parse(journaldURL)
 		if err != nil {
-			err = fmt.Errorf("failed to open socket to journald: %v", err)
+			err = fmt.Errorf("invalid journald URL: %v", err)
 			return
 		}
-		instance.Worker.JrnlOut = conn
+		messagePublishPath := &url.URL{Path: "upload"} // Only path accepted by the remote server
+		instance.Worker.JrnlURL = baseURL.ResolveReference(messagePublishPath).String()
+
+		instance.Worker.JrnlOut = &http.Client{
+			Transport: transport,
+			Timeout:   0, // no per-request timeout
+		}
+
+		var req *http.Request
+		req, err = http.NewRequest(http.MethodPost, journaldURL, bytes.NewReader(nil))
+		if err != nil {
+			err = fmt.Errorf("failed to create test HTTP connection to journald: %v", err)
+			return
+		}
+		req.Header.Set("Content-Type", "application/vnd.fdo.journal")
+
+		var resp *http.Response
+		resp, err = instance.Worker.JrnlOut.Do(req)
+		if err != nil {
+			err = fmt.Errorf("failed to test HTTP connection to journald: %v", err)
+			return
+		}
+		resp.Body.Close()
 	}
 
 	// Start worker
@@ -83,6 +106,6 @@ func (manager *InstanceManager) RemoveInstance() {
 		manager.Instance.Worker.FileOut.Close()
 	}
 	if manager.Instance.Worker.JrnlOut != nil {
-		manager.Instance.Worker.JrnlOut.Close()
+		manager.Instance.Worker.JrnlOut.CloseIdleConnections()
 	}
 }

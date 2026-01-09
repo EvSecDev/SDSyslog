@@ -9,6 +9,7 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sync/atomic"
+	"time"
 )
 
 // Creates a new queue
@@ -83,6 +84,22 @@ func newQueueInst[T any](namespace []string, capacity uint64) (new *QueueInst[T]
 	}
 	new.mask.Store(capacity - 1)
 	return
+}
+
+// Poll based wrapper around Push function to block until succeed (includes built-in poll interval)
+func (container *Queue[T]) PushBlocking(ctx context.Context, value T, size int) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if container.Push(value) { // try once
+				container.ActiveWrite.Load().Metrics.Bytes.Add(uint64(size))
+				return
+			}
+			time.Sleep(10 * time.Millisecond) // or backoff
+		}
+	}
 }
 
 // Attempts to write an element (non success = queue full)

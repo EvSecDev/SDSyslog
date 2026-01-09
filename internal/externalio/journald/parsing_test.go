@@ -1,93 +1,177 @@
 package journald
 
 import (
-	"bufio"
-	"strings"
+	"sdsyslog/internal/global"
+	"sdsyslog/pkg/protocol"
+	"strconv"
 	"testing"
+	"time"
 )
 
-func TestExtractEntry(t *testing.T) {
+func TestParseFields(t *testing.T) {
+	protocol.InitBidiMaps()
+	baseTimestampUs := int64(1_700_000_000_123_456)
+	expectedTime := time.Unix(
+		baseTimestampUs/1_000_000,
+		(baseTimestampUs%1_000_000)*1_000,
+	)
+
 	tests := []struct {
-		name           string
-		input          *bufio.Reader
-		expectedFields map[string]string
-		expectedErr    bool
+		name        string
+		input       map[string]string
+		expected    global.ParsedMessage
+		expectedErr bool
 	}{
 		{
-			name: "basic",
-			input: bufio.NewReader(strings.NewReader(
-				"key1=value1\n" +
-					"key2=value2\n\n",
-			)),
-			expectedFields: map[string]string{
-				"key1": "value1",
-				"key2": "value2",
+			name: "basic valid entry",
+			input: map[string]string{
+				"MESSAGE":              "hello world",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"_HOSTNAME":            "test-host",
+				"PRIORITY":             "6",
+				"_PID":                 "1234",
+				"SYSLOG_FACILITY":      "3",
 			},
-			expectedErr: false,
-		},
-		{
-			name:           "empty entry",
-			input:          bufio.NewReader(strings.NewReader("")),
-			expectedFields: map[string]string{},
-			expectedErr:    false, // Should trigger EOF, no error reported
-		},
-		{
-			name: "binary field",
-			input: bufio.NewReader(strings.NewReader(
-				"binaryKey\n\x08\x00\x00\x00\x00\x00\x00\x00" +
-					"abcdefgh\n",
-			)),
-			expectedFields: map[string]string{
-				"binaryKey": "abcdefgh",
+			expected: global.ParsedMessage{
+				Text:            "hello world",
+				ApplicationName: "my-app",
+				Hostname:        "test-host",
+				ProcessID:       1234,
+				Timestamp:       expectedTime,
+				Facility:        "daemon",
+				Severity:        "info",
 			},
-			expectedErr: false,
 		},
 		{
-			name: "binary field with too large data",
-			input: bufio.NewReader(strings.NewReader(
-				"largeBinaryKey\n\x01\x00\x00\x00\x00\x00\x00\x00" +
-					// Data size exceeds 10MB (you'd adjust it for your test environment)
-					strings.Repeat("a", 1024*1024*11) + "\n",
-			)),
-			expectedFields: map[string]string{},
-			expectedErr:    true, // Expecting error because binary size exceeds limit
-		},
-		{
-			name: "missing newline after binary data",
-			input: bufio.NewReader(strings.NewReader(
-				"binaryKeyWithoutNewline\n\x08\x00\x00\x00\x00\x00\x00\x00" +
-					"abcdefgh", // Missing newline at the end
-			)),
-			expectedFields: map[string]string{},
-			expectedErr:    true, // Expecting error because the newline after binary data is missing
-		},
-		{
-			name: "malformed length for binary field",
-			input: bufio.NewReader(strings.NewReader(
-				"binaryKey\n\x10\x00\x00\x00\x00\x00\x00\x00" +
-					"abcdefgh" +
-					"\n",
-			)),
-			expectedFields: map[string]string{},
-			expectedErr:    true, // Expecting error due to mismatch between length and actual data size
-		},
-		{
-			name: "fields with empty values",
-			input: bufio.NewReader(strings.NewReader(
-				"emptyField=\n" +
-					"anotherField=\n\n",
-			)),
-			expectedFields: map[string]string{
-				"emptyField":   "",
-				"anotherField": "",
+			name: "missing MESSAGE",
+			input: map[string]string{
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"PRIORITY":             "6",
 			},
-			expectedErr: false,
+			expectedErr: true,
+		},
+		{
+			name: "missing timestamp",
+			input: map[string]string{
+				"MESSAGE":           "hello",
+				"SYSLOG_IDENTIFIER": "my-app",
+				"PRIORITY":          "6",
+			},
+			expectedErr: true,
+		},
+		{
+			name: "invalid timestamp",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": "not-a-number",
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"PRIORITY":             "6",
+			},
+			expectedErr: true,
+		},
+		{
+			name: "application name fallback order",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"_SYSTEMD_USER_UNIT":   "user.service",
+				"_SYSTEMD_UNIT":        "system.service",
+				"PRIORITY":             "5",
+			},
+			expected: global.ParsedMessage{
+				Text:            "hello",
+				ApplicationName: "user.service",
+				Hostname:        global.Hostname,
+				ProcessID:       global.PID,
+				Timestamp:       expectedTime,
+				Facility:        "daemon",
+				Severity:        "notice",
+			},
+		},
+		{
+			name: "missing application name",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"PRIORITY":             "6",
+			},
+			expectedErr: true,
+		},
+		{
+			name: "hostname fallback",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"PRIORITY":             "6",
+			},
+			expected: global.ParsedMessage{
+				Text:            "hello",
+				ApplicationName: "my-app",
+				Hostname:        global.Hostname,
+				ProcessID:       global.PID,
+				Timestamp:       expectedTime,
+				Facility:        "daemon",
+				Severity:        "info",
+			},
+		},
+		{
+			name: "pid fallback to global PID",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"PRIORITY":             "6",
+			},
+			expected: global.ParsedMessage{
+				Text:            "hello",
+				ApplicationName: "my-app",
+				Hostname:        global.Hostname,
+				ProcessID:       global.PID,
+				Timestamp:       expectedTime,
+				Facility:        "daemon",
+				Severity:        "info",
+			},
+		},
+		{
+			name: "invalid pid",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"PRIORITY":             "6",
+				"_PID":                 "abc",
+			},
+			expectedErr: true,
+		},
+		{
+			name: "invalid priority",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"PRIORITY":             "not-a-number",
+			},
+			expectedErr: true,
+		},
+		{
+			name: "invalid facility",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"PRIORITY":             "6",
+				"SYSLOG_FACILITY":      "not-a-number",
+			},
+			expectedErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fields, err := ExtractEntry(tt.input)
+			msg, err := ParseFields(tt.input)
 			if err != nil && !tt.expectedErr {
 				t.Fatalf("expected no error, but got '%s'", err)
 			}
@@ -98,22 +182,26 @@ func TestExtractEntry(t *testing.T) {
 				return
 			}
 
-			expectedFieldsCpy := tt.expectedFields
-
-			for key, value := range fields {
-				expectedVal, validKey := expectedFieldsCpy[key]
-				if !validKey {
-					t.Fatalf("found unexpected key in output '%s'", key)
-				}
-				delete(expectedFieldsCpy, key) // Remove from copy to check for remaining after
-
-				if expectedVal != value {
-					t.Fatalf("key='%s'; expected value to be '%s', but got '%s'", key, expectedVal, value)
-				}
+			if tt.expected.Text != msg.Text {
+				t.Fatalf("expected Text '%s', but got '%s'", tt.expected.Text, msg.Text)
 			}
-
-			if len(expectedFieldsCpy) > 0 {
-				t.Errorf("expected additional fields in test output, but output did not contain them. Missing %d fields: \n%v\n", len(expectedFieldsCpy), expectedFieldsCpy)
+			if tt.expected.ApplicationName != msg.ApplicationName {
+				t.Fatalf("expected ApplicationName '%s', but got '%s'", tt.expected.ApplicationName, msg.ApplicationName)
+			}
+			if tt.expected.Hostname != msg.Hostname {
+				t.Fatalf("expected Hostname '%s', but got '%s'", tt.expected.Hostname, msg.Hostname)
+			}
+			if tt.expected.ProcessID != msg.ProcessID {
+				t.Fatalf("expected ProcessID '%d', but got '%d'", tt.expected.ProcessID, msg.ProcessID)
+			}
+			if tt.expected.Timestamp != msg.Timestamp {
+				t.Fatalf("expected Timestamp '%s', but got '%s'", tt.expected.Timestamp, msg.Timestamp)
+			}
+			if tt.expected.Facility != msg.Facility {
+				t.Fatalf("expected Facility '%s', but got '%s'", tt.expected.Facility, msg.Facility)
+			}
+			if tt.expected.Severity != msg.Severity {
+				t.Fatalf("expected Severity '%s', but got '%s'", tt.expected.Severity, msg.Severity)
 			}
 		})
 	}

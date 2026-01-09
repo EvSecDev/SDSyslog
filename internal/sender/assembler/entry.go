@@ -8,11 +8,10 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/internal/sender/listener"
 	"sdsyslog/pkg/protocol"
 )
 
-func New(namespace []string, inQueue *mpmc.Queue[listener.ParsedMessage], outQueue *mpmc.Queue[[]byte], hostID, maxPayloadSize int) (new *Instance) {
+func New(namespace []string, inQueue *mpmc.Queue[global.ParsedMessage], outQueue *mpmc.Queue[[]byte], hostID, maxPayloadSize int) (new *Instance) {
 	new = &Instance{
 		Namespace:      append(namespace, global.NSAssm),
 		inbox:          inQueue,

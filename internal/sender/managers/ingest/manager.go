@@ -6,11 +6,10 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/internal/sender/listener"
 )
 
 // Creates new instance manager
-func NewInstanceManager(ctx context.Context, outbox *mpmc.Queue[listener.ParsedMessage]) (new *InstanceManager) {
+func NewInstanceManager(ctx context.Context, outbox *mpmc.Queue[global.ParsedMessage]) (new *InstanceManager) {
 	// Double check queues - should never get past build
 	if outbox == nil {
 		panic("FATAL: Sender Ingest manager received empty outbox queue variable")

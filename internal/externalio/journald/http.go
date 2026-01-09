@@ -8,7 +8,7 @@ import (
 )
 
 // Writes journald export format byte payload to the journald-remote HTTP endpoint
-func SendJournalExport(client *http.Client, url string, payload []byte) (err error) {
+func sendJournalExport(client *http.Client, url string, payload []byte) (err error) {
 	req, err := http.NewRequest(
 		http.MethodPost,
 		url,

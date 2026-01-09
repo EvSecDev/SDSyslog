@@ -5,6 +5,7 @@ import (
 	"context"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
+	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
@@ -90,7 +91,7 @@ func (instance *Instance) Run(ctx context.Context) {
 					instance.Metrics.SuccessfulFileWrites.Add(1)
 				}
 				if instance.JrnlOut != nil {
-					err := writeJrnl(ctx, msg, instance.JrnlOut, instance.JrnlURL)
+					err := journald.Write(ctx, msg, instance.JrnlOut, instance.JrnlURL)
 					if err != nil {
 						logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
 							"Failed to write message(s) to journald output: %v\n", err)

@@ -1,4 +1,4 @@
-package listener
+package file
 
 import (
 	"os"
@@ -19,12 +19,12 @@ func TestParseLine(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          string
-		expectedOutput ParsedMessage
+		expectedOutput global.ParsedMessage
 	}{
 		{
 			name:  "Default",
 			input: "short message",
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            "short message",
 				ApplicationName: "-",
 				Hostname:        global.Hostname,
@@ -37,7 +37,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Default Empty",
 			input: "",
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            "-",
 				ApplicationName: "-",
 				Hostname:        global.Hostname,
@@ -50,7 +50,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 1",
 			input: `Jul  9 18:05:33 Host1 rsyslogd: [origin software="rsyslogd" swVersion="8.2302.0" x-pid="4765" x-info="https://www.rsyslog.com"] start`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `[origin software="rsyslogd" swVersion="8.2302.0" x-pid="4765" x-info="https://www.rsyslog.com"] start`,
 				ApplicationName: "rsyslogd",
 				Hostname:        "Host1",
@@ -63,7 +63,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 2",
 			input: `Nov 17 09:52:41 Host1 kernel: Linux version 6.1.0-27-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0, GNU ld (2024-11-01)`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `Linux version 6.1.0-27-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0, GNU ld (2024-11-01)`,
 				ApplicationName: "kernel",
 				Hostname:        "Host1",
@@ -76,7 +76,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 3",
 			input: `Nov 17 12:18:00 Host1 audisp-syslog[1135]: type=BPF msg=audit(1731874680.879:116): prog-id=17 op=UNLOAD`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `type=BPF msg=audit(1731874680.879:116): prog-id=17 op=UNLOAD`,
 				ApplicationName: "audisp-syslog",
 				Hostname:        "Host1",
@@ -89,7 +89,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 4",
 			input: `2025/03/15 10:47:59 [notice] 33709#33709: using inherited sockets from "5;6;"`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `using inherited sockets from "5;6;"`,
 				ApplicationName: "-",
 				Hostname:        global.Hostname,
@@ -102,7 +102,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 5",
 			input: `2025-12-03 17:46:26 status triggers-pending libc-bin:amd64 2.41-12`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `status triggers-pending libc-bin:amd64 2.41-12`,
 				ApplicationName: "-",
 				Hostname:        global.Hostname,
@@ -115,7 +115,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 6",
 			input: `10.10.10.10 - - [28/Jul/2024:03:58:35 -0700] "GET / HTTP/1.1" 444 0 "-" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `10.10.10.10 - - [28/Jul/2024:03:58:35 -0700] "GET / HTTP/1.1" 444 0 "-" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"`,
 				ApplicationName: "-",
 				Hostname:        global.Hostname,
@@ -128,7 +128,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 7",
 			input: `[19-Sep-2023 16:52:51] NOTICE: Terminating ...`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `Terminating ...`,
 				ApplicationName: "-",
 				Hostname:        global.Hostname,
@@ -141,7 +141,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 8",
 			input: `2025-12-21T18:39:01.211585-08:00 Host1 systemd[1]: Starting phpsessionclean.service - Clean php session files...`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `Starting phpsessionclean.service - Clean php session files...`,
 				ApplicationName: "systemd",
 				Hostname:        "Host1",
@@ -154,7 +154,7 @@ func TestParseLine(t *testing.T) {
 		{
 			name:  "Format Type 8 No pid",
 			input: `2025-12-21T19:08:28.506905-08:00 Host1 php8.4-cgi: php_invoke mbstring: already enabled for PHP 8.4 cgi sapi`,
-			expectedOutput: ParsedMessage{
+			expectedOutput: global.ParsedMessage{
 				Text:            `php_invoke mbstring: already enabled for PHP 8.4 cgi sapi`,
 				ApplicationName: "php8.4-cgi",
 				Hostname:        "Host1",
@@ -170,7 +170,7 @@ func TestParseLine(t *testing.T) {
 		before := time.Now()
 		t.Run(tt.name, func(t *testing.T) {
 			// Serialize
-			output := parseLine(tt.input)
+			output := ParseLine(tt.input)
 			after := time.Now()
 			if output.ApplicationName != tt.expectedOutput.ApplicationName {
 				t.Errorf("expected ApplicationName to be '%s', but got '%s'", tt.expectedOutput.ApplicationName, output.ApplicationName)

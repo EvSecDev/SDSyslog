@@ -1,102 +1,110 @@
 package journald
 
 import (
-	"bufio"
-	"encoding/binary"
 	"fmt"
-	"io"
-	"strings"
+	"sdsyslog/internal/global"
+	"sdsyslog/pkg/protocol"
+	"strconv"
 	"time"
 )
 
-// Reads a journald export entry until complete entry (double newline).
-// https://systemd.io/JOURNAL_EXPORT_FORMATS/#journal-export-format
-func ExtractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
-	fields = make(map[string]string)
-	for {
-		var line string
+// Extracts relevant fields from a journal entry
+func ParseFields(fields map[string]string) (message global.ParsedMessage, err error) {
+	var ok bool
 
-		line, err = reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				err = nil
-				// EOF means journal did not start properly
-				// Sleeping longer than stderr check read timeout
-				//   so if there was an error, we will return from this when the daemon is shutting down
-				time.Sleep(30 * time.Millisecond)
-				return
-			} else {
-				// Any other error
-				err = fmt.Errorf("failed initial line read: %v", err)
-				return
-			}
-		}
-		line = strings.TrimSuffix(line, "\n")
-
-		// End of entry when we hit empty (i.e. double newline after read + trim)
-		if line == "" {
-			break
-		}
-
-		// Text field
-		if strings.Contains(line, "=") {
-			parts := strings.SplitN(line, "=", 2)
-			if len(parts) != 2 {
-				err = fmt.Errorf("invalid text field format: '%s'", line)
-				return
-			}
-
-			fields[parts[0]] = parts[1]
-			continue // next field
-		}
-
-		// Binary field
-		// Data until newline is the key name
-		key := line
-		if key == "" {
-			err = fmt.Errorf("invalid binary field: empty key")
-			return
-		}
-
-		// Next 64 bits are the little-endian length field
-		lenField := make([]byte, 8)
-		_, err = io.ReadFull(reader, lenField)
-		if err != nil {
-			err = fmt.Errorf("failed binary field length read: %v", err)
-			return
-		}
-
-		size := binary.LittleEndian.Uint64(lenField)
-
-		// Sanity limit for binary fields (10MB)
-		if size > 1024*1024*10 {
-			err = fmt.Errorf("binary field size too large: %d bytes", size)
-			return
-		}
-
-		// Read out the data of expected length
-		data := make([]byte, size)
-		_, err = io.ReadFull(reader, data)
-		if err != nil {
-			err = fmt.Errorf("failed binary field value read: %v", err)
-			return
-		}
-
-		// Consume exactly one newline
-		b, _ := reader.ReadByte()
-		if b != '\n' {
-			// Bail because field terminators will be off otherwise (causing panic at length field read above)
-			err = fmt.Errorf("binary field missing newline")
-			return
-		}
-
-		fields[key] = string(data)
-	}
-
-	if len(fields) == 0 {
-		err = fmt.Errorf("encountered empty entry")
+	// RAW LOG
+	message.Text, ok = fields["MESSAGE"]
+	if !ok {
+		err = fmt.Errorf("journal entry has no message")
 		return
 	}
 
+	// TIMESTAMP
+	rawTimestamp, ok := fields["__REALTIME_TIMESTAMP"]
+	if !ok {
+		err = fmt.Errorf("journal entry has no realtime timestamp")
+		return
+	}
+	rawTimestampUs, err := strconv.ParseInt(rawTimestamp, 0, 64)
+	if err != nil {
+		err = fmt.Errorf("failed parsing journal realtime timestamp: %v", err)
+		return
+	}
+	message.Timestamp = time.Unix(
+		int64(rawTimestampUs/1_000_000),         // seconds
+		int64((rawTimestampUs%1_000_000)*1_000), // nanoseconds
+	)
+
+	// APPLICATION NAME
+	candidates := []string{"SYSLOG_IDENTIFIER", "_SYSTEMD_USER_UNIT", "_SYSTEMD_UNIT"}
+	for _, key := range candidates {
+		if val, ok := fields[key]; ok {
+			message.ApplicationName = val
+			break
+		}
+	}
+	if message.ApplicationName == "" {
+		err = fmt.Errorf("journal entry has no unit field")
+		return
+	}
+
+	// HOSTNAME
+	message.Hostname, ok = fields["_HOSTNAME"]
+	if !ok {
+		message.Hostname = global.Hostname
+	}
+
+	// PRIORITY
+	journalPriority, ok := fields["PRIORITY"]
+	if !ok {
+		err = fmt.Errorf("journal entry has no priority field")
+		return
+	}
+	jrnlPriInt, err := strconv.Atoi(journalPriority)
+	if err != nil {
+		err = fmt.Errorf("journal message priority '%s' is invalid: %v", journalPriority, err)
+		return
+	}
+	message.Severity, err = protocol.CodeToSeverity(uint16(jrnlPriInt))
+	if err != nil {
+		err = fmt.Errorf("invalid severity '%d': %v", jrnlPriInt, err)
+		return
+	}
+
+	// PROCESS ID
+	var pidStr string
+	candidates = []string{"_PID", "SYSLOG_PID"}
+	for _, key := range candidates {
+		if val, ok := fields[key]; ok {
+			pidStr = val
+			break
+		}
+	}
+	if pidStr != "" {
+		message.ProcessID, err = strconv.Atoi(pidStr)
+		if err != nil {
+			err = fmt.Errorf("invalid pid '%s': %v", pidStr, err)
+			return
+		}
+	} else {
+		// Using self for missing pid
+		message.ProcessID = global.PID
+	}
+
+	// FACILITY
+	journalFacility, ok := fields["SYSLOG_FACILITY"]
+	if !ok {
+		journalFacility = "3" // Default to daemon
+	}
+	jrnlSeverityInt, err := strconv.Atoi(journalFacility)
+	if err != nil {
+		err = fmt.Errorf("journal message priority '%s' is invalid: %v", journalFacility, err)
+		return
+	}
+	message.Facility, err = protocol.CodeToFacility(uint16(jrnlSeverityInt))
+	if err != nil {
+		err = fmt.Errorf("invalid severity '%d': %v", jrnlSeverityInt, err)
+		return
+	}
 	return
 }

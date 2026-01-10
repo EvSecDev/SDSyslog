@@ -2,15 +2,16 @@
 ## Profile made for primarily for Debian systems
 ## Variables - add/modify if required
 @{exelocation}=$executableFilePath
-@{config}=$configurationFilePath
+@{configdir}=$configurationDirPath
 @{privKey}=$privateKeyFilePath
+@{stateDir}=$progStateDirPath
 
 ## Profile Begin
 profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   # Receive signals
   signal receive set=(stop term kill quit int urg exists cont),
   # Send signals to self
-  signal send set=(exists urg) peer=SDSyslog,
+  signal send set=(exists urg term) peer=SDSyslog,
 
   # Capabilities
   network inet dgram,
@@ -20,28 +21,41 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   network unix stream,
   network unix dgram,
   network netlink raw,
+  capability dac_override,
+  capability dac_read_search,
 
-  ## Configurations needed
-  @{config} r,
+  # Configurations needed
+  @{configdir}{/,/**} r,
   @{privKey} r,
 
-  ## State Keeping
-  /var/cache/sdsyslog{,/**} rw,
+  # State Keeping
+  @{stateDir}{,/**} rw,
 
-  ## Ingest
+  # [Sender] Journald reading
   /usr/bin/journalctl rUx,
 
-  ## Program Accesses
-  /dev/null rw,
-  owner /proc/*/mountinfo r,
-  owner /proc/*/cgroup r,
-  /proc/sys/net/core/somaxconn r,
-  # Required for journald output
+  # [Receiver] Required for journald output
   /proc/sys/kernel/random/boot_id r,
-  /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
-  /sys/fs/cgroup/system.slice/*.service/cpu.max r,
-  /usr/share/zoneinfo/** r,
+
+  # [Receiver] Required for multiple Receiver listeners
+  /proc/sys/net/core/somaxconn r,
+
+  # Required for non-IP addresses in listener/sender/metric server
   /etc/hosts r,
   /etc/resolv.conf r,
   /etc/nsswitch.conf r,
+
+  # Timestamps
+  /usr/share/zoneinfo/** r,
+
+  # Required for scaling limiter
+  /sys/fs/cgroup/system.slice/*.service/cpu.max r,
+
+  # Misc accesses
+  /dev/null rw,
+  owner /proc/*/mountinfo r,
+  owner /proc/*/cgroup r,
+
+  # Base Go Access
+  /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
 }

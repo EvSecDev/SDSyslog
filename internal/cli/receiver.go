@@ -14,7 +14,7 @@ func ReceiveMode(ctx context.Context, commandname string, args []string) {
 	var configPath string
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	SetGlobalArguments(commandFlags)
-	SetCommon(commandFlags, &configPath)
+	SetCommon(commandFlags, &configPath, "receive")
 
 	commandFlags.Usage = func() {
 		PrintHelpMenu(commandFlags, commandname, global.CmdOpts)

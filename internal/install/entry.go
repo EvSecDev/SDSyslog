@@ -6,7 +6,6 @@ import (
 	"embed"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sdsyslog/internal/global"
 	"strings"
 
@@ -116,8 +115,9 @@ func Remove(mode string) {
 		fmt.Fprintf(os.Stderr, "Error with template config: %v\n", err)
 	}
 
-	// Cleanup state dir - best effort
-	stateDir := filepath.Dir(global.DefaultStateFile)
-	os.Remove(global.DefaultStateFile)
-	os.Remove(stateDir)
+	// Cleanup state dir
+	err = os.RemoveAll(global.DefaultStateDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error with removing state dir: %v\n", err)
+	}
 }

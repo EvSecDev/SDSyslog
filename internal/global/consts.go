@@ -18,16 +18,21 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.6.0"
+	ProgVersion string = "v0.7.0"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
 	LogTagsKey CtxKey = "logtags" // List of tags in order of broad->specific appended/popped at various parts of the program
 
-	DefaultBinaryPath        string        = "/usr/local/bin/sdsyslog"
-	DefaultConfigPath        string        = "/etc/sdsyslog.json"
-	DefaultPrivKeyPath       string        = "/etc/ssl/private/sdsyslog.key"
-	DefaultStateFile         string        = "/var/cache/sdsyslog/last.state"
+	ProgBaseName             string        = "sdsyslog"
+	DefaultBinaryPath        string        = "/usr/local/bin/" + ProgBaseName
+	DefaultConfigDir         string        = "/etc/" + ProgBaseName
+	DefaultConfigSend        string        = DefaultConfigDir + "/" + ProgBaseName + "-sender.json"
+	DefaultConfigRecv        string        = DefaultConfigDir + "/" + ProgBaseName + ".json"
+	DefaultPrivKeyPath       string        = DefaultConfigDir + "/private.key"
+	DefaultAAProfName        string        = "usr.local.bin." + ProgBaseName
+	DefaultStateDir          string        = "/var/cache/" + ProgBaseName
+	DefaultStateFile         string        = DefaultStateDir + "/last.state"
 	DefaultReceiverPort      int           = 8514
 	DefaultMinQueueSize      int           = 512
 	DefaultMaxQueueSize      int           = 4096

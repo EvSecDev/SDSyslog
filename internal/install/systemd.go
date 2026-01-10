@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sdsyslog/internal/global"
 	"strings"
 )
 
@@ -29,6 +30,12 @@ func installService(mode string) (err error) {
 		err = fmt.Errorf("Unable to retrieve configuration file from embedded filesystem: %v", err)
 		return
 	}
+
+	// Inject variables into file
+	newUnitFile := strings.Replace(string(unitFile), "$executableFilePath", global.DefaultBinaryPath, 1)
+	newUnitFile = strings.Replace(newUnitFile, "$receiveConfigFilePath", global.DefaultConfigRecv, 1)
+	newUnitFile = strings.Replace(newUnitFile, "$sendConfigFilePath", global.DefaultConfigSend, 1)
+	unitFile = []byte(newUnitFile)
 
 	err = os.WriteFile(unitFilePath, unitFile, 0644)
 	if err != nil {

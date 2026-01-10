@@ -65,8 +65,16 @@ func (manager *InstanceManager) AddInstance(filePath string, journaldURL string)
 			Timeout:   0, // no per-request timeout
 		}
 
+		testCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
 		var req *http.Request
-		req, err = http.NewRequest(http.MethodPost, journaldURL, bytes.NewReader(nil))
+		req, err = http.NewRequestWithContext(
+			testCtx,
+			http.MethodPost,
+			journaldURL,
+			bytes.NewReader(nil),
+		)
 		if err != nil {
 			err = fmt.Errorf("failed to create test HTTP connection to journald: %v", err)
 			return

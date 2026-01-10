@@ -77,6 +77,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		err = fmt.Errorf("failed starting output: %v", err)
 		return
 	}
+	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+		"output instance started successfully\n")
 
 	// Stage 3 - Shard+Assembler
 	daemon.Mgrs.Defrag = defrag.NewInstanceManager(daemon.ctx,
@@ -86,6 +88,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	for i := 0; i < daemon.cfg.MinDefrags; i++ {
 		_ = daemon.Mgrs.Defrag.AddInstance()
 	}
+	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+		"%d defrag instance(s) started successfully\n", daemon.cfg.MinDefrags)
 
 	// Stage 2 - Processor
 	daemon.Mgrs.Proc, err = proc.NewInstanceManager(daemon.ctx,
@@ -103,6 +107,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	for i := 0; i < daemon.cfg.MinProcessors; i++ {
 		daemon.Mgrs.Proc.AddInstance()
 	}
+	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+		"%d processor instance(s) started successfully\n", daemon.cfg.MinProcessors)
 
 	// Start handling exit signals before listener starts ingesting messages
 	go signalHandler(daemon)
@@ -121,6 +127,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 			return
 		}
 	}
+	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+		"%d listener instance(s) started successfully\n", daemon.cfg.MinProcessors)
 
 	// Metrics Collector
 	daemon.metricsCollector = metrics.New(daemon.Mgrs,

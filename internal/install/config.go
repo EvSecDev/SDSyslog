@@ -16,8 +16,29 @@ import (
 )
 
 func installConfig(mode string) (err error) {
+	var configFilePath string
+	switch mode {
+	case "send":
+		configFilePath = global.DefaultConfigSend
+	case "receive":
+		configFilePath = global.DefaultConfigRecv
+	default:
+		err = fmt.Errorf("unknown mode '%s'", mode)
+		return
+	}
+
+	err = os.Mkdir(global.DefaultConfigDir, 0755)
+	if err != nil {
+		if strings.HasSuffix(err.Error(), "file exists") {
+			err = nil
+		} else {
+			err = fmt.Errorf("failed to create configuration directory: %v", err)
+			return
+		}
+	}
+
 	// Don't overwrite existing
-	_, err = os.Stat(global.DefaultConfigPath)
+	_, err = os.Stat(configFilePath)
 	if err == nil {
 		// No terminal - no overwrite
 		if !term.IsTerminal(int(os.Stdout.Fd())) {
@@ -26,7 +47,7 @@ func installConfig(mode string) (err error) {
 		}
 
 		// File exists, prompt user for confirmation to overwrite
-		fmt.Printf("Configuration file already exists at '%s'. Are you SURE you want to overwrite it? (yes/no): ", global.DefaultConfigPath)
+		fmt.Printf("Configuration file already exists at '%s'. Are you SURE you want to overwrite it? (yes/no): ", configFilePath)
 		reader := bufio.NewReader(os.Stdin)
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
@@ -39,7 +60,7 @@ func installConfig(mode string) (err error) {
 
 	switch mode {
 	case "send":
-		err = CreateSendTemplateConfig(global.DefaultConfigPath)
+		err = CreateSendTemplateConfig(configFilePath)
 	case "receive":
 		var private, public []byte
 		private, public, err = ecdh.CreatePersistentKey()
@@ -70,7 +91,7 @@ func installConfig(mode string) (err error) {
 			fmt.Printf("  IMPORTANT: Public key (use this for all senders): %s\n", base64.StdEncoding.EncodeToString(public))
 		}
 
-		err = CreateRecvTemplateConfig(global.DefaultConfigPath)
+		err = CreateRecvTemplateConfig(configFilePath)
 	default:
 		err = fmt.Errorf("unknown mode '%s'", mode)
 		return
@@ -79,18 +100,11 @@ func installConfig(mode string) (err error) {
 		return
 	}
 
-	fmt.Printf("Successfully wrote template configuration file to '%s'\n", global.DefaultConfigPath)
+	fmt.Printf("Successfully wrote template configuration file to '%s'\n", configFilePath)
 	return
 }
 
 func uninstallConfig(mode string) (err error) {
-	err = os.Remove(global.DefaultConfigPath)
-	if err != nil && !os.IsNotExist(err) {
-		return
-	} else {
-		err = nil
-	}
-
 	if mode == "receive" {
 		err = os.Remove(global.DefaultPrivKeyPath)
 		if err != nil && !os.IsNotExist(err) {
@@ -102,7 +116,14 @@ func uninstallConfig(mode string) (err error) {
 		fmt.Printf("Successfully removed private key file '%s'\n", global.DefaultPrivKeyPath)
 	}
 
-	fmt.Printf("Successfully removed configuration file '%s'\n", global.DefaultConfigPath)
+	err = os.RemoveAll(global.DefaultConfigDir)
+	if err != nil && !os.IsNotExist(err) {
+		return
+	} else {
+		err = nil
+	}
+
+	fmt.Printf("Successfully removed configuration directory '%s'\n", global.DefaultConfigDir)
 	return
 }
 

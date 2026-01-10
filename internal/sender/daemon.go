@@ -112,6 +112,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	for i := 0; i < daemon.cfg.MinOutputs; i++ {
 		_ = daemon.Mgrs.Out.AddInstance()
 	}
+	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+		"%d output instance(s) started successfully\n", daemon.cfg.MinOutputs)
 
 	// Stage 2 - Assemblers
 	daemon.Mgrs.Assem, err = packaging.NewInstanceManager(daemon.ctx,
@@ -130,6 +132,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	for i := 0; i < daemon.cfg.MinAssemblers; i++ {
 		_ = daemon.Mgrs.Assem.AddInstance()
 	}
+	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+		"%d assembler instance(s) started successfully\n", daemon.cfg.MinAssemblers)
 
 	// Start handling exit signals before listener starts ingesting messages
 	go signalHandler(daemon)
@@ -154,6 +158,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			return
 		}
 	}
+	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+		"ingest instance started successfully\n")
 
 	// Metrics Collector
 	daemon.metricsCollector = metrics.New(daemon.Mgrs.In,
@@ -226,10 +232,12 @@ func (daemon *Daemon) Shutdown() {
 
 	// Stop metric server
 	if daemon.cfg.MetricQueryServerEnabled {
-		err := daemon.MetricServer.Shutdown(daemon.ctx)
-		if err != nil && err != http.ErrServerClosed {
-			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-				"metric HTTP server did not shutdown gracefully: %v\n", err)
+		if daemon.MetricServer != nil {
+			err := daemon.MetricServer.Shutdown(daemon.ctx)
+			if err != nil && err != http.ErrServerClosed {
+				logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
+					"metric HTTP server did not shutdown gracefully: %v\n", err)
+			}
 		}
 	}
 

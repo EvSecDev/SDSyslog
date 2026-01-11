@@ -44,6 +44,16 @@ func GetLastPosition(stateFilePath string) (cursor string, err error) {
 	cursor = string(data[:n])
 	cursor = strings.Trim(cursor, "\n")
 
+	// Validate cursor format - restart from zero otherwise
+	testCursorFields := strings.Split(cursor, ";")
+	if len(testCursorFields) < 3 {
+		// Just checking to see if there are more than one (2 times could be a coincidence)
+		cursor = ""
+	}
+	if strings.HasPrefix(testCursorFields[0], "s=") {
+		cursor = ""
+	}
+
 	return
 }
 

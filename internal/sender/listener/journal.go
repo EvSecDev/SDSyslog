@@ -62,13 +62,16 @@ func (instance *JrnlInstance) Run(ctx context.Context) {
 					"error reading journal output: %v\n", err)
 				return
 			}
+			if len(fields) == 0 {
+				return
+			}
 
 			// Mark current cursor after successful entry retrieval
 			var fieldPresent bool
 			readPosition, fieldPresent = fields["__CURSOR"]
 			if !fieldPresent {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"failed cursor extraction: %v\n", err)
+					"failed cursor extraction\n")
 			}
 
 			// Parse and retrieve fields we need

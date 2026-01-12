@@ -18,7 +18,7 @@ func New(namespace []string, inQueue *mpmc.Queue[global.ParsedMessage], outQueue
 		outbox:         outQueue,
 		hostID:         hostID,
 		maxPayloadSize: maxPayloadSize,
-		Metrics:        &MetricStorage{},
+		Metrics:        MetricStorage{},
 	}
 	return
 }

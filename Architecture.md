@@ -130,6 +130,39 @@ If the receiver program is being shutdown (internally or external signal):
 - Delay further shutdown for a fixed time until queues can flush
 - If fixed wait time is exceeded, program exits immediately
 
+## Input/Output Modules
+
+Modules must satisfy this minimum contract:
+
+- function `NewInput`
+  - Takes: `namespace []string`, `baseStateFile string`, `outbox *mpmc.Queue[global.ParsedMessage]`, optional values...
+  - Returns: `*InModule`, `error`
+- function `NewOutput`
+  - Takes: optional values...
+  - Returns: `*OutModule`, `error`
+- type `InModule`
+  - Methods:
+    - Reader - Go routine
+      - Takes: `context.Context`
+      - Returns: nothing
+    - CollectMetrics
+      - Takes: `interval time.Duration`
+      - Returns: `[]metrics.Metric`
+    - Shutdown - Gracefully terminates any resources
+      - Takes: nothing
+      - Returns: `error`
+- type `OutModule`
+  - Methods:
+    - Write
+      - Takes: `context.Context`, `protocol.Payload`
+      - Returns: `int`, `error` (first return is number of entries written, likely 1 unless batching internally)
+    - CollectMetrics
+      - Takes: `interval time.Duration`
+      - Returns: `[]metrics.Metric`
+    - Shutdown - Gracefully terminates any resources
+      - Takes: nothing
+      - Returns: `error`
+
 ## Encryption
 
 Ephemeral private keys are generated randomly on the sender and used in conjunction with a pre-shared receiver public key to created a shared secret.

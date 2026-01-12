@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func Watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool, fileHasRotated chan bool) {
+func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool, fileHasRotated chan bool) {
 	// Open the inotify instance
 	fd, err := syscall.InotifyInit()
 	if err != nil {

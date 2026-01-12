@@ -1,7 +1,7 @@
-package output
+package file
 
 import (
-	"io"
+	"context"
 	"sdsyslog/pkg/protocol"
 	"sort"
 	"strings"
@@ -9,8 +9,12 @@ import (
 )
 
 // Writes log message and associated metadata in one line to configured file
-func writeFile(lineBuffer *[]string, msg protocol.Payload, file io.Writer) (err error) {
-	newEntry := FormatAsText(msg)
+func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (linesWritten int, err error) {
+	if mod == nil {
+		return
+	}
+
+	newEntry := formatAsText(msg)
 
 	// Always ensure outputs have only one trailing newline
 	var lineParts []string
@@ -22,11 +26,11 @@ func writeFile(lineBuffer *[]string, msg protocol.Payload, file io.Writer) (err 
 	newLine := strings.Join(lineParts, " ")
 
 	// Buffer small amount to reorder and write in batches
-	*lineBuffer = append(*lineBuffer, newLine)
+	*mod.batchBuffer = append(*mod.batchBuffer, newLine)
 
 	// Batch 20 at a time
-	if len(*lineBuffer) > 20 {
-		err = flushFileBuffer(lineBuffer, file)
+	if len(*mod.batchBuffer) > 20 {
+		linesWritten, err = mod.FlushBuffer()
 		if err != nil {
 			return
 		}
@@ -36,16 +40,16 @@ func writeFile(lineBuffer *[]string, msg protocol.Payload, file io.Writer) (err 
 }
 
 // Flushes line buffer to the file
-func flushFileBuffer(lineBuffer *[]string, file io.Writer) (err error) {
-	if lineBuffer == nil {
+func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
+	if mod.batchBuffer == nil {
 		return
 	}
 
-	if len(*lineBuffer) == 0 {
+	if len(*mod.batchBuffer) == 0 {
 		return
 	}
 
-	sort.Slice(*lineBuffer, func(i, j int) bool {
+	sort.Slice(*mod.batchBuffer, func(i, j int) bool {
 		// Extract timestamp prefix (up to first space)
 		getTime := func(s string) time.Time {
 			ts := s
@@ -59,27 +63,28 @@ func flushFileBuffer(lineBuffer *[]string, file io.Writer) (err error) {
 			return t
 		}
 
-		ti := getTime((*lineBuffer)[i])
-		tj := getTime((*lineBuffer)[j])
+		ti := getTime((*mod.batchBuffer)[i])
+		tj := getTime((*mod.batchBuffer)[j])
 
 		// Newest first, compare reverse
 		return ti.After(tj)
 	})
 
-	for _, line := range *lineBuffer {
+	for _, line := range *mod.batchBuffer {
 		data := []byte(line)
 		for len(data) > 0 {
 			var n int
-			n, err = file.Write(data)
+			n, err = mod.sink.Write(data)
 			if err != nil {
 				return
 			}
 			data = data[n:] // remove the bytes that were successfully written
 		}
+		flushedCnt++
 	}
 
 	// All writes succeeded, empty buffer
-	*lineBuffer = []string{}
+	*mod.batchBuffer = []string{}
 
 	return
 }

@@ -170,6 +170,7 @@ func TestRecvConstantFlow(t *testing.T) {
 
 		time.Sleep(pollingInterval)
 	}
+	writerWaiter.Wait()
 
 	// Graceful shutdown
 	daemon.Shutdown()
@@ -184,7 +185,8 @@ func TestRecvConstantFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error checking output file, but got '%v'", err)
 	}
-	lines := strings.Split(string(outputContents), "\n")
+	output := strings.Trim(string(outputContents), "\n")
+	lines := strings.Split(output, "\n")
 	if len(lines) != int(totalMessagesSent.Load()) {
 		t.Errorf("expected outputs file to have %d lines, but it actually has %d lines", totalMessagesSent.Load(), len(lines))
 	}

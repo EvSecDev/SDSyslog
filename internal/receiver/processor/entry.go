@@ -20,7 +20,7 @@ func New(namespace []string, queue *mpmc.Queue[listener.Container], shardRouting
 		Namespace:   append(namespace, global.NSWorker),
 		inbox:       queue,
 		routingView: shardRouting,
-		Metrics:     &MetricStorage{},
+		Metrics:     MetricStorage{},
 	}
 	return
 }

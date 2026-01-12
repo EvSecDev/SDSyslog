@@ -9,5 +9,5 @@ type Instance struct {
 	Namespace []string
 	inbox     *mpmc.Queue[[]byte]
 	conn      *net.UDPConn
-	Metrics   *MetricStorage
+	Metrics   MetricStorage
 }

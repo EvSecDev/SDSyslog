@@ -18,7 +18,7 @@ func New(namespace []string, shard *shard.Instance, outQueue *mpmc.Queue[protoco
 		shardInst: shard,
 		outbox:    outQueue,
 		cleaner:   overrideClear,
-		Metrics:   &MetricStorage{},
+		Metrics:   MetricStorage{},
 	}
 	return
 }

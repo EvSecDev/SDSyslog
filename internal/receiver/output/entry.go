@@ -5,7 +5,6 @@ import (
 	"context"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
@@ -18,15 +17,13 @@ func New(namespace []string, inQueue *mpmc.Queue[protocol.Payload]) (new *Instan
 	new = &Instance{
 		Namespace: append(namespace, global.NSWorker),
 		Inbox:     inQueue,
-		Metrics:   &MetricStorage{},
+		Metrics:   MetricStorage{},
 	}
 	return
 }
 
 // Take assembled messages and write to configured outputs
 func (instance *Instance) Run(ctx context.Context) {
-	var buffer []string
-
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -53,16 +50,12 @@ func (instance *Instance) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			if len(buffer) > 0 {
-				flushFileBuffer(&buffer, instance.FileOut)
-			}
+			instance.FileMod.FlushBuffer()
 			return
 		case <-ticker.C:
 			// Periodic flush of file output event buffer
 			// Buffer might never fill and flush if we don't get enough messages
-			if len(buffer) > 0 {
-				flushFileBuffer(&buffer, instance.FileOut)
-			}
+			instance.FileMod.FlushBuffer()
 		case msg, ok := <-popCh:
 			func() {
 				// Record panics and continue output
@@ -82,22 +75,19 @@ func (instance *Instance) Run(ctx context.Context) {
 				instance.Metrics.ReceivedMessages.Add(1)
 
 				// Write message to all outputs
-				if instance.FileOut != nil {
-					err := writeFile(&buffer, msg, instance.FileOut)
-					if err != nil {
-						logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-							"Failed to write message(s) to file output: %v\n", err)
-					}
-					instance.Metrics.SuccessfulFileWrites.Add(1)
+				n, err := instance.FileMod.Write(ctx, msg)
+				if err != nil {
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+						"Failed to write message(s) to file output: %v\n", err)
 				}
-				if instance.JrnlOut != nil {
-					err := journald.Write(ctx, msg, instance.JrnlOut, instance.JrnlURL)
-					if err != nil {
-						logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-							"Failed to write message(s) to journald output: %v\n", err)
-					}
-					instance.Metrics.SuccessfulJrnlWrites.Add(1)
+				instance.Metrics.SuccessfulFileWrites.Add(uint64(n))
+
+				n, err = instance.JrnlMod.Write(ctx, msg)
+				if err != nil {
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+						"Failed to write message(s) to journald output: %v\n", err)
 				}
+				instance.Metrics.SuccessfulJrnlWrites.Add(uint64(n))
 			}()
 		}
 	}

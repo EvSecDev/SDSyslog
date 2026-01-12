@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.7.1"
+	ProgVersion string = "v0.8.0"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)

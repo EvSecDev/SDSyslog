@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
@@ -13,7 +12,11 @@ import (
 )
 
 // Writes log message and associated metadata to systemd journald
-func Write(ctx context.Context, msg protocol.Payload, jrnl *http.Client, jrnlURL string) (err error) {
+func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesWritten int, err error) {
+	if mod == nil {
+		return
+	}
+
 	severityInt, err := protocol.SeverityToCode(msg.Severity)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
@@ -65,12 +68,13 @@ func Write(ctx context.Context, msg protocol.Payload, jrnl *http.Client, jrnlURL
 	// Terminate with double newline
 	buf.WriteByte('\n')
 
-	err = sendJournalExport(jrnl, jrnlURL, buf.Bytes())
+	err = sendJournalExport(mod.sink, mod.url, buf.Bytes())
 	if err != nil {
 		err = fmt.Errorf("%v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
 			err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
 		return
 	}
+	entriesWritten = 1
 
 	return
 }

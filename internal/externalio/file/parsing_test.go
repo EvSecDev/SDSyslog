@@ -170,7 +170,7 @@ func TestParseLine(t *testing.T) {
 		before := time.Now()
 		t.Run(tt.name, func(t *testing.T) {
 			// Serialize
-			output := ParseLine(tt.input)
+			output := parseLine(tt.input)
 			after := time.Now()
 			if output.ApplicationName != tt.expectedOutput.ApplicationName {
 				t.Errorf("expected ApplicationName to be '%s', but got '%s'", tt.expectedOutput.ApplicationName, output.ApplicationName)

@@ -2,13 +2,11 @@ package ingest
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
-	"os"
 	"path/filepath"
+	"sdsyslog/internal/externalio/file"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/sender/listener"
 )
 
 // Create file ingest instance
@@ -24,33 +22,21 @@ func (manager *InstanceManager) AddFileInstance(filePath string, stateFile strin
 		return
 	}
 
-	// Create unique state file for this source
-	stateFileDir := filepath.Dir(stateFile)
-	stateFileName := filepath.Base(stateFile)
-
-	newStateFileName := base64.RawURLEncoding.EncodeToString([]byte(filePath)) + "_" + stateFileName // Using full file path as prefix to state file
-	newStateFile := filepath.Join(stateFileDir, newStateFileName)
-
-	// Worker for this file
-	ingestInstance := &FileWorker{
-		Worker: listener.NewFileSource(logctx.GetTagList(manager.ctx), filePath, newStateFile, manager.outQueue),
-	}
-
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, filename)
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
+
+	// Worker for this file
+	ingestInstance := &FileWorker{}
+	ingestInstance.Worker, err = file.NewInput(logctx.GetTagList(manager.ctx), filePath, stateFile, manager.outQueue)
+	if err != nil {
+		return
+	}
 
 	// Create new context
 	ingestCtx, cancelInstances := context.WithCancel(context.Background())
 	ingestCtx = context.WithValue(ingestCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
 	manager.FileSources[filePath] = ingestInstance
 	ingestInstance.cancel = cancelInstances
-
-	// Open file
-	ingestInstance.Worker.Source, err = os.OpenFile(filePath, os.O_RDONLY, 0)
-	if err != nil {
-		logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.ErrorLog, "failed to open source file: %v\n", err)
-		return
-	}
 
 	ingestInstance.wg.Add(1)
 	go func() {
@@ -72,8 +58,9 @@ func (manager *InstanceManager) RemoveFileInstance(filename string) (err error) 
 		return
 	}
 
-	if fileSource.Worker.Source != nil {
-		fileSource.Worker.Source.Close()
+	err = fileSource.Worker.Shutdown()
+	if err != nil {
+		return
 	}
 	if fileSource.cancel != nil {
 		fileSource.cancel()

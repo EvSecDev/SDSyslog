@@ -16,7 +16,7 @@ func New(namespace []string, inQueue *mpmc.Queue[[]byte], conn *net.UDPConn) (ne
 		Namespace: append(namespace, global.NSWorker),
 		inbox:     inQueue,
 		conn:      conn,
-		Metrics:   &MetricStorage{},
+		Metrics:   MetricStorage{},
 	}
 	return
 }

@@ -11,5 +11,5 @@ type Instance struct {
 	outbox         *mpmc.Queue[[]byte]               // fragments for sender
 	hostID         int                               // ID for all sent messages
 	maxPayloadSize int                               // maximum payload size for configured destination
-	Metrics        *MetricStorage
+	Metrics        MetricStorage
 }

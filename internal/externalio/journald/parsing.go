@@ -9,7 +9,7 @@ import (
 )
 
 // Extracts relevant fields from a journal entry
-func ParseFields(fields map[string]string) (message global.ParsedMessage, err error) {
+func parseFields(fields map[string]string) (message global.ParsedMessage, err error) {
 	var ok bool
 
 	// RAW LOG

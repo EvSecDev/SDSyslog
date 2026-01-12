@@ -1,17 +1,16 @@
 package output
 
 import (
-	"io"
-	"net/http"
+	"sdsyslog/internal/externalio/file"
+	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 )
 
 type Instance struct {
 	Namespace []string
-	FileOut   io.WriteCloser
-	JrnlOut   *http.Client
-	JrnlURL   string
+	FileMod   *file.OutModule
+	JrnlMod   *journald.OutModule
 	Inbox     *mpmc.Queue[protocol.Payload]
-	Metrics   *MetricStorage
+	Metrics   MetricStorage
 }

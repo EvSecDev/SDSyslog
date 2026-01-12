@@ -1,4 +1,4 @@
-package listener
+package journald
 
 import (
 	"sdsyslog/internal/metrics"
@@ -11,10 +11,10 @@ type MetricStorage struct {
 	Success   atomic.Uint64 // number of messages processed successfully
 }
 
-func (instance *FileInstance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
-	lines := instance.Metrics.LinesRead.Swap(0)
-	suc := instance.Metrics.Success.Swap(0)
+	lines := mod.metrics.LinesRead.Swap(0)
+	suc := mod.metrics.Success.Swap(0)
 
 	// Record read time
 	recordTime := time.Now()
@@ -22,8 +22,8 @@ func (instance *FileInstance) CollectMetrics(interval time.Duration) (collection
 	collection = []metrics.Metric{
 		{
 			Name:        "lines_read",
-			Description: "Total lines read from sources in the interval",
-			Namespace:   instance.Namespace,
+			Description: "Total lines read from journald in the interval",
+			Namespace:   mod.Namespace,
 			Value: metrics.MetricValue{
 				Raw:      lines,
 				Unit:     "count",
@@ -34,8 +34,8 @@ func (instance *FileInstance) CollectMetrics(interval time.Duration) (collection
 		},
 		{
 			Name:        "success_processed",
-			Description: "Total processed messages extracted from sources in the interval",
-			Namespace:   instance.Namespace,
+			Description: "Total processed messages extracted from journald in the interval",
+			Namespace:   mod.Namespace,
 			Value: metrics.MetricValue{
 				Raw:      suc,
 				Unit:     "count",

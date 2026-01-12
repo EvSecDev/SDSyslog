@@ -10,7 +10,7 @@ type Instance struct {
 	conn      *net.UDPConn
 	Outbox    *mpmc.Queue[Container]
 	minLen    int
-	Metrics   *MetricStorage
+	Metrics   MetricStorage
 }
 
 // For SPSC queue

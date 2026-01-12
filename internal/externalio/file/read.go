@@ -1,44 +1,29 @@
-// Watches and reads lines from configured sources
-package listener
+package file
 
 import (
 	"context"
 	"io"
 	"os"
-	"sdsyslog/internal/externalio/file"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/queue/mpmc"
 	"syscall"
 )
 
-// New creates a file listener instance
-func NewFileSource(namespace []string, filePath string, stateFilePath string, queue *mpmc.Queue[global.ParsedMessage]) (new *FileInstance) {
-	new = &FileInstance{
-		Namespace:       append(namespace, global.NSoFile),
-		Outbox:          queue,
-		SourceFilePath:  filePath,
-		SourceStateFile: stateFilePath,
-		Metrics:         &MetricStorage{},
-	}
-	return
-}
-
-func (instance *FileInstance) Run(ctx context.Context) {
-	logFileInode, logFileOffset, err := file.GetLastPosition(instance.SourceFilePath, instance.SourceStateFile)
+func (mod *InModule) Run(ctx context.Context) {
+	logFileInode, logFileOffset, err := getLastPosition(mod.filePath, mod.stateFile)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to get position of last source file read for '%s': %v\n", instance.SourceFilePath, err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to get position of last source file read for '%s': %v\n", mod.filePath, err)
 	}
 
-	_, err = instance.Source.Seek(logFileOffset, io.SeekStart)
+	_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to resume last source file read position for '%s': %v\n", instance.SourceFilePath, err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to resume last source file read position for '%s': %v\n", mod.filePath, err)
 	}
 
 	// Create inotify background watcher
 	fileHasChanged := make(chan bool, 1) // Main blocker for reading new lines
 	fileHasRotated := make(chan bool, 1) // Notify when to switch file inode and reset offset
-	go file.Watcher(ctx, instance.SourceFilePath, fileHasChanged, fileHasRotated)
+	go watcher(ctx, mod.filePath, fileHasChanged, fileHasRotated)
 
 	buf := make([]byte, 65536)
 	lineBuf := []byte{} // note: unbounded
@@ -46,12 +31,12 @@ func (instance *FileInstance) Run(ctx context.Context) {
 	for {
 		for {
 			// Record current file position before read
-			startOfChunk, err := instance.Source.Seek(0, io.SeekCurrent)
+			startOfChunk, err := mod.sink.Seek(0, io.SeekCurrent)
 			if err != nil {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to retrieve current position in log file: %v\n", err)
 			}
 
-			n, err := instance.Source.Read(buf)
+			n, err := mod.sink.Read(buf)
 			if n == 0 {
 				// no more bytes available, break to outer select for blocking
 				break
@@ -76,9 +61,9 @@ func (instance *FileInstance) Run(ctx context.Context) {
 				}
 
 				// line complete, process it
-				instance.Metrics.LinesRead.Add(1)
+				mod.metrics.LinesRead.Add(1)
 
-				msg := file.ParseLine(string(lineBuf))
+				msg := parseLine(string(lineBuf))
 
 				size := len(msg.Text) +
 					len(msg.ApplicationName) +
@@ -86,8 +71,8 @@ func (instance *FileInstance) Run(ctx context.Context) {
 					len(msg.Facility) +
 					len(msg.Severity) +
 					16 // int64 size pid and time
-				instance.Outbox.PushBlocking(ctx, msg, size)
-				instance.Metrics.Success.Add(1)
+				mod.outbox.PushBlocking(ctx, msg, size)
+				mod.metrics.Success.Add(1)
 
 				// reset line buffer
 				lineBuf = []byte{}
@@ -104,10 +89,10 @@ func (instance *FileInstance) Run(ctx context.Context) {
 		// Block until file change, file rotation, or cancellation
 		select {
 		case <-ctx.Done():
-			err := file.SavePosition(instance.SourceStateFile, logFileInode, logFileOffset)
+			err := savePosition(mod.stateFile, logFileInode, logFileOffset)
 			if err != nil {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"failed to save position in file source '%s': %v\n", instance.SourceFilePath, err)
+					"failed to save position in file source '%s': %v\n", mod.filePath, err)
 			}
 			return
 		case <-fileHasChanged:
@@ -115,15 +100,15 @@ func (instance *FileInstance) Run(ctx context.Context) {
 		case reopenLogFile := <-fileHasRotated:
 			if reopenLogFile {
 				// Reopen at file path
-				instance.Source.Close()
-				instance.Source, err = os.Open(instance.SourceFilePath)
+				mod.sink.Close()
+				mod.sink, err = os.Open(mod.filePath)
 				if err != nil {
 					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to reopen rotated log file: %v\n", err)
 					continue
 				}
 
 				// Retrieve new file inode
-				fileInfo, err := os.Stat(instance.SourceFilePath)
+				fileInfo, err := os.Stat(mod.filePath)
 				if err != nil {
 					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "unable to stat new source file: %v\n", err)
 					continue
@@ -139,7 +124,7 @@ func (instance *FileInstance) Run(ctx context.Context) {
 		}
 
 		// Re-scan for new lines after the last offset
-		_, err = instance.Source.Seek(logFileOffset, io.SeekStart)
+		_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to seek to last offset: %v\n", err)
 		}

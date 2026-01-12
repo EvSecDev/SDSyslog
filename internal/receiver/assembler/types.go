@@ -11,5 +11,5 @@ type Instance struct {
 	shardInst *shard.Instance
 	outbox    *mpmc.Queue[protocol.Payload]
 	cleaner   shard.OverrideCleaner
-	Metrics   *MetricStorage
+	Metrics   MetricStorage
 }

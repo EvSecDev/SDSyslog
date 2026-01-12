@@ -97,7 +97,7 @@ func (logger *Logger) GetFormattedLogLines() (formatted []string) {
 		return ti.Before(tj)
 	})
 
-	formatted = make([]string, 0, len(logger.queue))
+	formatted = make([]string, 0, len(events))
 	for _, event := range events {
 		var parts []string
 

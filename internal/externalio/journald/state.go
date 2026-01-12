@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GetLastPosition(stateFilePath string) (cursor string, err error) {
+func getLastPosition(stateFilePath string) (cursor string, err error) {
 	stateDirectory := filepath.Dir(stateFilePath)
 
 	_, err = os.Stat(stateDirectory)
@@ -57,7 +57,7 @@ func GetLastPosition(stateFilePath string) (cursor string, err error) {
 	return
 }
 
-func SavePosition(cursor string, stateFilePath string) (err error) {
+func savePosition(cursor string, stateFilePath string) (err error) {
 	// Don't nuke existing cursor
 	if cursor == "" {
 		return

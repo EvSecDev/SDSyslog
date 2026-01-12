@@ -10,7 +10,7 @@ import (
 )
 
 // Retrieve last read position for the log file from the state file
-func GetLastPosition(logFilePath string, stateFilePath string) (inode uint64, position int64, err error) {
+func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, position int64, err error) {
 	stateDirectory := filepath.Dir(stateFilePath)
 
 	_, err = os.Stat(stateDirectory)
@@ -106,7 +106,7 @@ func GetLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 }
 
 // Save the current file read position to the state file
-func SavePosition(stateFilePath string, inode uint64, position int64) (err error) {
+func savePosition(stateFilePath string, inode uint64, position int64) (err error) {
 	stateDirectory := filepath.Dir(stateFilePath)
 
 	_, err = os.Stat(stateDirectory)

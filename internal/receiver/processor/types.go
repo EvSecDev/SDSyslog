@@ -10,5 +10,5 @@ type Instance struct {
 	Namespace   []string
 	inbox       *mpmc.Queue[listener.Container]
 	routingView shard.RoutingView
-	Metrics     *MetricStorage
+	Metrics     MetricStorage
 }

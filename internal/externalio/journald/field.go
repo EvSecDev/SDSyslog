@@ -11,7 +11,7 @@ import (
 
 // Reads a journald export entry until complete entry (double newline).
 // https://systemd.io/JOURNAL_EXPORT_FORMATS/#journal-export-format
-func ExtractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
+func extractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
 	fields = make(map[string]string)
 	for {
 		var line string

@@ -20,7 +20,7 @@ func New(namespace []string, buffer int, packetDeadlinePtr *atomic.Int64) (new *
 		Buckets:        make(map[string]*Bucket),
 		KeyQueue:       make(chan string, buffer),
 		PacketDeadline: packetDeadlinePtr,
-		Metrics:        &MetricStorage{},
+		Metrics:        MetricStorage{},
 	}
 	return
 }
@@ -158,14 +158,13 @@ func (queue *Instance) PopKey(ctx context.Context) (key string, ok bool) {
 
 	select {
 	case <-ctx.Done():
-		// Under high contention, metrics can become out of sync. Re-syncs metric value on shutdown (shutdown sequence relies on metric)
-		if len(queue.KeyQueue) != int(queue.Metrics.WaitingBuckets.Load()) {
-			queue.Metrics.WaitingBuckets.Store(uint64(len(queue.KeyQueue)))
-		}
 		return
 	case key, ok = <-queue.KeyQueue:
 		if ok {
+			// Protecting subtract - will get out of sync without explicit sync between assembler and processors
+			queue.Mu.Lock()
 			success := atomics.Subtract(&queue.Metrics.WaitingBuckets, 1, 1) // max retries set low due to single consumer (assembler itself)
+			queue.Mu.Unlock()
 			if !success {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
 					"failed to decrement waiting bucket metric after successful bucket key retrieval\n")
@@ -184,6 +183,7 @@ func (queue *Instance) DrainBucket(ctx context.Context, key string) (bucket *Buc
 	// Retrieve bucket
 	bucket, ok := queue.Buckets[key]
 	if !ok {
+		queue.Mu.Unlock()
 		bucketNotExist = true
 		return
 	}
@@ -203,12 +203,6 @@ func (queue *Instance) DrainBucket(ctx context.Context, key string) (bucket *Buc
 	if !success {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
 			"failed to decrement total bucket metric after successful bucket deletion\n")
-
-		// Under high contention, metrics can become out of sync. Re-syncs metric value
-		if len(queue.Buckets) != int(queue.Metrics.TotalBuckets.Load()) {
-			queue.Metrics.TotalBuckets.Store(uint64(len(queue.Buckets)))
-		}
 	}
-
 	return
 }

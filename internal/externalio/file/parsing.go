@@ -2,13 +2,14 @@ package file
 
 import (
 	"sdsyslog/internal/global"
+	"sdsyslog/pkg/protocol"
 	"strconv"
 	"strings"
 	"time"
 )
 
 // Parses file line text for common formats and extracts metadata. (The Monstrosity of Assumption TM)
-func ParseLine(rawLine string) (message global.ParsedMessage) {
+func parseLine(rawLine string) (message global.ParsedMessage) {
 	line := strings.TrimSpace(rawLine)
 
 	// Format: Syslog
@@ -208,5 +209,19 @@ func setDefaults(old global.ParsedMessage, raw string) (new global.ParsedMessage
 		}
 		new.Text = raw
 	}
+	return
+}
+
+// Main raw log line format for outputs
+// Fmt: '2020-01-01T10:10:10.123456789Z Server01 MyApp[1234]: Daemon: [INFO]: this is a log message'
+func formatAsText(msg protocol.Payload) (text string) {
+	text =
+		msg.Timestamp.Format(time.RFC3339Nano) + " " +
+			msg.Hostname + " " +
+			msg.ApplicationName +
+			"[" + strconv.Itoa(msg.ProcessID) + "]: " +
+			msg.Facility + ": " +
+			"[" + strings.ToUpper(msg.Severity) + "]: " +
+			string(msg.LogText)
 	return
 }

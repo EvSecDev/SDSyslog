@@ -20,7 +20,7 @@ func New(namespace []string, conn *net.UDPConn, queue *mpmc.Queue[Container]) (n
 		conn:      conn,
 		Outbox:    queue,
 		minLen:    protocol.MinOuterPayloadLen,
-		Metrics:   &MetricStorage{},
+		Metrics:   MetricStorage{},
 	}
 	return
 }

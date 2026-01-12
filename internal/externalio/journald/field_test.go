@@ -87,7 +87,7 @@ func TestExtractEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fields, err := ExtractEntry(tt.input)
+			fields, err := extractEntry(tt.input)
 			if err != nil && !tt.expectedErr {
 				t.Fatalf("expected no error, but got '%s'", err)
 			}

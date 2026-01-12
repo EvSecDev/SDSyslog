@@ -2,10 +2,10 @@ package ingest
 
 import (
 	"context"
-	"os/exec"
+	"sdsyslog/internal/externalio/file"
+	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/internal/sender/listener"
 	"sync"
 )
 
@@ -18,16 +18,13 @@ type InstanceManager struct {
 }
 
 type FileWorker struct {
-	Worker *listener.FileInstance // reader+Parser
-
+	Worker *file.InModule
 	wg     sync.WaitGroup     // Waiter for instance
 	cancel context.CancelFunc // cancel instance
 }
 
 type JrnlWorker struct {
-	Worker  *listener.JrnlInstance // reader+Parser
-	Command *exec.Cmd
-
+	Worker *journald.InModule
 	wg     sync.WaitGroup     // Waiter for instance
 	cancel context.CancelFunc // cancel instance
 }

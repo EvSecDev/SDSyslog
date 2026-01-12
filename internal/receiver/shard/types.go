@@ -21,7 +21,7 @@ type Instance struct {
 	KeyQueue       chan string        // FIFO of filled bucket keys
 	PacketDeadline *atomic.Int64      // Owned by manager
 	InShutdown     bool               // Blocks new bucket creation
-	Metrics        *MetricStorage
+	Metrics        MetricStorage
 }
 
 // Interface for making fragment routing decisions

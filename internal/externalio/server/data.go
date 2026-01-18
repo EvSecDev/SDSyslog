@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"sdsyslog/internal/global"
 	"sdsyslog/internal/metrics"
 	"strings"
 	"time"
@@ -10,7 +11,7 @@ import (
 
 // Handles metric search requests based on time for data
 func handleData(baseCtx context.Context, search DataSearcher, serverResponder http.ResponseWriter, clientRequest *http.Request) {
-	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, "/data/")
+	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, global.DataPath)
 	reqNamespace := strings.Split(rawNamespace, "/")
 
 	reqName := clientRequest.FormValue("name")

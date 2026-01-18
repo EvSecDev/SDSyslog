@@ -203,11 +203,17 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		serverCtx = logctx.AppendCtxTag(serverCtx, global.NSMetric)
 		serverCtx = logctx.AppendCtxTag(serverCtx, global.NSMetricSrv)
 
-		daemon.MetricServer = server.SetupListener(serverCtx,
+		daemon.MetricServer, err = server.SetupListener(serverCtx,
 			daemon.cfg.MetricQueryServerPort,
 			daemon.MetricDataSearcher,
 			daemon.MetricDiscoverer,
 			daemon.MetricAggregator)
+		if err != nil {
+			err = fmt.Errorf("failed creating HTTP metric server: %v", err)
+			daemon.Shutdown()
+			return
+		}
+
 		daemon.wg.Add(1)
 		go func() {
 			defer daemon.wg.Done()

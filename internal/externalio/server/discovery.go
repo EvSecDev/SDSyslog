@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"net/http"
+	"sdsyslog/internal/global"
 	"sdsyslog/internal/metrics"
 	"strings"
 )
 
 // Handles metric search to discover metrics (returns no actual data, only sample metric per individual metric)
 func handleDiscovery(baseCtx context.Context, discover Discoverer, serverResponder http.ResponseWriter, clientRequest *http.Request) {
-	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, "/discover/")
+	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, global.DiscoveryPath)
 	reqNamespace := strings.Split(rawNamespace, "/")
 
 	reqName := clientRequest.FormValue("name")

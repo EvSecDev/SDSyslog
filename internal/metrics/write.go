@@ -22,7 +22,8 @@ func (registry *Registry) NewTimeSlice(now time.Time, interval time.Duration) (t
 	return
 }
 
-// Adds batch of metrics to a time slice
+// Adds batch of metrics to an existing time slice.
+// Ignores add if timeslice was not created.
 func (registry *Registry) Add(timeSlice time.Time, metrics []Metric) {
 	registry.mu.Lock()
 	defer registry.mu.Unlock()

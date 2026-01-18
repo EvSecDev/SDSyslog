@@ -92,8 +92,6 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 	// Iterate over the metrics and aggregate values based on the aggregation type
 	var aggregatedValue float64
 	var count int
-	var minValue float64
-	var maxValue float64
 	for idx, metric := range metricsResults {
 		count++
 
@@ -103,23 +101,26 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 			return
 		}
 
-		if idx == 0 {
-			minValue = value
-			maxValue = value
-		}
-
 		switch aggType {
 		case global.MetricSum:
 			aggregatedValue += value
 		case global.MetricAvg:
 			aggregatedValue += value
 		case global.MetricMin:
-			if value < minValue {
-				minValue = value
+			if idx == 0 {
+				aggregatedValue = value
+			}
+
+			if value < aggregatedValue {
+				aggregatedValue = value
 			}
 		case global.MetricMax:
-			if value > maxValue {
-				maxValue = value
+			if idx == 0 {
+				aggregatedValue = value
+			}
+
+			if value > aggregatedValue {
+				aggregatedValue = value
 			}
 		default:
 			err = fmt.Errorf("unsupported aggregation type: %s", aggType)

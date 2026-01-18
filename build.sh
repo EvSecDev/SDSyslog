@@ -98,11 +98,6 @@ function compile_program() {
 			)
 		fi
 
-		# Performance benchmark notes (without -race on intense tests):
-		#  Dev Hardware (bare metal): AMD Ryzen 7 7840HS (Debian Stable)
-		#  MPMC queue: min=16.9ns/op, max=60ns/op (battery)
-		#  Shard queue: min=300ns/op_max=1000ns/op, min=400ns/op, max=2000ns/op (battery)
-
 		go -C "$repoRoot/$SRCdir" test "${testArgs[@]}" ./... | grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: "
 		internalExitCode=${PIPESTATUS[0]}
 

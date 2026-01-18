@@ -6,6 +6,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sdsyslog/internal/global"
@@ -20,8 +21,21 @@ import (
 var webFiles embed.FS
 
 // Sets up HTTP listener configuration for metric querying
-func SetupListener(ctx context.Context, port int, search DataSearcher, discover Discoverer, aggregation AggSearcher) (server *http.Server) {
+func SetupListener(ctx context.Context, port int, search DataSearcher, discover Discoverer, aggregation AggSearcher) (server *http.Server, err error) {
 	requestMultiplexer := http.NewServeMux()
+
+	helpPage, err := webFiles.ReadFile("static-files/metric-help.html")
+	if err != nil {
+		err = fmt.Errorf("failed reading metric help html page from internal fs: %v\n", err)
+		return
+	}
+
+	// Replace variables in html with globals
+	helpPage = bytes.Replace(helpPage, []byte("@@LISTEN_ADDR@@"), []byte(global.HTTPListenAddr), 1)
+	helpPage = bytes.Replace(helpPage, []byte("@@LISTEN_PORT@@"), []byte(strconv.Itoa(port)), 1)
+	helpPage = bytes.Replace(helpPage, []byte("@@DATA_PATH@@"), []byte(global.DataPath), 1)
+	helpPage = bytes.Replace(helpPage, []byte("@@DISCOVER_PATH@@"), []byte(global.DiscoveryPath), 1)
+	helpPage = bytes.Replace(helpPage, []byte("@@AGGREGATION_PATH@@"), []byte(global.AggregationPath), 1)
 
 	// Root help page
 	requestMultiplexer.HandleFunc("/", func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
@@ -34,20 +48,13 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 			return
 		}
 
-		helpPage, err := webFiles.ReadFile("static-files/metric-help.html")
-		if err != nil {
-			serverResponder.WriteHeader(http.StatusInternalServerError)
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed reading metric help html page from internal fs: %v\n", err)
-			return
-		}
-
 		serverResponder.Header().Set("Content-Type", "text/html; charset=utf-8")
 		serverResponder.WriteHeader(http.StatusOK)
 		serverResponder.Write(helpPage)
 	})
 
 	// Metric Discovery Requests
-	requestMultiplexer.HandleFunc("/discover/", func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
+	requestMultiplexer.HandleFunc(global.DiscoveryPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
 		if clientRequest.Method != http.MethodGet {
 			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
 			return
@@ -56,7 +63,7 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 	})
 
 	// Metric Data Requests
-	requestMultiplexer.HandleFunc("/data/", func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
+	requestMultiplexer.HandleFunc(global.DataPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
 		if clientRequest.Method != http.MethodGet {
 			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
 			return
@@ -65,7 +72,7 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 	})
 
 	// Metric Aggregation Requests
-	requestMultiplexer.HandleFunc("/aggregation/", func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
+	requestMultiplexer.HandleFunc(global.AggregationPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
 		if clientRequest.Method != http.MethodGet {
 			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
 			return

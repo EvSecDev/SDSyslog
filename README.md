@@ -20,23 +20,30 @@ Warning: This program is early in its development and *does* contain bugs.
 Steps:
 
 - Copy binary to the desired system
-- For the receiving daemon:
+- Assume root privileges for the initial install commands
+- For the receiving daemon (if applicable):
   - `./sdsyslog configure --install-receiver`
-- For the sending daemon:
+  - Modify the configuration file to your needs (`/etc/sdsyslog/sdsyslog.json"`)
+  - Start the systemd service for the Receiver with `systemctl start sdsyslog`
+  - Check for any errors with `journalctl -r -u sdsyslog`
+- For the sending daemon (if applicable):
   - `./sdsyslog configure --install-sender`
-- Modify the configuration file to your needs (`/etc/sdsyslog.json`)
+  - Modify the configuration file to your needs (`/etc/sdsyslog/sdsyslog-sender.json"`)
+  - Start the systemd service for the sender with `systemctl start sdsyslog-sender`
+  - Check for any errors with `journalctl -r -u sdsyslog-sender`
 
 ## Uninstallation
 
 Steps:
 
 - WARNING: this PERMANENTLY removes the private key file, configuration file, and any state-saving files
+- Assume root privileges for the uninstall commands
 - For the receiving daemon:
   - `./sdsyslog configure --uninstall-receiver`
 - For the sending daemon:
   - `./sdsyslog configure --uninstall-sender`
 
-### SDSyslog Help Menu
+## SDSyslog Help Menu
 
 ```bash
 Usage: ./sdsyslog [subcommand]
@@ -67,11 +74,23 @@ These metrics include:
 - Pipeline stage worker performance (busy time, average/max processing time, in/out counts, etc.)
 
 To access the internal metric registry, set `enableHTTPQueryServer` under `metrics` in the JSON configuration to `true`.
+
 When the daemon is started, a limited HTTP server will also be started on localhost (default port is `18514`).
+
 To get started with this API, grab the HTML docs by querying the root path `curl http://localhost:18514/` for the sender or `curl http://localhost:28514/` for the receiver.
 
 ## Notes
 
 - Journal output requires the installation of `systemd-journal-remote` and uses the HTTP configuration of the socket.
   - Logs are written to their own journal file (separate from the main system journal), usually located under `/var/log/journal/remote/`.
+- Beats output adds custom fields that are similar, but not the same, as other beats clients (like filebeat).
+  - Added fields can be found in the source at `internal/externalio/beats/write.go`
+  - Most of these fields will end up prefixed by `beat_` in third party log analysis software.
+    - For example, code like below will end up as the field: `beat_log_id`
+
+      ```go
+      "log": map[string]interface{}{
+        "id": msg.LogID,
+      ```
+
 - Maximum individual log message size is 4GB

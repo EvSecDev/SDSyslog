@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.10.0"
+	ProgVersion string = "v0.11.0"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
@@ -56,6 +56,10 @@ const (
 	HTTPReadTimeout        time.Duration = 30 * time.Second
 	HTTPWriteTimeout       time.Duration = 10 * time.Second
 	HTTPIdleTimeout        time.Duration = 180 * time.Second
+
+	DiscoveryPath   string = "/discover/"
+	DataPath        string = "/data/"
+	AggregationPath string = "/aggregation/"
 
 	MetricSum string = "sum"
 	MetricAvg string = "average"

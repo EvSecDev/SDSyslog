@@ -3,6 +3,7 @@ package out
 import (
 	"context"
 	"fmt"
+	"sdsyslog/internal/externalio/beats"
 	"sdsyslog/internal/externalio/file"
 	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/global"
@@ -11,8 +12,8 @@ import (
 )
 
 // Create and start new output instance
-func (manager *InstanceManager) AddInstance(filePath string, journaldURL string) (err error) {
-	if filePath == "" && journaldURL == "" {
+func (manager *InstanceManager) AddInstance(filePath string, journaldURL string, beatsAddress string) (err error) {
+	if filePath == "" && journaldURL == "" && beatsAddress == "" {
 		err = fmt.Errorf("no outputs enabled/configured")
 		return
 	}
@@ -34,6 +35,10 @@ func (manager *InstanceManager) AddInstance(filePath string, journaldURL string)
 		return
 	}
 	instance.Worker.JrnlMod, err = journald.NewOutput(journaldURL)
+	if err != nil {
+		return
+	}
+	instance.Worker.BeatsMod, err = beats.NewOutput(beatsAddress)
 	if err != nil {
 		return
 	}
@@ -60,4 +65,5 @@ func (manager *InstanceManager) RemoveInstance() {
 
 	manager.Instance.Worker.FileMod.Shutdown()
 	manager.Instance.Worker.JrnlMod.Shutdown()
+	manager.Instance.Worker.BeatsMod.Shutdown()
 }

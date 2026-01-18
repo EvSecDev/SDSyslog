@@ -7,9 +7,10 @@ import (
 )
 
 type MetricStorage struct {
-	ReceivedMessages     atomic.Uint64
-	SuccessfulFileWrites atomic.Uint64
-	SuccessfulJrnlWrites atomic.Uint64
+	ReceivedMessages      atomic.Uint64
+	SuccessfulFileWrites  atomic.Uint64
+	SuccessfulJrnlWrites  atomic.Uint64
+	SuccessfulBeatsWrites atomic.Uint64
 }
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
@@ -17,6 +18,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	recvMsgs := instance.Metrics.ReceivedMessages.Swap(0)
 	fileWrites := instance.Metrics.SuccessfulFileWrites.Swap(0)
 	jrnlWrites := instance.Metrics.SuccessfulJrnlWrites.Swap(0)
+	beatsWrites := instance.Metrics.SuccessfulBeatsWrites.Swap(0)
 
 	totalWrites := fileWrites + jrnlWrites
 
@@ -66,6 +68,18 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
 				Raw:      jrnlWrites,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        "success_beats_writes",
+			Description: "Total writes to beats output",
+			Namespace:   instance.Namespace,
+			Value: metrics.MetricValue{
+				Raw:      beatsWrites,
 				Unit:     "count",
 				Interval: interval,
 			},

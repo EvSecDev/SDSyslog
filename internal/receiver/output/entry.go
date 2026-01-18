@@ -50,12 +50,16 @@ func (instance *Instance) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			instance.FileMod.FlushBuffer()
+			if instance.FileMod != nil {
+				instance.FileMod.FlushBuffer()
+			}
 			return
 		case <-ticker.C:
-			// Periodic flush of file output event buffer
-			// Buffer might never fill and flush if we don't get enough messages
-			instance.FileMod.FlushBuffer()
+			if instance.FileMod != nil {
+				// Periodic flush of file output event buffer
+				// Buffer might never fill and flush if we don't get enough messages
+				instance.FileMod.FlushBuffer()
+			}
 		case msg, ok := <-popCh:
 			func() {
 				// Record panics and continue output
@@ -88,6 +92,13 @@ func (instance *Instance) Run(ctx context.Context) {
 						"Failed to write message(s) to journald output: %v\n", err)
 				}
 				instance.Metrics.SuccessfulJrnlWrites.Add(uint64(n))
+
+				n, err = instance.BeatsMod.Write(ctx, msg)
+				if err != nil {
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+						"Failed to write message(s) to beats output: %v\n", err)
+				}
+				instance.Metrics.SuccessfulBeatsWrites.Add(uint64(n))
 			}()
 		}
 	}

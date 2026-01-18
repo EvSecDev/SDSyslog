@@ -35,6 +35,7 @@ func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
 	// Output settings
 	config.JournaldURL = cfg.Outputs.JournaldURL
 	config.OutputFilePath = cfg.Outputs.FilePath
+	config.BeatsEndpoint = cfg.Outputs.BeatsAddress
 
 	// Scaling settings
 	config.AutoscaleEnabled = cfg.AutoScaling.Enabled

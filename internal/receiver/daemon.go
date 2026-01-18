@@ -72,7 +72,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		err = fmt.Errorf("failed creating output instance manager: %v", err)
 		return
 	}
-	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath, daemon.cfg.JournaldURL)
+	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath, daemon.cfg.JournaldURL, daemon.cfg.BeatsEndpoint)
 	if err != nil {
 		err = fmt.Errorf("failed starting output: %v", err)
 		return

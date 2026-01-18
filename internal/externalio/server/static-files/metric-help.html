@@ -52,6 +52,21 @@ curl "http://localhost:18514/data/?name=depth&starttime=2025-12-31T16:00:00Z&end
 curl "http://localhost:18514/data/Receiver/Ingest?name=usage"
 </pre>
 
+<h2>Metric Aggregation</h2>
+<p>URL: <code>/aggregation/</code> or <code>/aggregation/namespace/path</code></p>
+<p>Returns a JSON object of aggregated metrics matching filters.</p>
+<p>Query Parameters:</p>
+<ul>
+  <li><code>name</code> — Metric name filter (exact match).</li>
+  <li><code>aggregation</code> — Filter by aggregation type: <code>Average</code>, <code>Sum</code>, <code>Min</code>,
+    <code>Max</code>
+  </li>
+</ul>
+<pre>
+# Example: Get average depth for the packaging worker depth metric for the last 5 minutes
+curl "http://localhost:18514/aggregation/Sender/Packaging/0/Worker?aggregation=Average&name=depth&starttime=-5m"
+</pre>
+
 <h2>Notes</h2>
 <ul>
   <li>All endpoints respond with JSON arrays. If no results are found, a JSON error message is returned.</li>

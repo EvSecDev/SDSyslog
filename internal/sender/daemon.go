@@ -175,6 +175,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	}()
 	daemon.MetricDataSearcher = daemon.metricsCollector.Registry.Search
 	daemon.MetricDiscoverer = daemon.metricsCollector.Registry.Discover
+	daemon.MetricAggregator = daemon.metricsCollector.Registry.Aggregate
 
 	// Autoscaler
 	if daemon.cfg.AutoscaleEnabled {
@@ -205,7 +206,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		daemon.MetricServer = server.SetupListener(serverCtx,
 			daemon.cfg.MetricQueryServerPort,
 			daemon.MetricDataSearcher,
-			daemon.MetricDiscoverer)
+			daemon.MetricDiscoverer,
+			daemon.MetricAggregator)
 		daemon.wg.Add(1)
 		go func() {
 			defer daemon.wg.Done()

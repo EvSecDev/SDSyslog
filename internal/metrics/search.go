@@ -1,7 +1,10 @@
 package metrics
 
 import (
+	"fmt"
+	"sdsyslog/internal/global"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -66,6 +69,108 @@ func (registry *Registry) Search(name string, namespacePrefix []string, start, e
 	}
 
 	return
+}
+
+// Finds and aggregates all data for a given metric for the aggregation type (global consts prefixed by Metric*).
+// Requires exact match for name and namespace.
+// Start/end time if not provided will default to past minute.
+func (registry *Registry) Aggregate(aggType string, name string, namespace []string, start, end time.Time) (result Metric, err error) {
+	if start.IsZero() && end.IsZero() {
+		start = time.Now().Add(-1 * time.Minute)
+		end = time.Now()
+	}
+
+	aggType = strings.ToLower(aggType)
+
+	// Grab all individual time slices for the metric
+	metricsResults := registry.Search(name, namespace, start, end)
+	if len(metricsResults) == 0 {
+		err = fmt.Errorf("search returned no results")
+		return
+	}
+
+	// Iterate over the metrics and aggregate values based on the aggregation type
+	var aggregatedValue float64
+	var count int
+	var minValue float64
+	var maxValue float64
+	for idx, metric := range metricsResults {
+		count++
+
+		value, ok := toFloat64(metric.Value.Raw)
+		if !ok {
+			err = fmt.Errorf("non-numeric value for aggregation %s: %T", aggType, metric.Value.Raw)
+			return
+		}
+
+		if idx == 0 {
+			minValue = value
+			maxValue = value
+		}
+
+		switch aggType {
+		case global.MetricSum:
+			aggregatedValue += value
+		case global.MetricAvg:
+			aggregatedValue += value
+		case global.MetricMin:
+			if value < minValue {
+				minValue = value
+			}
+		case global.MetricMax:
+			if value > maxValue {
+				maxValue = value
+			}
+		default:
+			err = fmt.Errorf("unsupported aggregation type: %s", aggType)
+			return
+		}
+	}
+
+	if aggType == global.MetricAvg {
+		aggregatedValue /= float64(count)
+	}
+
+	result = Metric{
+		Name:        metricsResults[0].Name,
+		Description: metricsResults[0].Description,
+		Namespace:   metricsResults[0].Namespace,
+		Type:        metricsResults[0].Type,
+		Timestamp:   time.Now(),
+		Value: MetricValue{
+			Raw:      aggregatedValue,
+			Unit:     metricsResults[0].Value.Unit,
+			Interval: metricsResults[0].Value.Interval,
+		},
+	}
+	return
+}
+
+func toFloat64(v interface{}) (float64, bool) {
+	switch t := v.(type) {
+	case float64:
+		return t, true
+	case float32:
+		return float64(t), true
+	case int:
+		return float64(t), true
+	case int64:
+		return float64(t), true
+	case int32:
+		return float64(t), true
+	case uint:
+		return float64(t), true
+	case uint64:
+		return float64(t), true
+	case uint32:
+		return float64(t), true
+	case string:
+		f, err := strconv.ParseFloat(t, 64)
+		if err == nil {
+			return f, true
+		}
+	}
+	return 0, false
 }
 
 // Finds all metric types that match given search filters (time-independent). Returns all when all filters are empty.

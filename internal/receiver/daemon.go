@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/managers/defrag"
 	"sdsyslog/internal/receiver/managers/in"
@@ -20,7 +20,6 @@ import (
 	"sdsyslog/internal/receiver/scaling"
 	"sdsyslog/pkg/protocol"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -45,7 +44,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSRecv)
 	defer func() { daemon.ctx = logctx.RemoveLastCtxTag(daemon.ctx) }()
 
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting...\n")
+	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon...\n")
 
 	// Pre-startup
 	protocol.InitBidiMaps()
@@ -109,9 +108,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
 		"%d processor instance(s) started successfully\n", daemon.cfg.MinProcessors)
-
-	// Start handling exit signals before listener starts ingesting messages
-	go signalHandler(daemon)
 
 	// Stage 1 - Listener
 	daemon.Mgrs.Input = in.NewInstanceManager(daemon.ctx,
@@ -186,13 +182,41 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		}()
 	}
 
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Startup complete.\n")
+	// For update hot-swap/systemd
+	err = lifecycle.ReadinessSender()
+	if err != nil {
+		err = fmt.Errorf("error sending readiness to parent process: %v", err)
+		daemon.Shutdown()
+		return
+	}
+	err = lifecycle.WaitForParentExit()
+	if err != nil {
+		err = fmt.Errorf("error waiting for parent process to exit: %v", err)
+		daemon.Shutdown()
+		return
+	}
+	err = lifecycle.NotifyMainPID(daemon.ctx, os.Getpid())
+	if err != nil {
+		err = fmt.Errorf("error swapping main systemd PID: %v", err)
+		daemon.Shutdown()
+		return
+	}
+	err = lifecycle.NotifyReady(daemon.ctx)
+	if err != nil {
+		err = fmt.Errorf("error sending readiness to systemd: %v", err)
+		daemon.Shutdown()
+		return
+	}
+
+	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
+		"Startup complete. Listening for messages on %s:%d\n", daemon.cfg.ListenIP, daemon.cfg.ListenPort)
 	return
 }
 
 // Blocking daemon waiter
 func (daemon *Daemon) Run() {
-	<-daemon.ctx.Done()
+	// Block on signals only
+	lifecycle.SignalHandler(daemon.ctx, daemon)
 }
 
 // Gracefully shutdown pipeline worker threads (errors are printed to program log buffer)
@@ -270,23 +294,4 @@ func (daemon *Daemon) Shutdown() {
 			global.ReceiveShutdownTimeout.Seconds())
 		return
 	}
-}
-
-// Handle exit requests and initiate graceful shutdown on signal reception
-func signalHandler(daemon *Daemon) {
-	// Channel for handling interrupt signals
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-
-	sig := <-sigChan
-
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-		"Received signal: %v\n", sig)
-
-	// Start daemon shutdown
-	daemon.Shutdown()
-	logger := logctx.GetLogger(daemon.ctx)
-	logger.Wake()
-	logger.Wait()
-	os.Exit(0)
 }

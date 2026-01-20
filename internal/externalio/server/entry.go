@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/network"
 	"strconv"
 	"strings"
 )
@@ -95,11 +96,20 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 
 // Starts the metric HTTP server and waits for requests
 func Start(ctx context.Context, server *http.Server) {
-	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Metric query server starting on %s (http://%s/)\n",
+	// Reuse existing port in case we are starting under a parent process (updating)
+	conn, err := network.ReuseTCPPort(server.Addr)
+	if err != nil {
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			"Metric query server failed to bind: %v\n", err)
+		return
+	}
+
+	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Starting metric query server on %s (http://%s/)\n",
 		server.Addr,
 		server.Addr,
 	)
-	err := server.ListenAndServe()
+
+	err = server.Serve(conn)
 	if err != nil && err != http.ErrServerClosed {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Metric query server failed to start: %v\n", err)
 	}

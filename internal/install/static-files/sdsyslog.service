@@ -1,7 +1,7 @@
 [Unit]
 Description=Secure Diode System Logger (SDSyslog) Receiver
 Documentation=https://github.com/EvSecDev/SDSyslog
-After=systemd-journald.service
+After=network.target systemd-journald.service
 
 [Service]
 User=root
@@ -9,7 +9,9 @@ Group=adm
 StandardOutput=journal
 StandardError=journal
 ExecStart=$executableFilePath receive --config $receiveConfigFilePath
-Type=exec
+Type=notify-reload
+# Allow new child process to signal reload success
+NotifyAccess=all
 RestartSec=60
 Restart=on-abnormal
 

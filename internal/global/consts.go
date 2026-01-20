@@ -39,6 +39,13 @@ const (
 	DefaultMinPacketDeadline time.Duration = 50 * time.Millisecond
 	DefaultMaxPacketDeadline time.Duration = 1 * time.Second
 
+	// Program lifecycle (updates/hot-swap/systemd)
+	DefaultMaxWaitForUpdate time.Duration = 10 * time.Second // Max allowed child startup time
+	ReadyMessage            string        = "READY"
+	EnvNameReadinessFD      string        = "READY_FD"
+	EnvNameAlivenessFD      string        = "PARENT_ALIVE_FD"
+
+	// IO Modules
 	DefaultJournaldURL = "http://localhost:19532"
 
 	// Parsing defaults

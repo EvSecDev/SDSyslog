@@ -9,9 +9,12 @@
 ## Profile Begin
 profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   # Receive signals
-  signal receive set=(stop term kill quit int urg exists cont),
+  signal receive set=(stop term kill hup quit int urg exists cont),
   # Send signals to self
-  signal send set=(exists urg term) peer=SDSyslog,
+  signal send set=(exists urg term kill) peer=SDSyslog,
+
+  # Self update
+  @{exelocation} rix,
 
   # Capabilities
   network inet dgram,

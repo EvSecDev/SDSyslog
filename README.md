@@ -94,3 +94,6 @@ To get started with this API, grab the HTML docs by querying the root path `curl
       ```
 
 - Maximum individual log message size is 4GB
+- Due to address/port reuse across the program (or during hot swap updates), there is a slight chance of data loss due to how Linux handles UDP socket receive buffers.
+  - Essentially the program has no way of safely "draining" a go routines associated kernel-level socket buffer before it shuts down (for scaling down and hot swapping).
+  - As a consequence, there is no guarantee that this program can make to *not* drop data during these events.

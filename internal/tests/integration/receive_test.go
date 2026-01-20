@@ -187,7 +187,9 @@ func TestRecvConstantFlow(t *testing.T) {
 	}
 	output := strings.Trim(string(outputContents), "\n")
 	lines := strings.Split(output, "\n")
-	if len(lines) != int(totalMessagesSent.Load()) {
+	if output == "" {
+		t.Errorf("expected outputs file to have %d lines, but is empty", totalMessagesSent.Load())
+	} else if len(lines) != int(totalMessagesSent.Load()) {
 		t.Errorf("expected outputs file to have %d lines, but it actually has %d lines", totalMessagesSent.Load(), len(lines))
 	}
 

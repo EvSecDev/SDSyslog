@@ -16,16 +16,16 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent
 	severityInt, err := protocol.SeverityToCode(msg.Severity)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"%v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
-			err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
+			"%v (message: ip: '%s', host id '%d', log id '%d', hostname '%s', application name '%s')\n",
+			err, msg.RemoteIP, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
 		severityInt = 6 // info
 	}
 
 	facilityInt, err := protocol.FacilityToCode(msg.Facility)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"%v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
-			err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
+			"%v (message: ip: '%s', host id '%d', log id '%d', hostname '%s', application name '%s')\n",
+			err, msg.RemoteIP, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
 		facilityInt = 1 // user
 	}
 
@@ -39,6 +39,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent
 			"name":     msg.Hostname,
 			"hostname": msg.Hostname,
 			"id":       msg.HostID,
+			"ip":       msg.RemoteIP,
 		},
 		"agent": map[string]interface{}{
 			"name": msg.Hostname, // Treated as remote host name for some parsers

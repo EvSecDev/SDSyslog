@@ -74,6 +74,9 @@ func (instance *Instance) Run(ctx context.Context) {
 				return
 			}
 
+			// Inject remote IP to actual message
+			msg.RemoteIP = queueEntry.Meta.RemoteIP
+
 			// Record time metrics post-validation
 			durNs := time.Since(processingStartTime).Nanoseconds()
 			instance.Metrics.SumNs.Add(uint64(durNs))

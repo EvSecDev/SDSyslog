@@ -25,6 +25,7 @@ type Message struct {
 
 // Friendly container for internal use - most fields are optional (filled in automatically) - leave exported
 type Payload struct {
+	RemoteIP        string // Derived by receiver, not sent across the wire
 	HostID          int
 	LogID           int
 	MessageSeq      int

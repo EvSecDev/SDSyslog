@@ -119,6 +119,7 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 
 	// Create singular payload - Leave unused fields as default (0)
 	// We can use one of the payloads as a template
+	primaryPayload.RemoteIP = payloads[0].RemoteIP
 	primaryPayload.HostID = payloads[0].HostID
 	primaryPayload.LogID = payloads[0].LogID
 	primaryPayload.Facility = payloads[0].Facility
@@ -137,7 +138,8 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 func allFieldsEqual(payloads []Payload) (valid bool) {
 	ref := payloads[0]
 	for _, payload := range payloads[1:] {
-		if payload.HostID != ref.HostID ||
+		if payload.RemoteIP != ref.RemoteIP ||
+			payload.HostID != ref.HostID ||
 			payload.LogID != ref.LogID ||
 			payload.Facility != ref.Facility ||
 			payload.Severity != ref.Severity ||

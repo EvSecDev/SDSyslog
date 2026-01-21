@@ -215,9 +215,18 @@ func setDefaults(old global.ParsedMessage, raw string) (new global.ParsedMessage
 // Main raw log line format for outputs
 // Fmt: '2020-01-01T10:10:10.123456789Z Server01 MyApp[1234]: Daemon: [INFO]: this is a log message'
 func formatAsText(msg protocol.Payload) (text string) {
+	var remoteID string
+	if msg.RemoteIP != "" && msg.Hostname != "" {
+		remoteID = msg.RemoteIP + "/" + msg.Hostname
+	} else if msg.RemoteIP == "" {
+		remoteID = msg.Hostname
+	} else if msg.Hostname == "" {
+		remoteID = msg.RemoteIP
+	}
+
 	text =
 		msg.Timestamp.Format(time.RFC3339Nano) + " " +
-			msg.Hostname + " " +
+			remoteID + " " +
 			msg.ApplicationName +
 			"[" + strconv.Itoa(msg.ProcessID) + "]: " +
 			msg.Facility + ": " +

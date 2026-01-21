@@ -20,16 +20,16 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 	severityInt, err := protocol.SeverityToCode(msg.Severity)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"%v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
-			err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
+			"%v (message: ip: '%s', host id '%d', log id '%d', hostname '%s', application name '%s')\n",
+			err, msg.RemoteIP, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
 		severityInt = 6 // info
 	}
 
 	facilityInt, err := protocol.FacilityToCode(msg.Facility)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"%v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
-			err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
+			"%v (message: ip: '%s', host id '%d', log id '%d', hostname '%s', application name '%s')\n",
+			err, msg.RemoteIP, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
 		facilityInt = 1 // user
 	}
 
@@ -52,6 +52,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 		{key: "HOSTNAME", val: msg.Hostname},
 		{key: "SYSLOG_HOSTNAME", val: msg.Hostname},
 		{key: "SYSLOG_TIMESTAMP", val: msg.Timestamp.Format(time.RFC3339Nano)},
+		{key: "REMOTE_IP", val: msg.RemoteIP},
 	}
 
 	// Key=val\n Format
@@ -70,8 +71,8 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 
 	err = sendJournalExport(mod.sink, mod.url, buf.Bytes())
 	if err != nil {
-		err = fmt.Errorf("%v (message: host id '%d', log id '%d', hostname '%s', application name '%s')\n",
-			err, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
+		err = fmt.Errorf("%v (message: ip: '%s', host id '%d', log id '%d', hostname '%s', application name '%s')\n",
+			err, msg.RemoteIP, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
 		return
 	}
 	entriesWritten = 1

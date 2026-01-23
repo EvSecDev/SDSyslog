@@ -218,6 +218,12 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	}
 
 	// For update hot-swap/systemd
+	err = lifecycle.NotifyMainPID(daemon.ctx, os.Getpid())
+	if err != nil {
+		err = fmt.Errorf("error changing systemd main PID: %v\n", err)
+		daemon.Shutdown()
+		return
+	}
 	err = lifecycle.ReadinessSender()
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to parent process: %v", err)
@@ -227,12 +233,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	err = lifecycle.WaitForParentExit()
 	if err != nil {
 		err = fmt.Errorf("error waiting for parent process to exit: %v", err)
-		daemon.Shutdown()
-		return
-	}
-	err = lifecycle.NotifyMainPID(daemon.ctx, os.Getpid())
-	if err != nil {
-		err = fmt.Errorf("error swapping main systemd PID: %v", err)
 		daemon.Shutdown()
 		return
 	}

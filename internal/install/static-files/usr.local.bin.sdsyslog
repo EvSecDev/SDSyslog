@@ -5,6 +5,8 @@
 @{configdir}=$configurationDirPath
 @{privKey}=$privateKeyFilePath
 @{stateDir}=$progStateDirPath
+@{drainPinPath}=$drainingSocketsMapPinPath
+@{drainFuncPath}=$drainingSocketsFuncPinPath
 
 ## Profile Begin
 profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
@@ -24,8 +26,21 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   network unix stream,
   network unix dgram,
   network netlink raw,
+
+  # Log files
   capability dac_override,
   capability dac_read_search,
+
+  # eBPF General
+  capability bpf,
+  capability sys_resource,
+  capability sys_admin,
+  capability perfmon,
+  /sys/kernel/btf/{,*} r,
+
+  # eBPF Custom Paths (pins)
+  @{drainPinPath} rw,
+  @{drainFuncPath} rw,
 
   # Configurations needed
   @{configdir}{/,/**} r,
@@ -53,6 +68,7 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
 
   # Required for scaling limiter
   /sys/fs/cgroup/system.slice/*.service/cpu.max r,
+  /sys/fs/cgroup/user.slice/user-*.slice/session-*.scope/cpu.max r,
 
   # Misc accesses
   /dev/null rw,

@@ -8,6 +8,7 @@ import (
 	"os"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/crypto/wrappers"
+	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/lifecycle"
@@ -64,6 +65,13 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		return
 	}
 	global.BootID = strings.TrimSpace(string(data))
+
+	// Listener socket helper - kernel-side of socket drain feature
+	err = ebpf.LoadProgram()
+	if err != nil {
+		err = fmt.Errorf("failed to load listener helper: %v", err)
+		return
+	}
 
 	// Stage 4 - Output Manager
 	daemon.Mgrs.Output, err = out.NewInstanceManager(daemon.ctx, daemon.cfg.MinOutputQueueSize)
@@ -183,6 +191,12 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	// For update hot-swap/systemd
+	err = lifecycle.NotifyMainPID(daemon.ctx, os.Getpid())
+	if err != nil {
+		err = fmt.Errorf("error changing systemd main PID: %v\n", err)
+		daemon.Shutdown()
+		return
+	}
 	err = lifecycle.ReadinessSender()
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to parent process: %v", err)
@@ -192,12 +206,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	err = lifecycle.WaitForParentExit()
 	if err != nil {
 		err = fmt.Errorf("error waiting for parent process to exit: %v", err)
-		daemon.Shutdown()
-		return
-	}
-	err = lifecycle.NotifyMainPID(daemon.ctx, os.Getpid())
-	if err != nil {
-		err = fmt.Errorf("error swapping main systemd PID: %v", err)
 		daemon.Shutdown()
 		return
 	}

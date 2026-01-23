@@ -9,23 +9,22 @@ function check_for_dev_artifacts() {
 	echo "[*] Checking for development artifacts in source code directory $src..."
 
 	# Get head commit hash
-	#headCommitHash=$(git rev-parse HEAD)
+	headCommitHash=$(git rev-parse HEAD)
 
 	# Get commit where last release was generated from
-	#lastReleaseCommitHash=$(cat "$repoDir"/.last_release_commit)
+	lastReleaseCommitHash=$(cat "$repoDir"/.last_release_commit)
 
 	# Retrieve the program version from the last release commit
-	#lastReleaseVersionNumber=$(git show "$lastReleaseCommitHash":"$src"/main.go 2>/dev/null | grep "progVersion string" | cut -d" " -f5 | sed 's/"//g')
+	lastReleaseVersionNumber=$(git show "$lastReleaseCommitHash":"cmd/sdsyslog/main.go" 2>/dev/null | grep "progVersion string" | cut -d" " -f5 | sed 's/"//g')
 
 	# Get the current version number
-	#currentVersionNumber=$(grep "progVersion string" "$src"/main.go | cut -d" " -f5 | sed 's/"//g')
+	currentVersionNumber=$(grep "progVersion string" "cmd/sdsyslog/main.go" | cut -d" " -f5 | sed 's/"//g')
 
 	# Exit if version number hasn't been upped since last commit
-	#if [[ $lastReleaseVersionNumber == $currentVersionNumber ]] && ! [[ $headCommitHash == $lastReleaseCommitHash ]] && [[ -n $lastReleaseVersionNumber ]]
-	#then
-	#	echo -e "   ${RED}[-] ERROR${RESET}: Version number in $src/main.go has not been bumped since last commit, exiting build"
-	#	exit 1
-	#fi
+	if [[ $lastReleaseVersionNumber == $currentVersionNumber ]] && ! [[ $headCommitHash == $lastReleaseCommitHash ]] && [[ -n $lastReleaseVersionNumber ]]; then
+		echo -e "   ${RED}[-] ERROR${RESET}: Version number in $src/main.go has not been bumped since last commit, exiting build"
+		exit 1
+	fi
 
 	# Quick check for any left over debug prints
 	if grep -ER "DEBUG" "$src"/; then

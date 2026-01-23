@@ -3,6 +3,7 @@ module sdsyslog
 go 1.25.5
 
 require (
+	github.com/cilium/ebpf v0.20.0
 	github.com/elastic/go-lumber v0.1.1
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 	golang.org/x/crypto v0.47.0

@@ -94,6 +94,8 @@ To get started with this API, grab the HTML docs by querying the root path `curl
       ```
 
 - Maximum individual log message size is 4GB
-- Due to address/port reuse across the program (or during hot swap updates), there is a slight chance of data loss due to how Linux handles UDP socket receive buffers.
+- Due to address/port reuse across the program (or during hot swap updates), there is a slight chance of data loss between when packets are received by the system and when the program reads the data.
   - Essentially the program has no way of safely "draining" a go routines associated kernel-level socket buffer before it shuts down (for scaling down and hot swapping).
-  - As a consequence, there is no guarantee that this program can make to *not* drop data during these events.
+  - On non-Linux systems (or older non-eBPF Linux kernels), there is no guarantee that this program can make to *not* drop data during these events.
+  - For *BSD systems, during shutdown, the program will attempt to time when the socket is empty to close a listener.
+    - On listener shutdowns, there will be a warning log message when the OS buffer still has bytes left (byte value may or may not be accurate to the total amount left in the buffer).

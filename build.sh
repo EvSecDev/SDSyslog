@@ -72,13 +72,17 @@ function compile_program_prechecks() {
 }
 
 function compile_program() {
-	local GOARCH GOOS buildFull replaceDeployedExe deployedBinaryPath buildVersion skipTests intenseTests
+	local GOARCH GOOS buildFull deployedBinaryPath buildVersion skipTests intenseTests
 	GOARCH=$1
 	GOOS=$2
 	buildFull=$3
-	replaceDeployedExe=$4
-	skipTests=$5
-	intenseTests=$6
+	skipTests=$4
+	intenseTests=$5
+
+	# eBPF program
+	if type -t compile_ebpf_c &>/dev/null; then
+		compile_ebpf_c "$repoRoot/ebpf" "$SRCdir/ebpf/static-files"
+	fi
 
 	if [[ $skipTests != 'true' ]]; then
 		# Run tests (excludes unimportant info)
@@ -135,16 +139,6 @@ function compile_program() {
 
 		# Create hash for built binary
 		sha256sum "$fullNameEXE" >"$fullNameEXE".sha256
-	elif [[ $replaceDeployedExe == true ]]; then
-		# Replace existing binary with new one
-		deployedBinaryPath=$(which $outputEXE)
-		if [[ -z $deployedBinaryPath ]]; then
-			echo -e "${RED}[-] ERROR${RESET}: Could not determine path of existing program binary, refusing to continue" >&2
-			rm "$outputEXE"
-			exit 1
-		fi
-
-		mv "$outputEXE" "$deployedBinaryPath"
 	fi
 
 	# Ensure readme has updated code blocks
@@ -167,7 +161,6 @@ Options:
   -b           Build the program using defaults
   -n           Skip tests
   -f           Run intense tests (-race -bench)
-  -r           Replace binary in path with updated one
   -a <arch>    Architecture of compiled binary (amd64, arm64) [default: amd64]
   -o <os>      Which operating system to build for (linux, windows) [default: linux]
   -u           Update go packages for program
@@ -184,7 +177,7 @@ skipTests='false'
 intenseTests='false'
 
 # Argument parsing
-while getopts 'a:o:P:bfunprh' opt; do
+while getopts 'a:o:P:bfunph' opt; do
 	case "$opt" in
 	'a')
 		architecture="$OPTARG"
@@ -197,9 +190,6 @@ while getopts 'a:o:P:bfunprh' opt; do
 		;;
 	'f')
 		intenseTests='true'
-		;;
-	'r')
-		replaceDeployedExe='true'
 		;;
 	'o')
 		os="$OPTARG"
@@ -226,7 +216,7 @@ done
 
 if [[ $prepareRelease == true ]]; then
 	compile_program_prechecks
-	compile_program "$architecture" "$os" 'true' 'false' 'true'
+	compile_program "$architecture" "$os" 'true' 'true'
 	tempReleaseDir=$(prepare_github_release_files "$fullNameProgramPrefix")
 	create_release_notes "$repoRoot" "$tempReleaseDir"
 elif [[ -n $publishVersion ]]; then
@@ -235,7 +225,7 @@ elif [[ $updatepackages == true ]]; then
 	update_go_packages "$repoRoot" "$SRCdir"
 elif [[ $buildmode == true ]]; then
 	compile_program_prechecks
-	compile_program "$architecture" "$os" 'false' "$replaceDeployedExe" "$skipTests" "$intenseTests"
+	compile_program "$architecture" "$os" 'false' "$skipTests" "$intenseTests"
 else
 	echo -e "${RED}ERROR${RESET}: Unknown option or combination of options" >&2
 	exit 1

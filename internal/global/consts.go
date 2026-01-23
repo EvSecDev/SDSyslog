@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.11.0"
+	ProgVersion string = "v0.12.0"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
@@ -45,8 +45,16 @@ const (
 	EnvNameReadinessFD      string        = "READY_FD"
 	EnvNameAlivenessFD      string        = "PARENT_ALIVE_FD"
 
+	// eBPF - Linux only
+	DrainSocket           int    = 1
+	DrainMapName          string = "draining_sockets"
+	DrainFuncName         string = "reuseport_select"
+	KernelDrainMapPath    string = "/sys/fs/bpf/" + DrainMapName
+	KernelSocketRouteFunc string = "/sys/fs/bpf/" + DrainFuncName
+
 	// IO Modules
-	DefaultJournaldURL = "http://localhost:19532"
+	DefaultJournaldURL string = "http://localhost:19532"
+	DefaultBeatsAddr   string = "localhost:5044"
 
 	// Parsing defaults
 	DefaultFacility string = "daemon"

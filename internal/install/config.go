@@ -205,6 +205,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 
 	newCfg.Outputs.FilePath = "/var/log/all.log"
 	newCfg.Outputs.JournaldURL = global.DefaultJournaldURL
+	newCfg.Outputs.BeatsAddress = global.DefaultBeatsAddr
 
 	newCfg.PrivateKeyFile = global.DefaultPrivKeyPath
 

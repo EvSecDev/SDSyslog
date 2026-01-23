@@ -3,6 +3,7 @@ package in
 import (
 	"context"
 	"fmt"
+	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
@@ -60,6 +61,30 @@ func (manager *InstanceManager) RemoveInstance(id int) {
 			ingestInstance.cancel()
 		}
 		if ingestInstance.conn != nil {
+			// Mark draining (if supported)
+			cookie, err := ebpf.GetSocketCookie(ingestInstance.conn)
+			if err != nil {
+				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.ErrorLog,
+					"Listener %d: failed to get cookie for socket: %v\n", id, err)
+			}
+
+			err = ebpf.MarkSocketDraining(global.KernelDrainMapPath, cookie)
+			if err != nil {
+				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.ErrorLog,
+					"Listener %d: failed to set socket as draining: %v\n", id, err)
+			}
+
+			// Wait for drain
+			dataLeft, err := network.WaitUntilEmptySocket(ingestInstance.conn)
+			if err != nil {
+				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.ErrorLog,
+					"Listener %d: failed to check current socket buffer size: %v\n", id, err)
+			}
+			if dataLeft > 0 {
+				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.WarnLog,
+					"Listener %d: Socket is being closed with %d bytes left in the buffer\n", id, dataLeft)
+			}
+
 			ingestInstance.conn.Close() // Required for listener to process cancellation
 		}
 

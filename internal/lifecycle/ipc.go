@@ -66,37 +66,3 @@ func ReadinessSender() (err error) {
 
 	return
 }
-
-// Uses parent-supplied environment variable file descriptor to determine when parent exits.
-// Returns nil if env var does not exist.
-func WaitForParentExit() (err error) {
-	fdStr := os.Getenv(global.EnvNameAlivenessFD)
-	if fdStr == "" {
-		return // Not under updater
-	}
-
-	fd, err := strconv.Atoi(fdStr)
-	if err != nil {
-		err = fmt.Errorf("invalid %s: %v", global.EnvNameAlivenessFD, err)
-		return
-	}
-
-	f := os.NewFile(uintptr(fd), "parent-alive")
-	if f == nil {
-		err = fmt.Errorf("failed to open %s=%d", global.EnvNameAlivenessFD, fd)
-		return
-	}
-	defer f.Close()
-
-	buf := make([]byte, 1)
-	_, err = f.Read(buf)
-	if err == io.EOF {
-		// Parent exited
-		err = nil
-		return
-	} else if err != nil {
-		err = fmt.Errorf("error waiting for parent exit: %v", err)
-		return
-	}
-	return
-}

@@ -43,7 +43,7 @@ func (gatherer *Gatherer) Run(ctx context.Context) {
 				timeSlice := gatherer.Registry.NewTimeSlice(now, gatherer.Interval)
 
 				lastRun = now
-				go gatherer.runIntervalTasks(ctx, timeSlice, gatherer.Interval)
+				gatherer.runIntervalTasks(ctx, timeSlice, gatherer.Interval)
 			}
 
 			// Conduct old metric evaluations and cleanup
@@ -92,7 +92,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	gatherer.Registry.Add(timeSlice, procCollect)
 
 	// Defrag
-	gatherer.Mgrs.Defrag.Mu.Lock()
+	gatherer.Mgrs.Defrag.Mu.RLock()
 	var collection []metrics.Metric // collection for all pairs
 	for _, instance := range gatherer.Mgrs.Defrag.InstancePairs {
 		// Shard
@@ -103,7 +103,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 		m2 := instance.Assembler.CollectMetrics(interval)
 		collection = append(collection, m2...)
 	}
-	gatherer.Mgrs.Defrag.Mu.Unlock()
+	gatherer.Mgrs.Defrag.Mu.RUnlock()
 
 	// Save collected metrics to the registry
 	gatherer.Registry.Add(timeSlice, collection)

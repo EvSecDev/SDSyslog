@@ -14,13 +14,13 @@ import (
 
 func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, defragMgr *defrag.InstanceManager) {
 	// Grab required info under lock
-	defragMgr.Mu.Lock()
+	defragMgr.Mu.RLock()
 	instanceCount := len(defragMgr.InstancePairs)
 	var instanceIDs []int
 	for id := range defragMgr.InstancePairs {
 		instanceIDs = append(instanceIDs, id)
 	}
-	defragMgr.Mu.Unlock()
+	defragMgr.Mu.RUnlock()
 
 	// No scaling if we are at the min/max
 	if instanceCount == defragMgr.MaxInstCount || instanceCount == defragMgr.MinInstCount {
@@ -76,12 +76,10 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up assembler\n")
 	} else if scaleDown {
 		// Picking just the first (valid) one
-		defragMgr.Mu.Lock()
 		for instanceId := range defragMgr.InstancePairs {
 			defragMgr.RemoveInstance(instanceId)
 			break
 		}
-		defragMgr.Mu.Unlock()
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled down assembler\n")
 	}
 }

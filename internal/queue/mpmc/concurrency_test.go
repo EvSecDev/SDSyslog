@@ -162,12 +162,12 @@ func TestQueue_StressIntegrity(t *testing.T) {
 	}
 
 	// Start multiple producers
-	for i := range numProducers {
+	for i := 0; i < numProducers; i++ {
 		go producer(i)
 	}
 
 	// Start multiple consumers
-	for range numConsumers {
+	for i := 0; i < numConsumers; i++ {
 		go consumer()
 	}
 

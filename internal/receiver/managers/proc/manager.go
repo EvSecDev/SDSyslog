@@ -11,12 +11,12 @@ import (
 )
 
 // Creates new instance manager
-func NewInstanceManager(ctx context.Context, inQueueSize int, shardRouting shard.RoutingView, minInsts, maxInsts int, minQsize, maxQsize int) (new *InstanceManager, err error) {
+func NewInstanceManager(ctx context.Context, shardRouting shard.RoutingView, minInsts, maxInsts int, minQsize, maxQsize int) (new *InstanceManager, err error) {
 	// Add log context
 	ctx = logctx.AppendCtxTag(ctx, global.NSProc)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	inQueue, err := mpmc.New[listener.Container](logctx.GetTagList(ctx), uint64(inQueueSize), minQsize, maxQsize)
+	inQueue, err := mpmc.New[listener.Container](logctx.GetTagList(ctx), uint64(minQsize), minQsize, maxQsize)
 	if err != nil {
 		return
 	}

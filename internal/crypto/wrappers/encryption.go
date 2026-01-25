@@ -16,8 +16,16 @@ var EncryptInnerPayload func(payload []byte, suiteID uint8) (ciphertext, ephemer
 // Wrapper to decrypt an inner payload from cipher text to clear text
 var DecryptInnerPayload func(ciphertext, ephemeralPub, nonce []byte, suiteID uint8) (innerPayload []byte, err error)
 
-// Sets up encryption wrapper function injecting the public key to the local scope
-func SetupEncryptInnerPayload(serverPub []byte) {
+// Sets up encryption wrapper function injecting the public key to the local scope.
+// Does not set the function if key is empty. Will throw error if function is not initialized and no key is provided.
+func SetupEncryptInnerPayload(serverPub []byte) (err error) {
+	if len(serverPub) <= 0 {
+		if EncryptInnerPayload == nil {
+			err = fmt.Errorf("provided no public key and encryption function is not already initialized")
+		}
+		return
+	}
+
 	EncryptInnerPayload = func(payload []byte, suiteID uint8) (ciphertext, ephemeralPub, nonce []byte, err error) {
 		if len(serverPub) == 0 {
 			err = fmt.Errorf("public key empty: attempted call to uninitialized function")
@@ -59,10 +67,19 @@ func SetupEncryptInnerPayload(serverPub []byte) {
 
 		return
 	}
+	return
 }
 
-// Sets up decryption wrapper function injecting the private key to the local scope
-func SetupDecryptInnerPayload(privateKey []byte) {
+// Sets up decryption wrapper function injecting the private key to the local scope.
+// Does not set the function if key is empty. Will throw error if function is not initialized and no key is provided.
+func SetupDecryptInnerPayload(privateKey []byte) (err error) {
+	if len(privateKey) <= 0 {
+		if DecryptInnerPayload == nil {
+			err = fmt.Errorf("provided no public key and encryption function is not already initialized")
+		}
+		return
+	}
+
 	DecryptInnerPayload = func(ciphertext, ephemeralPub, nonce []byte, suiteID uint8) (innerPayload []byte, err error) {
 		if len(privateKey) == 0 {
 			err = fmt.Errorf("private key empty: attempted call to uninitialized function")
@@ -96,4 +113,5 @@ func SetupDecryptInnerPayload(privateKey []byte) {
 
 		return
 	}
+	return
 }

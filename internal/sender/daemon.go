@@ -27,11 +27,8 @@ import (
 
 // Create new sending daemon instance
 func NewDaemon(cfg Config) (new *Daemon) {
-	ctx, cancel := context.WithCancel(context.Background())
 	new = &Daemon{
-		cfg:    cfg,
-		ctx:    ctx,
-		cancel: cancel,
+		cfg: cfg,
 	}
 	return
 }
@@ -71,7 +68,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 
 	// Pre-startup
 	protocol.InitBidiMaps()
-	wrappers.SetupEncryptInnerPayload(serverPub)
+	err = wrappers.SetupEncryptInnerPayload(serverPub)
+	if err != nil {
+		err = fmt.Errorf("failed to setup encryption function: %v", err)
+		return
+	}
 	daemon.cfg.setDefaults()
 
 	global.Hostname, err = os.Hostname()
@@ -218,24 +219,13 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	}
 
 	// For update hot-swap/systemd
-	err = lifecycle.NotifyMainPID(daemon.ctx, os.Getpid())
-	if err != nil {
-		err = fmt.Errorf("error changing systemd main PID: %v\n", err)
-		daemon.Shutdown()
-		return
-	}
 	err = lifecycle.ReadinessSender()
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to parent process: %v", err)
 		daemon.Shutdown()
 		return
 	}
-	err = lifecycle.WaitForParentExit()
-	if err != nil {
-		err = fmt.Errorf("error waiting for parent process to exit: %v", err)
-		daemon.Shutdown()
-		return
-	}
+	lifecycle.PostUpdateActions(daemon.ctx)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to systemd: %v", err)

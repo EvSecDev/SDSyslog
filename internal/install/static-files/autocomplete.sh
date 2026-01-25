@@ -5,9 +5,9 @@ _sdsyslog() {
     # Main config of options
     declare -A COMMANDS=(
         [root_sub]="configure receive send version"
-        [root_opts]="-v --verbosity"
+        [root_opts]="-c --config -v --verbosity"
 
-        [configure_opts]="--create-keys --recv-config-template --send-config-template -c --config -v --verbosity"
+        [configure_opts]="--create-keys --recv-config-template --send-config-template -c --config -v --verbosity --uninstall-sender --uninstall-receiver --install-sender --install-receiver"
         [receive_opts]="__inherit__"
         [send_opts]="__inherit__"
         [version_opts]="__inherit__"

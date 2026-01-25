@@ -26,11 +26,8 @@ import (
 
 // Create new receiver daemon instance
 func NewDaemon(cfg Config) (new *Daemon) {
-	ctx, cancel := context.WithCancel(context.Background())
 	new = &Daemon{
-		cfg:    cfg,
-		ctx:    ctx,
-		cancel: cancel,
+		cfg: cfg,
 	}
 	return
 }
@@ -49,7 +46,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Pre-startup
 	protocol.InitBidiMaps()
-	wrappers.SetupDecryptInnerPayload(serverPriv)
+	err = wrappers.SetupDecryptInnerPayload(serverPriv)
+	if err != nil {
+		err = fmt.Errorf("failed to setup decryption function: %v", err)
+		return
+	}
 	daemon.cfg.setDefaults()
 
 	global.Hostname, err = os.Hostname()
@@ -74,7 +75,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	// Stage 4 - Output Manager
-	daemon.Mgrs.Output, err = out.NewInstanceManager(daemon.ctx, daemon.cfg.MinOutputQueueSize)
+	daemon.Mgrs.Output, err = out.NewInstanceManager(daemon.ctx, daemon.cfg.MinOutputQueueSize, daemon.cfg.MaxOutputQueueSize)
 	if err != nil {
 		err = fmt.Errorf("failed creating output instance manager: %v", err)
 		return
@@ -100,7 +101,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Stage 2 - Processor
 	daemon.Mgrs.Proc, err = proc.NewInstanceManager(daemon.ctx,
-		daemon.cfg.MinProcessorQueueSize,
 		daemon.Mgrs.Defrag.Routing,
 		daemon.cfg.MinProcessors,
 		daemon.cfg.MaxProcessors,
@@ -191,24 +191,13 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	// For update hot-swap/systemd
-	err = lifecycle.NotifyMainPID(daemon.ctx, os.Getpid())
-	if err != nil {
-		err = fmt.Errorf("error changing systemd main PID: %v\n", err)
-		daemon.Shutdown()
-		return
-	}
 	err = lifecycle.ReadinessSender()
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to parent process: %v", err)
 		daemon.Shutdown()
 		return
 	}
-	err = lifecycle.WaitForParentExit()
-	if err != nil {
-		err = fmt.Errorf("error waiting for parent process to exit: %v", err)
-		daemon.Shutdown()
-		return
-	}
+	lifecycle.PostUpdateActions(daemon.ctx)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to systemd: %v", err)
@@ -277,7 +266,7 @@ func (daemon *Daemon) Shutdown() {
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth) // Wait here before shutting down (active write always has newest data)
 		if !success {
 			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-				"assembler inbox queue did not empty in time: dropped %d messages\n", last)
+				"output inbox queue did not empty in time: dropped %d messages\n", last)
 		}
 		daemon.Mgrs.Output.RemoveInstance()
 	}

@@ -10,8 +10,6 @@ StandardOutput=journal
 StandardError=journal
 ExecStart=$executableFilePath receive --config $receiveConfigFilePath
 Type=notify-reload
-# Allow new child process to signal reload success
-NotifyAccess=all
 RestartSec=60
 Restart=on-abnormal
 

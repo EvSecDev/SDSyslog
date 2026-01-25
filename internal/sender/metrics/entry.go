@@ -47,7 +47,7 @@ func (gatherer *Gatherer) Run(ctx context.Context) {
 				timeSlice := gatherer.Registry.NewTimeSlice(now, gatherer.Interval)
 
 				lastRun = now
-				go gatherer.runIntervalTasks(ctx, timeSlice, gatherer.Interval)
+				gatherer.runIntervalTasks(ctx, timeSlice, gatherer.Interval)
 			}
 
 			// Conduct old metric evaluations and cleanup

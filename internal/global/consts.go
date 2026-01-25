@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.12.0"
+	ProgVersion string = "v0.13.0"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
@@ -43,7 +43,7 @@ const (
 	DefaultMaxWaitForUpdate time.Duration = 10 * time.Second // Max allowed child startup time
 	ReadyMessage            string        = "READY"
 	EnvNameReadinessFD      string        = "READY_FD"
-	EnvNameAlivenessFD      string        = "PARENT_ALIVE_FD"
+	EnvNameSelfUpdate       string        = "UPDATING_CHILD-PID"
 
 	// eBPF - Linux only
 	DrainSocket           int    = 1

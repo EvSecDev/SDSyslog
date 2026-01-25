@@ -10,19 +10,19 @@ import (
 )
 
 // Creates new instance manager with shared queue (between assemblers and output workers)
-func NewInstanceManager(ctx context.Context, size int) (new *InstanceManager, err error) {
+func NewInstanceManager(ctx context.Context, minQsize, maxQsize int) (new *InstanceManager, err error) {
 	// Add log context
 	ctx = logctx.AppendCtxTag(ctx, global.NSmOutput)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	outQueue, err := mpmc.New[protocol.Payload](logctx.GetTagList(ctx), uint64(size), 2, global.DefaultMaxQueueSize)
+	inbox, err := mpmc.New[protocol.Payload](logctx.GetTagList(ctx), uint64(minQsize), minQsize, maxQsize)
 	if err != nil {
 		return
 	}
 
 	new = &InstanceManager{
 		Instance: &OutputInstance{},
-		Queue:    outQueue,
+		Queue:    inbox,
 		ctx:      ctx,
 	}
 	return

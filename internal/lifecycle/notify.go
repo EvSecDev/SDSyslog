@@ -28,20 +28,19 @@ func NotifyReload(ctx context.Context) (err error) {
 
 // Sends READY=1 to systemd to indicate service startup complete.
 func NotifyReady(ctx context.Context) (err error) {
+	// Temporary child processes for updates never send ready
+	fdStr := os.Getenv(global.EnvNameReadinessFD)
+	if fdStr != "" {
+		return // running under updater
+	}
+
 	err = notify(ctx, "READY=1")
 	return
 }
 
 // Sends custom status message to systemd for context.
 func NotifyStatus(ctx context.Context, msg string) (err error) {
-	err = notify(ctx, "READY="+msg)
-	return
-}
-
-// Tells systemd to switch the tracked main PID.
-// The target PID must already exist and be in the same cgroup.
-func NotifyMainPID(ctx context.Context, pid int) (err error) {
-	err = notify(ctx, fmt.Sprintf("MAINPID=%d", pid))
+	err = notify(ctx, "STATUS="+msg)
 	return
 }
 

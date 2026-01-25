@@ -11,7 +11,7 @@ import (
 )
 
 type InstanceManager struct {
-	Mu             sync.Mutex // For scaling operations
+	Mu             sync.RWMutex // For scaling operations
 	InstancePairs  []*InstancePair
 	MinInstCount   int // Minimum number of instances at any one time
 	MaxInstCount   int // Maximum number of instances at any one time

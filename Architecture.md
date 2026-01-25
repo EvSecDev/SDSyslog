@@ -122,15 +122,37 @@ Stage 3 to Stage 4 will share a single queue and operate on a lock-free ring buf
 
 Note: all metric variables within queue objects are atomic read/write to allow for lock-less metric gathering.
 
-### Shutdown Sequence
+## Shutdown Sequence
 
-If the receiver program is being shutdown (internally or external signal):
+If the program is being shutdown (internally or external signal):
 
-- Shutdown the listeners first
-- Delay further shutdown for a fixed time until queues can flush
-- If fixed wait time is exceeded, program exits immediately
+Receiver:
+
+- If on Linux (eBPF supported), mark sockets as draining to prevent additional packets from being read
+- Wait for OS socket buffers to empty
+- Close all listener sockets
+- Manager issues cancel to listener workers
+- Manager waits for listener workers to exit
+- Walk through each stage:
+  - Watch inbox queue until empty
+  - Issue cancel to worker(s)
+  - Wait for worker to exit
+
+Sender:
+
+- Manager issues cancel to reader workers
+- Manager waits for workers to exit
+- Reader workers save read positions in state file
+- Reader workers exit
+- Walk through each stage:
+  - Watch inbox queue until empty
+  - Issue cancel to worker(s)
+  - Wait for worker to exit
 
 ## Input/Output Modules
+
+Note: Even though these modules are not run concurrently with each other (multiple inputs/multiple outputs), they must still remain concurrent/multi-process safe.
+This is to maintain the continuity of operation during in-place upgrades (where two processes could be writing (different messages) to the same output).
 
 Modules must satisfy this minimum contract:
 
@@ -162,6 +184,34 @@ Modules must satisfy this minimum contract:
     - Shutdown - Gracefully terminates any resources
       - Takes: nothing
       - Returns: `error`
+
+## Self Updater
+
+The program can self update without dropping any traffic by starting a temporary process to continue processing messages while the primary process replaces itself.
+
+Two-Stage Hot Swap Process:
+
+- Primary_Process     - Receives signal SIGHUP
+- Primary_Process     - Create communication pipe
+- Primary_Process     - Signal handler starts Temp_Process (child) with shared pipe via environment variable (for FD number)
+- Primary_Process     - Wait for Temp_Process to signal it is fully started with Read pipe
+- Temp_Process        - Start daemon
+- Temp_Process        - Once daemon is started, send readiness signal to Primary_Process (parent)
+- Primary_Process     - Receives Temp_Process readiness signal
+- Primary_Process     - Set update environment variable with Temp_Process PID for next in-place program
+- Primary_Process     - Start shutdown process
+- Primary_Process     - Daemon shutdown succeeds
+- Primary_Process     - Right before normal os exit, re-exec self with new binary file from disk
+- Primary_Process_New - Start all components
+- Primary_Process_New - All components successfully started
+- Primary_Process_New - Notifies systemd READY (if under systemd)
+- Primary_Process_New - Check for update environment variable
+- Primary_Process_New - If update environment variable exists, get value (Temp_Process pid)
+- Primary_Process_New - Send signal SIGTERM to Temp_Process PID
+- Temp_Process        - Receive SIGTERM signal
+- Temp_Process        - Starts normal shutdown procedure
+- Primary_Process_New - Cleans up exited Temp_Process
+- Primary_Process_New - Continues on as normal
 
 ## Encryption
 

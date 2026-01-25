@@ -6,12 +6,16 @@ import (
 
 // Current number of shards running
 func (rs *RoutingState) GetShardCount() (count int) {
+	rs.Manager.Mu.RLock()
+	defer rs.Manager.Mu.RUnlock()
 	count = len(rs.Manager.InstancePairs)
 	return
 }
 
 // Retrieves instance pointer for a particular index
 func (rs *RoutingState) GetShard(shardID int) (shardInst *shard.Instance) {
+	rs.Manager.Mu.RLock()
+	defer rs.Manager.Mu.RUnlock()
 	if len(rs.Manager.InstancePairs)-1 >= shardID {
 		shardInst = rs.Manager.InstancePairs[shardID].Shard
 	}
@@ -20,6 +24,8 @@ func (rs *RoutingState) GetShard(shardID int) (shardInst *shard.Instance) {
 
 // Checks if particular instance has been marked as shutdown
 func (rs *RoutingState) IsShardShutdown(shardID int) (shutdown bool) {
+	rs.Manager.Mu.RLock()
+	defer rs.Manager.Mu.RUnlock()
 	if len(rs.Manager.InstancePairs)-1 >= shardID {
 		shutdown = rs.Manager.InstancePairs[shardID].Shard.InShutdown
 	}
@@ -28,10 +34,13 @@ func (rs *RoutingState) IsShardShutdown(shardID int) (shutdown bool) {
 
 // Checks if shard contains a particular bucket
 func (rs *RoutingState) BucketExists(shardID int, bucketKey string) (present bool) {
+	rs.Manager.Mu.RLock()
 	sh := rs.Manager.InstancePairs[shardID].Shard
+	rs.Manager.Mu.RUnlock()
+
 	sh.Mu.Lock()
+	defer sh.Mu.Unlock()
 	_, present = sh.Buckets[bucketKey]
-	sh.Mu.Unlock()
 	return
 }
 
@@ -59,6 +68,8 @@ func (rs *RoutingState) ClearOverride(bucketKey string) {
 
 // Picks the first non-shutdown shard that is not the original one
 func (rs *RoutingState) FindAlternativeShard(origShardID int) (newShardID int) {
+	rs.Manager.Mu.RLock()
+	defer rs.Manager.Mu.RUnlock()
 	for shardID, pair := range rs.Manager.InstancePairs {
 		if shardID != origShardID && !pair.Shard.InShutdown {
 			newShardID = shardID

@@ -10,8 +10,6 @@ import (
 
 // Resizes queue if nearing capacity limit or heavily unused
 func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
-	const capacityStepValue int = global.DefaultMinQueueSize
-
 	activeQueue := container.ActiveWrite.Load()
 	currentCapacity := activeQueue.Size
 	currentDepth := activeQueue.Metrics.Depth.Load()
@@ -21,7 +19,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 		return
 	}
 	// At maximum limit, nothing to do
-	if currentCapacity <= container.maximumSize {
+	if currentCapacity >= container.maximumSize {
 		return
 	}
 
@@ -31,7 +29,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 	currentSizePerItem := currentByteSize / uint64(currentCapacity)
 
 	// Estimate new queue maximum memory size in bytes
-	expectedMaxNewQueueMemSize := uint64((currentCapacity + capacityStepValue) * int(currentSizePerItem))
+	expectedMaxNewQueueMemSize := uint64((nextPowerOfTwo(currentCapacity)) * int(currentSizePerItem))
 
 	// Decide direction
 	var scaleUp, scaleDown bool
@@ -45,26 +43,49 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 	} else if float64(currentDepth/uint64(currentCapacity))*100 <= 2 {
 		scaleDown = true
 	}
-
 	if scaleUp {
-		err := container.mutateSize(uint64(currentCapacity + capacityStepValue))
+		err := container.mutateSize(uint64(nextPowerOfTwo(currentCapacity)))
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
 				"Failed to scale queue capacity: %v\n", err)
 			return
 		}
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog,
-			"Scaled up queue from %d to %d capacity\n", currentCapacity, currentCapacity+capacityStepValue)
+			"Scaled up queue from %d to %d capacity\n", currentCapacity, nextPowerOfTwo(currentCapacity))
 	} else if scaleDown {
-		err := container.mutateSize(uint64(currentCapacity - capacityStepValue))
+		err := container.mutateSize(uint64(prevPowerOfTwo(currentCapacity)))
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
 				"Failed to scale queue capacity: %v\n", err)
 			return
 		}
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog,
-			"Scaled down queue from %d to %d capacity\n", currentCapacity, currentCapacity-capacityStepValue)
+			"Scaled down queue from %d to %d capacity\n", currentCapacity, prevPowerOfTwo(currentCapacity))
 	}
+}
+
+func nextPowerOfTwo(start int) (next int) {
+	if start <= 1 {
+		next = 1
+		return
+	}
+	start--
+	start |= start >> 1
+	start |= start >> 2
+	start |= start >> 4
+	start |= start >> 8
+	start |= start >> 16
+	start |= start >> 32
+	next = start + 1
+	return
+}
+
+func prevPowerOfTwo(start int) (prev int) {
+	if start == 0 {
+		return
+	}
+	prev = nextPowerOfTwo(start) >> 1
+	return
 }
 
 // Decides whether to scale up or down based on depth metric values (metric=depth)

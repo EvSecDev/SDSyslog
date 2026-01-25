@@ -57,9 +57,7 @@ func (manager *InstanceManager) RemoveInstance(id int) {
 
 	ingestInstance, ok := manager.Instances[id]
 	if ok {
-		if ingestInstance.cancel != nil {
-			ingestInstance.cancel()
-		}
+		var dataLeft int
 		if ingestInstance.conn != nil {
 			// Mark draining (if supported)
 			cookie, err := ebpf.GetSocketCookie(ingestInstance.conn)
@@ -75,17 +73,24 @@ func (manager *InstanceManager) RemoveInstance(id int) {
 			}
 
 			// Wait for drain
-			dataLeft, err := network.WaitUntilEmptySocket(ingestInstance.conn)
+			dataLeft, err = network.WaitUntilEmptySocket(ingestInstance.conn)
 			if err != nil {
 				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.ErrorLog,
 					"Listener %d: failed to check current socket buffer size: %v\n", id, err)
 			}
-			if dataLeft > 0 {
-				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.WarnLog,
-					"Listener %d: Socket is being closed with %d bytes left in the buffer\n", id, dataLeft)
-			}
+		}
+		if ingestInstance.cancel != nil {
+			ingestInstance.cancel()
+		}
+		if ingestInstance.conn != nil {
+			// Required for listener to process cancellation when blocked
+			// Theoretically... can cause deadlocks on shutdown due to close not breaking blocking read syscall
+			ingestInstance.conn.Close()
+		}
 
-			ingestInstance.conn.Close() // Required for listener to process cancellation
+		if dataLeft > 0 {
+			logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.WarnLog,
+				"Listener %d: Socket was closed with %d bytes left in the buffer\n", id, dataLeft)
 		}
 
 		ingestInstance.wg.Wait()

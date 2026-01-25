@@ -32,6 +32,18 @@ Steps:
   - Start the systemd service for the sender with `systemctl start sdsyslog-sender`
   - Check for any errors with `journalctl -r -u sdsyslog-sender`
 
+## Updates
+
+Downloading the new binary and running the installation again will update any files on disk.
+
+It will overwrite and reload most things, but will *not* overwrite the configuration file unless requested.
+
+To update the running daemon with zero interruption to traffic, a `SIGHUP` signal will trigger an in-place upgrade.
+
+If running under systemd, you only need to run `systemctl reload sdsyslog`/`systemctl reload sdsyslog-sender`.
+
+Otherwise, a standalone process upgrade can be triggered with the command `kill -HUP <PID>`.
+
 ## Uninstallation
 
 Steps:

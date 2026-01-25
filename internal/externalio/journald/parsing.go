@@ -2,6 +2,7 @@ package journald
 
 import (
 	"fmt"
+	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/pkg/protocol"
 	"strconv"
@@ -9,7 +10,7 @@ import (
 )
 
 // Extracts relevant fields from a journal entry
-func parseFields(fields map[string]string) (message global.ParsedMessage, err error) {
+func parseFields(fields map[string]string, localHostname string) (message global.ParsedMessage, err error) {
 	var ok bool
 
 	// RAW LOG
@@ -51,7 +52,7 @@ func parseFields(fields map[string]string) (message global.ParsedMessage, err er
 	// HOSTNAME
 	message.Hostname, ok = fields["_HOSTNAME"]
 	if !ok {
-		message.Hostname = global.Hostname
+		message.Hostname = localHostname
 	}
 
 	// PRIORITY
@@ -88,7 +89,7 @@ func parseFields(fields map[string]string) (message global.ParsedMessage, err er
 		}
 	} else {
 		// Using self for missing pid
-		message.ProcessID = global.PID
+		message.ProcessID = os.Getpid()
 	}
 
 	// FACILITY

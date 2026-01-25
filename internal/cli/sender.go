@@ -7,23 +7,27 @@ import (
 	"fmt"
 	"os"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/sender"
 )
 
-func SendMode(ctx context.Context, commandname string, args []string) {
+func SendMode(ctx context.Context, cliOpts *global.CommandSet, commandname string, args []string) {
 	var configPath string
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
-	SetGlobalArguments(commandFlags)
+	requestedLogLevel := SetGlobalArguments(commandFlags)
 	SetCommon(commandFlags, &configPath, "send")
 
 	commandFlags.Usage = func() {
-		PrintHelpMenu(commandFlags, commandname, global.CmdOpts)
+		PrintHelpMenu(commandFlags, commandname, cliOpts)
 	}
 	if len(args) < 1 {
-		PrintHelpMenu(commandFlags, commandname, global.CmdOpts)
+		PrintHelpMenu(commandFlags, commandname, cliOpts)
 		os.Exit(1)
 	}
 	commandFlags.Parse(args[0:])
+
+	// Change log level if verbosity argument was given at this command level
+	logctx.SetLogLevel(ctx, *requestedLogLevel)
 
 	jsonCfg, err := sender.LoadConfig(configPath)
 	if err != nil {

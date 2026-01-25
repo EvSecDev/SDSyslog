@@ -29,7 +29,7 @@ func NotifyReload(ctx context.Context) (err error) {
 // Sends READY=1 to systemd to indicate service startup complete.
 func NotifyReady(ctx context.Context) (err error) {
 	// Temporary child processes for updates never send ready
-	fdStr := os.Getenv(global.EnvNameReadinessFD)
+	fdStr := os.Getenv(EnvNameReadinessFD)
 	if fdStr != "" {
 		return // running under updater
 	}

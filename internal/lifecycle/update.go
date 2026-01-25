@@ -50,7 +50,7 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 	cmd.ExtraFiles = []*os.File{readyW}
 	readyFDNum := fdStartingIndex + slices.Index(cmd.ExtraFiles, readyW) // Should always be 3 here, but just in case
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("%s=%d", global.EnvNameReadinessFD, readyFDNum),
+		fmt.Sprintf("%s=%d", EnvNameReadinessFD, readyFDNum),
 	)
 
 	err = cmd.Start()
@@ -81,16 +81,16 @@ func updateAndExit(ctx context.Context, daemonManager DaemonLike, childProc *exe
 	env := os.Environ()
 
 	// Add update environment variable with child process PID
-	env = append(env, global.EnvNameSelfUpdate+"="+strconv.Itoa(childProc.Process.Pid))
+	env = append(env, EnvNameSelfUpdate+"="+strconv.Itoa(childProc.Process.Pid))
 
 	// Will not return. Call below terminates this execution immediately if no error.
 	err := syscall.Exec(argv[0], argv, env)
 	if err != nil {
 		// Cleanup update variable
-		err := os.Unsetenv(global.EnvNameSelfUpdate)
+		err := os.Unsetenv(EnvNameSelfUpdate)
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-				"failed to unset environment variable %s (future updates may use wrong PID): %v\n", global.EnvNameSelfUpdate, err)
+				"failed to unset environment variable %s (future updates may use wrong PID): %v\n", EnvNameSelfUpdate, err)
 		}
 
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Self update execve call failed: %v\n", err)
@@ -126,16 +126,16 @@ func updateAndExit(ctx context.Context, daemonManager DaemonLike, childProc *exe
 // Kills child PID by env variable.
 // All errors non-fatal, sent to context log buffer.
 func PostUpdateActions(ctx context.Context) {
-	childPID := os.Getenv(global.EnvNameSelfUpdate)
+	childPID := os.Getenv(EnvNameSelfUpdate)
 	if childPID == "" {
 		return // not running post update
 	}
 
 	// Cleanup update variable
-	err := os.Unsetenv(global.EnvNameSelfUpdate)
+	err := os.Unsetenv(EnvNameSelfUpdate)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"failed to unset environment variable %s (future updates may use wrong PID): %v\n", global.EnvNameSelfUpdate, err)
+			"failed to unset environment variable %s (future updates may use wrong PID): %v\n", EnvNameSelfUpdate, err)
 	}
 
 	pid, err := strconv.Atoi(childPID)

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
+	"runtime"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/crypto/wrappers"
@@ -43,7 +43,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSSend)
 	defer func() { daemon.ctx = logctx.RemoveLastCtxTag(daemon.ctx) }()
 
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon...\n")
+	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon (%s)...\n", global.ProgVersion)
 
 	// Setup destination network "connection"
 	if daemon.cfg.DestinationIP == "" {
@@ -74,13 +74,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		return
 	}
 	daemon.cfg.setDefaults()
-
-	global.Hostname, err = os.Hostname()
-	if err != nil {
-		err = fmt.Errorf("failed to determine local hostname: %v", err)
-		return
-	}
-	global.PID = os.Getpid()
 
 	mainHostID, err := random.FourByte()
 	if err != nil {
@@ -183,7 +176,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		scaler := scaling.New(daemon.metricsCollector.Registry,
 			daemon.cfg.AutoscaleCheckInterval,
 			daemon.Mgrs,
-			global.LogicalCPUCount)
+			runtime.NumCPU())
 		workerCtx := daemon.ctx
 		daemon.wg.Add(1)
 		go func() {
@@ -250,7 +243,7 @@ func (daemon *Daemon) Shutdown() {
 	defer func() { daemon.ctx = logctx.RemoveLastCtxTag(daemon.ctx) }()
 
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-		"Daemon shutdown started...\n")
+		"Daemon shutdown started (%s)...\n", global.ProgVersion)
 
 	// Stop metric server
 	if daemon.cfg.MetricQueryServerEnabled {

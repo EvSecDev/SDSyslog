@@ -2,7 +2,6 @@ package ebpf
 
 import (
 	"bytes"
-	"sdsyslog/internal/global"
 	"testing"
 
 	"github.com/cilium/ebpf"
@@ -28,9 +27,9 @@ func TestLoadProgram(t *testing.T) {
 		t.Fatalf("no maps found in eBPF object")
 	}
 
-	prog, ok := spec.Programs[global.DrainFuncName]
+	prog, ok := spec.Programs[DrainFuncName]
 	if !ok {
-		t.Fatalf("expected program %s not found", global.DrainFuncName)
+		t.Fatalf("expected program %s not found", DrainFuncName)
 	}
 
 	if len(prog.Instructions) == 0 {

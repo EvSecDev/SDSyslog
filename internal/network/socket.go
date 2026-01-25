@@ -6,7 +6,7 @@ import (
 	"net"
 	"os"
 	"runtime"
-	"sdsyslog/internal/global"
+	"sdsyslog/internal/ebpf"
 	"syscall"
 	"time"
 
@@ -34,7 +34,7 @@ func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
 				}
 
 				// Attempt to attach eBPF program if pinned
-				prog, err := os.Open(global.KernelSocketRouteFunc)
+				prog, err := os.Open(ebpf.KernelSocketRouteFunc)
 				if err != nil {
 					// eBPF not available; silently fall back to normal reuseport
 					return

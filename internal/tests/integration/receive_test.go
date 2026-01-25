@@ -51,10 +51,10 @@ func TestRecvConstantFlow(t *testing.T) {
 	testOutputsFile := filepath.Join(testDir, "recv-pipeline-test-outputs.txt")
 
 	// Setup logging with in memory
-	global.Verbosity = 1 // Set to standard for tests
+	logVerbosity := 1 // Set to standard for tests
 	globalCtx, globalCancel := context.WithCancel(context.Background())
-	logger := logctx.NewLogger("global", global.Verbosity, globalCtx.Done()) // New logger tied to global
-	globalCtx = logctx.WithLogger(globalCtx, logger)                         // Add logger to global ctx
+	logger := logctx.NewLogger("global", logVerbosity, globalCtx.Done()) // New logger tied to global
+	globalCtx = logctx.WithLogger(globalCtx, logger)                     // Add logger to global ctx
 
 	// Daemon config
 	newCfg := receiver.Config{

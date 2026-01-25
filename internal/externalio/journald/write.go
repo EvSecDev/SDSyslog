@@ -42,7 +42,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 	}
 	fields := []field{
 		{key: "__REALTIME_TIMESTAMP", val: fmt.Sprintf("%d", time.Now().UnixMicro())}, // Required field
-		{key: "_BOOT_ID", val: global.BootID},                                         // Required field
+		{key: "_BOOT_ID", val: global.BootID()},                                       // Required field
 		{key: "PRIORITY", val: strconv.Itoa(int(severityInt))},
 		{key: "SYSLOG_IDENTIFIER", val: msg.ApplicationName},
 		{key: "MESSAGE", val: string(msg.LogText)}, // Required field

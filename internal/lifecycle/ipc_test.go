@@ -3,7 +3,6 @@ package lifecycle
 import (
 	"io"
 	"os"
-	"sdsyslog/internal/global"
 	"strconv"
 	"testing"
 	"time"
@@ -25,7 +24,7 @@ func TestReadinessHandshake(t *testing.T) {
 
 				go func() {
 					time.Sleep(10 * time.Millisecond)
-					w.Write([]byte(global.ReadyMessage))
+					w.Write([]byte(ReadyMessage))
 				}()
 
 				if err := readinessReceiver(r); err != nil {
@@ -56,7 +55,7 @@ func TestReadinessHandshake(t *testing.T) {
 				defer r.Close()
 
 				go func() {
-					w.Write([]byte(global.ReadyMessage[:1]))
+					w.Write([]byte(ReadyMessage[:1]))
 					w.Close()
 				}()
 
@@ -68,7 +67,7 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender no env",
 			run: func(t *testing.T) {
-				os.Unsetenv(global.EnvNameReadinessFD)
+				os.Unsetenv(EnvNameReadinessFD)
 				if err := ReadinessSender(); err != nil {
 					t.Fatalf("expected nil, got %v", err)
 				}
@@ -77,8 +76,8 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender invalid env",
 			run: func(t *testing.T) {
-				os.Setenv(global.EnvNameReadinessFD, "bad")
-				defer os.Unsetenv(global.EnvNameReadinessFD)
+				os.Setenv(EnvNameReadinessFD, "bad")
+				defer os.Unsetenv(EnvNameReadinessFD)
 
 				if err := ReadinessSender(); err == nil {
 					t.Fatal("expected error")
@@ -88,8 +87,8 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender bad fd",
 			run: func(t *testing.T) {
-				os.Setenv(global.EnvNameReadinessFD, "999999")
-				defer os.Unsetenv(global.EnvNameReadinessFD)
+				os.Setenv(EnvNameReadinessFD, "999999")
+				defer os.Unsetenv(EnvNameReadinessFD)
 
 				if err := ReadinessSender(); err == nil {
 					t.Fatal("expected error")
@@ -102,20 +101,20 @@ func TestReadinessHandshake(t *testing.T) {
 				r, w, _ := os.Pipe()
 				defer r.Close()
 
-				os.Setenv(global.EnvNameReadinessFD, strconv.Itoa(int(w.Fd())))
-				defer os.Unsetenv(global.EnvNameReadinessFD)
+				os.Setenv(EnvNameReadinessFD, strconv.Itoa(int(w.Fd())))
+				defer os.Unsetenv(EnvNameReadinessFD)
 
 				if err := ReadinessSender(); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				buf := make([]byte, len(global.ReadyMessage))
+				buf := make([]byte, len(ReadyMessage))
 				if _, err := io.ReadFull(r, buf); err != nil {
 					t.Fatalf("read failed: %v", err)
 				}
 
-				if string(buf) != global.ReadyMessage {
-					t.Fatalf("expected %q, got %q", global.ReadyMessage, buf)
+				if string(buf) != ReadyMessage {
+					t.Fatalf("expected %q, got %q", ReadyMessage, buf)
 				}
 			},
 		},

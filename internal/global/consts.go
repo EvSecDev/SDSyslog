@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.13.0"
+	ProgVersion string = "v0.13.1"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
@@ -38,19 +38,6 @@ const (
 	DefaultMaxQueueSize      int           = 4096
 	DefaultMinPacketDeadline time.Duration = 50 * time.Millisecond
 	DefaultMaxPacketDeadline time.Duration = 1 * time.Second
-
-	// Program lifecycle (updates/hot-swap/systemd)
-	DefaultMaxWaitForUpdate time.Duration = 10 * time.Second // Max allowed child startup time
-	ReadyMessage            string        = "READY"
-	EnvNameReadinessFD      string        = "READY_FD"
-	EnvNameSelfUpdate       string        = "UPDATING_CHILD-PID"
-
-	// eBPF - Linux only
-	DrainSocket           int    = 1
-	DrainMapName          string = "draining_sockets"
-	DrainFuncName         string = "reuseport_select"
-	KernelDrainMapPath    string = "/sys/fs/bpf/" + DrainMapName
-	KernelSocketRouteFunc string = "/sys/fs/bpf/" + DrainFuncName
 
 	// IO Modules
 	DefaultJournaldURL string = "http://localhost:19532"

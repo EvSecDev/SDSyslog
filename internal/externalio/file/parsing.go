@@ -1,6 +1,7 @@
 package file
 
 import (
+	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/pkg/protocol"
 	"strconv"
@@ -9,7 +10,7 @@ import (
 )
 
 // Parses file line text for common formats and extracts metadata. (The Monstrosity of Assumption TM)
-func parseLine(rawLine string) (message global.ParsedMessage) {
+func parseLine(rawLine string, localHostname string) (message global.ParsedMessage) {
 	line := strings.TrimSpace(rawLine)
 
 	// Format: Syslog
@@ -43,7 +44,7 @@ func parseLine(rawLine string) (message global.ParsedMessage) {
 					}
 
 					message.Timestamp = withCurrentYear(ts)
-					message = setDefaults(message, line)
+					message = setDefaults(message, line, localHostname)
 					return
 				}
 			}
@@ -94,7 +95,7 @@ func parseLine(rawLine string) (message global.ParsedMessage) {
 				// Remaining part is the message text
 				message.Text = rest
 			}
-			message = setDefaults(message, line)
+			message = setDefaults(message, line, localHostname)
 			return
 		}
 	}
@@ -117,7 +118,7 @@ func parseLine(rawLine string) (message global.ParsedMessage) {
 							}
 							message.Text = strings.TrimSpace(rest[colon+1:])
 							message.Timestamp = ts
-							message = setDefaults(message, line)
+							message = setDefaults(message, line, localHostname)
 							return
 						}
 					}
@@ -131,7 +132,7 @@ func parseLine(rawLine string) (message global.ParsedMessage) {
 		if ts, err := time.Parse("2006-01-02 15:04:05", line[:19]); err == nil {
 			message.Timestamp = ts
 			message.Text = strings.TrimSpace(line[19:])
-			message = setDefaults(message, line)
+			message = setDefaults(message, line, localHostname)
 			return
 		}
 	}
@@ -156,13 +157,13 @@ func parseLine(rawLine string) (message global.ParsedMessage) {
 					message.Text = strings.TrimSpace(rest[colon+1:])
 				}
 				message.Timestamp = ts
-				message = setDefaults(message, line)
+				message = setDefaults(message, line, localHostname)
 				return
 			}
 		}
 	}
 
-	message = setDefaults(message, line)
+	message = setDefaults(message, line, localHostname)
 	return
 }
 
@@ -183,16 +184,16 @@ func withCurrentYear(old time.Time) (new time.Time) {
 }
 
 // Replaces empty fields with expected defaults
-func setDefaults(old global.ParsedMessage, raw string) (new global.ParsedMessage) {
+func setDefaults(old global.ParsedMessage, raw string, localHostname string) (new global.ParsedMessage) {
 	new = old
 	if new.ApplicationName == "" {
 		new.ApplicationName = "-"
 	}
 	if new.Hostname == "" {
-		new.Hostname = global.Hostname
+		new.Hostname = localHostname
 	}
 	if new.ProcessID == 0 {
-		new.ProcessID = global.PID
+		new.ProcessID = os.Getpid()
 	}
 	if new.Timestamp.IsZero() {
 		new.Timestamp = time.Now()

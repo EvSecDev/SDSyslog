@@ -10,11 +10,11 @@ import (
 func TestParseLine(t *testing.T) {
 	// set defaults
 	var err error
-	global.Hostname, err = os.Hostname()
+	localHostname, err := os.Hostname()
 	if err != nil {
 		t.Fatalf("failed to determine local hostname: %v", err)
 	}
-	global.PID = os.Getpid()
+	testPid := os.Getpid()
 
 	tests := []struct {
 		name           string
@@ -27,8 +27,8 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: global.ParsedMessage{
 				Text:            "short message",
 				ApplicationName: "-",
-				Hostname:        global.Hostname,
-				ProcessID:       global.PID,
+				Hostname:        localHostname,
+				ProcessID:       testPid,
 				Timestamp:       time.Now(),
 				Facility:        global.DefaultFacility,
 				Severity:        global.DefaultSeverity,
@@ -40,8 +40,8 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: global.ParsedMessage{
 				Text:            "-",
 				ApplicationName: "-",
-				Hostname:        global.Hostname,
-				ProcessID:       global.PID,
+				Hostname:        localHostname,
+				ProcessID:       testPid,
 				Timestamp:       time.Now(),
 				Facility:        global.DefaultFacility,
 				Severity:        global.DefaultSeverity,
@@ -54,7 +54,7 @@ func TestParseLine(t *testing.T) {
 				Text:            `[origin software="rsyslogd" swVersion="8.2302.0" x-pid="4765" x-info="https://www.rsyslog.com"] start`,
 				ApplicationName: "rsyslogd",
 				Hostname:        "Host1",
-				ProcessID:       global.PID,
+				ProcessID:       testPid,
 				Timestamp:       timeParse1Panic("Jul  9 18:05:33"),
 				Facility:        global.DefaultFacility,
 				Severity:        global.DefaultSeverity,
@@ -67,7 +67,7 @@ func TestParseLine(t *testing.T) {
 				Text:            `Linux version 6.1.0-27-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0, GNU ld (2024-11-01)`,
 				ApplicationName: "kernel",
 				Hostname:        "Host1",
-				ProcessID:       global.PID,
+				ProcessID:       testPid,
 				Timestamp:       timeParse1Panic("Nov 17 09:52:41"),
 				Facility:        global.DefaultFacility,
 				Severity:        global.DefaultSeverity,
@@ -92,7 +92,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: global.ParsedMessage{
 				Text:            `using inherited sockets from "5;6;"`,
 				ApplicationName: "-",
-				Hostname:        global.Hostname,
+				Hostname:        localHostname,
 				ProcessID:       33709,
 				Timestamp:       timeParse2Panic("2025/03/15 10:47:59"),
 				Facility:        global.DefaultFacility,
@@ -105,8 +105,8 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: global.ParsedMessage{
 				Text:            `status triggers-pending libc-bin:amd64 2.41-12`,
 				ApplicationName: "-",
-				Hostname:        global.Hostname,
-				ProcessID:       global.PID,
+				Hostname:        localHostname,
+				ProcessID:       testPid,
 				Timestamp:       timeParse3Panic("2025-12-03 17:46:26"),
 				Facility:        global.DefaultFacility,
 				Severity:        global.DefaultSeverity,
@@ -118,8 +118,8 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: global.ParsedMessage{
 				Text:            `10.10.10.10 - - [28/Jul/2024:03:58:35 -0700] "GET / HTTP/1.1" 444 0 "-" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"`,
 				ApplicationName: "-",
-				Hostname:        global.Hostname,
-				ProcessID:       global.PID,
+				Hostname:        localHostname,
+				ProcessID:       testPid,
 				Timestamp:       timeParse5Panic("28/Jul/2024:03:58:35 -0700"),
 				Facility:        global.DefaultFacility,
 				Severity:        global.DefaultSeverity,
@@ -131,8 +131,8 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: global.ParsedMessage{
 				Text:            `Terminating ...`,
 				ApplicationName: "-",
-				Hostname:        global.Hostname,
-				ProcessID:       global.PID,
+				Hostname:        localHostname,
+				ProcessID:       testPid,
 				Timestamp:       timeParse4Panic("19-Sep-2023 16:52:51"),
 				Facility:        global.DefaultFacility,
 				Severity:        global.DefaultSeverity,
@@ -158,7 +158,7 @@ func TestParseLine(t *testing.T) {
 				Text:            `php_invoke mbstring: already enabled for PHP 8.4 cgi sapi`,
 				ApplicationName: "php8.4-cgi",
 				Hostname:        "Host1",
-				ProcessID:       global.PID,
+				ProcessID:       testPid,
 				Timestamp:       timeParse6Panic("2025-12-21T19:08:28.506905-08:00"),
 				Facility:        global.DefaultFacility,
 				Severity:        global.DefaultSeverity,
@@ -170,7 +170,7 @@ func TestParseLine(t *testing.T) {
 		before := time.Now()
 		t.Run(tt.name, func(t *testing.T) {
 			// Serialize
-			output := parseLine(tt.input)
+			output := parseLine(tt.input, localHostname)
 			after := time.Now()
 			if output.ApplicationName != tt.expectedOutput.ApplicationName {
 				t.Errorf("expected ApplicationName to be '%s', but got '%s'", tt.expectedOutput.ApplicationName, output.ApplicationName)

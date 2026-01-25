@@ -1,19 +1,24 @@
 package global
 
-var (
-	CmdOpts         *CommandSet // Holds CLI command definition
-	LogicalCPUCount int         // For max workers
-	Hostname        string      // local machine name
-	BootID          string      // UUID of system for current runtime 
-	PID             int         // self
+import "sync"
 
-	// Integer for printing increasingly detailed information as program progresses
-	//
-	//	0 - None: quiet (prints nothing but errors)
-	//	1 - Standard: normal progress messages
-	//	2 - Progress: more progress messages (no actual data outputted)
-	//	3 - Data: shows limited data being processed
-	//	4 - FullData: shows full data being processed
-	//	5 - Debug: shows extra data during processing (raw bytes)
-	Verbosity int
+// Global state that is unchanging during program lifetime.
+// Enforced WORM (write-once read-many) to prevent mutating global state.
+var (
+	bootID     string
+	bootIDOnce sync.Once
 )
+
+// Initializes boot ID.
+// Can only be called once, subsequent calls do nothing,
+func SetBootID(id string) {
+	bootIDOnce.Do(func() {
+		bootID = id
+	})
+}
+
+// Retrieve boot ID.
+// Can return empty value if not initialized yet.
+func BootID() string {
+	return bootID
+}

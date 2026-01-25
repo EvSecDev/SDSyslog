@@ -9,7 +9,7 @@ import (
 	"syscall"
 )
 
-func (mod *InModule) Run(ctx context.Context) {
+func (mod *InModule) Reader(ctx context.Context) {
 	logFileInode, logFileOffset, err := getLastPosition(mod.filePath, mod.stateFile)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to get position of last source file read for '%s': %v\n", mod.filePath, err)
@@ -18,6 +18,16 @@ func (mod *InModule) Run(ctx context.Context) {
 	_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to resume last source file read position for '%s': %v\n", mod.filePath, err)
+	}
+
+	var localHostname string
+	var iter uint64
+	const refreshMask = 1024 - 1
+	localHostname, err = os.Hostname()
+	if err != nil {
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to retrieve current local hostname: %v\n", err)
+		localHostname = "-"
+		err = nil
 	}
 
 	// Create inotify background watcher
@@ -63,7 +73,7 @@ func (mod *InModule) Run(ctx context.Context) {
 				// line complete, process it
 				mod.metrics.LinesRead.Add(1)
 
-				msg := parseLine(string(lineBuf))
+				msg := parseLine(string(lineBuf), localHostname)
 
 				size := len(msg.Text) +
 					len(msg.ApplicationName) +
@@ -120,6 +130,17 @@ func (mod *InModule) Run(ctx context.Context) {
 
 				// Reset offset position for new file
 				logFileOffset = 0
+			}
+		}
+
+		// Local hostname periodic refresh
+		iter++
+		if iter&refreshMask == 0 {
+			newName, err := os.Hostname()
+			if err == nil && newName != localHostname {
+				localHostname = newName
+			} else if err != nil {
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to refresh current local hostname: %v\n", err)
 			}
 		}
 

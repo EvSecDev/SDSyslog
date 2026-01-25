@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"runtime"
-	"sdsyslog/internal/global"
 
 	"github.com/cilium/ebpf"
 	"golang.org/x/sys/unix"
@@ -65,7 +64,7 @@ func MarkSocketDraining(pinnedMapPath string, socketCookie uint64) (err error) {
 	}
 	defer socketMap.Close()
 
-	err = socketMap.Put(socketCookie, uint8(global.DrainSocket))
+	err = socketMap.Put(socketCookie, uint8(DrainSocket))
 	if err != nil {
 		err = fmt.Errorf("failed to mark socket draining: %v\n", err)
 		return

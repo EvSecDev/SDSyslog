@@ -9,7 +9,7 @@ import (
 )
 
 // Setup/installation options
-func SetupMode(commandname string, args []string) {
+func SetupMode(cliOpts *global.CommandSet, commandname string, args []string) {
 	var newKeyPair bool
 	var newSendConf bool
 	var newRecvConf bool
@@ -20,7 +20,6 @@ func SetupMode(commandname string, args []string) {
 	var templateConfPath string
 
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
-	SetGlobalArguments(commandFlags)
 	commandFlags.BoolVar(&uninstallSender, "uninstall-sender", false, "Remove the sender daemon")
 	commandFlags.BoolVar(&uninstallReceiver, "uninstall-receiver", false, "Remove the receiver daemon")
 	commandFlags.BoolVar(&installSender, "install-sender", false, "Install/Upgrade the sender daemon")
@@ -32,10 +31,10 @@ func SetupMode(commandname string, args []string) {
 	commandFlags.BoolVar(&newRecvConf, "recv-config-template", false, "Create new template config for the receiver daemon (using config-path argument)")
 
 	commandFlags.Usage = func() {
-		PrintHelpMenu(commandFlags, commandname, global.CmdOpts)
+		PrintHelpMenu(commandFlags, commandname, cliOpts)
 	}
 	if len(args) < 1 {
-		PrintHelpMenu(commandFlags, commandname, global.CmdOpts)
+		PrintHelpMenu(commandFlags, commandname, cliOpts)
 		os.Exit(1)
 	}
 	commandFlags.Parse(args[0:])
@@ -57,7 +56,7 @@ func SetupMode(commandname string, args []string) {
 	} else if uninstallReceiver {
 		install.Remove("receive")
 	} else {
-		PrintHelpMenu(commandFlags, commandname, global.CmdOpts)
+		PrintHelpMenu(commandFlags, commandname, cliOpts)
 		os.Exit(1)
 	}
 

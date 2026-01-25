@@ -42,7 +42,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSRecv)
 	defer func() { daemon.ctx = logctx.RemoveLastCtxTag(daemon.ctx) }()
 
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon...\n")
+	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon (%s)...\n", global.ProgVersion)
 
 	// Pre-startup
 	protocol.InitBidiMaps()
@@ -53,19 +53,12 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 	daemon.cfg.setDefaults()
 
-	global.Hostname, err = os.Hostname()
-	if err != nil {
-		err = fmt.Errorf("failed to determine local hostname: %v", err)
-		return
-	}
-	global.PID = os.Getpid()
-
 	data, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
 	if err != nil {
 		err = fmt.Errorf("failed to determine local boot id: %v", err)
 		return
 	}
-	global.BootID = strings.TrimSpace(string(data))
+	global.SetBootID(strings.TrimSpace(string(data)))
 
 	// Listener socket helper - kernel-side of socket drain feature
 	err = ebpf.LoadProgram()
@@ -222,7 +215,7 @@ func (daemon *Daemon) Shutdown() {
 	defer func() { daemon.ctx = logctx.RemoveLastCtxTag(daemon.ctx) }()
 
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-		"Daemon shutdown started...\n")
+		"Daemon shutdown started (%s)...\n", global.ProgVersion)
 
 	// Stop metric server
 	if daemon.cfg.MetricQueryServerEnabled {

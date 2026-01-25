@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"os"
 	"runtime/debug"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
@@ -11,6 +12,16 @@ import (
 
 func (mod *InModule) Reader(ctx context.Context) {
 	reader := bufio.NewReader(mod.sink)
+
+	var localHostname string
+	var iter uint64
+	const refreshMask = 1024 - 1
+	localHostname, err := os.Hostname()
+	if err != nil {
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to retrieve current local hostname: %v\n", err)
+		localHostname = "-"
+		err = nil
+	}
 
 	var readPosition string
 	for {
@@ -61,7 +72,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			}
 
 			// Parse and retrieve fields we need
-			msg, err := parseFields(fields)
+			msg, err := parseFields(fields, localHostname)
 			if err != nil {
 				if err == io.EOF {
 					return
@@ -80,6 +91,17 @@ func (mod *InModule) Reader(ctx context.Context) {
 				16 // int64 size pid and time
 			mod.outbox.PushBlocking(ctx, msg, size)
 			mod.metrics.Success.Add(1)
+
+			// Local hostname periodic refresh
+			iter++
+			if iter&refreshMask == 0 {
+				newName, err := os.Hostname()
+				if err == nil && newName != localHostname {
+					localHostname = newName
+				} else if err != nil {
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to refresh current local hostname: %v\n", err)
+				}
+			}
 		}()
 	}
 }

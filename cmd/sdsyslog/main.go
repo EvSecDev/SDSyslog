@@ -12,17 +12,17 @@ import (
 )
 
 func main() {
-	global.CmdOpts = cli.DefineOptions()
+	cliOpts := cli.DefineOptions()
 
 	args := os.Args
 	commandFlags := flag.NewFlagSet(args[0], flag.ExitOnError)
-	cli.SetGlobalArguments(commandFlags)
+	requestedLogLevel := cli.SetGlobalArguments(commandFlags)
 
 	commandFlags.Usage = func() {
-		cli.PrintHelpMenu(commandFlags, cli.RootCLICommand, global.CmdOpts)
+		cli.PrintHelpMenu(commandFlags, cli.RootCLICommand, cliOpts)
 	}
 	if len(args) < 2 {
-		cli.PrintHelpMenu(commandFlags, cli.RootCLICommand, global.CmdOpts)
+		cli.PrintHelpMenu(commandFlags, cli.RootCLICommand, cliOpts)
 		os.Exit(1)
 	}
 	commandFlags.Parse(args[1:])
@@ -34,18 +34,18 @@ func main() {
 	// Setting global logging
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	logger := logctx.NewLogger("global", global.Verbosity, ctx.Done()) // New logger tied to global
-	ctx = logctx.WithLogger(ctx, logger)                               // Add logger to global ctx
-	logctx.StartWatcher(logger, os.Stdout)                             // Send received output to stdout
+	logger := logctx.NewLogger("global", *requestedLogLevel, ctx.Done()) // New logger tied to global
+	ctx = logctx.WithLogger(ctx, logger)                                 // Add logger to global ctx
+	logctx.StartWatcher(logger, os.Stdout)                               // Send received output to stdout
 
 	// Process commands
 	switch command {
 	case "send":
-		cli.SendMode(ctx, command, args)
+		cli.SendMode(ctx, cliOpts, command, args)
 	case "receive":
-		cli.ReceiveMode(ctx, command, args)
+		cli.ReceiveMode(ctx, cliOpts, command, args)
 	case "configure":
-		cli.SetupMode(command, args)
+		cli.SetupMode(cliOpts, command, args)
 	case "version":
 		if len(args) > 0 && (args[0] == "--verbosity" || args[0] == "-v") {
 			fmt.Printf("SDSyslog %s\n", global.ProgVersion)
@@ -55,7 +55,7 @@ func main() {
 			fmt.Println(global.ProgVersion)
 		}
 	default:
-		cli.PrintHelpMenu(commandFlags, "root", global.CmdOpts)
+		cli.PrintHelpMenu(commandFlags, "root", cliOpts)
 		os.Exit(1)
 	}
 

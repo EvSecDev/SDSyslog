@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/global"
 	"strings"
 )
@@ -22,8 +23,8 @@ func installAAProfile() (err error) {
 	newaaProf = strings.Replace(newaaProf, "=$configurationDirPath", "="+global.DefaultConfigDir, 1)
 	newaaProf = strings.Replace(newaaProf, "=$privateKeyFilePath", "="+global.DefaultPrivKeyPath, 1)
 	newaaProf = strings.Replace(newaaProf, "=$progStateDirPath", "="+global.DefaultStateDir, 1)
-	newaaProf = strings.Replace(newaaProf, "=$drainingSocketsMapPinPath", "="+global.KernelDrainMapPath, 1)
-	newaaProf = strings.Replace(newaaProf, "=$drainingSocketsFuncPinPath", "="+global.KernelSocketRouteFunc, 1)
+	newaaProf = strings.Replace(newaaProf, "=$drainingSocketsMapPinPath", "="+ebpf.KernelDrainMapPath, 1)
+	newaaProf = strings.Replace(newaaProf, "=$drainingSocketsFuncPinPath", "="+ebpf.KernelSocketRouteFunc, 1)
 	appArmorProfile = []byte(newaaProf)
 
 	// Check if apparmor /sys path exists

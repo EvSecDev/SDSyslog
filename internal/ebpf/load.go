@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"sdsyslog/internal/global"
 
 	"github.com/cilium/ebpf"
 	"golang.org/x/sys/unix"
@@ -81,16 +80,16 @@ func LoadProgram() (err error) {
 		return
 	}
 
-	_, err = os.Stat(global.KernelDrainMapPath)
+	_, err = os.Stat(KernelDrainMapPath)
 	if err != nil && os.IsNotExist(err) {
 		// Only pin once per host boot
-		drainingMap, ok := coll.Maps[global.DrainMapName]
+		drainingMap, ok := coll.Maps[DrainMapName]
 		if !ok {
-			err = fmt.Errorf("map %s not found in collection", global.DrainMapName)
+			err = fmt.Errorf("map %s not found in collection", DrainMapName)
 			return
 		}
 
-		err = drainingMap.Pin(global.KernelDrainMapPath)
+		err = drainingMap.Pin(KernelDrainMapPath)
 		if err != nil && !errors.Is(err, os.ErrExist) {
 			err = fmt.Errorf("pin map: %v", err)
 			return
@@ -98,23 +97,23 @@ func LoadProgram() (err error) {
 	}
 
 	// Unpin old versions
-	_, err = os.Stat(global.KernelSocketRouteFunc)
+	_, err = os.Stat(KernelSocketRouteFunc)
 	if err == nil {
-		err = os.Remove(global.KernelSocketRouteFunc)
+		err = os.Remove(KernelSocketRouteFunc)
 		if err != nil && !os.IsNotExist(err) {
 			err = fmt.Errorf("failed to remove old bpffs function file: %v", err)
 			return
 		}
 	}
 
-	prog, ok := coll.Programs[global.DrainFuncName]
+	prog, ok := coll.Programs[DrainFuncName]
 	if !ok {
-		err = fmt.Errorf("program %s not found in collection", global.DrainFuncName)
+		err = fmt.Errorf("program %s not found in collection", DrainFuncName)
 		return
 	}
 
 	// Pin newest
-	err = prog.Pin(global.KernelSocketRouteFunc)
+	err = prog.Pin(KernelSocketRouteFunc)
 	if err != nil && !os.IsNotExist(err) {
 		err = fmt.Errorf("pin function: %v", err)
 		return

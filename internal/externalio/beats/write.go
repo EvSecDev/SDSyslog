@@ -2,6 +2,7 @@ package beats
 
 import (
 	"context"
+	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
@@ -47,7 +48,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent
 			"program": global.ProgBaseName,
 			"version": global.ProgVersion,
 			"type":    "filebeat",
-			"pid":     global.PID,
+			"pid":     os.Getpid(),
 		},
 		"process": map[string]interface{}{
 			"pid": msg.ProcessID,

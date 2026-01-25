@@ -1,6 +1,7 @@
 package journald
 
 import (
+	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/pkg/protocol"
 	"strconv"
@@ -15,6 +16,11 @@ func TestParseFields(t *testing.T) {
 		baseTimestampUs/1_000_000,
 		(baseTimestampUs%1_000_000)*1_000,
 	)
+
+	localHostname, err := os.Hostname()
+	if err != nil {
+		t.Fatalf("failed to determine local hostname: %v", err)
+	}
 
 	tests := []struct {
 		name        string
@@ -83,8 +89,8 @@ func TestParseFields(t *testing.T) {
 			expected: global.ParsedMessage{
 				Text:            "hello",
 				ApplicationName: "user.service",
-				Hostname:        global.Hostname,
-				ProcessID:       global.PID,
+				Hostname:        localHostname,
+				ProcessID:       os.Getpid(),
 				Timestamp:       expectedTime,
 				Facility:        "daemon",
 				Severity:        "notice",
@@ -110,8 +116,8 @@ func TestParseFields(t *testing.T) {
 			expected: global.ParsedMessage{
 				Text:            "hello",
 				ApplicationName: "my-app",
-				Hostname:        global.Hostname,
-				ProcessID:       global.PID,
+				Hostname:        localHostname,
+				ProcessID:       os.Getpid(),
 				Timestamp:       expectedTime,
 				Facility:        "daemon",
 				Severity:        "info",
@@ -128,8 +134,8 @@ func TestParseFields(t *testing.T) {
 			expected: global.ParsedMessage{
 				Text:            "hello",
 				ApplicationName: "my-app",
-				Hostname:        global.Hostname,
-				ProcessID:       global.PID,
+				Hostname:        localHostname,
+				ProcessID:       os.Getpid(),
 				Timestamp:       expectedTime,
 				Facility:        "daemon",
 				Severity:        "info",
@@ -171,7 +177,7 @@ func TestParseFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msg, err := parseFields(tt.input)
+			msg, err := parseFields(tt.input, localHostname)
 			if err != nil && !tt.expectedErr {
 				t.Fatalf("expected no error, but got '%s'", err)
 			}

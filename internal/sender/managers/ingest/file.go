@@ -42,7 +42,7 @@ func (manager *InstanceManager) AddFileInstance(filePath string, stateFile strin
 	go func() {
 		defer ingestInstance.wg.Done()
 		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Worker.Namespace)
-		ingestInstance.Worker.Run(ingestCtx)
+		ingestInstance.Worker.Reader(ingestCtx)
 	}()
 	return
 }

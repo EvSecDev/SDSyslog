@@ -7,24 +7,21 @@ import (
 )
 
 // Waits until atomic value is 0 three consecutive times in a row, with retries and timeout
-func WaitUntilZero(value *atomic.Uint64) (reachedZero bool, lastValue uint64) {
-	const successfulStreakCount int = 3
+func WaitUntilZero(value *atomic.Uint64, timeout time.Duration) (reachedZero bool, lastValue uint64) {
+	const successfulStreakCount = 3
 
 	// Initial backoff duration
-	backoffDuration := 50 * time.Millisecond
+	backoff := 50 * time.Millisecond
 
 	// Max backoff duration
 	maxBackoff := 1 * time.Second
 
-	// Maximum number of iterations
-	maxIterations := 30
-
-	// Track consecutive values at 0
+	deadline := time.Now().Add(timeout)
 	zeroStreak := 0
 
-	// Retry loop with exponential backoff
-	for i := 0; i < maxIterations; i++ {
+	for {
 		lastValue = value.Load()
+
 		if lastValue == 0 {
 			zeroStreak++
 			if zeroStreak >= successfulStreakCount {
@@ -36,18 +33,25 @@ func WaitUntilZero(value *atomic.Uint64) (reachedZero bool, lastValue uint64) {
 			zeroStreak = 0
 		}
 
-		// Sleep for the backoff duration
-		time.Sleep(backoffDuration)
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			// Timed out
+			reachedZero = false
+			return
+		}
 
-		// Increase the backoff duration exponentially
-		if backoffDuration < maxBackoff {
-			backoffDuration *= 2
-			if backoffDuration > maxBackoff {
-				backoffDuration = maxBackoff
+		sleep := backoff
+		if sleep > remaining {
+			sleep = remaining
+		}
+		time.Sleep(sleep)
+
+		// Exponential backoff with cap
+		if backoff < maxBackoff {
+			backoff *= 2
+			if backoff > maxBackoff {
+				backoff = maxBackoff
 			}
 		}
 	}
-
-	// Timed out
-	return
 }

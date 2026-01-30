@@ -8,6 +8,7 @@ import (
 	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/shard"
 	"strconv"
+	"time"
 )
 
 // Create new shard+assembler
@@ -71,13 +72,13 @@ func (manager *InstanceManager) RemoveInstance(instanceID int) {
 
 	// Stop new bucket creation in this shard and wait for drain
 	instancePair.Shard.InShutdown = true
-	success, last := atomics.WaitUntilZero(&instancePair.Shard.Metrics.TotalBuckets) // Wait for buckets to fill or timeout
+	success, last := atomics.WaitUntilZero(&instancePair.Shard.Metrics.TotalBuckets, 15*time.Second) // Wait for buckets to fill or timeout
 	if !success {
 		logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.WarnLog,
 			"assembler id %d: shard total buckets did not empty in time: dropped %d messages\n", instanceID, last)
 	}
 
-	success, last = atomics.WaitUntilZero(&instancePair.Shard.Metrics.WaitingBuckets) // Wait for assembler to pull last bucket
+	success, last = atomics.WaitUntilZero(&instancePair.Shard.Metrics.WaitingBuckets, 15*time.Second) // Wait for assembler to pull last bucket
 	if !success {
 		logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.WarnLog,
 			"assembler id %d: shard waiting buckets queue did not empty in time: dropped %d messages\n", instanceID, last)

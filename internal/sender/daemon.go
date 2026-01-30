@@ -273,7 +273,7 @@ func (daemon *Daemon) Shutdown() {
 	// Stop assemblers
 	if daemon.Mgrs.Assem != nil {
 		queue := daemon.Mgrs.Assem.InQueue.ActiveWrite.Load()
-		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth)
+		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
 			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
 				"assembler inbox queue did not empty in time: dropped %d messages\n", last)
@@ -286,7 +286,7 @@ func (daemon *Daemon) Shutdown() {
 	// Stop output workers
 	if daemon.Mgrs.Out != nil {
 		queue := daemon.Mgrs.Out.InQueue.ActiveWrite.Load()
-		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth)
+		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
 			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
 				"output inbox queue did not empty in time: dropped %d messages\n", last)

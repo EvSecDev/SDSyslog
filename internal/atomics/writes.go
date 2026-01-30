@@ -19,10 +19,11 @@ func Subtract(source *atomic.Uint64, value uint64, maxRetries int) (success bool
 			return
 		}
 
-		newValue := current - value
-
-		if current-value <= 0 {
+		var newValue uint64
+		if value >= current {
 			newValue = 0
+		} else {
+			newValue = current - value
 		}
 
 		// CAS will only succeed if the value has not changed since we last read it.

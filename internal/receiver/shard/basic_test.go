@@ -27,7 +27,7 @@ func TestPushPop_Basic(t *testing.T) {
 		{
 			name: "single fragment completes bucket",
 			fragments: []protocol.Payload{
-				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, LogText: []byte("A")},
+				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 			},
 			expectedQueue: 1,
 			expectedBytes: 1,
@@ -35,8 +35,8 @@ func TestPushPop_Basic(t *testing.T) {
 		{
 			name: "multi-fragment fills bucket in order",
 			fragments: []protocol.Payload{
-				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, LogText: []byte("A")},
-				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, LogText: []byte("B")},
+				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
+				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("B")},
 			},
 			expectedQueue: 1,
 			expectedBytes: 2,
@@ -44,8 +44,8 @@ func TestPushPop_Basic(t *testing.T) {
 		{
 			name: "out-of-order fragments",
 			fragments: []protocol.Payload{
-				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, LogText: []byte("B")},
-				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, LogText: []byte("A")},
+				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("B")},
+				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
 			},
 			expectedQueue: 1,
 			expectedBytes: 2,
@@ -53,8 +53,8 @@ func TestPushPop_Basic(t *testing.T) {
 		{
 			name: "duplicate fragments ignored",
 			fragments: []protocol.Payload{
-				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, LogText: []byte("A")},
-				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, LogText: []byte("A")},
+				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
+				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 			},
 			expectedQueue: 1,
 			expectedBytes: 1,
@@ -62,7 +62,7 @@ func TestPushPop_Basic(t *testing.T) {
 		{
 			name: "timeout triggers bucket fill",
 			fragments: []protocol.Payload{
-				{HostID: 1, MessageSeq: 0, MessageSeqMax: 2, LogText: []byte("A")},
+				{HostID: 1, MessageSeq: 0, MessageSeqMax: 2, Data: []byte("A")},
 			},
 			expectedQueue: 1,
 			expectedBytes: 1,
@@ -137,7 +137,7 @@ func TestPushPop_Parallel(t *testing.T) {
 					HostID:        pid,
 					MessageSeq:    i,
 					MessageSeqMax: fragsPerProducer - 1,
-					LogText:       []byte("data"),
+					Data:          []byte("data"),
 				}
 				key := "bucket" + strconv.Itoa(uniqueID+fragsPerProducer)
 				queue.push(ctx, key, frag, time.Now())

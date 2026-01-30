@@ -15,6 +15,7 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
+	"sdsyslog/internal/syslog"
 	"sdsyslog/pkg/protocol"
 	"strings"
 	"time"
@@ -313,7 +314,7 @@ func mockPackets(numMessages int, rawMessage string, maxPayloadSize int, publicK
 	}
 
 	// Pre-startup
-	protocol.InitBidiMaps()
+	syslog.InitBidiMaps()
 	wrappers.SetupEncryptInnerPayload(publicKey)
 
 	mainHostID, err := random.FourByte()
@@ -322,14 +323,18 @@ func mockPackets(numMessages int, rawMessage string, maxPayloadSize int, publicK
 		return
 	}
 
+	fields := map[string]any{
+		"Facility":        22,
+		"Severity":        5,
+		"ProcessID":       3483,
+		"ApplicationName": "test-app",
+	}
+
 	newMsg := protocol.Message{
-		Facility:        "daemon",
-		Severity:        "info",
-		Timestamp:       time.Now(),
-		ProcessID:       1,
-		Hostname:        "localhost",
-		ApplicationName: "recv-test",
-		LogText:         rawMessage,
+		Timestamp: time.Now(),
+		Hostname:  "localhost",
+		Fields:    fields,
+		Data:      rawMessage,
 	}
 
 	for range numMessages {

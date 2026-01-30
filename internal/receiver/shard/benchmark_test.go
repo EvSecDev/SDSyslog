@@ -17,26 +17,30 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 	mockDeadline.Store(int64(100))
 	mockCtx := context.Background()
 
+	fields := map[string]any{
+		"Facility":        22,
+		"Severity":        5,
+		"ProcessID":       3483,
+		"ApplicationName": "test-app",
+	}
+
 	payloadTemplate := protocol.Payload{
-		HostID:          101,
-		LogID:           202,
-		MessageSeq:      0,
-		MessageSeqMax:   0,
-		Facility:        "daemon",
-		Severity:        "info",
-		Timestamp:       time.Now(),
-		ProcessID:       1,
-		Hostname:        "localhost",
-		ApplicationName: "testing",
-		LogText:         []byte{},
-		PaddingLen:      6,
+		HostID:        101,
+		MsgID:         202,
+		MessageSeq:    0,
+		MessageSeqMax: 0,
+		Timestamp:     time.Now(),
+		Hostname:      "localhost",
+		CustomFields:  fields,
+		Data:          []byte{},
+		PaddingLen:    6,
 	}
 
 	queue := New([]string{global.NSTest}, global.DefaultMinQueueSize, &mockDeadline)
 
 	// Warm-up to stabilize caches, allocator, CPU frequency, ect
 	for i := 0; i < 1000; i++ {
-		payloadTemplate.LogText = append(payloadTemplate.LogText, []byte(strconv.Itoa(i))...)
+		payloadTemplate.Data = append(payloadTemplate.Data, []byte(strconv.Itoa(i))...)
 		queue.push(mockCtx, "key"+strconv.Itoa(i), payloadTemplate, time.Now())
 		key, ok := queue.PopKey(context.Background())
 		if !ok {
@@ -57,7 +61,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 			start := time.Now()
 
 			for i := 0; i < b.N; i++ {
-				payloadTemplate.LogText = bytes.Repeat([]byte("0"), msgSize)
+				payloadTemplate.Data = bytes.Repeat([]byte("0"), msgSize)
 				queue.push(mockCtx, "key"+strconv.Itoa(i), payloadTemplate, time.Now())
 				key, ok := queue.PopKey(context.Background())
 				if !ok {

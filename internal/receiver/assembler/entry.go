@@ -106,8 +106,8 @@ func (instance *Instance) Run(ctx context.Context) {
 			}
 			if !success {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"Failed to push message to output queue: host id %d, log id %d, hostname %s, appname %s\n",
-					finalMsg.HostID, finalMsg.LogID, finalMsg.Hostname, finalMsg.ApplicationName)
+					"Failed to push message to output queue: host id %d, message id %d, hostname %s\n",
+					finalMsg.HostID, finalMsg.MsgID, finalMsg.Hostname)
 				return
 			}
 

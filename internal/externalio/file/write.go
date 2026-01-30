@@ -14,7 +14,10 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (linesWri
 		return
 	}
 
-	newEntry := formatAsText(msg)
+	newEntry, err := formatAsText(ctx, msg)
+	if err != nil {
+		return
+	}
 
 	// Always ensure outputs have only one trailing newline
 	var lineParts []string

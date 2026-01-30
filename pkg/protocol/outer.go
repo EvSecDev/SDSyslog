@@ -8,7 +8,7 @@ import (
 )
 
 // Validate and create transport payload given header fields
-func ContructOuterPayload(innerPayload []byte, suiteID uint8) (outterPayload []byte, err error) {
+func ConstructOuterPayload(innerPayload []byte, suiteID uint8) (outerPayload []byte, err error) {
 	// Reject empty payload
 	if len(innerPayload) < 1 {
 		err = fmt.Errorf("payload cannot be empty")
@@ -29,7 +29,7 @@ func ContructOuterPayload(innerPayload []byte, suiteID uint8) (outterPayload []b
 		return
 	}
 
-	// Validate ephemerals against chosen suite
+	// Validate ephemeral against chosen suite
 	if len(ephemeralPub) != suite.KeySize {
 		err = fmt.Errorf("invalid key length: suite ID %d requires length %d, but received key length %d", suiteID, suite.KeySize, len(ephemeralPub))
 		return
@@ -42,7 +42,7 @@ func ContructOuterPayload(innerPayload []byte, suiteID uint8) (outterPayload []b
 
 	// Allocate blob length of inputs
 	totalLength := crypto.SuiteIDLen + len(ephemeralPub) + len(nonce) + len(ciphertext)
-	outterPayload = make([]byte, 0, totalLength)
+	outerPayload = make([]byte, 0, totalLength)
 
 	// Using buffer to build blob
 	var buffer bytes.Buffer
@@ -71,7 +71,7 @@ func ContructOuterPayload(innerPayload []byte, suiteID uint8) (outterPayload []b
 	}
 
 	// Convert buffer to byte slice
-	outterPayload = buffer.Bytes()
+	outerPayload = buffer.Bytes()
 
 	// Kill memory for crypto-related bytes
 	crypto.Memzero(ephemeralPub)

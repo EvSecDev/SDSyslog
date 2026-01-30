@@ -2,120 +2,104 @@ package protocol
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"testing"
 	"time"
 )
 
 func TestConstructPayload(t *testing.T) {
-	InitBidiMaps()
+	var buf bytes.Buffer
+	err := binary.Write(&buf, binary.BigEndian, int64(1234))
+	if err != nil {
+		t.Fatalf("failed to mock integer: %v", err)
+	}
+	mockInt := buf.Bytes()
 
 	testCases := []struct {
 		name     string
 		input    Payload
-		expected InnerWireFormat
+		expected innerWireFormat
 		err      string
 	}{
 		{
 			name: "valid payload",
 			input: Payload{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        "user",
-				Severity:        "info",
-				ProcessID:       1234,
-				Hostname:        "test-host",
-				ApplicationName: "app1",
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Hostname:      "test-host",
+				CustomFields: map[string]any{
+					"applicationname": "app1",
+					"processid":       int64(1234),
+					"marker":          nil,
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
 			},
-			expected: InnerWireFormat{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        1, // "user" maps to 1
-				Severity:        6, // "info" maps to 6
-				ProcessID:       1234,
-				Hostname:        []byte("test-host"),
-				ApplicationName: []byte("app1"),
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
+			expected: innerWireFormat{
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Hostname:      []byte("test-host"),
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("app1"),
+					},
+					{
+						Key:     []byte("marker"),
+						valType: ContextString,
+						Value:   []byte(emptyFieldChar),
+					},
+					{
+						Key:     []byte("processid"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
 			},
 			err: "",
 		},
 		{
 			name: "messageSeq larger than messageSeqMax",
 			input: Payload{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      5,
-				MessageSeqMax:   4, // Invalid case
-				Facility:        "user",
-				Severity:        "info",
-				ProcessID:       1234,
-				Hostname:        "test-host",
-				ApplicationName: "app1",
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    5,
+				MessageSeqMax: 4, // Invalid case
+				Hostname:      "test-host",
+				CustomFields: map[string]any{
+					"applicationname": "app1",
+					"processid":       1234,
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
 			},
-			expected: InnerWireFormat{},
+			expected: innerWireFormat{},
 			err:      "message sequence cannot be larger than maximum sequence",
-		},
-		{
-			name: "invalid facility",
-			input: Payload{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        "invalid-facility", // Invalid facility
-				Severity:        "info",
-				ProcessID:       1234,
-				Hostname:        "test-host",
-				ApplicationName: "app1",
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
-			},
-			expected: InnerWireFormat{},
-			err:      "invalid facility: unknown facility name: invalid-facility",
-		},
-		{
-			name: "invalid severity",
-			input: Payload{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        "user",
-				Severity:        "invalid-severity", // Invalid severity
-				ProcessID:       1234,
-				Hostname:        "test-host",
-				ApplicationName: "app1",
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
-			},
-			expected: InnerWireFormat{},
-			err:      "invalid severity: unknown severity name: invalid-severity",
 		},
 		{
 			name: "invalid padding length",
 			input: Payload{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        "user",
-				Severity:        "info",
-				ProcessID:       1234,
-				Hostname:        "test-host",
-				ApplicationName: "app1",
-				LogText:         []byte("log message"),
-				PaddingLen:      500, // Invalid padding length
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Hostname:      "test-host",
+				CustomFields: map[string]any{
+					"applicationname": "app1",
+					"processid":       1234,
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 500, // Invalid padding length
 			},
-			expected: InnerWireFormat{},
+			expected: innerWireFormat{},
 			err:      fmt.Sprintf("invalid padding length 500: must be between %d and %d", minPaddingLen, maxPaddingLen),
 		},
 	}
@@ -138,7 +122,7 @@ func TestConstructPayload(t *testing.T) {
 					t.Errorf("unexpected error: '%v'", err)
 				}
 				if !compareProtocols(proto, tt.expected) {
-					t.Errorf("expected '%v' but got '%v'", tt.expected, proto)
+					t.Errorf("Protocols not equal:\n Expected '%v'\n Got      '%v'", tt.expected, proto)
 				}
 			}
 		})
@@ -146,121 +130,112 @@ func TestConstructPayload(t *testing.T) {
 }
 
 func TestDeconstructPayload(t *testing.T) {
-	InitBidiMaps()
+	var buf bytes.Buffer
+	err := binary.Write(&buf, binary.BigEndian, int64(1234))
+	if err != nil {
+		t.Fatalf("failed to mock integer: %v", err)
+	}
+	mockInt := buf.Bytes()
 
 	testCases := []struct {
 		name     string
-		input    InnerWireFormat
+		input    innerWireFormat
 		expected Payload
 		err      string
 	}{
 		{
 			name: "valid protocol",
-			input: InnerWireFormat{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        1, // "user" maps to 1
-				Severity:        6, // "info" maps to 6
-				Timestamp:       uint64(time.Now().UnixMilli()),
-				ProcessID:       1234,
-				Hostname:        []byte("test-host"),
-				ApplicationName: []byte("app1"),
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
+			input: innerWireFormat{
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Timestamp:     uint64(time.Now().UnixMilli()),
+				Hostname:      []byte("test-host"),
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("app1"),
+					},
+					{
+						Key:     []byte("processid"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
 			},
 			expected: Payload{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        "user",
-				Severity:        "info",
-				Timestamp:       time.UnixMilli(int64(time.Now().UnixMilli())),
-				ProcessID:       1234,
-				Hostname:        "test-host",
-				ApplicationName: "app1",
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Timestamp:     time.UnixMilli(int64(time.Now().UnixMilli())),
+				Hostname:      "test-host",
+				CustomFields: map[string]any{
+					"applicationname": "app1",
+					"processid":       int64(1234),
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
 			},
 			err: "",
 		},
 		{
 			name: "empty host ID",
-			input: InnerWireFormat{
-				HostID:          0, // Invalid HostID
-				LogID:           1,
-				MessageSeq:      1,
-				MessageSeqMax:   1,
-				Facility:        1,
-				Severity:        6,
-				Timestamp:       1000,
-				ProcessID:       1234,
-				Hostname:        []byte("test-host"),
-				ApplicationName: []byte("app1"),
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
+			input: innerWireFormat{
+				HostID:        0,
+				MsgID:         1,
+				MessageSeq:    1,
+				MessageSeqMax: 1,
+				Timestamp:     1000,
+				Hostname:      []byte("test-host"),
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("user"),
+					},
+					{
+						Key:     []byte("facility"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
 			},
 			expected: Payload{},
 			err:      "empty host ID",
 		},
 		{
-			name: "empty log ID",
-			input: InnerWireFormat{
-				HostID:          1,
-				LogID:           0, // Invalid LogID
-				MessageSeq:      1,
-				MessageSeqMax:   1,
-				Facility:        1,
-				Severity:        6,
-				Timestamp:       1000,
-				ProcessID:       1234,
-				Hostname:        []byte("test-host"),
-				ApplicationName: []byte("app1"),
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
+			name: "empty msg ID",
+			input: innerWireFormat{
+				HostID:        1,
+				MsgID:         0,
+				MessageSeq:    1,
+				MessageSeqMax: 1,
+				Timestamp:     1000,
+				Hostname:      []byte("test-host"),
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("user"),
+					},
+					{
+						Key:     []byte("facility"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
 			},
 			expected: Payload{},
-			err:      "empty log ID",
-		},
-		{
-			name: "invalid facility code",
-			input: InnerWireFormat{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        9999, // Invalid facility code
-				Severity:        6,
-				Timestamp:       uint64(time.Now().UnixMilli()),
-				ProcessID:       1234,
-				Hostname:        []byte("test-host"),
-				ApplicationName: []byte("app1"),
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
-			},
-			expected: Payload{},
-			err:      "invalid facility: unknown facility code: 9999",
-		},
-		{
-			name: "invalid severity code",
-			input: InnerWireFormat{
-				HostID:          1,
-				LogID:           2,
-				MessageSeq:      3,
-				MessageSeqMax:   4,
-				Facility:        1,
-				Severity:        9999, // Invalid severity code
-				Timestamp:       uint64(time.Now().UnixMilli()),
-				ProcessID:       1234,
-				Hostname:        []byte("test-host"),
-				ApplicationName: []byte("app1"),
-				LogText:         []byte("log message"),
-				PaddingLen:      16,
-			},
-			expected: Payload{},
-			err:      "invalid severity: unknown severity code: 9999",
+			err:      "empty msg ID",
 		},
 	}
 
@@ -278,7 +253,7 @@ func TestDeconstructPayload(t *testing.T) {
 					t.Errorf("unexpected error: '%v'", err)
 				}
 				if !comparePayloads(request, tt.expected) {
-					t.Errorf("expected '%v' but got '%v'", tt.expected, request)
+					t.Errorf("Payloads not equal:\n Expected '%v'\n Got      '%v'", tt.expected, request)
 				}
 			}
 		})
@@ -286,33 +261,53 @@ func TestDeconstructPayload(t *testing.T) {
 }
 
 // Helper function to compare Protocol values
-func compareProtocols(p1, p2 InnerWireFormat) bool {
-	return p1.HostID == p2.HostID &&
-		p1.LogID == p2.LogID &&
+func compareProtocols(p1, p2 innerWireFormat) bool {
+	basicMatch := p1.HostID == p2.HostID &&
+		p1.MsgID == p2.MsgID &&
 		p1.MessageSeq == p2.MessageSeq &&
 		p1.MessageSeqMax == p2.MessageSeqMax &&
-		p1.Facility == p2.Facility &&
-		p1.Severity == p2.Severity &&
 		p1.Timestamp == p2.Timestamp &&
-		p1.ProcessID == p2.ProcessID &&
 		string(p1.Hostname) == string(p2.Hostname) &&
-		string(p1.ApplicationName) == string(p2.ApplicationName) &&
-		string(p1.LogText) == string(p2.LogText) &&
+		string(p1.Data) == string(p2.Data) &&
 		p1.PaddingLen == p2.PaddingLen
+	if !basicMatch {
+		return false
+	}
+	for index, ctxField := range p1.ContextFields {
+		if !bytes.Equal(ctxField.Key, p2.ContextFields[index].Key) {
+			return false
+		}
+		if ctxField.valType != p2.ContextFields[index].valType {
+			return false
+		}
+		if !bytes.Equal(ctxField.Value, p2.ContextFields[index].Value) {
+			return false
+		}
+	}
+	return true
 }
 
 // Helper function to compare Payload values
 func comparePayloads(p1, p2 Payload) bool {
-	return p1.HostID == p2.HostID &&
-		p1.LogID == p2.LogID &&
+	basicMatch := p1.HostID == p2.HostID &&
+		p1.MsgID == p2.MsgID &&
 		p1.MessageSeq == p2.MessageSeq &&
 		p1.MessageSeqMax == p2.MessageSeqMax &&
-		p1.Facility == p2.Facility &&
-		p1.Severity == p2.Severity &&
 		p1.Timestamp.Equal(p2.Timestamp) &&
-		p1.ProcessID == p2.ProcessID &&
 		p1.Hostname == p2.Hostname &&
-		p1.ApplicationName == p2.ApplicationName &&
-		bytes.Equal(p1.LogText, p2.LogText) &&
+		bytes.Equal(p1.Data, p2.Data) &&
 		p1.PaddingLen == p2.PaddingLen
+	if !basicMatch {
+		return false
+	}
+	for p1Key, p1Value := range p1.CustomFields {
+		p2Value, p1KeyPresentinP2 := p2.CustomFields[p1Key]
+		if !p1KeyPresentinP2 {
+			return false
+		}
+		if p1Value != p2Value {
+			return false
+		}
+	}
+	return true
 }

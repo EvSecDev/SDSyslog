@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"sdsyslog/internal/global"
-	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
 )
 
@@ -14,26 +13,15 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent
 		return
 	}
 
-	severityInt, err := protocol.SeverityToCode(msg.Severity)
-	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"%v (message: ip: '%s', host id '%d', log id '%d', hostname '%s', application name '%s')\n",
-			err, msg.RemoteIP, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
-		severityInt = 6 // info
-	}
-
-	facilityInt, err := protocol.FacilityToCode(msg.Facility)
-	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"%v (message: ip: '%s', host id '%d', log id '%d', hostname '%s', application name '%s')\n",
-			err, msg.RemoteIP, msg.HostID, msg.LogID, msg.Hostname, msg.ApplicationName)
-		facilityInt = 1 // user
+	customFields := make(map[string]interface{})
+	for key, value := range msg.CustomFields {
+		customFields[key] = value
 	}
 
 	fields := map[string]interface{}{
 		// Minimum required fields
 		"@timestamp": msg.Timestamp,
-		"message":    string(msg.LogText),
+		"message":    string(msg.Data),
 
 		// Common fields
 		"host": map[string]interface{}{
@@ -50,22 +38,11 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent
 			"type":    "filebeat",
 			"pid":     os.Getpid(),
 		},
-		"process": map[string]interface{}{
-			"pid": msg.ProcessID,
-		},
 
 		// Syslog compat fields
 		"log": map[string]interface{}{
-			"id": msg.LogID, // Custom
-			"syslog": map[string]interface{}{
-				"appname": msg.ApplicationName,
-				"facility": map[string]interface{}{
-					"code": facilityInt,
-					"name": msg.Facility,
-				},
-				"priority":      severityInt,
-				"priority-name": msg.Severity,
-			},
+			"id":     msg.MsgID,
+			"syslog": customFields,
 		},
 	}
 	events := []interface{}{fields}

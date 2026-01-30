@@ -19,7 +19,7 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 		return
 	}
 
-	remaining := []byte(primaryPayload.LogText)
+	remaining := []byte(primaryPayload.Data)
 	seq := 0
 
 	// Step through the payload to dynamically create fragment sizes
@@ -43,10 +43,10 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 
 		// Slice message
 		if len(remaining) > maxMessageSize {
-			payloadFragment.LogText = remaining[:maxMessageSize]
+			payloadFragment.Data = remaining[:maxMessageSize]
 			remaining = remaining[maxMessageSize:]
 		} else {
-			payloadFragment.LogText = remaining
+			payloadFragment.Data = remaining
 			remaining = nil
 		}
 
@@ -105,7 +105,7 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 			}
 		}
 
-		reassemblyBuffer.Write(payload.LogText)
+		reassemblyBuffer.Write(payload.Data)
 		prev = payload.MessageSeq
 	}
 
@@ -121,16 +121,13 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 	// We can use one of the payloads as a template
 	primaryPayload.RemoteIP = payloads[0].RemoteIP
 	primaryPayload.HostID = payloads[0].HostID
-	primaryPayload.LogID = payloads[0].LogID
-	primaryPayload.Facility = payloads[0].Facility
-	primaryPayload.Severity = payloads[0].Severity
+	primaryPayload.MsgID = payloads[0].MsgID
 	primaryPayload.Timestamp = payloads[0].Timestamp
-	primaryPayload.ProcessID = payloads[0].ProcessID
-	primaryPayload.ApplicationName = payloads[0].ApplicationName
+	primaryPayload.CustomFields = payloads[0].CustomFields
 	primaryPayload.Hostname = payloads[0].Hostname
 
 	// Include the, now whole, log message
-	primaryPayload.LogText = reassemblyBuffer.Bytes()
+	primaryPayload.Data = reassemblyBuffer.Bytes()
 	return
 }
 
@@ -138,15 +135,22 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 func allFieldsEqual(payloads []Payload) (valid bool) {
 	ref := payloads[0]
 	for _, payload := range payloads[1:] {
-		if payload.RemoteIP != ref.RemoteIP ||
-			payload.HostID != ref.HostID ||
-			payload.LogID != ref.LogID ||
-			payload.Facility != ref.Facility ||
-			payload.Severity != ref.Severity ||
-			!payload.Timestamp.Equal(ref.Timestamp) ||
-			payload.ProcessID != ref.ProcessID ||
-			payload.Hostname != ref.Hostname ||
-			payload.ApplicationName != ref.ApplicationName {
+		// Check custom fields equality
+		if len(ref.CustomFields) != len(payload.CustomFields) {
+			valid = false
+			return
+		}
+		for refIndex, customField := range ref.CustomFields {
+			if payload.CustomFields[refIndex] != customField {
+				valid = false
+				return
+			}
+		}
+
+		if payload.RemoteIP != ref.RemoteIP || payload.HostID != ref.HostID ||
+			payload.MsgID != ref.MsgID || !payload.Timestamp.Equal(ref.Timestamp) ||
+			payload.Hostname != ref.Hostname {
+
 			valid = false
 			return
 		}

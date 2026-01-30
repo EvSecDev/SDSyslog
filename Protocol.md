@@ -104,7 +104,7 @@ Both the cipher suite ID and ephemeral public key included in the header MUST be
 ------------------------------------------
 |            DATA (4B - XB)              |
 | 2 Bytes | Remaining Bytes |  1 Byte    |
-| NXTLEN  |  Fragment Text   | NUL (0x00) |
+| NXTLEN  |  Fragment Text  | NUL (0x00) |
 ------------------------------------------
 ---------------
 |   TRAILER   |

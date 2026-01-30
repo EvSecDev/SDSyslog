@@ -10,6 +10,12 @@ import (
 func TestFragmentAndDefragment(t *testing.T) {
 	now := time.Now()
 
+	templateCustomFields := map[string]any{
+		"applicationname": "app1",
+		"facility":        "daemon",
+		"severity":        "info",
+	}
+
 	tests := []struct {
 		name              string
 		input             Payload
@@ -21,15 +27,12 @@ func TestFragmentAndDefragment(t *testing.T) {
 		{
 			name: "Valid fragmentation and defragmentation",
 			input: Payload{
-				HostID:          101,
-				LogID:           555,
-				Facility:        "auth",
-				Severity:        "info",
-				Timestamp:       now,
-				ProcessID:       1234,
-				ApplicationName: "testapp",
-				Hostname:        "server1",
-				LogText:         bytes.Repeat([]byte("This is a long message that will need to be fragmented into multiple packets."), 5),
+				HostID:       101,
+				MsgID:        555,
+				Timestamp:    now,
+				CustomFields: templateCustomFields,
+				Hostname:     "server1",
+				Data:         bytes.Repeat([]byte("This is a long message that will need to be fragmented into multiple packets."), 5),
 			},
 			maxPayloadSize:    100,
 			fixedProtocolSize: 10,
@@ -39,15 +42,12 @@ func TestFragmentAndDefragment(t *testing.T) {
 		{
 			name: "Valid no frag",
 			input: Payload{
-				HostID:          1,
-				LogID:           2,
-				Facility:        "auth",
-				Severity:        "info",
-				Timestamp:       now,
-				ProcessID:       10,
-				ApplicationName: "testapp",
-				Hostname:        "server1",
-				LogText:         []byte("Short message."),
+				HostID:       1,
+				MsgID:        2,
+				Timestamp:    now,
+				CustomFields: templateCustomFields,
+				Hostname:     "server1",
+				Data:         []byte("Short message."),
 			},
 			maxPayloadSize:    150,
 			fixedProtocolSize: 1,
@@ -57,15 +57,12 @@ func TestFragmentAndDefragment(t *testing.T) {
 		{
 			name: "Valid large frag",
 			input: Payload{
-				HostID:          1,
-				LogID:           2,
-				Facility:        "auth",
-				Severity:        "info",
-				Timestamp:       now,
-				ProcessID:       10,
-				ApplicationName: "testapp",
-				Hostname:        "server1",
-				LogText:         []byte(strings.Repeat("a", 2500)),
+				HostID:       1,
+				MsgID:        2,
+				Timestamp:    now,
+				CustomFields: templateCustomFields,
+				Hostname:     "server1",
+				Data:         []byte(strings.Repeat("a", 2500)),
 			},
 			maxPayloadSize:    1400,
 			fixedProtocolSize: 250,
@@ -75,7 +72,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 		{
 			name: "Invalid maxPayloadSize",
 			input: Payload{
-				LogText: []byte("test"),
+				Data: []byte("test"),
 			},
 			maxPayloadSize:    0,
 			fixedProtocolSize: 10,
@@ -85,7 +82,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 		{
 			name: "Invalid protocolSize",
 			input: Payload{
-				LogText: []byte("test"),
+				Data: []byte("test"),
 			},
 			maxPayloadSize:    100,
 			fixedProtocolSize: 0,
@@ -116,9 +113,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 
 			for _, f := range frags {
 				if f.HostID != tt.input.HostID ||
-					f.LogID != tt.input.LogID ||
-					f.Facility != tt.input.Facility ||
-					f.Severity != tt.input.Severity {
+					f.MsgID != tt.input.MsgID {
 					t.Errorf("Shared field mismatch in fragment")
 				}
 				if f.MessageSeqMax != maxSeq {
@@ -131,8 +126,8 @@ func TestFragmentAndDefragment(t *testing.T) {
 				t.Fatalf("expected no error from defrag, but got: %v", err)
 			}
 
-			if !bytes.Equal(reassembled.LogText, tt.input.LogText) {
-				t.Errorf("Reassembled text mismatch.\nGot:  %s\nWant: %s", reassembled.LogText, tt.input.LogText)
+			if !bytes.Equal(reassembled.Data, tt.input.Data) {
+				t.Errorf("Reassembled text mismatch.\nGot:  %s\nWant: %s", reassembled.Data, tt.input.Data)
 			}
 		})
 	}
@@ -140,6 +135,12 @@ func TestFragmentAndDefragment(t *testing.T) {
 
 func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 	now := time.Now()
+
+	templateCustomFields := map[string]any{
+		"applicationname": "app1",
+		"facility":        "daemon",
+		"severity":        "info",
+	}
 
 	tests := []struct {
 		name        string
@@ -155,16 +156,16 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 		{
 			name: "Mismatched shared fields",
 			input: []Payload{
-				{HostID: 1, LogID: 5, Facility: "auth", Severity: "info", Timestamp: now},
-				{HostID: 2, LogID: 5, Facility: "auth", Severity: "info", Timestamp: now},
+				{HostID: 1, MsgID: 5, CustomFields: templateCustomFields, Timestamp: now},
+				{HostID: 2, MsgID: 5, CustomFields: templateCustomFields, Timestamp: now},
 			},
 			expectError: true,
 		},
 		{
 			name: "Out-of-order fragments",
 			input: []Payload{
-				{HostID: 1, LogID: 99, Facility: "sys", Severity: "info", Timestamp: now, MessageSeq: 1, MessageSeqMax: 1, LogText: []byte("world")},
-				{HostID: 1, LogID: 99, Facility: "sys", Severity: "info", Timestamp: now, MessageSeq: 0, MessageSeqMax: 1, LogText: []byte("hello ")},
+				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("world")},
+				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("hello ")},
 			},
 			expectError: false,
 			expectedLog: []byte("hello world"),
@@ -172,8 +173,8 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 		{
 			name: "Missing fragments beginning middle",
 			input: []Payload{
-				{HostID: 1, LogID: 99, Facility: "sys", Severity: "info", Timestamp: now, MessageSeq: 1, MessageSeqMax: 3, LogText: []byte("second text")},
-				{HostID: 1, LogID: 99, Facility: "sys", Severity: "info", Timestamp: now, MessageSeq: 3, MessageSeqMax: 3, LogText: []byte("fourth text")},
+				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 1, MessageSeqMax: 3, Data: []byte("second text")},
+				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 3, MessageSeqMax: 3, Data: []byte("fourth text")},
 			},
 			expectError: false,
 			expectedLog: []byte(missingLogPlaceholder + "second text" + missingLogPlaceholder + "fourth text"),
@@ -181,8 +182,8 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 		{
 			name: "Missing fragments double middle",
 			input: []Payload{
-				{HostID: 1, LogID: 99, Facility: "sys", Severity: "info", Timestamp: now, MessageSeq: 0, MessageSeqMax: 3, LogText: []byte("first text")},
-				{HostID: 1, LogID: 99, Facility: "sys", Severity: "info", Timestamp: now, MessageSeq: 3, MessageSeqMax: 3, LogText: []byte("fourth text")},
+				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 0, MessageSeqMax: 3, Data: []byte("first text")},
+				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 3, MessageSeqMax: 3, Data: []byte("fourth text")},
 			},
 			expectError: false,
 			expectedLog: []byte("first text" + missingLogPlaceholder + missingLogPlaceholder + "fourth text"),
@@ -190,8 +191,8 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 		{
 			name: "Missing fragments end",
 			input: []Payload{
-				{HostID: 1, LogID: 99, Facility: "sys", Severity: "info", Timestamp: now, MessageSeq: 0, MessageSeqMax: 2, LogText: []byte("first text")},
-				{HostID: 1, LogID: 99, Facility: "sys", Severity: "info", Timestamp: now, MessageSeq: 1, MessageSeqMax: 2, LogText: []byte(" second text")},
+				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 0, MessageSeqMax: 2, Data: []byte("first text")},
+				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 1, MessageSeqMax: 2, Data: []byte(" second text")},
 			},
 			expectError: false,
 			expectedLog: []byte("first text" + " second text" + missingLogPlaceholder),
@@ -212,8 +213,8 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			if !bytes.Equal(reassembled.LogText, tt.expectedLog) {
-				t.Errorf("Expected reassembled text %q, got %q", tt.expectedLog, reassembled.LogText)
+			if !bytes.Equal(reassembled.Data, tt.expectedLog) {
+				t.Errorf("Expected reassembled text %q, got %q", tt.expectedLog, reassembled.Data)
 			}
 		})
 	}

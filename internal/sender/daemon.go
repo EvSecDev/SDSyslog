@@ -20,7 +20,7 @@ import (
 	"sdsyslog/internal/sender/managers/packaging"
 	"sdsyslog/internal/sender/metrics"
 	"sdsyslog/internal/sender/scaling"
-	"sdsyslog/pkg/protocol"
+	"sdsyslog/internal/syslog"
 	"strconv"
 	"time"
 )
@@ -67,7 +67,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	}
 
 	// Pre-startup
-	protocol.InitBidiMaps()
+	syslog.InitBidiMaps()
 	err = wrappers.SetupEncryptInnerPayload(serverPub)
 	if err != nil {
 		err = fmt.Errorf("failed to setup encryption function: %v", err)

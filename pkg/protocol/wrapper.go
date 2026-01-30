@@ -8,23 +8,20 @@ import (
 
 // Main Entry Point: Takes in a new log message to be sent and creates packets (transport layer payload)
 func Create(newMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, err error) {
-	newLogID, err := random.FourByte()
+	newMessageID, err := random.FourByte()
 	if err != nil {
-		err = fmt.Errorf("failed to generate random log identifier: %v", err)
+		err = fmt.Errorf("failed to generate random message identifier: %v", err)
 		return
 	}
 
 	// Create internal log object
 	newLog := Payload{
-		HostID:          hostID,
-		LogID:           newLogID,
-		Facility:        newMsg.Facility,
-		Severity:        newMsg.Severity,
-		Timestamp:       newMsg.Timestamp,
-		ProcessID:       newMsg.ProcessID,
-		Hostname:        newMsg.Hostname,
-		ApplicationName: newMsg.ApplicationName,
-		LogText:         []byte(newMsg.LogText),
+		HostID:       hostID,
+		MsgID:        newMessageID,
+		Timestamp:    newMsg.Timestamp,
+		Hostname:     newMsg.Hostname,
+		CustomFields: newMsg.Fields,
+		Data:         []byte(newMsg.Data),
 	}
 
 	// Default to only supported
@@ -38,12 +35,12 @@ func Create(newMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, e
 
 	fragments, err := Fragment(newLog, maxPayloadSize, protocolOverhead)
 	if err != nil {
-		err = fmt.Errorf("failed to fragment log message: %v", err)
+		err = fmt.Errorf("failed to fragment message: %v", err)
 		return
 	}
 
 	for _, fragment := range fragments {
-		var payload InnerWireFormat
+		var payload innerWireFormat
 		payload, err = ValidatePayload(fragment)
 		if err != nil {
 			err = fmt.Errorf("invalid payload: %v", err)
@@ -58,7 +55,7 @@ func Create(newMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, e
 		}
 
 		var outterPayload []byte
-		outterPayload, err = ContructOuterPayload(innerPayload, cryptoSuiteInUse)
+		outterPayload, err = ConstructOuterPayload(innerPayload, cryptoSuiteInUse)
 		if err != nil {
 			err = fmt.Errorf("failed to serialize outer payload: %v", err)
 			return

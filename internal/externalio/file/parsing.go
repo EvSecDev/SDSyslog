@@ -1,8 +1,10 @@
 package file
 
 import (
+	"context"
 	"os"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
 	"strconv"
 	"strings"
@@ -215,7 +217,7 @@ func setDefaults(old global.ParsedMessage, raw string, localHostname string) (ne
 
 // Main raw log line format for outputs
 // Fmt: '2020-01-01T10:10:10.123456789Z Server01 MyApp[1234]: Daemon: [INFO]: this is a log message'
-func formatAsText(msg protocol.Payload) (text string) {
+func formatAsText(ctx context.Context, msg protocol.Payload) (text string, err error) {
 	var remoteID string
 	if msg.RemoteIP != "" && msg.Hostname != "" {
 		remoteID = msg.RemoteIP + "/" + msg.Hostname
@@ -225,13 +227,46 @@ func formatAsText(msg protocol.Payload) (text string) {
 		remoteID = msg.RemoteIP
 	}
 
-	text =
-		msg.Timestamp.Format(time.RFC3339Nano) + " " +
-			remoteID + " " +
-			msg.ApplicationName +
-			"[" + strconv.Itoa(msg.ProcessID) + "]: " +
-			msg.Facility + ": " +
-			"[" + strings.ToUpper(msg.Severity) + "]: " +
-			string(msg.LogText)
+	var keyValString []string
+	var appname, processid, facility, severity string
+	for key, value := range msg.CustomFields {
+		keyLowercase := strings.ToLower(key)
+		switch keyLowercase {
+		case "applicationname":
+			appname = protocol.FormatValue(value)
+			continue
+		case "processid":
+			processid = protocol.FormatValue(value)
+			continue
+		case "facility":
+			facility = protocol.FormatValue(value)
+			continue
+		case "severity":
+			severity = protocol.FormatValue(value)
+			continue
+		}
+
+		// Other fields get added to suffix
+		fmtVal := protocol.FormatValue(value)
+		if fmtVal == "" {
+			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "invalid custom field '%s': invalid type", key)
+			continue
+		}
+
+		kvPair := key + "=" + fmtVal
+		keyValString = append(keyValString, kvPair)
+	}
+
+	text = msg.Timestamp.Format(time.RFC3339Nano) + " " +
+		remoteID + " " +
+		appname +
+		"[" + processid + "]: " +
+		facility + ": " +
+		"[" + severity + "]: " +
+		string(msg.Data)
+
+	if len(keyValString) > 0 {
+		text += " (" + strings.Join(keyValString, ";") + ")"
+	}
 	return
 }

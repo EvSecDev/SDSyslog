@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestConstructAndDeconstructOutter(t *testing.T) {
+func TestConstructAndDeconstructouter(t *testing.T) {
 	priv, pub, err := ecdh.CreatePersistentKey()
 	if err != nil {
 		panic(err)
@@ -63,17 +63,17 @@ func TestConstructAndDeconstructOutter(t *testing.T) {
 			wrappers.SetupDecryptInnerPayload(priv)
 
 			// Test ConstructOuterPayload
-			outterBlob, err := ContructOuterPayload(tt.payload, tt.suiteID)
+			outerBlob, err := ConstructOuterPayload(tt.payload, tt.suiteID)
 			if (err != nil) != tt.expectedErr {
-				t.Errorf("ContructOuterPayload() error = %v, expectedErr %v", err, tt.expectedErr)
+				t.Errorf("ConstructOuterPayload() error = %v, expectedErr %v", err, tt.expectedErr)
 			}
-			if err == nil && len(outterBlob) == 0 {
-				t.Errorf("ContructOuterPayload() returned an empty blob")
+			if err == nil && len(outerBlob) == 0 {
+				t.Errorf("ConstructOuterPayload() returned an empty blob")
 			}
 
 			// Test DeconstructOuterPayload only if Construct succeeded
 			if err == nil {
-				innerPayload, err := DeconstructOuterPayload(outterBlob)
+				innerPayload, err := DeconstructOuterPayload(outerBlob)
 				if (err != nil) != tt.expectedErr {
 					t.Errorf("DeconstructOuterPayload() error = %v, expectedErr %v", err, tt.expectedErr)
 				}

@@ -19,7 +19,7 @@ import (
 	"sdsyslog/internal/receiver/managers/proc"
 	"sdsyslog/internal/receiver/metrics"
 	"sdsyslog/internal/receiver/scaling"
-	"sdsyslog/pkg/protocol"
+	"sdsyslog/internal/syslog"
 	"strings"
 	"time"
 )
@@ -45,7 +45,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon (%s)...\n", global.ProgVersion)
 
 	// Pre-startup
-	protocol.InitBidiMaps()
+	syslog.InitBidiMaps()
 	err = wrappers.SetupDecryptInnerPayload(serverPriv)
 	if err != nil {
 		err = fmt.Errorf("failed to setup decryption function: %v", err)

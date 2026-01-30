@@ -2,86 +2,115 @@ package protocol
 
 import (
 	"bytes"
+	"encoding/binary"
 	"strings"
 	"testing"
 	"time"
 )
 
 func TestConstructAndDeconstruct(t *testing.T) {
+	var buf bytes.Buffer
+	err := binary.Write(&buf, binary.BigEndian, int64(1234))
+	if err != nil {
+		t.Fatalf("failed to mock integer: %v", err)
+	}
+	mockInt := buf.Bytes()
+
 	tests := []struct {
 		name        string
-		input       InnerWireFormat
+		input       innerWireFormat
 		expectedErr bool
 	}{
 		{
 			name: "Normal",
-			input: InnerWireFormat{
-				HostID:          12345,
-				LogID:           92789,
-				MessageSeq:      1,
-				MessageSeqMax:   5,
-				Facility:        22,
-				Severity:        5,
-				Timestamp:       uint64(time.Now().Unix()),
-				ProcessID:       9876,
-				Hostname:        []byte("localhost"),
-				ApplicationName: []byte("testApp"),
-				LogText:         []byte("This is a test log message"),
-				PaddingLen:      18,
+			input: innerWireFormat{
+				HostID:        12345,
+				MsgID:         92789,
+				MessageSeq:    1,
+				MessageSeqMax: 5,
+				Timestamp:     uint64(time.Now().Unix()),
+				Hostname:      []byte("localhost"),
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("user"),
+					},
+					{
+						Key:     []byte("facility"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte("This is a test log message"),
+				PaddingLen: 18,
 			},
 			expectedErr: false,
 		},
 		{
 			name: "LongEven",
-			input: InnerWireFormat{
-				HostID:          12345,
-				LogID:           67819,
-				MessageSeq:      1,
-				MessageSeqMax:   5,
-				Facility:        22,
-				Severity:        5,
-				Timestamp:       uint64(time.Now().Unix()),
-				ProcessID:       9876,
-				Hostname:        []byte("localhost"),
-				ApplicationName: []byte("testApp"),
-				LogText:         []byte(strings.Repeat("t", 256)),
-				PaddingLen:      28,
+			input: innerWireFormat{
+				HostID:        12345,
+				MsgID:         67819,
+				MessageSeq:    1,
+				MessageSeqMax: 5,
+				Timestamp:     uint64(time.Now().Unix()),
+				Hostname:      []byte("localhost"),
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("user"),
+					},
+					{
+						Key:     []byte("facility"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte(strings.Repeat("t", 256)),
+				PaddingLen: 28,
 			},
 			expectedErr: false,
 		},
 		{
 			name: "LongOdd",
-			input: InnerWireFormat{
-				HostID:          12345,
-				LogID:           67839,
-				MessageSeq:      1,
-				MessageSeqMax:   5,
-				Facility:        22,
-				Severity:        5,
-				Timestamp:       uint64(time.Now().Unix()),
-				ProcessID:       9876,
-				Hostname:        []byte("localhost"),
-				ApplicationName: []byte("testApp"),
-				LogText:         []byte(strings.Repeat("t", 550)),
-				PaddingLen:      38,
+			input: innerWireFormat{
+				HostID:        12345,
+				MsgID:         67839,
+				MessageSeq:    1,
+				MessageSeqMax: 5,
+				Timestamp:     uint64(time.Now().Unix()),
+				Hostname:      []byte("localhost"),
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("user"),
+					},
+					{
+						Key:     []byte("facility"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte(strings.Repeat("t", 550)),
+				PaddingLen: 38,
 			},
 			expectedErr: false,
 		},
 		{
 			name: "Short",
-			input: InnerWireFormat{
-				HostID:          1,
-				LogID:           1,
-				MessageSeq:      1,
-				MessageSeqMax:   5,
-				Facility:        2,
-				Severity:        5,
-				Timestamp:       uint64(time.Now().Unix()),
-				ProcessID:       1,
-				Hostname:        []byte{},
-				ApplicationName: []byte("-"),
-				LogText:         []byte("t"),
-				PaddingLen:      1,
+			input: innerWireFormat{
+				HostID:        1,
+				MsgID:         1,
+				MessageSeq:    1,
+				MessageSeqMax: 5,
+				Timestamp:     uint64(time.Now().Unix()),
+				Hostname:      []byte("a"),
+				ContextFields: []contextWireFormat{},
+				Data:          []byte("t"),
+				PaddingLen:    1,
 			},
 			expectedErr: true,
 		},
@@ -115,8 +144,8 @@ func TestConstructAndDeconstruct(t *testing.T) {
 			if deserialized.HostID != tt.input.HostID {
 				t.Errorf("HostID: expected %d, got %d", tt.input.HostID, deserialized.HostID)
 			}
-			if deserialized.LogID != tt.input.LogID {
-				t.Errorf("LogID: expected %d, got %d", tt.input.LogID, deserialized.LogID)
+			if deserialized.MsgID != tt.input.MsgID {
+				t.Errorf("MsgID: expected %d, got %d", tt.input.MsgID, deserialized.MsgID)
 			}
 			if deserialized.MessageSeq != tt.input.MessageSeq {
 				t.Errorf("MessageSeq: expected %d, got %d", tt.input.MessageSeq, deserialized.MessageSeq)
@@ -124,26 +153,25 @@ func TestConstructAndDeconstruct(t *testing.T) {
 			if deserialized.MessageSeqMax != tt.input.MessageSeqMax {
 				t.Errorf("MessageSeqMax: expected %d, got %d", tt.input.MessageSeqMax, deserialized.MessageSeqMax)
 			}
-			if deserialized.Facility != tt.input.Facility {
-				t.Errorf("Facility: expected %d, got %d", tt.input.Facility, deserialized.Facility)
-			}
-			if deserialized.Severity != tt.input.Severity {
-				t.Errorf("Severity: expected %d, got %d", tt.input.Severity, deserialized.Severity)
-			}
 			if deserialized.Timestamp != tt.input.Timestamp {
 				t.Errorf("Timestamp: expected %d, got %d", tt.input.Timestamp, deserialized.Timestamp)
-			}
-			if deserialized.ProcessID != tt.input.ProcessID {
-				t.Errorf("ProcessID: expected %d, got %d", tt.input.ProcessID, deserialized.ProcessID)
 			}
 			if !bytes.Equal(deserialized.Hostname, tt.input.Hostname) {
 				t.Errorf("Hostname: expected %v, got %v", tt.input.Hostname, deserialized.Hostname)
 			}
-			if !bytes.Equal(deserialized.ApplicationName, tt.input.ApplicationName) {
-				t.Errorf("ApplicationName: expected %v, got %v", tt.input.ApplicationName, deserialized.ApplicationName)
+			for index, ctxField := range deserialized.ContextFields {
+				if !bytes.Equal(ctxField.Key, tt.input.ContextFields[index].Key) {
+					t.Errorf("Context field Key: expected %x, got %x", tt.input.ContextFields[index].Key, ctxField.Key)
+				}
+				if ctxField.valType != tt.input.ContextFields[index].valType {
+					t.Errorf("Context field value type: expected %x, got %x", tt.input.ContextFields[index].valType, ctxField.valType)
+				}
+				if !bytes.Equal(ctxField.Value, tt.input.ContextFields[index].Value) {
+					t.Errorf("Context field value: expected %x, got %x", tt.input.ContextFields[index].Value, ctxField.Value)
+				}
 			}
-			if !bytes.Equal(deserialized.LogText, tt.input.LogText) {
-				t.Errorf("LogText: expected %v, got %v", tt.input.LogText, deserialized.LogText)
+			if !bytes.Equal(deserialized.Data, tt.input.Data) {
+				t.Errorf("Data: expected %v, got %v", tt.input.Data, deserialized.Data)
 			}
 			if deserialized.PaddingLen != tt.input.PaddingLen {
 				t.Errorf("PaddingLen: expected %d, got %d", tt.input.PaddingLen, deserialized.PaddingLen)
@@ -163,19 +191,16 @@ func TestShortPayload(t *testing.T) {
 
 func TestLongPayload(t *testing.T) {
 	// Test serialization with a payload exceeding length field
-	fields := InnerWireFormat{
-		HostID:          12345,
-		LogID:           96789,
-		MessageSeq:      1,
-		MessageSeqMax:   5,
-		Facility:        22,
-		Severity:        5,
-		Timestamp:       uint64(time.Now().Unix()),
-		ProcessID:       9876,
-		Hostname:        []byte("localhost"),
-		ApplicationName: []byte("testApp"),
-		LogText:         []byte(strings.Repeat("t", 65536)),
-		PaddingLen:      8,
+	fields := innerWireFormat{
+		HostID:        12345,
+		MsgID:         96789,
+		MessageSeq:    1,
+		MessageSeqMax: 5,
+		Timestamp:     uint64(time.Now().Unix()),
+		Hostname:      []byte("localhost"),
+		ContextFields: []contextWireFormat{},
+		Data:          []byte(strings.Repeat("t", 65536)),
+		PaddingLen:    8,
 	}
 	_, err := ConstructInnerPayload(fields)
 	if err == nil {
@@ -183,54 +208,65 @@ func TestLongPayload(t *testing.T) {
 	}
 }
 
-func TestInvalidLogText(t *testing.T) {
-	// Test deserialization with invalid LogText (empty)
-	fields := InnerWireFormat{
-		HostID:          12345,
-		LogID:           96789,
-		MessageSeq:      1,
-		MessageSeqMax:   5,
-		Facility:        22,
-		Severity:        5,
-		Timestamp:       uint64(time.Now().Unix()),
-		ProcessID:       9876,
-		Hostname:        []byte("localhost"),
-		ApplicationName: []byte("testApp"),
-		LogText:         []byte(""),
-		PaddingLen:      8,
+func TestInvaliData(t *testing.T) {
+	fields := innerWireFormat{
+		HostID:        12345,
+		MsgID:         96789,
+		MessageSeq:    1,
+		MessageSeqMax: 5,
+		Timestamp:     uint64(time.Now().Unix()),
+		Hostname:      []byte("localhost"),
+		ContextFields: []contextWireFormat{
+			{
+				Key:     []byte("applicationname"),
+				valType: ContextString,
+				Value:   []byte("user"),
+			},
+		},
+		Data:       []byte(""),
+		PaddingLen: 8,
 	}
 
-	serialized, err := ConstructInnerPayload(fields)
-	if err != nil {
-		t.Errorf("Expected no error for construction, but got %v", err)
-	}
-
-	// Modify the LogText field to be empty
-	deserialized, err := DeconstructInnerPayload(serialized)
+	_, err := ConstructInnerPayload(fields)
 	if err == nil {
-		t.Error("Expected error for empty LogText, but got none")
+		t.Fatalf("Expected error for construction, but got nil")
 	}
-
-	if deserialized.LogText != nil {
-		t.Errorf("Expected nil LogText, got %v", deserialized.LogText)
+	expectedErr := "failed to serialize Data: field cannot be empty"
+	if err.Error() != expectedErr {
+		t.Errorf("Expected error '%s', got %v", expectedErr, err)
 	}
 }
 
 func TestPaddingLen(t *testing.T) {
+	var buf bytes.Buffer
+	err := binary.Write(&buf, binary.BigEndian, int64(1234))
+	if err != nil {
+		t.Fatalf("failed to mock integer: %v", err)
+	}
+	mockInt := buf.Bytes()
+
 	// Test that padding is added correctly
-	fields := InnerWireFormat{
-		HostID:          12345,
-		LogID:           96789,
-		MessageSeq:      1,
-		MessageSeqMax:   5,
-		Facility:        22,
-		Severity:        5,
-		Timestamp:       uint64(time.Now().Unix()),
-		ProcessID:       9876,
-		Hostname:        []byte("localhost"),
-		ApplicationName: []byte("testApp"),
-		LogText:         []byte("This is a test log message"),
-		PaddingLen:      8,
+	fields := innerWireFormat{
+		HostID:        12345,
+		MsgID:         96789,
+		MessageSeq:    1,
+		MessageSeqMax: 5,
+		Timestamp:     uint64(time.Now().Unix()),
+		Hostname:      []byte("localhost"),
+		ContextFields: []contextWireFormat{
+			{
+				Key:     []byte("applicationname"),
+				valType: ContextString,
+				Value:   []byte("user"),
+			},
+			{
+				Key:     []byte("facility"),
+				valType: ContextInt64,
+				Value:   mockInt,
+			},
+		},
+		Data:       []byte("This is a test log message"),
+		PaddingLen: 8,
 	}
 
 	// Serialize the payload
@@ -238,18 +274,25 @@ func TestPaddingLen(t *testing.T) {
 
 	// Calculate the expected length based on test case
 	expectedLen := 0
-	expectedLen += lenHostID                           // HostID (uint32)
-	expectedLen += lenLogID                            // LogID (uint16)
-	expectedLen += lenMsgSeq                           // MessageSeq (uint16)
-	expectedLen += lenSeqMax                           // MessageSeqMax (uint16)
-	expectedLen += lenFacility                         // Facility (uint16)
-	expectedLen += lenSeverity                         // Severity (uint16)
-	expectedLen += lenTimestamp                        // Timestamp (uint64)
-	expectedLen += lenProcID                           // ProcessID (uint32)
-	expectedLen += 1 + len(fields.Hostname) + 1        // Hostname length + Hostname + Null terminator
-	expectedLen += 1 + len(fields.ApplicationName) + 1 // ApplicationName length + ApplicationName + Null terminator
-	expectedLen += 1 + len(fields.LogText) + 2         // LogText length + LogText + Null terminator
-	expectedLen += fields.PaddingLen                   // Padding
+	expectedLen += lenHostID                    // HostID (uint32)
+	expectedLen += lenMsgID                     // MsgID (uint16)
+	expectedLen += lenMsgSeq                    // MessageSeq (uint16)
+	expectedLen += lenSeqMax                    // MessageSeqMax (uint16)
+	expectedLen += lenTimestamp                 // Timestamp (uint64)
+	expectedLen += 1 + len(fields.Hostname) + 1 // Hostname length + Hostname + Null terminator
+	expectedLen += lenContextSectionNxtLen      // Context nxt length
+	for _, field := range fields.ContextFields {
+		expectedLen += lenCtxKeyNxtLen
+		expectedLen += len(field.Key)
+		expectedLen += lenCtxKeyTerminator
+		expectedLen += lenCtxTypeVal
+		expectedLen += lenCtxValNxtLen
+		expectedLen += len(field.Value)
+		expectedLen += lenCtxValTerminator
+	}
+	expectedLen += lenContextSectionTerminator // Context Null terminator
+	expectedLen += 1 + len(fields.Data) + 2    // LogText length + LogText + Null terminator
+	expectedLen += fields.PaddingLen           // Padding
 
 	// Check that padding is added
 	if len(serialized) != expectedLen {
@@ -258,19 +301,22 @@ func TestPaddingLen(t *testing.T) {
 }
 
 func TestInvalidNextLengthByte(t *testing.T) {
-	fields := InnerWireFormat{
-		HostID:          12345,
-		LogID:           96789,
-		MessageSeq:      1,
-		MessageSeqMax:   5,
-		Facility:        22,
-		Severity:        5,
-		Timestamp:       uint64(time.Now().Unix()),
-		ProcessID:       9876,
-		Hostname:        []byte("localhost"),
-		ApplicationName: []byte("testApp"),
-		LogText:         []byte("This is a test log message"),
-		PaddingLen:      8,
+	fields := innerWireFormat{
+		HostID:        12345,
+		MsgID:         96789,
+		MessageSeq:    1,
+		MessageSeqMax: 5,
+		Timestamp:     uint64(time.Now().Unix()),
+		Hostname:      []byte("localhost"),
+		ContextFields: []contextWireFormat{
+			{
+				Key:     []byte("applicationname"),
+				valType: ContextString,
+				Value:   []byte("user"),
+			},
+		},
+		Data:       []byte("This is a test log message"),
+		PaddingLen: 8,
 	}
 
 	serialized, err := ConstructInnerPayload(fields)

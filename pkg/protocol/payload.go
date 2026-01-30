@@ -3,17 +3,26 @@ package protocol
 import (
 	"fmt"
 	"sdsyslog/internal/crypto"
+	"sort"
 	"time"
-	"unicode"
+	"unicode/utf8"
 )
 
 // Creates individual packet inner payload
-func ValidatePayload(request Payload) (proto InnerWireFormat, err error) {
+func ValidatePayload(request Payload) (proto innerWireFormat, err error) {
 	// MessageHostID
+	if request.HostID == 0 {
+		err = fmt.Errorf("host ID cannot be zero")
+		return
+	}
 	proto.HostID = uint32(request.HostID)
 
 	// MessageID
-	proto.LogID = uint32(request.LogID)
+	proto.MsgID = uint32(request.MsgID)
+	if request.MsgID == 0 {
+		err = fmt.Errorf("message ID cannot be zero")
+		return
+	}
 
 	// Sequence ID and Sequence Max
 	if request.MessageSeq > request.MessageSeqMax {
@@ -23,34 +32,90 @@ func ValidatePayload(request Payload) (proto InnerWireFormat, err error) {
 	proto.MessageSeq = uint16(request.MessageSeq)
 	proto.MessageSeqMax = uint16(request.MessageSeqMax)
 
-	// Facility: Convert to numeric code
-	proto.Facility, err = FacilityToCode(request.Facility)
-	if err != nil {
-		err = fmt.Errorf("invalid facility: %v", err)
-		return
-	}
-
-	// Severity: Convert to numeric code
-	proto.Severity, err = SeverityToCode(request.Severity)
-	if err != nil {
-		err = fmt.Errorf("invalid severity: %v", err)
-		return
-	}
-
 	// Timestamp: Convert time.Time to epoch milliseconds
 	proto.Timestamp = uint64(request.Timestamp.UnixMilli())
-
-	// Process ID
-	proto.ProcessID = uint32(request.ProcessID)
 
 	// Hostname: Clean and validate
 	proto.Hostname = cleanStringToBytes(request.Hostname, maxHostnameLen)
 
-	// ApplicationName: Clean and validate
-	proto.ApplicationName = cleanStringToBytes(request.ApplicationName, maxAppNameLen)
+	// Context: Serialize
+	if len(request.CustomFields) > 0 {
+		proto.ContextFields = make([]contextWireFormat, 0, len(request.CustomFields))
+
+		// Ensure predictable order of wire format context fields
+		keys := make([]string, 0, len(request.CustomFields))
+		for k := range request.CustomFields {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		var totalCtxLen int
+		for _, key := range keys {
+			value := request.CustomFields[key]
+
+			cleanKey := cleanStringToBytes(key, maxCtxKeyLen)
+			if len(cleanKey) < minCtxKeyLen {
+				err = fmt.Errorf("custom field key cannot be less than %d byte(s)", minCtxKeyLen)
+				return
+			}
+
+			var cleanType uint8
+			var cleanValue []byte
+			if value == nil {
+				// no value, use placeholder
+				cleanType = ContextString
+				cleanValue = []byte(emptyFieldChar)
+			} else {
+				cleanType, cleanValue, err = serializeAnyValue(value)
+				if err != nil {
+					err = fmt.Errorf("invalid custom field '%s': %v", cleanKey, err)
+					return
+				}
+				if len(cleanValue) < minCtxValLen {
+					cleanValue = []byte(emptyFieldChar)
+				}
+				if len(cleanValue) > maxCtxValLen {
+					err = fmt.Errorf("value too long for key '%s' (must be less than %d bytes)", key, maxCtxValLen)
+					return
+				}
+				// Only strings enforce utf8
+				if cleanType == ContextString {
+					if !utf8.Valid(cleanValue) {
+						err = fmt.Errorf("non-UTF8 context field value for key '%s' is unsupported", string(cleanKey))
+						return
+					}
+				}
+			}
+
+			newCtxEntry := contextWireFormat{
+				Key:     cleanKey,
+				valType: cleanType,
+				Value:   cleanValue,
+			}
+			proto.ContextFields = append(proto.ContextFields, newCtxEntry)
+			// Peeking true length of eventual serialized bytes
+			totalCtxLen += lenCtxKeyNxtLen + len(newCtxEntry.Key) + lenCtxKeyTerminator +
+				lenCtxTypeVal +
+				lenCtxValNxtLen + len(newCtxEntry.Value) + lenCtxValTerminator
+		}
+
+		if totalCtxLen < minCtxSecLenWithData {
+			err = fmt.Errorf("custom field serialized length is below expected minimum")
+			return
+		}
+
+		if totalCtxLen > maxCtxSectionLen {
+			err = fmt.Errorf("context section exceeds maximum custom field section limit (%d bytes)", maxCtxSectionLen)
+			return
+		}
+	}
 
 	// LogText: Clean and validate
-	proto.LogText = cleanLogBytes(request.LogText)
+	proto.Data = cleanBytes(request.Data)
+	if !utf8.Valid(proto.Data) {
+		err = fmt.Errorf("non-UTF8 data is unsupported")
+		return
+	}
 
 	// Padding Length (random padding is generated as part of the trailer)
 	if request.PaddingLen < minPaddingLen || request.PaddingLen > maxPaddingLen {
@@ -62,42 +127,8 @@ func ValidatePayload(request Payload) (proto InnerWireFormat, err error) {
 	return
 }
 
-// Converts a string to bytes, truncates to maxLength and removes non-ASCII characters
-func cleanStringToBytes(input string, maxLength int) (cleanBytes []byte) {
-	if input == "" {
-		input = emptyFieldChar // mandator empty placeholder
-	}
-
-	// Remove non-ASCII characters
-	var cleanStr string
-	for _, char := range input {
-		if char <= unicode.MaxASCII {
-			cleanStr += string(char)
-		}
-	}
-
-	// Truncate to maxLength
-	if len(cleanStr) > maxLength {
-		cleanStr = cleanStr[:maxLength]
-	}
-
-	// Convert to byte slice
-	cleanBytes = []byte(cleanStr)
-	return
-}
-
-// Removes null-byte sequences from LogText and ensures UTF-8 encoding
-func cleanLogBytes(log []byte) (cleanBytes []byte) {
-	for _, b := range log {
-		if b != 0 {
-			cleanBytes = append(cleanBytes, b)
-		}
-	}
-	return
-}
-
 // Validates and extracts packet inner payload
-func ParsePayload(proto InnerWireFormat) (validated Payload, err error) {
+func ParsePayload(proto innerWireFormat) (validated Payload, err error) {
 	// Validate HostID
 	if proto.HostID == 0 {
 		err = fmt.Errorf("empty host ID")
@@ -105,12 +136,12 @@ func ParsePayload(proto InnerWireFormat) (validated Payload, err error) {
 	}
 	validated.HostID = int(proto.HostID)
 
-	// Validate LogID
-	if proto.LogID == 0 {
-		err = fmt.Errorf("empty log ID")
+	// Validate MsgID
+	if proto.MsgID == 0 {
+		err = fmt.Errorf("empty msg ID")
 		return
 	}
-	validated.LogID = int(proto.LogID)
+	validated.MsgID = int(proto.MsgID)
 
 	// Validate Sequence ID and Sequence Max
 	if proto.MessageSeq > proto.MessageSeqMax {
@@ -120,29 +151,8 @@ func ParsePayload(proto InnerWireFormat) (validated Payload, err error) {
 	validated.MessageSeq = int(proto.MessageSeq)
 	validated.MessageSeqMax = int(proto.MessageSeqMax)
 
-	// Validate Facility: Convert numeric code back to string
-	validated.Facility, err = CodeToFacility(proto.Facility)
-	if err != nil {
-		err = fmt.Errorf("invalid facility: %v", err)
-		return
-	}
-
-	// Validate Severity: Convert numeric code back to string
-	validated.Severity, err = CodeToSeverity(proto.Severity)
-	if err != nil {
-		err = fmt.Errorf("invalid severity: %v", err)
-		return
-	}
-
 	// Validate Timestamp: Convert from milliseconds back to time.Time
 	validated.Timestamp = time.UnixMilli(int64(proto.Timestamp))
-
-	// Validate ProcessID
-	if proto.ProcessID == 0 {
-		err = fmt.Errorf("empty process ID")
-		return
-	}
-	validated.ProcessID = int(proto.ProcessID)
 
 	// Validate Hostname length and convert back to string
 	if len(proto.Hostname) == 0 {
@@ -153,25 +163,63 @@ func ParsePayload(proto InnerWireFormat) (validated Payload, err error) {
 		err = fmt.Errorf("exceeded maximum hostname length %d", maxHostnameLen)
 		return
 	}
+	if !isPrintableASCII(proto.Hostname) {
+		err = fmt.Errorf("non-ASCII hostname '%s' is not supported", proto.Hostname)
+		return
+	}
 	validated.Hostname = string(proto.Hostname)
 
-	// Validate ApplicationName length and convert back to string
-	if len(proto.ApplicationName) == 0 {
-		err = fmt.Errorf("empty application name")
-		return
-	}
-	if len(proto.ApplicationName) > maxAppNameLen {
-		err = fmt.Errorf("exceeded maximum application name length %d", maxAppNameLen)
-		return
-	}
-	validated.ApplicationName = string(proto.ApplicationName)
+	// Context: Deserialize
+	if len(proto.ContextFields) > 0 {
+		validated.CustomFields = make(map[string]any, len(proto.ContextFields))
 
-	// Validate LogText length and convert back to string
-	if len(proto.LogText) == 0 {
-		err = fmt.Errorf("empty log text")
+		for _, field := range proto.ContextFields {
+			// Key
+			keyLength := len(field.Key)
+			if keyLength < minCtxKeyLen || keyLength > maxCtxKeyLen {
+				err = fmt.Errorf("invalid context field key length: %d", keyLength)
+				return
+			}
+			if !isPrintableASCII(field.Key) {
+				err = fmt.Errorf("non-ASCII context field key '%s' is not supported", field.Key)
+				return
+			}
+
+			// Value
+			valueLength := len(field.Value)
+			if valueLength < minCtxValLen || valueLength > maxCtxValLen {
+				err = fmt.Errorf("invalid context field value length: %d", valueLength)
+				return
+			}
+			// Only strings enforce utf8
+			if field.valType == ContextString {
+				if !utf8.Valid(field.Value) {
+					err = fmt.Errorf("non-UTF8 context field value for key '%s' is unsupported", string(field.Key))
+					return
+				}
+			}
+
+			var value any
+			value, err = deserializeAnyValue(field.valType, field.Value)
+			if err != nil {
+				err = fmt.Errorf("invalid custom field '%s': %v", string(field.Key), err)
+				return
+			}
+
+			validated.CustomFields[string(field.Key)] = value
+		}
+	}
+
+	// Validate data length and convert back to string
+	if len(proto.Data) == 0 {
+		err = fmt.Errorf("empty data text")
 		return
 	}
-	validated.LogText = proto.LogText
+	if !utf8.Valid(proto.Data) {
+		err = fmt.Errorf("non-UTF8 data is unsupported")
+		return
+	}
+	validated.Data = proto.Data
 
 	// Validate PaddingLen
 	if proto.PaddingLen < minPaddingLen || proto.PaddingLen > maxPaddingLen {
@@ -199,11 +247,25 @@ func CalculateProtocolOverhead(suiteID uint8, primaryPayload Payload) (fixedOver
 
 	// Calculate variable lengths from primary payload
 	// padding length changes, omit from this calculation
-	innerVariableLength :=
-		len(primaryPayload.Hostname) +
-			len(primaryPayload.ApplicationName)
+	innerVariableLength := len(primaryPayload.Hostname)
+	if len(primaryPayload.CustomFields) > 0 {
+		for key, value := range primaryPayload.CustomFields {
+			innerVariableLength += ctxFieldOverhead
 
-		// Return sum of overheads
+			innerVariableLength += len(key)
+
+			var data []byte
+			_, data, err = serializeAnyValue(value)
+			if err != nil {
+				err = fmt.Errorf("failed to get serialized length for field '%s'", key)
+				return
+			}
+			innerVariableLength += len(data)
+		}
+	}
+	innerVariableLength += lenContextSectionNxtLen + lenContextSectionTerminator
+
+	// Return sum of overheads
 	fixedOverhead = outerTotal + minInnerPayloadLenFixedOnly + innerVariableLength
 	return
 }

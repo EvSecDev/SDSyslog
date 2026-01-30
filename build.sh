@@ -87,7 +87,6 @@ function compile_program() {
 	if [[ $skipTests != 'true' ]]; then
 		# Run tests (excludes unimportant info)
 		echo "[*] Running all tests..."
-		set +e
 
 		local testArgs
 		testArgs=(
@@ -102,17 +101,45 @@ function compile_program() {
 			)
 		fi
 
-		go -C "$repoRoot/$SRCdir" test "${testArgs[@]}" ./... | grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: "
-		internalExitCode=${PIPESTATUS[0]}
+		local coverProfileOutPkg coverProfileOutSrc coverPercent pkgExitCode internalExitCode
+		coverProfileOutPkg="$repoRoot/coverprofile_pkg.out"
+		coverProfileOutSrc="$repoRoot/coverprofile_src.out"
 
-		go -C "$repoRoot/pkg" test "${testArgs[@]}" ./... | grep -Ev "\[no test files\]|^PASS$"
+		# shellcheck disable=SC2064
+		trap "rm -f $coverProfileOutPkg $coverProfileOutSrc" EXIT
+
+		set +e
+
+		go -C "$repoRoot/pkg" test "${testArgs[@]}" -coverprofile="$coverProfileOutPkg" ./... |
+			grep -Ev "\[no test files\]|^PASS$|coverage: 0.0% of statements$|^coverage: "
 		pkgExitCode=${PIPESTATUS[0]}
 
-		set -e
-		if [[ $internalExitCode != 0 ]] || [[ $pkgExitCode != 0 ]]; then
+		if [[ $pkgExitCode != 0 ]]; then
 			echo -e "   ${RED}[-] FAILED TESTS${RESET}"
 			exit 1
 		fi
+
+		go -C "$repoRoot/$SRCdir" test "${testArgs[@]}" -coverprofile="$coverProfileOutSrc" ./... |
+			grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: |coverage: 0.0% of statements$|^coverage: "
+		internalExitCode=${PIPESTATUS[0]}
+
+		if [[ $internalExitCode != 0 ]]; then
+			echo -e "   ${RED}[-] FAILED TESTS${RESET}"
+			exit 1
+		fi
+
+		set -e
+		echo -e "   ${GREEN}[+] DONE${RESET}"
+		echo "[*] Test Coverage Totals:"
+
+		coverPercent=$(go tool cover -func="$coverProfileOutPkg" | grep "^total:" | awk '{print $3}')
+		echo " Protocol Coverage: $coverPercent"
+		rm "$coverProfileOutPkg"
+
+		coverPercent=$(go tool cover -func="$coverProfileOutSrc" | grep "^total:" | awk '{print $3}')
+		echo " Internal Coverage: $coverPercent"
+		rm "$coverProfileOutSrc"
+
 		echo -e "   ${GREEN}[+] DONE${RESET}"
 	fi
 

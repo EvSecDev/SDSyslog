@@ -3,14 +3,14 @@ package journald
 import (
 	"os"
 	"sdsyslog/internal/global"
-	"sdsyslog/pkg/protocol"
+	"sdsyslog/internal/syslog"
 	"strconv"
 	"testing"
 	"time"
 )
 
 func TestParseFields(t *testing.T) {
-	protocol.InitBidiMaps()
+	syslog.InitBidiMaps()
 	baseTimestampUs := int64(1_700_000_000_123_456)
 	expectedTime := time.Unix(
 		baseTimestampUs/1_000_000,

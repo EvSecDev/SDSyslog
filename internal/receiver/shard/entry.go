@@ -42,8 +42,8 @@ func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fr
 	}
 
 	// Compute default shard index
-	defaultIndex := (ipIntH + ipIntL + fragment.HostID + fragment.LogID) % numShards
-	bucketKey := fmt.Sprintf("%s-%d-%d", remoteAddress, fragment.HostID, fragment.LogID)
+	defaultIndex := (ipIntH + ipIntL + fragment.HostID + fragment.MsgID) % numShards
+	bucketKey := fmt.Sprintf("%s-%d-%d", remoteAddress, fragment.HostID, fragment.MsgID)
 
 	// Send to a shard
 	var routedIndex int
@@ -76,7 +76,7 @@ func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fr
 		routedIndex = defaultIndex
 	}
 
-	logctx.LogEvent(ctx, global.VerbosityData, global.InfoLog, "Sent log ID %d to shard %d\n", fragment.LogID, routedIndex)
+	logctx.LogEvent(ctx, global.VerbosityData, global.InfoLog, "Sent message ID %d to shard %d\n", fragment.MsgID, routedIndex)
 	success = true
 	return
 }

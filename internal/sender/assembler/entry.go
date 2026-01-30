@@ -54,17 +54,21 @@ func (instance *Instance) Run(ctx context.Context) {
 			// Subtract data size from sum
 			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(size), 4)
 
-			newMsg := protocol.Message{
-				Facility:        container.Facility,
-				Severity:        container.Severity,
-				Timestamp:       container.Timestamp,
-				ProcessID:       container.ProcessID,
-				Hostname:        container.Hostname,
-				ApplicationName: container.ApplicationName,
-				LogText:         container.Text,
+			customFields := map[string]any{
+				"Facility":        container.Facility,
+				"Severity":        container.Severity,
+				"ProcessID":       container.ProcessID,
+				"ApplicationName": container.ApplicationName,
 			}
 
-			msgLengthB := uint64(len(newMsg.LogText))
+			newMsg := protocol.Message{
+				Timestamp: container.Timestamp,
+				Hostname:  container.Hostname,
+				Fields:    customFields,
+				Data:      container.Text,
+			}
+
+			msgLengthB := uint64(len(newMsg.Data))
 
 			instance.Metrics.TotalMessages.Add(1)
 			instance.Metrics.TotalMsgSizeBytes.Add(msgLengthB)

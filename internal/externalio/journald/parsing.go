@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sdsyslog/internal/global"
-	"sdsyslog/pkg/protocol"
+	"sdsyslog/internal/syslog"
 	"strconv"
 	"time"
 )
@@ -66,7 +66,7 @@ func parseFields(fields map[string]string, localHostname string) (message global
 		err = fmt.Errorf("journal message priority '%s' is invalid: %v", journalPriority, err)
 		return
 	}
-	message.Severity, err = protocol.CodeToSeverity(uint16(jrnlPriInt))
+	message.Severity, err = syslog.CodeToSeverity(uint16(jrnlPriInt))
 	if err != nil {
 		err = fmt.Errorf("invalid severity '%d': %v", jrnlPriInt, err)
 		return
@@ -102,7 +102,7 @@ func parseFields(fields map[string]string, localHostname string) (message global
 		err = fmt.Errorf("journal message priority '%s' is invalid: %v", journalFacility, err)
 		return
 	}
-	message.Facility, err = protocol.CodeToFacility(uint16(jrnlSeverityInt))
+	message.Facility, err = syslog.CodeToFacility(uint16(jrnlSeverityInt))
 	if err != nil {
 		err = fmt.Errorf("invalid severity '%d': %v", jrnlSeverityInt, err)
 		return

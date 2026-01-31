@@ -31,20 +31,24 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 	// Estimate new queue maximum memory size in bytes
 	expectedMaxNewQueueMemSize := uint64((nextPowerOfTwo(currentCapacity)) * int(currentSizePerItem))
 
+	utilization := float64(currentDepth) / float64(currentCapacity) * 100
 	// Decide direction
 	var scaleUp, scaleDown bool
-	if float64(currentDepth/uint64(currentCapacity))*100 >= 90 {
+	if utilization >= 90 {
 		// No scaling up when near system memory limit
 		if availMem > 0 && expectedMaxNewQueueMemSize > availMem {
 			return
 		}
 
 		scaleUp = true
-	} else if float64(currentDepth/uint64(currentCapacity))*100 <= 2 {
+	} else if utilization <= 2 {
 		scaleDown = true
 	}
+
 	if scaleUp {
-		err := container.mutateSize(uint64(nextPowerOfTwo(currentCapacity)))
+		newSize := uint64(nextPowerOfTwo(currentCapacity + 1))
+
+		err := container.mutateSize(newSize)
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
 				"Failed to scale queue capacity: %v\n", err)
@@ -53,7 +57,9 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog,
 			"Scaled up queue from %d to %d capacity\n", currentCapacity, nextPowerOfTwo(currentCapacity))
 	} else if scaleDown {
-		err := container.mutateSize(uint64(prevPowerOfTwo(currentCapacity)))
+		newSize := uint64(prevPowerOfTwo(currentCapacity))
+
+		err := container.mutateSize(newSize)
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
 				"Failed to scale queue capacity: %v\n", err)

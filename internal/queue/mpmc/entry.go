@@ -133,11 +133,9 @@ func (container *Queue[T]) Push(value T) (success bool) {
 			}
 			queue.Metrics.PushCASRetries.Add(1)
 		} else if seq < pos {
-			queue.Metrics.PushFull.Add(1)
 			success = false // queue full
 			return
 		} else {
-			queue.Metrics.PushSeqAhead.Add(1)
 			runtime.Gosched() // yield then retry
 		}
 	}
@@ -203,7 +201,6 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 
 		// queue empty: wait for signal or context cancel
 		if seq < readySeq {
-			queue.Metrics.PopEmpty.Add(1)
 			migrateSignal := container.migrateCh.Load().(chan struct{})
 
 			select {
@@ -211,7 +208,6 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 				success = false
 				return
 			case <-queue.notEmpty:
-				queue.Metrics.PopWaitSignals.Add(1)
 				continue // retry after being signaled
 			case <-migrateSignal:
 				// Finish migration by flipping read to write pointer
@@ -222,6 +218,6 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 		}
 
 		// seq > readySeq, another consumer ahead, retry
-		queue.Metrics.PopSeqBehind.Add(1)
+		runtime.Gosched()
 	}
 }

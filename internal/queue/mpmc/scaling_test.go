@@ -1,6 +1,105 @@
 package mpmc
 
-import "testing"
+import (
+	"context"
+	"sdsyslog/internal/global"
+	"testing"
+)
+
+func TestQueueScaleCapacity_DecisionOnly(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name          string
+		initialCap    uint64
+		minCap        int
+		maxCap        int
+		pushCount     int
+		bytesPerItem  int
+		expectResize  bool
+		expectNewSize int
+	}{
+		{
+			name:          "scale up near capacity",
+			initialCap:    4,
+			minCap:        2,
+			maxCap:        32,
+			pushCount:     4,
+			bytesPerItem:  16,
+			expectResize:  true,
+			expectNewSize: 8,
+		},
+		{
+			name:          "scale down underutilized",
+			initialCap:    64,
+			minCap:        8,
+			maxCap:        128,
+			pushCount:     1,
+			bytesPerItem:  16,
+			expectResize:  true,
+			expectNewSize: 32,
+		},
+		{
+			name:         "no-op at mid utilization",
+			initialCap:   8,
+			minCap:       4,
+			maxCap:       32,
+			pushCount:    4,
+			bytesPerItem: 16,
+			expectResize: false,
+		},
+		{
+			name:         "no-op at min size",
+			initialCap:   4,
+			minCap:       4,
+			maxCap:       32,
+			pushCount:    0,
+			bytesPerItem: 16,
+			expectResize: false,
+		},
+		{
+			name:         "no-op at max size",
+			initialCap:   32,
+			minCap:       4,
+			maxCap:       32,
+			pushCount:    32,
+			bytesPerItem: 16,
+			expectResize: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q, err := New[int]([]string{global.NSTest}, tt.initialCap, tt.minCap, tt.maxCap)
+			if err != nil {
+				t.Fatalf("new queue: %v", err)
+			}
+
+			for i := 0; i < tt.pushCount; i++ {
+				q.PushBlocking(ctx, i, tt.bytesPerItem)
+			}
+
+			before := q.ActiveWrite.Load()
+
+			q.ScaleCapacity(ctx)
+
+			after := q.ActiveWrite.Load()
+
+			if tt.expectResize {
+				if before == after {
+					t.Fatalf("expected resize, ActiveWrite pointer unchanged")
+				}
+				if after.Size != tt.expectNewSize {
+					t.Fatalf("expected new size %d, got %d", tt.expectNewSize, after.Size)
+				}
+			} else {
+				if before != after {
+					t.Fatalf("did not expect resize, but ActiveWrite pointer changed")
+				}
+			}
+		})
+	}
+}
 
 func TestTrend(t *testing.T) {
 	tests := []struct {

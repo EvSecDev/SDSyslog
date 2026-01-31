@@ -2,7 +2,7 @@ package protocol
 
 import "time"
 
-// Container for external use - fields are mandatory
+// Container for external use - mandatory parts
 type Message struct {
 	Timestamp time.Time
 	Hostname  string

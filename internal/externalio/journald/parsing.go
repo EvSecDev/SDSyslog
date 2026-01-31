@@ -5,16 +5,19 @@ import (
 	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/syslog"
+	"sdsyslog/pkg/protocol"
 	"strconv"
 	"time"
 )
 
 // Extracts relevant fields from a journal entry
-func parseFields(fields map[string]string, localHostname string) (message global.ParsedMessage, err error) {
+func parseFields(fields map[string]string, localHostname string) (message protocol.Message, err error) {
 	var ok bool
 
+	message.Fields = make(map[string]any)
+
 	// RAW LOG
-	message.Text, ok = fields["MESSAGE"]
+	message.Data, ok = fields["MESSAGE"]
 	if !ok {
 		err = fmt.Errorf("journal entry has no message")
 		return
@@ -40,11 +43,12 @@ func parseFields(fields map[string]string, localHostname string) (message global
 	candidates := []string{"SYSLOG_IDENTIFIER", "_SYSTEMD_USER_UNIT", "_SYSTEMD_UNIT"}
 	for _, key := range candidates {
 		if val, ok := fields[key]; ok {
-			message.ApplicationName = val
+			message.Fields[global.CFappname] = val
 			break
 		}
 	}
-	if message.ApplicationName == "" {
+	_, ok = message.Fields[global.CFappname]
+	if !ok {
 		err = fmt.Errorf("journal entry has no unit field")
 		return
 	}
@@ -66,7 +70,7 @@ func parseFields(fields map[string]string, localHostname string) (message global
 		err = fmt.Errorf("journal message priority '%s' is invalid: %v", journalPriority, err)
 		return
 	}
-	message.Severity, err = syslog.CodeToSeverity(uint16(jrnlPriInt))
+	message.Fields[global.CFseverity], err = syslog.CodeToSeverity(uint16(jrnlPriInt))
 	if err != nil {
 		err = fmt.Errorf("invalid severity '%d': %v", jrnlPriInt, err)
 		return
@@ -82,14 +86,14 @@ func parseFields(fields map[string]string, localHostname string) (message global
 		}
 	}
 	if pidStr != "" {
-		message.ProcessID, err = strconv.Atoi(pidStr)
+		message.Fields[global.CFprocessid], err = strconv.Atoi(pidStr)
 		if err != nil {
 			err = fmt.Errorf("invalid pid '%s': %v", pidStr, err)
 			return
 		}
 	} else {
 		// Using self for missing pid
-		message.ProcessID = os.Getpid()
+		message.Fields[global.CFprocessid] = os.Getpid()
 	}
 
 	// FACILITY
@@ -102,10 +106,22 @@ func parseFields(fields map[string]string, localHostname string) (message global
 		err = fmt.Errorf("journal message priority '%s' is invalid: %v", journalFacility, err)
 		return
 	}
-	message.Facility, err = syslog.CodeToFacility(uint16(jrnlSeverityInt))
+	message.Fields[global.CFfacility], err = syslog.CodeToFacility(uint16(jrnlSeverityInt))
 	if err != nil {
 		err = fmt.Errorf("invalid severity '%d': %v", jrnlSeverityInt, err)
 		return
 	}
+
+	// Retrieve custom fields - best effort
+	permittedJournalFields := []string{"_EXE", "_COMM", "_CMDLINE", "_UID", "_GID"}
+	for _, field := range permittedJournalFields {
+		jrnlValue, ok := fields["SYSLOG_FACILITY"]
+		if !ok {
+			continue
+		}
+
+		message.Fields[field] = jrnlValue
+	}
+
 	return
 }

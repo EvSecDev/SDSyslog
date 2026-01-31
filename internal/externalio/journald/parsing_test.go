@@ -4,6 +4,7 @@ import (
 	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/syslog"
+	"sdsyslog/pkg/protocol"
 	"strconv"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func TestParseFields(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       map[string]string
-		expected    global.ParsedMessage
+		expected    protocol.Message
 		expectedErr bool
 	}{
 		{
@@ -39,14 +40,16 @@ func TestParseFields(t *testing.T) {
 				"_PID":                 "1234",
 				"SYSLOG_FACILITY":      "3",
 			},
-			expected: global.ParsedMessage{
-				Text:            "hello world",
-				ApplicationName: "my-app",
-				Hostname:        "test-host",
-				ProcessID:       1234,
-				Timestamp:       expectedTime,
-				Facility:        "daemon",
-				Severity:        "info",
+			expected: protocol.Message{
+				Data:      "hello world",
+				Hostname:  "test-host",
+				Timestamp: expectedTime,
+				Fields: map[string]any{
+					global.CFappname:   "my-app",
+					global.CFprocessid: 1234,
+					global.CFfacility:  "daemon",
+					global.CFseverity:  "info",
+				},
 			},
 		},
 		{
@@ -86,14 +89,16 @@ func TestParseFields(t *testing.T) {
 				"_SYSTEMD_UNIT":        "system.service",
 				"PRIORITY":             "5",
 			},
-			expected: global.ParsedMessage{
-				Text:            "hello",
-				ApplicationName: "user.service",
-				Hostname:        localHostname,
-				ProcessID:       os.Getpid(),
-				Timestamp:       expectedTime,
-				Facility:        "daemon",
-				Severity:        "notice",
+			expected: protocol.Message{
+				Data:      "hello",
+				Hostname:  localHostname,
+				Timestamp: expectedTime,
+				Fields: map[string]any{
+					global.CFappname:   "user.service",
+					global.CFprocessid: os.Getpid(),
+					global.CFfacility:  "daemon",
+					global.CFseverity:  "notice",
+				},
 			},
 		},
 		{
@@ -113,14 +118,16 @@ func TestParseFields(t *testing.T) {
 				"SYSLOG_IDENTIFIER":    "my-app",
 				"PRIORITY":             "6",
 			},
-			expected: global.ParsedMessage{
-				Text:            "hello",
-				ApplicationName: "my-app",
-				Hostname:        localHostname,
-				ProcessID:       os.Getpid(),
-				Timestamp:       expectedTime,
-				Facility:        "daemon",
-				Severity:        "info",
+			expected: protocol.Message{
+				Data:      "hello",
+				Hostname:  localHostname,
+				Timestamp: expectedTime,
+				Fields: map[string]any{
+					global.CFappname:   "my-app",
+					global.CFprocessid: os.Getpid(),
+					global.CFfacility:  "daemon",
+					global.CFseverity:  "info",
+				},
 			},
 		},
 		{
@@ -131,14 +138,16 @@ func TestParseFields(t *testing.T) {
 				"SYSLOG_IDENTIFIER":    "my-app",
 				"PRIORITY":             "6",
 			},
-			expected: global.ParsedMessage{
-				Text:            "hello",
-				ApplicationName: "my-app",
-				Hostname:        localHostname,
-				ProcessID:       os.Getpid(),
-				Timestamp:       expectedTime,
-				Facility:        "daemon",
-				Severity:        "info",
+			expected: protocol.Message{
+				Data:      "hello",
+				Hostname:  localHostname,
+				Timestamp: expectedTime,
+				Fields: map[string]any{
+					global.CFappname:   "my-app",
+					global.CFprocessid: os.Getpid(),
+					global.CFfacility:  "daemon",
+					global.CFseverity:  "info",
+				},
 			},
 		},
 		{
@@ -188,26 +197,50 @@ func TestParseFields(t *testing.T) {
 				return
 			}
 
-			if tt.expected.Text != msg.Text {
-				t.Fatalf("expected Text '%s', but got '%s'", tt.expected.Text, msg.Text)
-			}
-			if tt.expected.ApplicationName != msg.ApplicationName {
-				t.Fatalf("expected ApplicationName '%s', but got '%s'", tt.expected.ApplicationName, msg.ApplicationName)
+			if tt.expected.Data != msg.Data {
+				t.Fatalf("expected Data '%s', but got '%s'", tt.expected.Data, msg.Data)
 			}
 			if tt.expected.Hostname != msg.Hostname {
 				t.Fatalf("expected Hostname '%s', but got '%s'", tt.expected.Hostname, msg.Hostname)
 			}
-			if tt.expected.ProcessID != msg.ProcessID {
-				t.Fatalf("expected ProcessID '%d', but got '%d'", tt.expected.ProcessID, msg.ProcessID)
-			}
 			if tt.expected.Timestamp != msg.Timestamp {
 				t.Fatalf("expected Timestamp '%s', but got '%s'", tt.expected.Timestamp, msg.Timestamp)
 			}
-			if tt.expected.Facility != msg.Facility {
-				t.Fatalf("expected Facility '%s', but got '%s'", tt.expected.Facility, msg.Facility)
+
+			expected := tt.expected.Fields[global.CFappname]
+			got, ok := msg.Fields[global.CFappname]
+			if !ok {
+				t.Errorf("expected %s to be present, but found nothing in custom fields", global.CFappname)
 			}
-			if tt.expected.Severity != msg.Severity {
-				t.Fatalf("expected Severity '%s', but got '%s'", tt.expected.Severity, msg.Severity)
+			if expected != got {
+				t.Errorf("expected %s to be '%s', but got '%s'", global.CFappname, expected, got)
+			}
+
+			expected = tt.expected.Fields[global.CFfacility]
+			got, ok = msg.Fields[global.CFfacility]
+			if !ok {
+				t.Errorf("expected %s to be present, but found nothing in custom fields", global.CFfacility)
+			}
+			if expected != got {
+				t.Errorf("expected %s to be '%s', but got '%s'", global.CFfacility, expected, got)
+			}
+
+			expected = tt.expected.Fields[global.CFprocessid]
+			got, ok = msg.Fields[global.CFprocessid]
+			if !ok {
+				t.Errorf("expected %s to be present, but found nothing in custom fields", global.CFprocessid)
+			}
+			if expected != got {
+				t.Errorf("expected %s to be '%s', but got '%s'", global.CFprocessid, expected, got)
+			}
+
+			expected = tt.expected.Fields[global.CFseverity]
+			got, ok = msg.Fields[global.CFseverity]
+			if !ok {
+				t.Errorf("expected %s to be present, but found nothing in custom fields", global.CFseverity)
+			}
+			if expected != got {
+				t.Errorf("expected %s to be '%s', but got '%s'", global.CFseverity, expected, got)
 			}
 		})
 	}

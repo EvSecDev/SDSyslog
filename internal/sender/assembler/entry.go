@@ -11,7 +11,7 @@ import (
 	"sdsyslog/pkg/protocol"
 )
 
-func New(namespace []string, inQueue *mpmc.Queue[global.ParsedMessage], outQueue *mpmc.Queue[[]byte], hostID, maxPayloadSize int) (new *Instance) {
+func New(namespace []string, inQueue *mpmc.Queue[protocol.Message], outQueue *mpmc.Queue[[]byte], hostID, maxPayloadSize int) (new *Instance) {
 	new = &Instance{
 		Namespace:      append(namespace, global.NSAssm),
 		inbox:          inQueue,
@@ -45,27 +45,20 @@ func (instance *Instance) Run(ctx context.Context) {
 			if !ok {
 				return
 			}
-			size := len(container.Text) +
-				len(container.ApplicationName) +
-				len(container.Hostname) +
-				len(container.Facility) +
-				len(container.Severity) +
-				16 // int64 size pid and time
 			// Subtract data size from sum
-			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(size), 4)
+			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(container.Size()), 4)
 
-			customFields := map[string]any{
-				"Facility":        container.Facility,
-				"Severity":        container.Severity,
-				"ProcessID":       container.ProcessID,
-				"ApplicationName": container.ApplicationName,
+			// In-module added fields
+			customFields := make(map[string]any)
+			for key, val := range container.Fields {
+				customFields[key] = val
 			}
 
 			newMsg := protocol.Message{
 				Timestamp: container.Timestamp,
 				Hostname:  container.Hostname,
 				Fields:    customFields,
-				Data:      container.Text,
+				Data:      container.Data,
 			}
 
 			msgLengthB := uint64(len(newMsg.Data))

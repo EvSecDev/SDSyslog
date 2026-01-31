@@ -12,8 +12,10 @@ import (
 )
 
 // Parses file line text for common formats and extracts metadata. (The Monstrosity of Assumption TM)
-func parseLine(rawLine string, localHostname string) (message global.ParsedMessage) {
+func parseLine(rawLine string, localHostname string) (message protocol.Message) {
 	line := strings.TrimSpace(rawLine)
+
+	message.Fields = make(map[string]any)
 
 	// Format: Syslog
 	if len(line) >= 15 {
@@ -31,18 +33,18 @@ func parseLine(rawLine string, localHostname string) (message global.ParsedMessa
 				colon := strings.Index(rest, ":")
 				if colon > 0 {
 					header := rest[:colon]
-					message.Text = strings.TrimSpace(rest[colon+1:])
+					message.Data = strings.TrimSpace(rest[colon+1:])
 
 					// app[pid] or app
 					if lb := strings.IndexByte(header, '['); lb > 0 {
-						message.ApplicationName = header[:lb]
+						message.Fields[global.CFappname] = header[:lb]
 						if rb := strings.IndexByte(header, ']'); rb > lb+1 {
 							if pid, err := strconv.Atoi(header[lb+1 : rb]); err == nil {
-								message.ProcessID = pid
+								message.Fields[global.CFprocessid] = pid
 							}
 						}
 					} else {
-						message.ApplicationName = header
+						message.Fields[global.CFappname] = header
 					}
 
 					message.Timestamp = withCurrentYear(ts)
@@ -74,12 +76,12 @@ func parseLine(rawLine string, localHostname string) (message global.ParsedMessa
 				pidEnd := strings.Index(rest, "]")
 				if pidStart > 0 && pidEnd > pidStart {
 					// Process includes PID in square brackets
-					message.ApplicationName = rest[:pidStart]
+					message.Fields[global.CFappname] = rest[:pidStart]
 					pidStr := rest[pidStart+1 : pidEnd]
 
 					// Convert PID to an integer
 					if pid, err := strconv.Atoi(pidStr); err == nil {
-						message.ProcessID = pid
+						message.Fields[global.CFprocessid] = pid
 					}
 
 					// Extract the message text after the PID part
@@ -88,14 +90,14 @@ func parseLine(rawLine string, localHostname string) (message global.ParsedMessa
 					// No PID, extract ApplicationName before the colon
 					colonIndex := strings.Index(rest, ":")
 					if colonIndex > 0 {
-						message.ApplicationName = rest[:colonIndex]
+						message.Fields[global.CFappname] = rest[:colonIndex]
 						rest = rest[colonIndex+1:] // Everything after the colon is the message text
 					}
 				}
 				rest = strings.TrimSpace(rest)
 
 				// Remaining part is the message text
-				message.Text = rest
+				message.Data = rest
 			}
 			message = setDefaults(message, line, localHostname)
 			return
@@ -110,15 +112,15 @@ func parseLine(rawLine string, localHostname string) (message global.ParsedMessa
 
 			if strings.HasPrefix(rest, "[") {
 				if rb := strings.Index(rest, "]"); rb > 1 {
-					message.Severity = strings.ToLower(rest[1:rb])
+					message.Fields[global.CFseverity] = strings.ToLower(rest[1:rb])
 					rest = strings.TrimSpace(rest[rb+1:])
 
 					if hash := strings.Index(rest, "#"); hash > 0 {
 						if colon := strings.Index(rest, ":"); colon > hash {
 							if pid, err := strconv.Atoi(rest[:hash]); err == nil {
-								message.ProcessID = pid
+								message.Fields[global.CFprocessid] = pid
 							}
-							message.Text = strings.TrimSpace(rest[colon+1:])
+							message.Data = strings.TrimSpace(rest[colon+1:])
 							message.Timestamp = ts
 							message = setDefaults(message, line, localHostname)
 							return
@@ -133,7 +135,7 @@ func parseLine(rawLine string, localHostname string) (message global.ParsedMessa
 	if len(line) >= 19 {
 		if ts, err := time.Parse("2006-01-02 15:04:05", line[:19]); err == nil {
 			message.Timestamp = ts
-			message.Text = strings.TrimSpace(line[19:])
+			message.Data = strings.TrimSpace(line[19:])
 			message = setDefaults(message, line, localHostname)
 			return
 		}
@@ -156,7 +158,7 @@ func parseLine(rawLine string, localHostname string) (message global.ParsedMessa
 			if ts, err := time.Parse("02-Jan-2006 15:04:05", tsStr); err == nil {
 				rest := strings.TrimSpace(line[rb+1:])
 				if colon := strings.Index(rest, ":"); colon > 0 {
-					message.Text = strings.TrimSpace(rest[colon+1:])
+					message.Data = strings.TrimSpace(rest[colon+1:])
 				}
 				message.Timestamp = ts
 				message = setDefaults(message, line, localHostname)
@@ -186,31 +188,36 @@ func withCurrentYear(old time.Time) (new time.Time) {
 }
 
 // Replaces empty fields with expected defaults
-func setDefaults(old global.ParsedMessage, raw string, localHostname string) (new global.ParsedMessage) {
+func setDefaults(old protocol.Message, raw string, localHostname string) (new protocol.Message) {
 	new = old
-	if new.ApplicationName == "" {
-		new.ApplicationName = "-"
+	if new.Timestamp.IsZero() {
+		new.Timestamp = time.Now()
 	}
 	if new.Hostname == "" {
 		new.Hostname = localHostname
 	}
-	if new.ProcessID == 0 {
-		new.ProcessID = os.Getpid()
-	}
-	if new.Timestamp.IsZero() {
-		new.Timestamp = time.Now()
-	}
-	if new.Facility == "" {
-		new.Facility = global.DefaultFacility
-	}
-	if new.Severity == "" {
-		new.Severity = global.DefaultSeverity
-	}
-	if new.Text == "" {
+	if new.Data == "" {
 		if raw == "" {
 			raw = "-"
 		}
-		new.Text = raw
+		new.Data = raw
+	}
+
+	_, ok := new.Fields[global.CFappname]
+	if !ok {
+		new.Fields[global.CFappname] = "-"
+	}
+	_, ok = new.Fields[global.CFprocessid]
+	if !ok {
+		new.Fields[global.CFprocessid] = os.Getpid()
+	}
+	_, ok = new.Fields[global.CFfacility]
+	if !ok {
+		new.Fields[global.CFfacility] = global.DefaultFacility
+	}
+	_, ok = new.Fields[global.CFseverity]
+	if !ok {
+		new.Fields[global.CFseverity] = global.DefaultSeverity
 	}
 	return
 }
@@ -230,18 +237,17 @@ func formatAsText(ctx context.Context, msg protocol.Payload) (text string, err e
 	var keyValString []string
 	var appname, processid, facility, severity string
 	for key, value := range msg.CustomFields {
-		keyLowercase := strings.ToLower(key)
-		switch keyLowercase {
-		case "applicationname":
+		switch key {
+		case global.CFappname:
 			appname = protocol.FormatValue(value)
 			continue
-		case "processid":
+		case global.CFprocessid:
 			processid = protocol.FormatValue(value)
 			continue
-		case "facility":
+		case global.CFfacility:
 			facility = protocol.FormatValue(value)
 			continue
-		case "severity":
+		case global.CFseverity:
 			severity = protocol.FormatValue(value)
 			continue
 		}

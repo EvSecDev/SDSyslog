@@ -8,13 +8,13 @@ import (
 	"net/url"
 	"os/exec"
 	"path/filepath"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/queue/mpmc"
+	"sdsyslog/pkg/protocol"
 	"time"
 )
 
 // Creates new journald listener module
-func NewInput(namespace []string, baseStateFile string, queue *mpmc.Queue[global.ParsedMessage]) (new *InModule, err error) {
+func NewInput(namespace []string, baseStateFile string, queue *mpmc.Queue[protocol.Message]) (new *InModule, err error) {
 	// Create unique state file for journal
 	stateFileDir := filepath.Dir(baseStateFile)
 	stateFileName := filepath.Base(baseStateFile)
@@ -59,7 +59,7 @@ func NewInput(namespace []string, baseStateFile string, queue *mpmc.Queue[global
 	}
 
 	new = &InModule{
-		Namespace: append(namespace, global.NSoJrnl),
+		Namespace: namespace,
 		cmd:       jrnlCmd,
 		sink:      stdout,
 		err:       stderr,

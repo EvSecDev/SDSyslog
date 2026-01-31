@@ -2,8 +2,8 @@ package file
 
 import (
 	"io"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/queue/mpmc"
+	"sdsyslog/pkg/protocol"
 )
 
 type OutModule struct {
@@ -16,6 +16,6 @@ type InModule struct {
 	sink      io.ReadSeekCloser
 	filePath  string
 	stateFile string
-	outbox    *mpmc.Queue[global.ParsedMessage]
+	outbox    *mpmc.Queue[protocol.Message]
 	metrics   MetricStorage
 }

@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
+	"strings"
 )
 
 func (mod *InModule) Reader(ctx context.Context) {
@@ -83,13 +84,9 @@ func (mod *InModule) Reader(ctx context.Context) {
 			}
 			mod.metrics.LinesRead.Add(1)
 
-			size := len(msg.Text) +
-				len(msg.ApplicationName) +
-				len(msg.Hostname) +
-				len(msg.Facility) +
-				len(msg.Severity) +
-				16 // int64 size pid and time
-			mod.outbox.PushBlocking(ctx, msg, size)
+			msg.Fields[global.IOCtxKey] = strings.Join(mod.Namespace, "/")
+
+			mod.outbox.PushBlocking(ctx, msg, msg.Size())
 			mod.metrics.Success.Add(1)
 
 			// Local hostname periodic refresh

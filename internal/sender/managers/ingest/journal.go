@@ -15,6 +15,9 @@ func (manager *InstanceManager) AddJrnlInstance(stateFile string) (err error) {
 		return
 	}
 
+	manager.ctx = logctx.AppendCtxTag(manager.ctx, global.NSoJrnl)
+	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
+
 	new, err := journald.NewInput(logctx.GetTagList(manager.ctx), stateFile, manager.outQueue)
 	if err != nil {
 		return

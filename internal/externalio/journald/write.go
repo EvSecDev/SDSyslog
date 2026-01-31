@@ -7,6 +7,7 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
+	"strings"
 	"time"
 )
 
@@ -26,6 +27,8 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 		"REMOTE_IP":            msg.RemoteIP,
 	}
 	for key, value := range msg.CustomFields {
+		key = strings.TrimPrefix(key, "_") // Remove journal internal fields prefix before write
+
 		text := protocol.FormatValue(value)
 		if text == "" {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,

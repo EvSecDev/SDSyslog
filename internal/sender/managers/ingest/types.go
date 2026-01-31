@@ -4,8 +4,8 @@ import (
 	"context"
 	"sdsyslog/internal/externalio/file"
 	"sdsyslog/internal/externalio/journald"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/queue/mpmc"
+	"sdsyslog/pkg/protocol"
 	"sync"
 )
 
@@ -13,7 +13,7 @@ type InstanceManager struct {
 	Mu            sync.Mutex
 	FileSources   map[string]*FileWorker // File sources keyed by path
 	JournalSource *JrnlWorker
-	outQueue      *mpmc.Queue[global.ParsedMessage] // Queue for worked completed by the pair
+	outQueue      *mpmc.Queue[protocol.Message] // Queue for worked completed by the pair
 	ctx           context.Context
 }
 

@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/queue/mpmc"
+	"sdsyslog/pkg/protocol"
 )
 
 // Creates new file input module. Returns nil nil if no path.
-func NewInput(namespace []string, filePath string, baseStateFile string, queue *mpmc.Queue[global.ParsedMessage]) (module *InModule, err error) {
+func NewInput(namespace []string, filePath string, baseStateFile string, queue *mpmc.Queue[protocol.Message]) (module *InModule, err error) {
 	if filePath == "" {
 		return
 	}
@@ -29,7 +29,7 @@ func NewInput(namespace []string, filePath string, baseStateFile string, queue *
 	}
 
 	module = &InModule{
-		Namespace: append(namespace, global.NSoFile),
+		Namespace: namespace,
 		sink:      file,
 		filePath:  filePath,
 		stateFile: newStateFile,

@@ -17,7 +17,7 @@ func (payload Payload) Size() (bytes int) {
 	bytes += 16 // RemoteIP
 	bytes += 16 // Hostname
 
-	// String backing storage ----
+	// String backing storage
 	bytes += len(payload.RemoteIP)
 	bytes += len(payload.Hostname)
 
@@ -34,6 +34,31 @@ func (payload Payload) Size() (bytes int) {
 
 	return
 }
+
+// Size returns an estimate of the total in-memory footprint of Message,
+// including stable Go runtime overhead (string/slice headers + backing data).
+func (msg Message) Size() (bytes int) {
+	// Fixed-size fields
+	bytes += 24 // Timestamp (time.Time)
+
+	// String backing storage
+	bytes += 16
+	bytes += len(msg.Hostname)
+
+	// Data
+	bytes += 16            // string header
+	bytes += len(msg.Data) // backing array
+
+	// Custom fields map
+	bytes += 8 // approximate map header pointer
+	for key, value := range msg.Fields {
+		bytes += len(key) + 16
+		bytes += valueSizeApprox(reflect.ValueOf(value))
+	}
+
+	return
+}
+
 func valueSizeApprox(v reflect.Value) (byteSize int) {
 	if !v.IsValid() {
 		return 0

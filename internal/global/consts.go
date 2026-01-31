@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.14.0"
+	ProgVersion string = "v0.14.1"
 
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
@@ -38,6 +38,13 @@ const (
 	DefaultMaxQueueSize      int           = 4096
 	DefaultMinPacketDeadline time.Duration = 50 * time.Millisecond
 	DefaultMaxPacketDeadline time.Duration = 1 * time.Second
+
+	// Custom Fields (internally required, not protocol required)
+	IOCtxKey    string = "SourceSink" // Identifying namespace of an in-module
+	CFfacility  string = "Facility"
+	CFseverity  string = "Severity"
+	CFprocessid string = "ProcessID"
+	CFappname   string = "ApplicationName"
 
 	// IO Modules
 	DefaultJournaldURL string = "http://localhost:19532"

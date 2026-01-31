@@ -52,7 +52,8 @@ func TestSendReceivePipeline(t *testing.T) {
 	globalCtx = logctx.WithLogger(globalCtx, logger)                     // Add logger to global ctx
 
 	// Mock output
-	testOutputsFile := filepath.Join(testDir, "integration-test-outputs.txt")
+	testOutputFileName := "integration-test-outputs.txt"
+	testOutputsFile := filepath.Join(testDir, testOutputFileName)
 
 	// Daemon config
 	newCfg := receiver.Config{
@@ -92,7 +93,8 @@ func TestSendReceivePipeline(t *testing.T) {
 	}
 
 	// Mock sending source
-	testInputsFile := filepath.Join(testDir, "integration-test-inputs.txt")
+	testInputFileName := "integration-test-inputs.txt"
+	testInputsFile := filepath.Join(testDir, testInputFileName)
 	testStateFile := filepath.Join(testDir, "integration-test-input-state.txt")
 	testInFile, err := os.OpenFile(testInputsFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0640)
 	if err != nil {
@@ -192,7 +194,10 @@ func TestSendReceivePipeline(t *testing.T) {
 			}
 
 			// Hash input as source of truth for checking output integrity
-			inputHash, err := hash.MultipleSlices([]byte(tt.inputText + "\n")) // add expected newline for file in/out
+			expectedNamespace := []string{global.NSSend, global.NSmIngest, global.NSoFile, testInputFileName}
+			expectedOutput := tt.inputText + " (" + global.IOCtxKey + "=" + strings.Join(expectedNamespace, "/") + ")" + "\n"
+
+			inputHash, err := hash.MultipleSlices([]byte(expectedOutput))
 			if err != nil {
 				t.Errorf("expected no error from input hash generation, but got '%v'", err)
 			}

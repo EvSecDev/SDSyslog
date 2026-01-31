@@ -5,6 +5,7 @@ import (
 	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/pkg/protocol"
+	"strings"
 )
 
 // Writes log message and associated metadata to configured beats server
@@ -15,6 +16,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent
 
 	customFields := make(map[string]interface{})
 	for key, value := range msg.CustomFields {
+		key = strings.TrimPrefix(key, "_") // Remove journal internal fields prefix
 		customFields[key] = value
 	}
 
@@ -39,7 +41,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent
 			"pid":     os.Getpid(),
 		},
 
-		// Syslog compat fields
+		// Custom fields written to syslog namespace
 		"log": map[string]interface{}{
 			"id":     msg.MsgID,
 			"syslog": customFields,

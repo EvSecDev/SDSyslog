@@ -22,8 +22,12 @@ func (manager *InstanceManager) AddFileInstance(filePath string, stateFile strin
 		return
 	}
 
+	manager.ctx = logctx.AppendCtxTag(manager.ctx, global.NSoFile)
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, filename)
-	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
+	defer func() {
+		manager.ctx = logctx.RemoveLastCtxTag(manager.ctx)
+		manager.ctx = logctx.RemoveLastCtxTag(manager.ctx)
+	}()
 
 	// Worker for this file
 	ingestInstance := &FileWorker{}

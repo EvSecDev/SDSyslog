@@ -6,6 +6,7 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
+	"sdsyslog/pkg/protocol"
 )
 
 // Creates new instance manager
@@ -19,7 +20,7 @@ func NewInstanceManager(ctx context.Context, inboxSize int, outbox *mpmc.Queue[[
 	ctx = logctx.AppendCtxTag(ctx, global.NSmPack)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	inbox, err := mpmc.New[global.ParsedMessage](logctx.GetTagList(ctx), uint64(inboxSize), minQsize, maxQsize)
+	inbox, err := mpmc.New[protocol.Message](logctx.GetTagList(ctx), uint64(inboxSize), minQsize, maxQsize)
 	if err != nil {
 		return
 	}

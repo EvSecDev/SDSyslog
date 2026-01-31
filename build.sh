@@ -243,7 +243,7 @@ done
 
 if [[ $prepareRelease == true ]]; then
 	compile_program_prechecks
-	compile_program "$architecture" "$os" 'true' 'true'
+	compile_program "$architecture" "$os" 'true' 'false' 'true'
 	tempReleaseDir=$(prepare_github_release_files "$fullNameProgramPrefix")
 	create_release_notes "$repoRoot" "$tempReleaseDir"
 elif [[ -n $publishVersion ]]; then

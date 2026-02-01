@@ -115,7 +115,7 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 	// Retrieve custom fields - best effort
 	permittedJournalFields := []string{"_EXE", "_COMM", "_CMDLINE", "_UID", "_GID"}
 	for _, field := range permittedJournalFields {
-		jrnlValue, ok := fields["SYSLOG_FACILITY"]
+		jrnlValue, ok := fields[field]
 		if !ok {
 			continue
 		}

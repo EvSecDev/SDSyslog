@@ -4,76 +4,13 @@ package logctx
 import (
 	"context"
 	"fmt"
-	"sdsyslog/internal/global"
+	"sort"
 	"strings"
-	"sync"
-	"time"
 )
 
-// Logger Constructor
-func NewLogger(id string, logLevel int, done <-chan struct{}) (logger *Logger) {
-	// loglevel
-	//
-	// Integer for printing increasingly detailed information as program progresses
-	//
-	//	0 - None: quiet (prints nothing but errors)
-	//	1 - Standard: normal progress messages
-	//	2 - Progress: more progress messages (no actual data outputted)
-	//	3 - Data: shows limited data being processed
-	//	4 - FullData: shows full data being processed
-	//	5 - Debug: shows extra data during processing (raw bytes)
-
-	logger = &Logger{
-		ID:         id,
-		CreatedAt:  time.Now(),
-		queue:      make([]Event, 0),
-		Done:       done,
-		PrintLevel: logLevel,
-		wg:         &sync.WaitGroup{},
-	}
-	logger.cond = sync.NewCond(&logger.mutex)
-	return
-}
-
-// Attach the logger to context
-func WithLogger(ctx context.Context, logger *Logger) (ctxLogger context.Context) {
-	ctxLogger = context.WithValue(ctx, global.LoggerKey, logger)
-	return
-}
-
-// Change the loggers level
-func SetLogLevel(ctx context.Context, newLevel int) {
-	logger := GetLogger(ctx)
-	if logger != nil {
-		logger.mutex.Lock()
-		defer logger.mutex.Unlock()
-		logger.PrintLevel = newLevel
-	}
-}
-
-// Extracts Logger from context or returns nil
-func GetLogger(ctx context.Context) (logger *Logger) {
-	logger, ok := ctx.Value(global.LoggerKey).(*Logger)
-	if ok {
-		return
-	}
-	logger = nil
-	return
-}
-
-// Hold main thread exit until logger is finished its work
-func (logger *Logger) Wait() {
-	logger.wg.Wait()
-}
-
-// Wake signals/broadcasts to any goroutines waiting on the condition variable
-func (logger *Logger) Wake() {
-	logger.mutex.Lock()
-	defer logger.mutex.Unlock()
-	logger.cond.Broadcast()
-}
-
-// Entry for logging events
+// Entry for logging events.
+// If event level is above the current set logger level, message will not be recorded.
+// If severity is an error, event level is not considered and message is recorded.
 func LogEvent(ctx context.Context, eventLevel int, severity string, message string, vars ...any) {
 	// Retrieve current tag list
 	tags := GetTagList(ctx)
@@ -84,7 +21,7 @@ func LogEvent(ctx context.Context, eventLevel int, severity string, message stri
 		var newMsg string
 
 		// vars might be empty - check to omit formatting
-		if vars == nil || !strings.Contains(message, "%") && !strings.Contains(message, `%%`) {
+		if len(vars) == 0 || (!strings.Contains(message, "%") && !strings.Contains(message, `%%`)) {
 			// Avoiding 'extra' print to log entries
 			newMsg = message
 		} else {
@@ -95,4 +32,44 @@ func LogEvent(ctx context.Context, eventLevel int, severity string, message stri
 		}
 		logger.log(eventLevel, severity, tags, newMsg)
 	}
+}
+
+func (logger *Logger) GetFormattedLogLines() (formatted []string) {
+	// Copy under lock to avoid holding mutex while sorting/formatting
+	logger.mutex.Lock()
+	events := make([]Event, len(logger.queue))
+	copy(events, logger.queue)
+	logger.mutex.Unlock()
+
+	// Stable sort: oldest to newest
+	sort.SliceStable(events, func(i, j int) bool {
+		ti := events[i].Timestamp
+		tj := events[j].Timestamp
+
+		// Zero timestamps sort last
+		if ti.IsZero() && tj.IsZero() {
+			return false
+		}
+		if ti.IsZero() {
+			return false
+		}
+		if tj.IsZero() {
+			return true
+		}
+		return ti.Before(tj)
+	})
+
+	formatted = make([]string, 0, len(events))
+	for _, event := range events {
+		msg := event.Format()
+
+		// Append newlines if not present
+		if !strings.HasSuffix(msg, "\n") {
+			msg += "\n"
+		}
+
+		// Final string
+		formatted = append(formatted, msg)
+	}
+	return
 }

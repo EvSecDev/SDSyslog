@@ -31,12 +31,14 @@ func main() {
 	command := args[1]
 	args = args[2:]
 
-	// Setting global logging
+	// Program-wide context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	logger := logctx.NewLogger("global", *requestedLogLevel, ctx.Done()) // New logger tied to global
-	ctx = logctx.WithLogger(ctx, logger)                                 // Add logger to global ctx
-	logctx.StartWatcher(logger, os.Stdout)                               // Send received output to stdout
+
+	// Setting global logging
+	ctx = logctx.New(ctx, "global", *requestedLogLevel, ctx.Done())
+	logger := logctx.GetLogger(ctx)
+	logctx.StartWatcher(logger, os.Stdout)
 
 	// Process commands
 	switch command {

@@ -53,8 +53,7 @@ func TestRecvConstantFlow(t *testing.T) {
 	// Setup logging with in memory
 	logVerbosity := 1 // Set to standard for tests
 	globalCtx, globalCancel := context.WithCancel(context.Background())
-	logger := logctx.NewLogger("global", logVerbosity, globalCtx.Done()) // New logger tied to global
-	globalCtx = logctx.WithLogger(globalCtx, logger)                     // Add logger to global ctx
+	globalCtx = logctx.New(globalCtx, "global", logVerbosity, globalCtx.Done())
 
 	// Daemon config
 	newCfg := receiver.Config{
@@ -177,6 +176,7 @@ func TestRecvConstantFlow(t *testing.T) {
 
 	// Global shutdown
 	globalCancel()
+	logger := logctx.GetLogger(globalCtx)
 	logger.Wake()
 	logger.Wait()
 

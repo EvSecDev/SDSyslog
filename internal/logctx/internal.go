@@ -24,6 +24,6 @@ func (logger *Logger) log(eventLevel int, eventSeverity string, tags []string, f
 
 	logger.mutex.Lock()
 	logger.queue = append(logger.queue, event)
-	logger.mutex.Unlock()
 	logger.cond.Signal() // Notify watcher that new event is available
+	logger.mutex.Unlock()
 }

@@ -6,45 +6,52 @@ import (
 )
 
 // Append new tag to tag list.
-// It performs copy-on-write to preserve immutability
+// New context contains a copy of the old context tag slice to ensure new context slice is owned only by the new context.
 func AppendCtxTag(ctx context.Context, newTag string) (newCtx context.Context) {
-	old := GetTagList(ctx)
+	oldTags := GetTagList(ctx)
 
-	// copy old slice, prevents mutation of parent context
-	tags := append(append([]string(nil), old...), newTag)
+	// Copy old slice, prevents mutation by parent context
+	copiedTags := append(append([]string(nil), oldTags...), newTag)
 
-	newCtx = context.WithValue(ctx, global.LogTagsKey, tags)
+	newCtx = context.WithValue(ctx, global.LogTagsKey, copiedTags)
 	return
 }
 
 // Removes last index of tag list.
-// Also uses copy-on-write
+// New context contains a copy of the old context tag slice to ensure new context slice is owned only by the new context.
 func RemoveLastCtxTag(ctx context.Context) (newCtx context.Context) {
-	old := GetTagList(ctx)
+	oldTags := GetTagList(ctx)
 
-	// copy old slice
-	tags := append([]string(nil), old...)
+	// Copy old slice, prevents mutation by parent context
+	copiedTags := append([]string(nil), oldTags...)
 
-	if len(tags) > 0 {
-		tags = tags[:len(tags)-1]
+	if len(copiedTags) > 0 {
+		copiedTags = copiedTags[:len(copiedTags)-1]
 	}
 
-	newCtx = context.WithValue(ctx, global.LogTagsKey, tags)
+	newCtx = context.WithValue(ctx, global.LogTagsKey, copiedTags)
 	return
 }
 
 // Overwrites entire tag list with given list
-func OverwriteCtxTag(ctx context.Context, newList []string) (newCtx context.Context) {
-	newCtx = context.WithValue(ctx, global.LogTagsKey, newList)
+// New context contains a copy of the old context tag slice to ensure new context slice is owned only by the new context.
+func OverwriteCtxTag(ctx context.Context, newTags []string) (newCtx context.Context) {
+	// Copy old slice, prevents mutation by parent context
+	copiedTags := append([]string(nil), newTags...)
+
+	newCtx = context.WithValue(ctx, global.LogTagsKey, copiedTags)
 	return
 }
 
-// Extracts tag list from context or returns empty array
-func GetTagList(ctx context.Context) (tags []string) {
-	tags, validAssert := ctx.Value(global.LogTagsKey).([]string)
+// Extracts and copies tag list from context or returns empty array if no tags exist on context.
+func GetTagList(ctx context.Context) (tagListCopy []string) {
+	currentTags, validAssert := ctx.Value(global.LogTagsKey).([]string)
 	if !validAssert {
-		tags = []string{}
+		tagListCopy = []string{}
 		return
 	}
+
+	// Copy old slice, prevents mutation of context list by manipulation of returned list
+	tagListCopy = append([]string(nil), currentTags...)
 	return
 }

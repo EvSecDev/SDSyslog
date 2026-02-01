@@ -19,7 +19,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 	const refreshMask = 1024 - 1
 	localHostname, err := os.Hostname()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to retrieve current local hostname: %v\n", err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to retrieve current local hostname: %w\n", err)
 		localHostname = "-"
 		err = nil
 	}
@@ -31,7 +31,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			err := savePosition(readPosition, mod.stateFile)
 			if err != nil {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"failed to save position in journal source: %v\n", err)
+					"failed to save position in journal source: %w\n", err)
 			}
 			return
 		default:
@@ -57,7 +57,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 					return
 				}
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"error reading journal output: %v\n", err)
+					"error reading journal output: %w\n", err)
 				return
 			}
 			if len(fields) == 0 {
@@ -79,7 +79,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 					return
 				}
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"field parse error: %v\n", err)
+					"field parse error: %w\n", err)
 				return
 			}
 			mod.metrics.LinesRead.Add(1)
@@ -96,7 +96,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 				if err == nil && newName != localHostname {
 					localHostname = newName
 				} else if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to refresh current local hostname: %v\n", err)
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to refresh current local hostname: %w\n", err)
 				}
 			}
 		}()

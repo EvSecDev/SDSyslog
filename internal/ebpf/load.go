@@ -38,7 +38,7 @@ func LoadProgram() (err error) {
 
 	ebpfByteCode, err := byteCodeFS.ReadFile("static-files/socket.o")
 	if err != nil {
-		err = fmt.Errorf("read bytecode: %v", err)
+		err = fmt.Errorf("read bytecode: %w", err)
 		return
 	}
 
@@ -47,20 +47,20 @@ func LoadProgram() (err error) {
 		Max: unix.RLIM_INFINITY,
 	})
 	if err != nil {
-		err = fmt.Errorf("set resource limit: %v", err)
+		err = fmt.Errorf("set resource limit: %w", err)
 		return
 	}
 
 	spec, err := ebpf.LoadCollectionSpecFromReader(bytes.NewReader(ebpfByteCode))
 	if err != nil {
-		err = fmt.Errorf("load eBPF spec: %v", err)
+		err = fmt.Errorf("load eBPF spec: %w", err)
 		return
 	}
 
 	// Loading into kernel
 	coll, err := ebpf.NewCollection(spec)
 	if err != nil {
-		err = fmt.Errorf("load eBPF collection: %v", err)
+		err = fmt.Errorf("load eBPF collection: %w", err)
 		return
 	}
 
@@ -72,7 +72,7 @@ func LoadProgram() (err error) {
 			0, "",
 		)
 		if err != nil {
-			err = fmt.Errorf("bpffs was not mounted and mount attempt failed: %v", err)
+			err = fmt.Errorf("bpffs was not mounted and mount attempt failed: %w", err)
 			return
 		}
 	} else if err != nil {
@@ -91,7 +91,7 @@ func LoadProgram() (err error) {
 
 		err = drainingMap.Pin(KernelDrainMapPath)
 		if err != nil && !errors.Is(err, os.ErrExist) {
-			err = fmt.Errorf("pin map: %v", err)
+			err = fmt.Errorf("pin map: %w", err)
 			return
 		}
 	}
@@ -101,7 +101,7 @@ func LoadProgram() (err error) {
 	if err == nil {
 		err = os.Remove(KernelSocketRouteFunc)
 		if err != nil && !os.IsNotExist(err) {
-			err = fmt.Errorf("failed to remove old bpffs function file: %v", err)
+			err = fmt.Errorf("failed to remove old bpffs function file: %w", err)
 			return
 		}
 	}
@@ -115,7 +115,7 @@ func LoadProgram() (err error) {
 	// Pin newest
 	err = prog.Pin(KernelSocketRouteFunc)
 	if err != nil && !os.IsNotExist(err) {
-		err = fmt.Errorf("pin function: %v", err)
+		err = fmt.Errorf("pin function: %w", err)
 		return
 	}
 

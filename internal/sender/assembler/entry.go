@@ -73,7 +73,7 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			packets, err := protocol.Create(newMsg, instance.hostID, instance.maxPayloadSize)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed serialization: %v", err)
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed serialization: %w", err)
 				return
 			}
 

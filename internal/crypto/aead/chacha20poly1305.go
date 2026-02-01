@@ -13,7 +13,7 @@ import (
 func Encrypt(plaintext, key, nonce, additional []byte) (ciphertext []byte, err error) {
 	err = random.PopulateEmptySlice(&nonce, chacha20poly1305.NonceSize)
 	if err != nil {
-		err = fmt.Errorf("encountered error fixing insecure provided nonce: %v", err)
+		err = fmt.Errorf("encountered error fixing insecure provided nonce: %w", err)
 		return
 	}
 
@@ -21,7 +21,7 @@ func Encrypt(plaintext, key, nonce, additional []byte) (ciphertext []byte, err e
 	aead, err := chacha20poly1305.New(key)
 	crypto.Memzero(key) // Kill keys' memory
 	if err != nil {
-		err = fmt.Errorf("failed creation of AEAD: %v", err)
+		err = fmt.Errorf("failed creation of AEAD: %w", err)
 		return
 	}
 
@@ -38,7 +38,7 @@ func Decrypt(ciphertext, key, nonce, additional []byte) (plaintext []byte, err e
 	aead, err := chacha20poly1305.New(key)
 	crypto.Memzero(key) // Kill keys' memory
 	if err != nil {
-		err = fmt.Errorf("failed creation of AEAD: %v", err)
+		err = fmt.Errorf("failed creation of AEAD: %w", err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func Decrypt(ciphertext, key, nonce, additional []byte) (plaintext []byte, err e
 	plaintext, err = aead.Open(nil, nonce, ciphertext, additional)
 	crypto.Memzero(nonce) // Kill nonces' memory
 	if err != nil {
-		err = fmt.Errorf("failed decryption of cipher text: %v", err)
+		err = fmt.Errorf("failed decryption of cipher text: %w", err)
 		return
 	}
 

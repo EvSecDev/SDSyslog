@@ -18,7 +18,7 @@ func NewOutput(endpoint string) (module *OutModule, err error) {
 
 	ljClient, err := lumberjack.SyncDial(endpoint, compression, timeout)
 	if err != nil {
-		err = fmt.Errorf("failed connection to beats server: %v", err)
+		err = fmt.Errorf("failed connection to beats server: %w", err)
 		return
 	}
 

@@ -341,7 +341,5 @@ func TestInvalidNextLengthByte(t *testing.T) {
 	_, err = DeconstructInnerPayload(corrupted)
 	if err == nil {
 		t.Error("Expected error when deconstructing payload with corrupted length byte, but got none")
-	} else {
-		t.Logf("Successfully detected corrupted payload: %v", err)
 	}
 }

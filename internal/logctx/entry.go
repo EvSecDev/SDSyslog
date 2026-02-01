@@ -88,6 +88,9 @@ func LogEvent(ctx context.Context, eventLevel int, severity string, message stri
 			// Avoiding 'extra' print to log entries
 			newMsg = message
 		} else {
+			// Maintain %w error wrapping compatibility
+			message = strings.ReplaceAll(message, "%w", "%v")
+
 			newMsg = fmt.Sprintf(message, vars...)
 		}
 		logger.log(eventLevel, severity, tags, newMsg)

@@ -19,7 +19,7 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 	// Readiness Pipe - Child -> Parent notification (signals when to start parent shutdown)
 	readyR, readyW, err := os.Pipe()
 	if err != nil {
-		err = fmt.Errorf("failed to create readiness pipe for new process: %v", err)
+		err = fmt.Errorf("failed to create readiness pipe for new process: %w", err)
 		return
 	}
 	defer readyR.Close()
@@ -28,13 +28,13 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 	// Copy ourselves
 	exePath, err := os.Executable()
 	if err != nil {
-		err = fmt.Errorf("failed to get executable path: %v", err)
+		err = fmt.Errorf("failed to get executable path: %w", err)
 		return
 	}
 	args := os.Args
 	workingDir, err := os.Getwd()
 	if err != nil {
-		err = fmt.Errorf("failed to get current working directory: %v", err)
+		err = fmt.Errorf("failed to get current working directory: %w", err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 
 	err = cmd.Start()
 	if err != nil {
-		err = fmt.Errorf("failed to start new process: %v", err)
+		err = fmt.Errorf("failed to start new process: %w", err)
 		return
 	}
 	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
@@ -90,13 +90,13 @@ func updateAndExit(ctx context.Context, daemonManager DaemonLike, childProc *exe
 		err := os.Unsetenv(EnvNameSelfUpdate)
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-				"failed to unset environment variable %s (future updates may use wrong PID): %v\n", EnvNameSelfUpdate, err)
+				"failed to unset environment variable %s (future updates may use wrong PID): %w\n", EnvNameSelfUpdate, err)
 		}
 
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Self update execve call failed: %v\n", err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Self update execve call failed: %w\n", err)
 		err = NotifyStatus(ctx, "Reload failed due to internal error. Check daemon logs.")
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Systemd notify status failed: %v\n", err)
+			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Systemd notify status failed: %w\n", err)
 		}
 
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Restarting daemon\n")
@@ -105,14 +105,14 @@ func updateAndExit(ctx context.Context, daemonManager DaemonLike, childProc *exe
 		// Empty key value avoids re-initializing the decrypt function, since it should already be initialized at this point.
 		err = daemonManager.Start(ctx, []byte{})
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed to restart daemon after update failure: %v\n", err)
+			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed to restart daemon after update failure: %w\n", err)
 			// Restart failed is fatal at this point, die.
 			return
 		}
 
 		err = NotifyReady(ctx)
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Systemd notify reload failed: %v\n", err)
+			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Systemd notify reload failed: %w\n", err)
 		}
 
 		// Remove child
@@ -135,13 +135,13 @@ func PostUpdateActions(ctx context.Context) {
 	err := os.Unsetenv(EnvNameSelfUpdate)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-			"failed to unset environment variable %s (future updates may use wrong PID): %v\n", EnvNameSelfUpdate, err)
+			"failed to unset environment variable %s (future updates may use wrong PID): %w\n", EnvNameSelfUpdate, err)
 	}
 
 	pid, err := strconv.Atoi(childPID)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-			"failed to convert child PID '%s' to integer (child process still running): %v\n", childPID, err)
+			"failed to convert child PID '%s' to integer (child process still running): %w\n", childPID, err)
 		return
 	}
 
@@ -149,7 +149,7 @@ func PostUpdateActions(ctx context.Context) {
 	err = syscall.Kill(pid, syscall.SIGTERM)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-			"failed to issue SIGTERM to child PID %d to integer (child process still running): %v\n", pid, err)
+			"failed to issue SIGTERM to child PID %d to integer (child process still running): %w\n", pid, err)
 		return
 	}
 
@@ -183,7 +183,7 @@ func PostUpdateActions(ctx context.Context) {
 			err = syscall.Kill(pid, syscall.SIGKILL)
 			if err != nil && err != syscall.ESRCH {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"failed to issue SIGKILL to child PID %d (child process might be still running): %v\n", pid, err)
+					"failed to issue SIGKILL to child PID %d (child process might be still running): %w\n", pid, err)
 				return
 			}
 
@@ -197,7 +197,7 @@ func PostUpdateActions(ctx context.Context) {
 				}
 				if err != nil && err != syscall.ECHILD {
 					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-						"failed to wait for child PID %d (child process might be a zombie): %v\n", pid, err)
+						"failed to wait for child PID %d (child process might be a zombie): %w\n", pid, err)
 					return
 				}
 				if err == syscall.ECHILD {
@@ -226,7 +226,7 @@ func terminateChildProcess(ctx context.Context, cmd *exec.Cmd) {
 		lerr := cmd.Process.Signal(syscall.SIGTERM)
 		if lerr != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-				"Failed to send graceful shutdown signal to child PID %d: %v\n", cmd.Process.Pid, lerr)
+				"Failed to send graceful shutdown signal to child PID %d: %w\n", cmd.Process.Pid, lerr)
 		}
 
 		done := make(chan error, 1)
@@ -242,7 +242,7 @@ func terminateChildProcess(ctx context.Context, cmd *exec.Cmd) {
 			lerr := cmd.Process.Kill()
 			if lerr != nil {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-					"Failed to force shutdown for child PID %d: %v\n", cmd.Process.Pid, lerr)
+					"Failed to force shutdown for child PID %d: %w\n", cmd.Process.Pid, lerr)
 			}
 			<-done
 		case <-done:

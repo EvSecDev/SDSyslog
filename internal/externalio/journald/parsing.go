@@ -31,7 +31,7 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 	}
 	rawTimestampUs, err := strconv.ParseInt(rawTimestamp, 0, 64)
 	if err != nil {
-		err = fmt.Errorf("failed parsing journal realtime timestamp: %v", err)
+		err = fmt.Errorf("failed parsing journal realtime timestamp: %w", err)
 		return
 	}
 	message.Timestamp = time.Unix(
@@ -67,12 +67,12 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 	}
 	jrnlPriInt, err := strconv.Atoi(journalPriority)
 	if err != nil {
-		err = fmt.Errorf("journal message priority '%s' is invalid: %v", journalPriority, err)
+		err = fmt.Errorf("journal message priority '%s' is invalid: %w", journalPriority, err)
 		return
 	}
 	message.Fields[global.CFseverity], err = syslog.CodeToSeverity(uint16(jrnlPriInt))
 	if err != nil {
-		err = fmt.Errorf("invalid severity '%d': %v", jrnlPriInt, err)
+		err = fmt.Errorf("invalid severity '%d': %w", jrnlPriInt, err)
 		return
 	}
 
@@ -88,7 +88,7 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 	if pidStr != "" {
 		message.Fields[global.CFprocessid], err = strconv.Atoi(pidStr)
 		if err != nil {
-			err = fmt.Errorf("invalid pid '%s': %v", pidStr, err)
+			err = fmt.Errorf("invalid pid '%s': %w", pidStr, err)
 			return
 		}
 	} else {
@@ -103,12 +103,12 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 	}
 	jrnlSeverityInt, err := strconv.Atoi(journalFacility)
 	if err != nil {
-		err = fmt.Errorf("journal message priority '%s' is invalid: %v", journalFacility, err)
+		err = fmt.Errorf("journal message priority '%s' is invalid: %w", journalFacility, err)
 		return
 	}
 	message.Fields[global.CFfacility], err = syslog.CodeToFacility(uint16(jrnlSeverityInt))
 	if err != nil {
-		err = fmt.Errorf("invalid severity '%d': %v", jrnlSeverityInt, err)
+		err = fmt.Errorf("invalid severity '%d': %w", jrnlSeverityInt, err)
 		return
 	}
 

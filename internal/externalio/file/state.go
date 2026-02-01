@@ -17,11 +17,11 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(stateDirectory, 0700)
 		if err != nil {
-			err = fmt.Errorf("failed to create missing state directory '%s': %v", stateDirectory, err)
+			err = fmt.Errorf("failed to create missing state directory '%s': %w", stateDirectory, err)
 			return
 		}
 	} else if err != nil {
-		err = fmt.Errorf("unable to access state directory: %v", err)
+		err = fmt.Errorf("unable to access state directory: %w", err)
 		return
 	}
 
@@ -31,7 +31,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 			inode, position = 0, 0
 			return
 		}
-		err = fmt.Errorf("failed to open state file: %v", err)
+		err = fmt.Errorf("failed to open state file: %w", err)
 		return
 	}
 	defer stateFile.Close()
@@ -40,7 +40,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 	data := make([]byte, 128)
 	n, err := stateFile.Read(data)
 	if err != nil && err.Error() != "EOF" {
-		err = fmt.Errorf("unable to read position file: %v", err)
+		err = fmt.Errorf("unable to read position file: %w", err)
 		return
 	} else {
 		err = nil
@@ -57,7 +57,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 		// Remove any invalid state data in state file
 		err = stateFile.Truncate(0)
 		if err != nil {
-			fmt.Printf("Error truncating file: %v\n", err)
+			err = fmt.Errorf("error truncating file: %w\n", err)
 			return
 		}
 
@@ -70,7 +70,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 		// Remove any invalid state data in state file
 		err = stateFile.Truncate(0)
 		if err != nil {
-			fmt.Printf("Error truncating file: %v\n", err)
+			err = fmt.Errorf("error truncating file: %w\n", err)
 			return
 		}
 
@@ -79,7 +79,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 
 	fileInfo, err := os.Stat(logFilePath)
 	if err != nil {
-		err = fmt.Errorf("unable to stat log file: %v", err)
+		err = fmt.Errorf("unable to stat log file: %w", err)
 		return
 	}
 
@@ -113,24 +113,24 @@ func savePosition(stateFilePath string, inode uint64, position int64) (err error
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(stateDirectory, 0700)
 		if err != nil {
-			err = fmt.Errorf("failed to create missing state directory '%s': %v", stateDirectory, err)
+			err = fmt.Errorf("failed to create missing state directory '%s': %w", stateDirectory, err)
 			return
 		}
 	} else if err != nil {
-		err = fmt.Errorf("unable to access state directory: %v", err)
+		err = fmt.Errorf("unable to access state directory: %w", err)
 		return
 	}
 
 	stateFile, err := os.OpenFile(stateFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		err = fmt.Errorf("failed to open state file: %v", err)
+		err = fmt.Errorf("failed to open state file: %w", err)
 		return
 	}
 	defer stateFile.Close()
 
 	_, err = fmt.Fprintf(stateFile, "%d %d", inode, position)
 	if err != nil {
-		err = fmt.Errorf("failed to write current log position to state file: %v", err)
+		err = fmt.Errorf("failed to write current log position to state file: %w", err)
 		return
 	}
 	return

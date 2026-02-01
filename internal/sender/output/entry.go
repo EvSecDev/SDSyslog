@@ -49,7 +49,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			_, err := instance.conn.Write(frag)
 			if err != nil {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"Failed to send fragment: %v\n", err)
+					"Failed to send fragment: %w\n", err)
 				return
 			}
 

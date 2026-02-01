@@ -31,7 +31,7 @@ func GetSocketCookie(conn *net.UDPConn) (cookie uint64, err error) {
 
 	cookie, err = unix.GetsockoptUint64(fd, unix.SOL_SOCKET, unix.SO_COOKIE)
 	if err != nil {
-		err = fmt.Errorf("getsockopt failed: %v", err)
+		err = fmt.Errorf("getsockopt failed: %w", err)
 		return
 	}
 
@@ -59,14 +59,14 @@ func MarkSocketDraining(pinnedMapPath string, socketCookie uint64) (err error) {
 
 	socketMap, err := ebpf.LoadPinnedMap(pinnedMapPath, nil)
 	if err != nil {
-		err = fmt.Errorf("failed to load eBPF map: %v", err)
+		err = fmt.Errorf("failed to load eBPF map: %w", err)
 		return
 	}
 	defer socketMap.Close()
 
 	err = socketMap.Put(socketCookie, uint8(DrainSocket))
 	if err != nil {
-		err = fmt.Errorf("failed to mark socket draining: %v\n", err)
+		err = fmt.Errorf("failed to mark socket draining: %w\n", err)
 		return
 	}
 

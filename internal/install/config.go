@@ -32,7 +32,7 @@ func installConfig(mode string) (err error) {
 		if strings.HasSuffix(err.Error(), "file exists") {
 			err = nil
 		} else {
-			err = fmt.Errorf("failed to create configuration directory: %v", err)
+			err = fmt.Errorf("failed to create configuration directory: %w", err)
 			return
 		}
 	}
@@ -71,20 +71,20 @@ func installConfig(mode string) (err error) {
 		_, err = os.Stat(global.DefaultPrivKeyPath)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				err = fmt.Errorf("failed checking private key file existence: %v", err)
+				err = fmt.Errorf("failed checking private key file existence: %w", err)
 				return
 			}
 
 			var privKeyFile *os.File
 			privKeyFile, err = os.OpenFile(global.DefaultPrivKeyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 			if err != nil {
-				err = fmt.Errorf("failed to open private key file: %v", err)
+				err = fmt.Errorf("failed to open private key file: %w", err)
 				return
 			}
 
 			_, err = privKeyFile.Write([]byte(base64.StdEncoding.EncodeToString(private)))
 			if err != nil {
-				err = fmt.Errorf("failed to write new private key: %v", err)
+				err = fmt.Errorf("failed to write new private key: %w", err)
 				return
 			}
 			fmt.Printf("Successfully wrote new private key file to '%s'\n", global.DefaultPrivKeyPath)
@@ -108,7 +108,7 @@ func uninstallConfig(mode string) (err error) {
 	if mode == "receive" {
 		err = os.Remove(global.DefaultPrivKeyPath)
 		if err != nil && !os.IsNotExist(err) {
-			err = fmt.Errorf("failed to remove private key file: %v", err)
+			err = fmt.Errorf("failed to remove private key file: %w", err)
 			return
 		} else {
 			err = nil
@@ -168,14 +168,14 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 
 	confBytes, err := json.MarshalIndent(newCfg, "", "  ")
 	if err != nil {
-		err = fmt.Errorf("error marshaling new config: %v", err)
+		err = fmt.Errorf("error marshaling new config: %w", err)
 		return
 	}
 	confBytes = append(confBytes, []byte("\n")...)
 
 	_, err = newConfFile.Write(confBytes)
 	if err != nil {
-		err = fmt.Errorf("failed to write config to file: %v", err)
+		err = fmt.Errorf("failed to write config to file: %w", err)
 		return
 	}
 	return
@@ -218,14 +218,14 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 
 	confBytes, err := json.MarshalIndent(newCfg, "", "  ")
 	if err != nil {
-		err = fmt.Errorf("error marshaling new config: %v", err)
+		err = fmt.Errorf("error marshaling new config: %w", err)
 		return
 	}
 	confBytes = append(confBytes, []byte("\n")...)
 
 	_, err = newConfFile.Write(confBytes)
 	if err != nil {
-		err = fmt.Errorf("failed to write config to file: %v", err)
+		err = fmt.Errorf("failed to write config to file: %w", err)
 		return
 	}
 	return

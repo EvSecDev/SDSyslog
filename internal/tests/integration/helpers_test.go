@@ -319,7 +319,7 @@ func mockPackets(numMessages int, rawMessage string, maxPayloadSize int, publicK
 
 	mainHostID, err := random.FourByte()
 	if err != nil {
-		err = fmt.Errorf("failed to generate new unique host identifier: %v", err)
+		err = fmt.Errorf("failed to generate new unique host identifier: %w", err)
 		return
 	}
 
@@ -341,7 +341,7 @@ func mockPackets(numMessages int, rawMessage string, maxPayloadSize int, publicK
 		var fragments [][]byte
 		fragments, err = protocol.Create(newMsg, mainHostID, maxPayloadSize)
 		if err != nil {
-			err = fmt.Errorf("failed serialize test data for mock packets: %v", err)
+			err = fmt.Errorf("failed serialize test data for mock packets: %w", err)
 			return
 		}
 		packets = append(packets, fragments...)

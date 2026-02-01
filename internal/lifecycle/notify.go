@@ -60,14 +60,14 @@ func notify(ctx context.Context, msg string) (err error) {
 
 	conn, err := net.DialUnix("unixgram", nil, addr)
 	if err != nil {
-		err = fmt.Errorf("notify dial failed: %v", err)
+		err = fmt.Errorf("notify dial failed: %w", err)
 		return
 	}
 	defer conn.Close()
 
 	_, err = conn.Write([]byte(msg))
 	if err != nil {
-		err = fmt.Errorf("notify write failed: %v", err)
+		err = fmt.Errorf("notify write failed: %w", err)
 		return
 	}
 

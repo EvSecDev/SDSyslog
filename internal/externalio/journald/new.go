@@ -49,12 +49,12 @@ func NewInput(namespace []string, baseStateFile string, queue *mpmc.Queue[protoc
 	jrnlCmd := exec.Command("journalctl", cmdArgs...)
 	stdout, err := jrnlCmd.StdoutPipe()
 	if err != nil {
-		err = fmt.Errorf("failed to create stdout pipe for journalctl command: %v", err)
+		err = fmt.Errorf("failed to create stdout pipe for journalctl command: %w", err)
 		return
 	}
 	stderr, err := jrnlCmd.StderrPipe()
 	if err != nil {
-		err = fmt.Errorf("failed to create stderr pipe for journalctl command: %v", err)
+		err = fmt.Errorf("failed to create stderr pipe for journalctl command: %w", err)
 		return
 	}
 
@@ -90,7 +90,7 @@ func NewOutput(endpoint string) (module *OutModule, err error) {
 	var baseURL *url.URL
 	baseURL, err = url.Parse(endpoint)
 	if err != nil {
-		err = fmt.Errorf("invalid journald URL: %v", err)
+		err = fmt.Errorf("invalid journald URL: %w", err)
 		return
 	}
 	messagePublishPath := &url.URL{Path: "upload"} // Only path accepted by the remote server
@@ -112,7 +112,7 @@ func NewOutput(endpoint string) (module *OutModule, err error) {
 		bytes.NewReader(nil),
 	)
 	if err != nil {
-		err = fmt.Errorf("failed to create test HTTP connection to journald: %v", err)
+		err = fmt.Errorf("failed to create test HTTP connection to journald: %w", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/vnd.fdo.journal")
@@ -120,7 +120,7 @@ func NewOutput(endpoint string) (module *OutModule, err error) {
 	var resp *http.Response
 	resp, err = new.sink.Do(req)
 	if err != nil {
-		err = fmt.Errorf("failed to test HTTP connection to journald: %v", err)
+		err = fmt.Errorf("failed to test HTTP connection to journald: %w", err)
 		return
 	}
 	resp.Body.Close()

@@ -59,7 +59,7 @@ func (instance *Instance) Run(ctx context.Context) {
 				}
 
 				// Otherwise, regular error
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed reading data from socket: %v\n", err)
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed reading data from socket: %w\n", err)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
 				return
 			}

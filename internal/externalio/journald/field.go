@@ -27,7 +27,7 @@ func extractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
 				return
 			} else {
 				// Any other error
-				err = fmt.Errorf("failed initial line read: %v", err)
+				err = fmt.Errorf("failed initial line read: %w", err)
 				return
 			}
 		}
@@ -62,7 +62,7 @@ func extractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
 		lenField := make([]byte, 8)
 		_, err = io.ReadFull(reader, lenField)
 		if err != nil {
-			err = fmt.Errorf("failed binary field length read: %v", err)
+			err = fmt.Errorf("failed binary field length read: %w", err)
 			return
 		}
 
@@ -78,7 +78,7 @@ func extractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
 		data := make([]byte, size)
 		_, err = io.ReadFull(reader, data)
 		if err != nil {
-			err = fmt.Errorf("failed binary field value read: %v", err)
+			err = fmt.Errorf("failed binary field value read: %w", err)
 			return
 		}
 

@@ -51,7 +51,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 		err := container.mutateSize(newSize)
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-				"Failed to scale queue capacity: %v\n", err)
+				"Failed to scale queue capacity: %w\n", err)
 			return
 		}
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog,
@@ -62,7 +62,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 		err := container.mutateSize(newSize)
 		if err != nil {
 			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-				"Failed to scale queue capacity: %v\n", err)
+				"Failed to scale queue capacity: %w\n", err)
 			return
 		}
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog,

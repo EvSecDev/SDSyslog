@@ -17,7 +17,7 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 	// Open the inotify instance
 	fd, err := syscall.InotifyInit()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to initialize inotify: %v\n", err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to initialize inotify: %w\n", err)
 		return
 	}
 	defer syscall.Close(fd)
@@ -33,7 +33,7 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 	// Add watcher for the log file
 	watchDescriptorFile, err := syscall.InotifyAddWatch(fd, logFileInput, syscall.IN_MODIFY|syscall.IN_CLOSE_WRITE)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to add log file '%s' to inotify watcher: %v\n", logFileInput, err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to add log file '%s' to inotify watcher: %w\n", logFileInput, err)
 		return
 	}
 	watchDescriptors["file"] = watchDescriptorFile
@@ -42,7 +42,7 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 	logDirectory := filepath.Dir(logFileInput)
 	watchDescriptorDir, err := syscall.InotifyAddWatch(fd, logDirectory, syscall.IN_MOVED_FROM|syscall.IN_MOVED_TO|syscall.IN_DELETE|syscall.IN_CREATE)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to add directory '%s' to inotify watcher: %v\n", logDirectory, err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to add directory '%s' to inotify watcher: %w\n", logDirectory, err)
 		return
 	}
 	watchDescriptors["dir"] = watchDescriptorDir
@@ -59,7 +59,7 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 			// Read the event
 			n, err := syscall.Read(fd, buf)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "error reading inotify event: %v\n", err)
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "error reading inotify event: %w\n", err)
 				continue
 			}
 
@@ -72,7 +72,7 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 				reader := bytes.NewReader(eventBytes)
 				err = binary.Read(reader, binary.LittleEndian, &event)
 				if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to read event content: %v\n", err)
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to read event content: %w\n", err)
 					continue
 				}
 
@@ -107,7 +107,7 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 
 							// Errors not solved by waiting
 							if !errors.Is(err, syscall.EACCES) && !errors.Is(err, syscall.EPERM) && !errors.Is(err, syscall.ENOENT) {
-								logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to add rotated log file to inotify watcher: %v\n", err)
+								logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to add rotated log file to inotify watcher: %w\n", err)
 								break
 							}
 
@@ -121,7 +121,8 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 						}
 
 						if err != nil {
-							logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to add rotated log file to inotify watcher after %d retires within %.0f minutes: %v", maxRetries, maxDelay.Minutes(), err)
+							logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+								"failed to add rotated log file to inotify watcher after %d retires within %.0f minutes: %w", maxRetries, maxDelay.Minutes(), err)
 						} else {
 							fileHasRotated <- true // send value to buffer so its available after main thread is unblocked
 							fileHasChanged <- true // unblock main thread

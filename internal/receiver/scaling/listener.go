@@ -68,7 +68,7 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 	if scaleUp {
 		_, err := inMgr.AddInstance()
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed to scale up listener instances: %v\n", err)
+			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed to scale up listener instances: %w\n", err)
 			return
 		}
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up listener\n")

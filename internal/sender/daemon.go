@@ -56,13 +56,13 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 
 	destAddr, err := net.ResolveUDPAddr("udp", daemon.cfg.DestinationIP+":"+strconv.Itoa(daemon.cfg.DestinationPort))
 	if err != nil {
-		err = fmt.Errorf("failed to resolve destination: %v", err)
+		err = fmt.Errorf("failed to resolve destination: %w", err)
 		return
 	}
 
 	destinationConnection, err := net.DialUDP("udp", nil, destAddr)
 	if err != nil {
-		err = fmt.Errorf("failed to open udp socket: %v", err)
+		err = fmt.Errorf("failed to open udp socket: %w", err)
 		return
 	}
 
@@ -70,20 +70,20 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	syslog.InitBidiMaps()
 	err = wrappers.SetupEncryptInnerPayload(serverPub)
 	if err != nil {
-		err = fmt.Errorf("failed to setup encryption function: %v", err)
+		err = fmt.Errorf("failed to setup encryption function: %w", err)
 		return
 	}
 	daemon.cfg.setDefaults()
 
 	mainHostID, err := random.FourByte()
 	if err != nil {
-		err = fmt.Errorf("failed to generate new unique host identifier: %v", err)
+		err = fmt.Errorf("failed to generate new unique host identifier: %w", err)
 		return
 	}
 
 	maxPayloadSize, err := network.FindSendingMaxUDPPayload(daemon.cfg.DestinationIP)
 	if err != nil {
-		err = fmt.Errorf("failed to find max payload size: %v", err)
+		err = fmt.Errorf("failed to find max payload size: %w", err)
 		return
 	}
 	if daemon.cfg.OverrideMaxPayloadSize != 0 {
@@ -99,7 +99,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		daemon.cfg.MinOutputQueueSize,
 		daemon.cfg.MaxOutputQueueSize)
 	if err != nil {
-		err = fmt.Errorf("error creating new output instance manager: %v", err)
+		err = fmt.Errorf("error creating new output instance manager: %w", err)
 		return
 	}
 	for i := 0; i < daemon.cfg.MinOutputs; i++ {
@@ -119,7 +119,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		daemon.cfg.MinAssemblerQueueSize,
 		daemon.cfg.MaxAssemblerQueueSize)
 	if err != nil {
-		err = fmt.Errorf("error creating new assembly instance manager: %v", err)
+		err = fmt.Errorf("error creating new assembly instance manager: %w", err)
 		return
 	}
 	for i := 0; i < daemon.cfg.MinAssemblers; i++ {
@@ -134,7 +134,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		for _, filePath := range daemon.cfg.FileSourcePaths {
 			err = daemon.Mgrs.In.AddFileInstance(filePath, daemon.cfg.StateFilePath)
 			if err != nil {
-				err = fmt.Errorf("failed adding new file ingest instance: %v", err)
+				err = fmt.Errorf("failed adding new file ingest instance: %w", err)
 				daemon.Shutdown()
 				return
 			}
@@ -143,7 +143,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	if daemon.cfg.JournalSourceEnabled {
 		err = daemon.Mgrs.In.AddJrnlInstance(daemon.cfg.StateFilePath)
 		if err != nil {
-			err = fmt.Errorf("failed creating journal ingest instance: %v", err)
+			err = fmt.Errorf("failed creating journal ingest instance: %w", err)
 			daemon.Shutdown()
 			return
 		}
@@ -199,7 +199,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			daemon.MetricDiscoverer,
 			daemon.MetricAggregator)
 		if err != nil {
-			err = fmt.Errorf("failed creating HTTP metric server: %v", err)
+			err = fmt.Errorf("failed creating HTTP metric server: %w", err)
 			daemon.Shutdown()
 			return
 		}
@@ -214,14 +214,14 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	// For update hot-swap/systemd
 	err = lifecycle.ReadinessSender()
 	if err != nil {
-		err = fmt.Errorf("error sending readiness to parent process: %v", err)
+		err = fmt.Errorf("error sending readiness to parent process: %w", err)
 		daemon.Shutdown()
 		return
 	}
 	lifecycle.PostUpdateActions(daemon.ctx)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
-		err = fmt.Errorf("error sending readiness to systemd: %v", err)
+		err = fmt.Errorf("error sending readiness to systemd: %w", err)
 		daemon.Shutdown()
 		return
 	}
@@ -251,7 +251,7 @@ func (daemon *Daemon) Shutdown() {
 			err := daemon.MetricServer.Shutdown(daemon.ctx)
 			if err != nil && err != http.ErrServerClosed {
 				logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-					"metric HTTP server did not shutdown gracefully: %v\n", err)
+					"metric HTTP server did not shutdown gracefully: %w\n", err)
 			}
 		}
 	}
@@ -262,7 +262,7 @@ func (daemon *Daemon) Shutdown() {
 			err := daemon.Mgrs.In.RemoveFileInstance(filename)
 			if err != nil {
 				logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-					"ingest worker shutdown failed: %v\n", err)
+					"ingest worker shutdown failed: %w\n", err)
 			}
 		}
 		if daemon.Mgrs.In.JournalSource != nil {

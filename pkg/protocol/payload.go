@@ -68,7 +68,7 @@ func ValidatePayload(request Payload) (proto innerWireFormat, err error) {
 			} else {
 				cleanType, cleanValue, err = serializeAnyValue(value)
 				if err != nil {
-					err = fmt.Errorf("invalid custom field '%s': %v", cleanKey, err)
+					err = fmt.Errorf("invalid custom field '%s': %w", cleanKey, err)
 					return
 				}
 				if len(cleanValue) < minCtxValLen {
@@ -202,7 +202,7 @@ func ParsePayload(proto innerWireFormat) (validated Payload, err error) {
 			var value any
 			value, err = deserializeAnyValue(field.valType, field.Value)
 			if err != nil {
-				err = fmt.Errorf("invalid custom field '%s': %v", string(field.Key), err)
+				err = fmt.Errorf("invalid custom field '%s': %w", string(field.Key), err)
 				return
 			}
 

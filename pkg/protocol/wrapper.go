@@ -10,7 +10,7 @@ import (
 func Create(newMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, err error) {
 	newMessageID, err := random.FourByte()
 	if err != nil {
-		err = fmt.Errorf("failed to generate random message identifier: %v", err)
+		err = fmt.Errorf("failed to generate random message identifier: %w", err)
 		return
 	}
 
@@ -29,13 +29,13 @@ func Create(newMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, e
 
 	protocolOverhead, err := CalculateProtocolOverhead(cryptoSuiteInUse, newLog)
 	if err != nil {
-		err = fmt.Errorf("failed to calculate protocol overhead: %v", err)
+		err = fmt.Errorf("failed to calculate protocol overhead: %w", err)
 		return
 	}
 
 	fragments, err := Fragment(newLog, maxPayloadSize, protocolOverhead)
 	if err != nil {
-		err = fmt.Errorf("failed to fragment message: %v", err)
+		err = fmt.Errorf("failed to fragment message: %w", err)
 		return
 	}
 
@@ -43,21 +43,21 @@ func Create(newMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, e
 		var payload innerWireFormat
 		payload, err = ValidatePayload(fragment)
 		if err != nil {
-			err = fmt.Errorf("invalid payload: %v", err)
+			err = fmt.Errorf("invalid payload: %w", err)
 			return
 		}
 
 		var innerPayload []byte
 		innerPayload, err = ConstructInnerPayload(payload)
 		if err != nil {
-			err = fmt.Errorf("failed to serialize inner payload: %v", err)
+			err = fmt.Errorf("failed to serialize inner payload: %w", err)
 			return
 		}
 
 		var outterPayload []byte
 		outterPayload, err = ConstructOuterPayload(innerPayload, cryptoSuiteInUse)
 		if err != nil {
-			err = fmt.Errorf("failed to serialize outer payload: %v", err)
+			err = fmt.Errorf("failed to serialize outer payload: %w", err)
 			return
 		}
 

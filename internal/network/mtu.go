@@ -48,7 +48,7 @@ func FindSendingMaxUDPPayload(destination string) (maxPayloadSize int, err error
 	// Precalculate overhead
 	overhead, err := getTransportOverhead(destinationIP, "udp")
 	if err != nil {
-		err = fmt.Errorf("failed to retrieve transport layer overhead: %v", err)
+		err = fmt.Errorf("failed to retrieve transport layer overhead: %w", err)
 		return
 	}
 

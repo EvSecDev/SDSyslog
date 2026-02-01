@@ -14,11 +14,11 @@ func getLastPosition(stateFilePath string) (cursor string, err error) {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(stateDirectory, 0700)
 		if err != nil {
-			err = fmt.Errorf("failed to create missing state directory '%s': %v", stateDirectory, err)
+			err = fmt.Errorf("failed to create missing state directory '%s': %w", stateDirectory, err)
 			return
 		}
 	} else if err != nil {
-		err = fmt.Errorf("unable to access state directory: %v", err)
+		err = fmt.Errorf("unable to access state directory: %w", err)
 		return
 	}
 
@@ -27,7 +27,7 @@ func getLastPosition(stateFilePath string) (cursor string, err error) {
 		if os.IsNotExist(err) {
 			return
 		}
-		err = fmt.Errorf("failed to open state file: %v", err)
+		err = fmt.Errorf("failed to open state file: %w", err)
 		return
 	}
 	defer stateFile.Close()
@@ -36,7 +36,7 @@ func getLastPosition(stateFilePath string) (cursor string, err error) {
 	data := make([]byte, 256)
 	n, err := stateFile.Read(data)
 	if err != nil && err.Error() != "EOF" {
-		err = fmt.Errorf("unable to read position file: %v", err)
+		err = fmt.Errorf("unable to read position file: %w", err)
 		return
 	} else {
 		err = nil
@@ -69,24 +69,24 @@ func savePosition(cursor string, stateFilePath string) (err error) {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(stateDirectory, 0700)
 		if err != nil {
-			err = fmt.Errorf("failed to create missing state directory '%s': %v", stateDirectory, err)
+			err = fmt.Errorf("failed to create missing state directory '%s': %w", stateDirectory, err)
 			return
 		}
 	} else if err != nil {
-		err = fmt.Errorf("unable to access state directory: %v", err)
+		err = fmt.Errorf("unable to access state directory: %w", err)
 		return
 	}
 
 	stateFile, err := os.OpenFile(stateFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		err = fmt.Errorf("failed to open state file: %v", err)
+		err = fmt.Errorf("failed to open state file: %w", err)
 		return
 	}
 	defer stateFile.Close()
 
 	_, err = fmt.Fprintf(stateFile, "%s", cursor)
 	if err != nil {
-		err = fmt.Errorf("failed to write current log position to state file: %v", err)
+		err = fmt.Errorf("failed to write current log position to state file: %w", err)
 		return
 	}
 	return

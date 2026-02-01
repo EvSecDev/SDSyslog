@@ -14,7 +14,7 @@ func getInterfaceForDestination(destination string) (iface *net.Interface, err e
 	// Parse the destination address
 	destAddr := net.ParseIP(rawIP)
 	if destAddr == nil {
-		err = fmt.Errorf("invalid destination address: %v", destination)
+		err = fmt.Errorf("invalid destination address: %s", destination)
 		return
 	}
 
@@ -28,7 +28,7 @@ func getInterfaceForDestination(destination string) (iface *net.Interface, err e
 	// Quick dial to see what source interface the system would use
 	conn, dialErr := net.Dial("udp", formattedIP+":0")
 	if dialErr != nil {
-		err = fmt.Errorf("failed to find interface for destination %v: %v", formattedIP, dialErr)
+		err = fmt.Errorf("failed to find interface for destination %s: %w", formattedIP, dialErr)
 		return
 	}
 	defer conn.Close()

@@ -263,7 +263,7 @@ func TestSendReceivePipeline(t *testing.T) {
 	// Check for errors post-shutdown
 	errors, errorsFound = filterLogBuffer(globalCtx, "", global.NSSend, global.ErrorLog)
 	if errorsFound {
-		t.Errorf("expected no errors in send daemon shutdown, but found:\n%v", errors)
+		t.Errorf("expected no errors in send daemon shutdown, but found:\n%s", errors)
 	}
 	warns, warnsFound := filterLogBuffer(globalCtx, "", global.NSSend, global.WarnLog)
 	if warnsFound {
@@ -271,7 +271,7 @@ func TestSendReceivePipeline(t *testing.T) {
 	}
 	errors, errorsFound = filterLogBuffer(globalCtx, "", global.NSRecv, global.ErrorLog)
 	if errorsFound {
-		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%v", errors)
+		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%s", errors)
 	}
 	warns, warnsFound = filterLogBuffer(globalCtx, "", global.NSRecv, global.WarnLog)
 	if warnsFound {

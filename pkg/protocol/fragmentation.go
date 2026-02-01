@@ -30,7 +30,7 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 		// Get a random padding length for this section of the data
 		payloadFragment.PaddingLen, err = random.NumberInRange(minPaddingLen, maxPaddingLen)
 		if err != nil {
-			err = fmt.Errorf("failed to generate padding length: %v", err)
+			err = fmt.Errorf("failed to generate padding length: %w", err)
 			return
 		}
 

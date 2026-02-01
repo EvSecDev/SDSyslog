@@ -14,7 +14,7 @@ func installAAProfile() (err error) {
 	const appArmorProfilePath string = "/etc/apparmor.d/" + global.DefaultAAProfName
 	appArmorProfile, err := installationFiles.ReadFile("static-files/" + global.DefaultAAProfName)
 	if err != nil {
-		err = fmt.Errorf("Unable to retrieve configuration file from embedded filesystem: %v", err)
+		err = fmt.Errorf("Unable to retrieve configuration file from embedded filesystem: %w", err)
 		return
 	}
 
@@ -35,14 +35,14 @@ func installAAProfile() (err error) {
 		err = nil
 		return
 	} else if err != nil {
-		err = fmt.Errorf("Unable to check if AppArmor is supported by this system: %v", err)
+		err = fmt.Errorf("Unable to check if AppArmor is supported by this system: %w", err)
 		return
 	}
 
 	// Write Apparmor Profile to /etc
 	err = os.WriteFile(appArmorProfilePath, appArmorProfile, 0644)
 	if err != nil {
-		err = fmt.Errorf("Failed to write apparmor profile: %v", err)
+		err = fmt.Errorf("Failed to write apparmor profile: %w", err)
 		return
 	}
 
@@ -50,7 +50,7 @@ func installAAProfile() (err error) {
 	command := exec.Command("apparmor_parser", "-r", appArmorProfilePath)
 	output, err := command.CombinedOutput()
 	if err != nil {
-		err = fmt.Errorf("Failed to reload apparmor profile: %v: %s", err, string(output))
+		err = fmt.Errorf("Failed to reload apparmor profile: %w: %s", err, string(output))
 		return
 	}
 
@@ -68,7 +68,7 @@ func uninstallAAProfile() (err error) {
 		err = nil
 		return
 	} else if err != nil {
-		err = fmt.Errorf("Unable to check if AppArmor is supported by this system: %v", err)
+		err = fmt.Errorf("Unable to check if AppArmor is supported by this system: %w", err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func uninstallAAProfile() (err error) {
 	output, err := command.CombinedOutput()
 	if err != nil {
 		if !strings.Contains(string(output), "not found, skipping") {
-			err = fmt.Errorf("Failed to disable apparmor profile: %v: %s", err, string(output))
+			err = fmt.Errorf("Failed to disable apparmor profile: %w: %s", err, string(output))
 			return
 		}
 		err = nil
@@ -92,7 +92,7 @@ func uninstallAAProfile() (err error) {
 	// Remove Apparmor Profile File
 	err = os.Remove(appArmorProfilePath)
 	if err != nil && !os.IsNotExist(err) {
-		err = fmt.Errorf("Failed to remove apparmor profile: %v", err)
+		err = fmt.Errorf("Failed to remove apparmor profile: %w", err)
 		return
 	} else {
 		err = nil

@@ -27,7 +27,7 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 
 	helpPage, err := webFiles.ReadFile("static-files/metric-help.html")
 	if err != nil {
-		err = fmt.Errorf("failed reading metric help html page from internal fs: %v\n", err)
+		err = fmt.Errorf("failed reading metric help html page from internal fs: %w\n", err)
 		return
 	}
 
@@ -100,7 +100,7 @@ func Start(ctx context.Context, server *http.Server) {
 	conn, err := network.ReuseTCPPort(server.Addr)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-			"Metric query server failed to bind: %v\n", err)
+			"Metric query server failed to bind: %w\n", err)
 		return
 	}
 
@@ -111,7 +111,7 @@ func Start(ctx context.Context, server *http.Server) {
 
 	err = server.Serve(conn)
 	if err != nil && err != http.ErrServerClosed {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Metric query server failed to start: %v\n", err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Metric query server failed to start: %w\n", err)
 	}
 }
 
@@ -120,7 +120,7 @@ func jResp(ctx context.Context, serverResponder http.ResponseWriter, content any
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(content); err != nil {
 		serverResponder.WriteHeader(http.StatusInternalServerError)
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed marshaling metric results: %v\n", err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed marshaling metric results: %w\n", err)
 		return
 	}
 	serverResponder.Header().Set("Content-Type", "application/json")

@@ -13,7 +13,7 @@ func MultipleSlices(inputs ...[]byte) (hash []byte, err error) {
 	for _, input := range inputs {
 		_, err = hasher.Write(input)
 		if err != nil {
-			err = fmt.Errorf("error writing data to hash: %v", err)
+			err = fmt.Errorf("error writing data to hash: %w", err)
 			return
 		}
 	}

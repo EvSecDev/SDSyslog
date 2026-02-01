@@ -34,7 +34,7 @@ func SetupEncryptInnerPayload(serverPub []byte) (err error) {
 
 		sharedSecret, ephemeralPub, err := ecdh.CreateSharedSecret(serverPub)
 		if err != nil {
-			err = fmt.Errorf("failed to create secret: %v", err)
+			err = fmt.Errorf("failed to create secret: %w", err)
 			return
 		}
 
@@ -42,26 +42,26 @@ func SetupEncryptInnerPayload(serverPub []byte) (err error) {
 		nonce = make([]byte, suite.NonceSize)
 		_, err = rand.Read(nonce)
 		if err != nil {
-			err = fmt.Errorf("failed to create random nonce: %v", err)
+			err = fmt.Errorf("failed to create random nonce: %w", err)
 			return
 		}
 
 		salt, err := hash.MultipleSlices(ephemeralPub, nonce)
 		if err != nil {
-			err = fmt.Errorf("failed to create salt: %v", err)
+			err = fmt.Errorf("failed to create salt: %w", err)
 			return
 		}
 
 		actualKey, err := hkdf.DeriveKey(sharedSecret, salt, suite.Name, suite.KeySize)
 		if err != nil {
-			err = fmt.Errorf("failed to derive key: %v", err)
+			err = fmt.Errorf("failed to derive key: %w", err)
 			return
 		}
 
 		aad := append([]byte{suiteID}, ephemeralPub...)
 		ciphertext, err = aead.Encrypt(payload, actualKey, nonce, aad)
 		if err != nil {
-			err = fmt.Errorf("failed encryption: %v", err)
+			err = fmt.Errorf("failed encryption: %w", err)
 			return
 		}
 
@@ -88,20 +88,20 @@ func SetupDecryptInnerPayload(privateKey []byte) (err error) {
 
 		sharedSecret, err := ecdh.ReCreateSharedSecret(privateKey, ephemeralPub)
 		if err != nil {
-			err = fmt.Errorf("failed recreating secret: %v", err)
+			err = fmt.Errorf("failed recreating secret: %w", err)
 			return
 		}
 
 		salt, err := hash.MultipleSlices(ephemeralPub, nonce)
 		if err != nil {
-			err = fmt.Errorf("failed creating salt: %v", err)
+			err = fmt.Errorf("failed creating salt: %w", err)
 			return
 		}
 
 		suite, _ := crypto.GetSuiteInfo(suiteID)
 		actualKey, err := hkdf.DeriveKey(sharedSecret, salt, suite.Name, suite.KeySize)
 		if err != nil {
-			err = fmt.Errorf("failed deriving key: %v", err)
+			err = fmt.Errorf("failed deriving key: %w", err)
 			return
 		}
 

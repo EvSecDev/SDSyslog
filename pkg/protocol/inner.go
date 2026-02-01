@@ -15,25 +15,25 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 
 	// HEADER
 	if err = binary.Write(&buf, binary.BigEndian, fields.HostID); err != nil {
-		err = fmt.Errorf("failed to serialize HostID: %v", err)
+		err = fmt.Errorf("failed to serialize HostID: %w", err)
 		return
 	}
 	if err = binary.Write(&buf, binary.BigEndian, fields.MsgID); err != nil {
-		err = fmt.Errorf("failed to serialize MsgID: %v", err)
+		err = fmt.Errorf("failed to serialize MsgID: %w", err)
 		return
 	}
 	if err = binary.Write(&buf, binary.BigEndian, fields.MessageSeq); err != nil {
-		err = fmt.Errorf("failed to serialize MessageSeq: %v", err)
+		err = fmt.Errorf("failed to serialize MessageSeq: %w", err)
 		return
 	}
 	if err = binary.Write(&buf, binary.BigEndian, fields.MessageSeqMax); err != nil {
-		err = fmt.Errorf("failed to serialize MessageSeqMax: %v", err)
+		err = fmt.Errorf("failed to serialize MessageSeqMax: %w", err)
 		return
 	}
 
 	// METADATA
 	if err = binary.Write(&buf, binary.BigEndian, fields.Timestamp); err != nil {
-		err = fmt.Errorf("failed to serialize Timestamp: %v", err)
+		err = fmt.Errorf("failed to serialize Timestamp: %w", err)
 		return
 	}
 	// Hostname
@@ -43,7 +43,7 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 	}
 	buf.WriteByte(uint8(len(fields.Hostname)))
 	if err = writeFixedLength(&buf, fields.Hostname, len(fields.Hostname)); err != nil {
-		err = fmt.Errorf("failed to serialize Hostname: %v", err)
+		err = fmt.Errorf("failed to serialize Hostname: %w", err)
 		return
 	}
 	buf.WriteByte(terminatorByte)
@@ -54,7 +54,7 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 		// Key
 		contextBuffer.WriteByte(uint8(len(ctxField.Key)))
 		if err = writeFixedLength(&contextBuffer, ctxField.Key, len(ctxField.Key)); err != nil {
-			err = fmt.Errorf("failed to serialize Context field key: %v", err)
+			err = fmt.Errorf("failed to serialize Context field key: %w", err)
 			return
 		}
 		contextBuffer.WriteByte(terminatorByte)
@@ -65,7 +65,7 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 		// Value
 		contextBuffer.WriteByte(uint8(len(ctxField.Value)))
 		if err = writeFixedLength(&contextBuffer, ctxField.Value, len(ctxField.Value)); err != nil {
-			err = fmt.Errorf("failed to serialize Context field value: %v", err)
+			err = fmt.Errorf("failed to serialize Context field value: %w", err)
 			return
 		}
 		contextBuffer.WriteByte(terminatorByte)
@@ -77,17 +77,17 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 	}
 	if contextBuffer.Len() > 0 {
 		if err = writeUint16(&buf, uint16(contextBuffer.Len())); err != nil {
-			err = fmt.Errorf("failed to serialize Context section length: %v", err)
+			err = fmt.Errorf("failed to serialize Context section length: %w", err)
 			return
 		}
 
 		if err = writeFixedLength(&buf, contextBuffer.Bytes(), contextBuffer.Len()); err != nil {
-			err = fmt.Errorf("failed to serialize Context section: %v", err)
+			err = fmt.Errorf("failed to serialize Context section: %w", err)
 			return
 		}
 	} else {
 		if err = writeUint16(&buf, uint16(customFieldsEmptyMarker)); err != nil {
-			err = fmt.Errorf("failed to serialize Context section marker length: %v", err)
+			err = fmt.Errorf("failed to serialize Context section marker length: %w", err)
 			return
 		}
 	}
@@ -103,11 +103,11 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 		return
 	}
 	if err = writeUint16(&buf, uint16(len(fields.Data))); err != nil {
-		err = fmt.Errorf("failed to serialize Data length: %v", err)
+		err = fmt.Errorf("failed to serialize Data length: %w", err)
 		return
 	}
 	if err = writeFixedLength(&buf, fields.Data, len(fields.Data)); err != nil {
-		err = fmt.Errorf("failed to serialize Data: %v", err)
+		err = fmt.Errorf("failed to serialize Data: %w", err)
 		return
 	}
 	buf.WriteByte(terminatorByte)
@@ -116,7 +116,7 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 	padding := make([]byte, fields.PaddingLen)
 	_, err = io.ReadFull(rand.Reader, padding)
 	if err != nil {
-		err = fmt.Errorf("failed to generate random padding: %v", err)
+		err = fmt.Errorf("failed to generate random padding: %w", err)
 		return
 	}
 	buf.Write(padding)
@@ -130,7 +130,7 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 func writeUint16(buf *bytes.Buffer, b uint16) (err error) {
 	err = binary.Write(buf, binary.BigEndian, b)
 	if err != nil {
-		err = fmt.Errorf("failed to write uint16: %v", err)
+		err = fmt.Errorf("failed to write uint16: %w", err)
 		return
 	}
 	return
@@ -146,7 +146,7 @@ func writeFixedLength(buf *bytes.Buffer, data []byte, length int) (err error) {
 
 	_, err = buf.Write(data)
 	if err != nil {
-		err = fmt.Errorf("failed to write: %v", err)
+		err = fmt.Errorf("failed to write: %w", err)
 		return
 	}
 
@@ -166,31 +166,31 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 
 	// HEADER
 	if err = binary.Read(buf, binary.BigEndian, &fields.HostID); err != nil {
-		err = fmt.Errorf("failed to deserialize HostID: %v", err)
+		err = fmt.Errorf("failed to deserialize HostID: %w", err)
 		return
 	}
 	if err = binary.Read(buf, binary.BigEndian, &fields.MsgID); err != nil {
-		err = fmt.Errorf("failed to deserialize MsgID: %v", err)
+		err = fmt.Errorf("failed to deserialize MsgID: %w", err)
 		return
 	}
 	if err = binary.Read(buf, binary.BigEndian, &fields.MessageSeq); err != nil {
-		err = fmt.Errorf("failed to deserialize MessageSeq: %v", err)
+		err = fmt.Errorf("failed to deserialize MessageSeq: %w", err)
 		return
 	}
 	if err = binary.Read(buf, binary.BigEndian, &fields.MessageSeqMax); err != nil {
-		err = fmt.Errorf("failed to deserialize MessageSeqMax: %v", err)
+		err = fmt.Errorf("failed to deserialize MessageSeqMax: %w", err)
 		return
 	}
 
 	// METADATA
 	if err = binary.Read(buf, binary.BigEndian, &fields.Timestamp); err != nil {
-		err = fmt.Errorf("failed to deserialize Timestamp: %v", err)
+		err = fmt.Errorf("failed to deserialize Timestamp: %w", err)
 		return
 	}
 	// Hostname
 	var hostnameLen uint8
 	if err = binary.Read(buf, binary.BigEndian, &hostnameLen); err != nil {
-		err = fmt.Errorf("failed to deserialize Hostname length: %v", err)
+		err = fmt.Errorf("failed to deserialize Hostname length: %w", err)
 		return
 	}
 	if hostnameLen == 0 {
@@ -203,7 +203,7 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 	}
 	fields.Hostname = make([]byte, hostnameLen)
 	if _, err = io.ReadFull(buf, fields.Hostname); err != nil {
-		err = fmt.Errorf("failed to deserialize Hostname: %v", err)
+		err = fmt.Errorf("failed to deserialize Hostname: %w", err)
 		return
 	}
 	err = readTerminator(buf, "Hostname")
@@ -214,7 +214,7 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 	// CONTEXT
 	var ctxSecLen uint16
 	if err = binary.Read(buf, binary.BigEndian, &ctxSecLen); err != nil {
-		err = fmt.Errorf("failed to deserialize Context section length: %v", err)
+		err = fmt.Errorf("failed to deserialize Context section length: %w", err)
 		return
 	}
 	if ctxSecLen == 0 {
@@ -225,7 +225,7 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 		// Custom fields present, extract
 		rawContextSection := make([]byte, ctxSecLen)
 		if _, err = io.ReadFull(buf, rawContextSection); err != nil {
-			err = fmt.Errorf("failed to deserialize Context section: %v", err)
+			err = fmt.Errorf("failed to deserialize Context section: %w", err)
 			return
 		}
 		contextReader := bytes.NewReader(rawContextSection)
@@ -236,13 +236,13 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 				break // end of context section
 			}
 			if err != nil {
-				err = fmt.Errorf("failed to read context field key length: %v", err)
+				err = fmt.Errorf("failed to read context field key length: %w", err)
 				return
 			}
 
 			fieldKey := make([]byte, keyLen)
 			if _, err = io.ReadFull(contextReader, fieldKey); err != nil {
-				err = fmt.Errorf("failed to deserialize context field key: %v", err)
+				err = fmt.Errorf("failed to deserialize context field key: %w", err)
 				return
 			}
 			err = readTerminator(contextReader, "Context field key")
@@ -253,19 +253,19 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 			var valType uint8
 			valType, err = contextReader.ReadByte()
 			if err != nil {
-				err = fmt.Errorf("failed to read context field value type: %v", err)
+				err = fmt.Errorf("failed to read context field value type: %w", err)
 				return
 			}
 
 			var valLen uint8
 			valLen, err = contextReader.ReadByte()
 			if err != nil {
-				err = fmt.Errorf("failed to read context field value length: %v", err)
+				err = fmt.Errorf("failed to read context field value length: %w", err)
 				return
 			}
 			fieldValue := make([]byte, valLen)
 			if _, err = io.ReadFull(contextReader, fieldValue); err != nil {
-				err = fmt.Errorf("failed to deserialize context field value: %v", err)
+				err = fmt.Errorf("failed to deserialize context field value: %w", err)
 				return
 			}
 			err = readTerminator(contextReader, "Context field value")
@@ -294,7 +294,7 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 	// LogText
 	var logTextLen uint16
 	if err = binary.Read(buf, binary.BigEndian, &logTextLen); err != nil {
-		err = fmt.Errorf("failed to deserialize LogText length: %v", err)
+		err = fmt.Errorf("failed to deserialize LogText length: %w", err)
 		return
 	}
 	if logTextLen == 0 {
@@ -303,7 +303,7 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 	}
 	fields.Data = make([]byte, logTextLen)
 	if _, err = io.ReadFull(buf, fields.Data); err != nil {
-		err = fmt.Errorf("failed to deserialize LogText: %v", err)
+		err = fmt.Errorf("failed to deserialize LogText: %w", err)
 		return
 	}
 	err = readTerminator(buf, "LogText")
@@ -323,7 +323,7 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 func readTerminator(buf *bytes.Reader, fieldBeingTerminated string) (err error) {
 	term, err := buf.ReadByte()
 	if err != nil {
-		err = fmt.Errorf("failed to read %s terminator: %v", fieldBeingTerminated, err)
+		err = fmt.Errorf("failed to read %s terminator: %w", fieldBeingTerminated, err)
 		return
 	}
 	if term != terminatorByte {

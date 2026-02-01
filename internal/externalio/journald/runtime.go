@@ -12,7 +12,7 @@ func (mod *InModule) Start() (err error) {
 	// Start command post goroutine startup
 	err = mod.cmd.Start()
 	if err != nil {
-		err = fmt.Errorf("failed to start journalctl command: %v", err)
+		err = fmt.Errorf("failed to start journalctl command: %w", err)
 		return
 	}
 	return
@@ -25,7 +25,7 @@ func (mod *InModule) CheckError() (err error) {
 	defer errFile.Close()
 	err = errFile.SetReadDeadline(time.Now().Add(25 * time.Millisecond))
 	if err != nil {
-		err = fmt.Errorf("failed to set deadline on stderr reader: %v", err)
+		err = fmt.Errorf("failed to set deadline on stderr reader: %w", err)
 		return
 	}
 
@@ -33,7 +33,7 @@ func (mod *InModule) CheckError() (err error) {
 	bytesRead, err := errFile.Read(buf)
 	if err != nil {
 		if !os.IsTimeout(err) {
-			err = fmt.Errorf("failed to read journalctl stderr: %v", err)
+			err = fmt.Errorf("failed to read journalctl stderr: %w", err)
 			return
 		}
 		err = nil

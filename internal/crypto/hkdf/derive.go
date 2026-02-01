@@ -22,7 +22,7 @@ func DeriveKey(secret, salt []byte, namespace string, keySize int) (secureKey []
 	crypto.Memzero(salt)   // Kill salt memory
 	crypto.Memzero(secret) // Kill secret memory
 	if err != nil {
-		err = fmt.Errorf("failed to populate key with secure bytes: %v", err)
+		err = fmt.Errorf("failed to populate key with secure bytes: %w", err)
 		return
 	}
 	return

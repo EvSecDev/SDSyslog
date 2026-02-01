@@ -13,12 +13,14 @@ import (
 func (mod *InModule) Reader(ctx context.Context) {
 	logFileInode, logFileOffset, err := getLastPosition(mod.filePath, mod.stateFile)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to get position of last source file read for '%s': %v\n", mod.filePath, err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+			"failed to get position of last source file read for '%s': %w\n", mod.filePath, err)
 	}
 
 	_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to resume last source file read position for '%s': %v\n", mod.filePath, err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			"failed to resume last source file read position for '%s': %w\n", mod.filePath, err)
 	}
 
 	var localHostname string
@@ -26,7 +28,8 @@ func (mod *InModule) Reader(ctx context.Context) {
 	const refreshMask = 1024 - 1
 	localHostname, err = os.Hostname()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to retrieve current local hostname: %v\n", err)
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+			"failed to retrieve current local hostname: %w\n", err)
 		localHostname = "-"
 		err = nil
 	}
@@ -44,7 +47,8 @@ func (mod *InModule) Reader(ctx context.Context) {
 			// Record current file position before read
 			startOfChunk, err := mod.sink.Seek(0, io.SeekCurrent)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to retrieve current position in log file: %v\n", err)
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					"failed to retrieve current position in log file: %w\n", err)
 			}
 
 			n, err := mod.sink.Read(buf)
@@ -55,7 +59,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 				// no more bytes available, break to outer select for blocking
 				break
 			} else if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "read error: %v", err)
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "read error: %w", err)
 				break
 			}
 
@@ -99,7 +103,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			err := savePosition(mod.stateFile, logFileInode, logFileOffset)
 			if err != nil {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"failed to save position in file source '%s': %v\n", mod.filePath, err)
+					"failed to save position in file source '%s': %w\n", mod.filePath, err)
 			}
 			return
 		case <-fileHasChanged:
@@ -110,14 +114,16 @@ func (mod *InModule) Reader(ctx context.Context) {
 				mod.sink.Close()
 				mod.sink, err = os.Open(mod.filePath)
 				if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to reopen rotated log file: %v\n", err)
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+						"failed to reopen rotated log file: %w\n", err)
 					continue
 				}
 
 				// Retrieve new file inode
 				fileInfo, err := os.Stat(mod.filePath)
 				if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "unable to stat new source file: %v\n", err)
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+						"unable to stat new source file: %w\n", err)
 					continue
 				}
 				stat := fileInfo.Sys().(*syscall.Stat_t)
@@ -137,14 +143,16 @@ func (mod *InModule) Reader(ctx context.Context) {
 			if err == nil && newName != localHostname {
 				localHostname = newName
 			} else if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to refresh current local hostname: %v\n", err)
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+					"failed to refresh current local hostname: %w\n", err)
 			}
 		}
 
 		// Re-scan for new lines after the last offset
 		_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed to seek to last offset: %v\n", err)
+			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				"failed to seek to last offset: %w\n", err)
 		}
 	}
 

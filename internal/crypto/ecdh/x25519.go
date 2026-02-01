@@ -17,14 +17,14 @@ func CreatePersistentKey() (private, public []byte, err error) {
 	private = make([]byte, KeyLen)
 	_, err = rand.Read(private)
 	if err != nil {
-		err = fmt.Errorf("failed to generate random private key: %v", err)
+		err = fmt.Errorf("failed to generate random private key: %w", err)
 		return
 	}
 
 	// Generate the corresponding public key
 	public, err = curve25519.X25519(private, curve25519.Basepoint)
 	if err != nil {
-		err = fmt.Errorf("failed to generate public key: %v", err)
+		err = fmt.Errorf("failed to generate public key: %w", err)
 		return
 	}
 
@@ -38,14 +38,14 @@ func CreateSharedSecret(publicKey []byte) (sharedSecret, ephemeralPublic []byte,
 	ephemeralPriv := make([]byte, KeyLen)
 	_, err = rand.Read(ephemeralPriv)
 	if err != nil {
-		err = fmt.Errorf("failed to generate ephemeral private key: %v", err)
+		err = fmt.Errorf("failed to generate ephemeral private key: %w", err)
 		return
 	}
 
 	// Create the ephemeral public key
 	ephemeralPublic, err = curve25519.X25519(ephemeralPriv, curve25519.Basepoint)
 	if err != nil {
-		err = fmt.Errorf("failed to generate ephemeral public key: %v", err)
+		err = fmt.Errorf("failed to generate ephemeral public key: %w", err)
 		return
 	}
 
@@ -53,7 +53,7 @@ func CreateSharedSecret(publicKey []byte) (sharedSecret, ephemeralPublic []byte,
 	sharedSecret, err = curve25519.X25519(ephemeralPriv, publicKey)
 	crypto.Memzero(ephemeralPriv) // Kill ephemeral private memory
 	if err != nil {
-		err = fmt.Errorf("failed to compute shared secret: %v", err)
+		err = fmt.Errorf("failed to compute shared secret: %w", err)
 		return
 	}
 
@@ -65,7 +65,7 @@ func CreateSharedSecret(publicKey []byte) (sharedSecret, ephemeralPublic []byte,
 func ReCreateSharedSecret(privateKey, ephemeralPublic []byte) (sharedSecret []byte, err error) {
 	sharedSecret, err = curve25519.X25519(privateKey, ephemeralPublic)
 	if err != nil {
-		err = fmt.Errorf("failed to recompute shared secret: %v", err)
+		err = fmt.Errorf("failed to recompute shared secret: %w", err)
 		return
 	}
 	return

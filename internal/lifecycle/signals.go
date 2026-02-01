@@ -54,7 +54,7 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 
 			childProc, err = preUpdate(ctx)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Reload Error: %v\n", err)
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Reload Error: %w\n", err)
 
 				err = NotifyStatus(ctx, "Reload failed due to internal error. Check daemon logs.")
 				if err != nil {

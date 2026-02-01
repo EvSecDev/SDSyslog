@@ -35,7 +35,7 @@ func PopulateEmptySlice(slice *[]byte, size int) (err error) {
 		// Populate array with secure random values
 		_, err = rand.Read(*slice)
 		if err != nil {
-			err = fmt.Errorf("failed to populate slice with pseudo random data: %v", err)
+			err = fmt.Errorf("failed to populate slice with pseudo random data: %w", err)
 			return
 		}
 	}
@@ -80,7 +80,7 @@ func NumberInRange(min, max int) (randomNumber int, err error) {
 	// Generate a random number in [min, max]
 	n, err := rand.Int(rand.Reader, big.NewInt(int64(max-min+1)))
 	if err != nil {
-		err = fmt.Errorf("failed reading in range: %v", err)
+		err = fmt.Errorf("failed reading in range: %w", err)
 		return
 	}
 

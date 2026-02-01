@@ -54,7 +54,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 
 	err = sendJournalExport(mod.sink, mod.url, buf.Bytes())
 	if err != nil {
-		err = fmt.Errorf("%v (message: ip: '%s', host id '%d', message id '%d', hostname '%s')\n",
+		err = fmt.Errorf("%w (message: ip: '%s', host id '%d', message id '%d', hostname '%s')\n",
 			err, msg.RemoteIP, msg.HostID, msg.MsgID, msg.Hostname)
 		return
 	}

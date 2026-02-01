@@ -16,7 +16,7 @@ func readinessReceiver(readyReader *os.File) (err error) {
 	buf := make([]byte, len(ReadyMessage))
 	_, err = io.ReadFull(readyReader, buf)
 	if err != nil {
-		err = fmt.Errorf("error reading readiness message: %v", err)
+		err = fmt.Errorf("error reading readiness message: %w", err)
 		return
 	}
 
@@ -40,7 +40,7 @@ func ReadinessSender() (err error) {
 
 	fd, err := strconv.Atoi(fdStr)
 	if err != nil {
-		err = fmt.Errorf("invalid %s: %v", EnvNameReadinessFD, err)
+		err = fmt.Errorf("invalid %s: %w", EnvNameReadinessFD, err)
 		return
 	}
 
@@ -57,7 +57,7 @@ func ReadinessSender() (err error) {
 		var bytesWritten int
 		bytesWritten, err = readyPipe.Write(msg)
 		if err != nil {
-			err = fmt.Errorf("failed to send readiness message: %v", err)
+			err = fmt.Errorf("failed to send readiness message: %w", err)
 			return
 		}
 		msg = msg[bytesWritten:]

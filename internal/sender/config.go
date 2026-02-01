@@ -13,13 +13,13 @@ import (
 func LoadConfig(path string) (cfg JSONConfig, err error) {
 	configFile, err := os.ReadFile(path)
 	if err != nil {
-		err = fmt.Errorf("failed to read config file: %v", err)
+		err = fmt.Errorf("failed to read config file: %w", err)
 		return
 	}
 
 	err = json.Unmarshal(configFile, &cfg)
 	if err != nil {
-		err = fmt.Errorf("invalid config syntax in '%s': %v", path, err)
+		err = fmt.Errorf("invalid config syntax in '%s': %w", path, err)
 		return
 	}
 
@@ -41,7 +41,7 @@ func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
 	// Scaling settings
 	config.AutoscaleCheckInterval, err = time.ParseDuration(cfg.AutoScaling.PollInterval)
 	if err != nil {
-		err = fmt.Errorf("failed to parse autoscale check interval time: %v", err)
+		err = fmt.Errorf("failed to parse autoscale check interval time: %w", err)
 		return
 	}
 	config.AutoscaleEnabled = cfg.AutoScaling.Enabled
@@ -59,12 +59,12 @@ func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
 	config.MetricQueryServerPort = cfg.Metrics.QueryServerPort
 	config.MetricMaxAge, err = time.ParseDuration(cfg.Metrics.MaxAge)
 	if err != nil {
-		err = fmt.Errorf("failed to parse metric max age time: %v", err)
+		err = fmt.Errorf("failed to parse metric max age time: %w", err)
 		return
 	}
 	config.MetricCollectionInterval, err = time.ParseDuration(cfg.Metrics.Interval)
 	if err != nil {
-		err = fmt.Errorf("failed to parse collection interval time: %v", err)
+		err = fmt.Errorf("failed to parse collection interval time: %w", err)
 		return
 	}
 

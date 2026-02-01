@@ -82,21 +82,21 @@ func (instance *Instance) Run(ctx context.Context) {
 				n, err := instance.FileMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-						"Failed to write message(s) to file output: %v\n", err)
+						"Failed to write message(s) to file output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulFileWrites.Add(uint64(n))
 
 				n, err = instance.JrnlMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-						"Failed to write message(s) to journald output: %v\n", err)
+						"Failed to write message(s) to journald output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulJrnlWrites.Add(uint64(n))
 
 				n, err = instance.BeatsMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-						"Failed to write message(s) to beats output: %v\n", err)
+						"Failed to write message(s) to beats output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulBeatsWrites.Add(uint64(n))
 			}()

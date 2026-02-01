@@ -48,14 +48,14 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	syslog.InitBidiMaps()
 	err = wrappers.SetupDecryptInnerPayload(serverPriv)
 	if err != nil {
-		err = fmt.Errorf("failed to setup decryption function: %v", err)
+		err = fmt.Errorf("failed to setup decryption function: %w", err)
 		return
 	}
 	daemon.cfg.setDefaults()
 
 	data, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
 	if err != nil {
-		err = fmt.Errorf("failed to determine local boot id: %v", err)
+		err = fmt.Errorf("failed to determine local boot id: %w", err)
 		return
 	}
 	global.SetBootID(strings.TrimSpace(string(data)))
@@ -63,19 +63,19 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	// Listener socket helper - kernel-side of socket drain feature
 	err = ebpf.LoadProgram()
 	if err != nil {
-		err = fmt.Errorf("failed to load listener helper: %v", err)
+		err = fmt.Errorf("failed to load listener helper: %w", err)
 		return
 	}
 
 	// Stage 4 - Output Manager
 	daemon.Mgrs.Output, err = out.NewInstanceManager(daemon.ctx, daemon.cfg.MinOutputQueueSize, daemon.cfg.MaxOutputQueueSize)
 	if err != nil {
-		err = fmt.Errorf("failed creating output instance manager: %v", err)
+		err = fmt.Errorf("failed creating output instance manager: %w", err)
 		return
 	}
 	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath, daemon.cfg.JournaldURL, daemon.cfg.BeatsEndpoint)
 	if err != nil {
-		err = fmt.Errorf("failed starting output: %v", err)
+		err = fmt.Errorf("failed starting output: %w", err)
 		return
 	}
 	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
@@ -100,7 +100,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		daemon.cfg.MinProcessorQueueSize,
 		daemon.cfg.MaxProcessorQueueSize)
 	if err != nil {
-		err = fmt.Errorf("failed adding new processor manager: %v", err)
+		err = fmt.Errorf("failed adding new processor manager: %w", err)
 		daemon.Shutdown()
 		return
 	}
@@ -119,7 +119,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	for i := 0; i < daemon.cfg.MinListeners; i++ {
 		_, err = daemon.Mgrs.Input.AddInstance()
 		if err != nil {
-			err = fmt.Errorf("failed adding new listener instance: %v", err)
+			err = fmt.Errorf("failed adding new listener instance: %w", err)
 			daemon.Shutdown()
 			return
 		}
@@ -171,7 +171,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 			daemon.MetricDiscoverer,
 			daemon.MetricAggregator)
 		if err != nil {
-			err = fmt.Errorf("failed creating HTTP metric server: %v", err)
+			err = fmt.Errorf("failed creating HTTP metric server: %w", err)
 			daemon.Shutdown()
 			return
 		}
@@ -186,14 +186,14 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	// For update hot-swap/systemd
 	err = lifecycle.ReadinessSender()
 	if err != nil {
-		err = fmt.Errorf("error sending readiness to parent process: %v", err)
+		err = fmt.Errorf("error sending readiness to parent process: %w", err)
 		daemon.Shutdown()
 		return
 	}
 	lifecycle.PostUpdateActions(daemon.ctx)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
-		err = fmt.Errorf("error sending readiness to systemd: %v", err)
+		err = fmt.Errorf("error sending readiness to systemd: %w", err)
 		daemon.Shutdown()
 		return
 	}
@@ -222,7 +222,7 @@ func (daemon *Daemon) Shutdown() {
 		err := daemon.MetricServer.Shutdown(daemon.ctx)
 		if err != nil && err != http.ErrServerClosed {
 			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-				"metric HTTP server did not shutdown gracefully: %v\n", err)
+				"metric HTTP server did not shutdown gracefully: %w\n", err)
 		}
 	}
 

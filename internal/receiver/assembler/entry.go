@@ -70,7 +70,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			finalMsg, err := protocol.Defragment(fragSlice)
 			if err != nil {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"Failed assembler: %v\n", err)
+					"Failed assembler: %w\n", err)
 				return
 			}
 

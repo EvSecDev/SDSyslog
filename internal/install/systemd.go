@@ -27,7 +27,7 @@ func installService(mode string) (err error) {
 
 	unitFile, err := installationFiles.ReadFile(templateFile)
 	if err != nil {
-		err = fmt.Errorf("Unable to retrieve configuration file from embedded filesystem: %v", err)
+		err = fmt.Errorf("Unable to retrieve configuration file from embedded filesystem: %w", err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func installService(mode string) (err error) {
 	command := exec.Command("systemctl", "daemon-reload")
 	output, err := command.CombinedOutput()
 	if err != nil {
-		err = fmt.Errorf("Failed to reload systemd units: %v: %s", err, string(output))
+		err = fmt.Errorf("Failed to reload systemd units: %w: %s", err, string(output))
 		return
 	}
 
@@ -55,7 +55,7 @@ func installService(mode string) (err error) {
 	output, err = command.CombinedOutput()
 	if err != nil {
 		if !strings.Contains(string(output), "disabled") {
-			err = fmt.Errorf("Failed to check systemd service enablement status: %v: %s", err, string(output))
+			err = fmt.Errorf("Failed to check systemd service enablement status: %w: %s", err, string(output))
 			return
 		}
 		// Disabled status is exit code 1
@@ -67,7 +67,7 @@ func installService(mode string) (err error) {
 		command := exec.Command("systemctl", "enable", unitName)
 		output, err = command.CombinedOutput()
 		if err != nil {
-			err = fmt.Errorf("Failed to enable systemd service: %v: %s", err, string(output))
+			err = fmt.Errorf("Failed to enable systemd service: %w: %s", err, string(output))
 			return
 		}
 	}
@@ -96,7 +96,7 @@ func uninstallService(mode string) (err error) {
 	if err != nil {
 		if !strings.Contains(string(output), "not-found") && !strings.Contains(string(output), "disabled") {
 			if !strings.Contains(string(output), "disabled") && !strings.Contains(string(output), "enabled") {
-				err = fmt.Errorf("Failed to check systemd service enablement status: %v: %s", err, string(output))
+				err = fmt.Errorf("Failed to check systemd service enablement status: %w: %s", err, string(output))
 				return
 			}
 		}
@@ -109,7 +109,7 @@ func uninstallService(mode string) (err error) {
 		command := exec.Command("systemctl", "disable", unitName)
 		output, err = command.CombinedOutput()
 		if err != nil {
-			err = fmt.Errorf("Failed to disable systemd service: %v: %s", err, string(output))
+			err = fmt.Errorf("Failed to disable systemd service: %w: %s", err, string(output))
 			return
 		}
 	}
@@ -118,7 +118,7 @@ func uninstallService(mode string) (err error) {
 	output, err = command.CombinedOutput()
 	if err != nil {
 		if !strings.Contains(string(output), "could not be found") {
-			err = fmt.Errorf("Failed to check systemd service status: %v: %s", err, string(output))
+			err = fmt.Errorf("Failed to check systemd service status: %w: %s", err, string(output))
 			return
 		}
 	}
@@ -128,7 +128,7 @@ func uninstallService(mode string) (err error) {
 		command = exec.Command("systemctl", "stop", unitName)
 		output, err = command.CombinedOutput()
 		if err != nil {
-			err = fmt.Errorf("Failed to stop systemd service: %v: %s", err, string(output))
+			err = fmt.Errorf("Failed to stop systemd service: %w: %s", err, string(output))
 			return
 		}
 	}
@@ -145,7 +145,7 @@ func uninstallService(mode string) (err error) {
 		command = exec.Command("systemctl", "daemon-reload")
 		output, err = command.CombinedOutput()
 		if err != nil {
-			err = fmt.Errorf("Failed to reload systemd units: %v: %s", err, string(output))
+			err = fmt.Errorf("Failed to reload systemd units: %w: %s", err, string(output))
 			return
 		}
 	}

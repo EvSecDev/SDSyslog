@@ -14,7 +14,7 @@ func installBinary() (err error) {
 
 	err = os.Rename(selfPath, global.DefaultBinaryPath)
 	if err != nil {
-		err = fmt.Errorf("failed to move: %v", err)
+		err = fmt.Errorf("failed to move: %w", err)
 		return
 	}
 

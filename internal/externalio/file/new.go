@@ -24,7 +24,7 @@ func NewInput(namespace []string, filePath string, baseStateFile string, queue *
 
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0)
 	if err != nil {
-		err = fmt.Errorf("failed to open source file: %v", err)
+		err = fmt.Errorf("failed to open source file: %w", err)
 		return
 	}
 

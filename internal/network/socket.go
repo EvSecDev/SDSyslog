@@ -24,12 +24,12 @@ func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
 				// Always set SO_REUSEADDR and SO_REUSEPORT
 				err := unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
 				if err != nil {
-					ctrlErr = fmt.Errorf("SO_REUSEADDR failed: %v", err)
+					ctrlErr = fmt.Errorf("SO_REUSEADDR failed: %w", err)
 					return
 				}
 				err = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
 				if err != nil {
-					ctrlErr = fmt.Errorf("SO_REUSEPORT failed: %v", err)
+					ctrlErr = fmt.Errorf("SO_REUSEPORT failed: %w", err)
 					return
 				}
 
@@ -55,7 +55,7 @@ func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
 	addr := net.UDPAddr{Port: port}
 	pc, err := cfg.ListenPacket(context.Background(), "udp", addr.String())
 	if err != nil {
-		err = fmt.Errorf("failed to listen on new reused connection: %v", err)
+		err = fmt.Errorf("failed to listen on new reused connection: %w", err)
 		return
 	}
 	conn = pc.(*net.UDPConn)
@@ -94,7 +94,7 @@ func ReuseTCPPort(addr string) (conn net.Listener, err error) {
 
 	conn, err = cfg.Listen(context.Background(), "tcp", addr)
 	if err != nil {
-		err = fmt.Errorf("failed to listen on reused tcp port: %v", err)
+		err = fmt.Errorf("failed to listen on reused tcp port: %w", err)
 		return
 	}
 

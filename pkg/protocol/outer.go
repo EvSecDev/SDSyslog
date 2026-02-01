@@ -25,7 +25,7 @@ func ConstructOuterPayload(innerPayload []byte, suiteID uint8) (outerPayload []b
 	// Encrypt inner payload
 	ciphertext, ephemeralPub, nonce, err := wrappers.EncryptInnerPayload(innerPayload, suiteID)
 	if err != nil {
-		err = fmt.Errorf("failed encryption: %v", err)
+		err = fmt.Errorf("failed encryption: %w", err)
 		return
 	}
 

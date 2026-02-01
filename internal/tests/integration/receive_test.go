@@ -196,10 +196,10 @@ func TestRecvConstantFlow(t *testing.T) {
 	// Check for errors post-shutdown
 	errors, errorsFound = filterLogBuffer(globalCtx, "", global.NSRecv, global.ErrorLog)
 	if errorsFound {
-		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%v", errors)
+		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%s", errors)
 	}
 	warns, warnsFound := filterLogBuffer(globalCtx, "", global.NSRecv, global.WarnLog)
 	if warnsFound {
-		t.Errorf("expected no warnings in receive daemon shutdown, but found:\n%v", warns)
+		t.Errorf("expected no warnings in receive daemon shutdown, but found:\n%s", warns)
 	}
 }

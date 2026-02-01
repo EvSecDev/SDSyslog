@@ -108,6 +108,7 @@ func TestRegistry_Discover(t *testing.T) {
 		wantCount int
 	}{
 		{"all", "", "", nil, 6},
+		{"all2", "", "", []string{}, 6},
 		{"elapsed_time both units", "ms", "", nil, 1},
 		{"counter only", "", Counter, nil, 1},
 		{"ingest namespace only", "", "", []string{"Receiver", "Ingest"}, 4},

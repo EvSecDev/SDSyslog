@@ -11,7 +11,13 @@ import (
 // Handles metric search to discover metrics (returns no actual data, only sample metric per individual metric)
 func handleDiscovery(baseCtx context.Context, discover Discoverer, serverResponder http.ResponseWriter, clientRequest *http.Request) {
 	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, global.DiscoveryPath)
-	reqNamespace := strings.Split(rawNamespace, "/")
+
+	var reqNamespace []string
+	if rawNamespace != "" {
+		reqNamespace = strings.Split(rawNamespace, "/")
+	} else {
+		reqNamespace = nil
+	}
 
 	reqName := clientRequest.FormValue("name")
 	reqDescription := clientRequest.FormValue("description")

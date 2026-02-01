@@ -32,11 +32,11 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 	}
 
 	// Replace variables in html with globals
-	helpPage = bytes.Replace(helpPage, []byte("@@LISTEN_ADDR@@"), []byte(global.HTTPListenAddr), 1)
-	helpPage = bytes.Replace(helpPage, []byte("@@LISTEN_PORT@@"), []byte(strconv.Itoa(port)), 1)
-	helpPage = bytes.Replace(helpPage, []byte("@@DATA_PATH@@"), []byte(global.DataPath), 1)
-	helpPage = bytes.Replace(helpPage, []byte("@@DISCOVER_PATH@@"), []byte(global.DiscoveryPath), 1)
-	helpPage = bytes.Replace(helpPage, []byte("@@AGGREGATION_PATH@@"), []byte(global.AggregationPath), 1)
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{LISTEN_ADDR}"), []byte(global.HTTPListenAddr))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{LISTEN_PORT}"), []byte(strconv.Itoa(port)))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{DATA_PATH}"), []byte(global.DataPath))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{DISCOVER_PATH}"), []byte(global.DiscoveryPath))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{AGGREGATION_PATH}"), []byte(global.AggregationPath))
 
 	// Root help page
 	requestMultiplexer.HandleFunc("/", func(serverResponder http.ResponseWriter, clientRequest *http.Request) {

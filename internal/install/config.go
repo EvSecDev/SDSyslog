@@ -198,7 +198,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	newCfg.AutoScaling.PollInterval = "5s"
 	newCfg.AutoScaling.MinListeners = 2
 	newCfg.AutoScaling.MinProcessors = 2
-	newCfg.AutoScaling.MinDefrags = 16
+	newCfg.AutoScaling.MinDefrags = 2
 	newCfg.AutoScaling.MaxListeners = 16
 	newCfg.AutoScaling.MaxProcessors = 16
 	newCfg.AutoScaling.MaxDefrags = 16

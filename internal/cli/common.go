@@ -13,10 +13,11 @@ func SetGlobalArguments(fs *flag.FlagSet) (requestedLogLevel *int) {
 }
 
 func SetCommon(fs *flag.FlagSet, configPath *string, mode string) {
-	if mode == "send" {
+	switch mode {
+	case global.SendMode:
 		fs.StringVar(configPath, "c", global.DefaultConfigSend, "Path to the configuration file")
 		fs.StringVar(configPath, "config", global.DefaultConfigSend, "Path to the configuration file")
-	} else if mode == "receive" {
+	case global.RecvMode:
 		fs.StringVar(configPath, "c", global.DefaultConfigRecv, "Path to the configuration file")
 		fs.StringVar(configPath, "config", global.DefaultConfigRecv, "Path to the configuration file")
 	}

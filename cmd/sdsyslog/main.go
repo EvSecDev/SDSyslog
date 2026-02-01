@@ -42,9 +42,9 @@ func main() {
 
 	// Process commands
 	switch command {
-	case "send":
+	case global.SendMode:
 		cli.SendMode(ctx, cliOpts, command, args)
-	case "receive":
+	case global.RecvMode:
 		cli.ReceiveMode(ctx, cliOpts, command, args)
 	case "configure":
 		cli.SetupMode(cliOpts, command, args)

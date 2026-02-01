@@ -36,6 +36,7 @@ func NewDaemon(cfg Config) (new *Daemon) {
 func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err error) {
 	// New context for the daemon
 	daemon.ctx, daemon.cancel = context.WithCancel(context.Background())
+	daemon.ctx = context.WithValue(globalCtx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
 	daemon.ctx = context.WithValue(daemon.ctx, global.LoggerKey, logctx.GetLogger(globalCtx))
 
 	// Top level tag for daemon logs

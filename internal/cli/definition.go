@@ -12,16 +12,16 @@ func DefineOptions() (cmdOpts *global.CommandSet) {
 	}
 
 	// Sending
-	root.ChildCommands["send"] = &global.CommandSet{
-		CommandName:     "send",
+	root.ChildCommands[global.SendMode] = &global.CommandSet{
+		CommandName:     global.SendMode,
 		Description:     "Send Messages",
 		FullDescription: "Reads messages from external sources, encrypts, fragments and transmits to configured destination",
 		ChildCommands:   nil,
 	}
 
 	// Receiving
-	root.ChildCommands["receive"] = &global.CommandSet{
-		CommandName:     "receive",
+	root.ChildCommands[global.RecvMode] = &global.CommandSet{
+		CommandName:     global.RecvMode,
 		Description:     "Receive Messages",
 		FullDescription: "Receives network packets, decrypts, reassembles, and sends messages to configured outputs",
 		ChildCommands:   nil,

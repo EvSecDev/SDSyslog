@@ -16,6 +16,18 @@ import (
 // Creates new daemon process as child to temporarily handle traffic during main process update.
 // Only returns after child process is fully started and taking traffic (or error).
 func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
+	// Sender daemons will duplicate messages if we attempt a 2 stage update.
+	// They can proceed directly to shutdown-replacement since inputs are stateful.
+	mode, ok := ctx.Value(global.CtxModeKey).(string)
+	if !ok {
+		err = fmt.Errorf("attempted retrieval and assertion of context mode key failed")
+		return
+	}
+	if mode == global.SendMode {
+		// No-op for sender
+		return
+	}
+
 	// Readiness Pipe - Child -> Parent notification (signals when to start parent shutdown)
 	readyR, readyW, err := os.Pipe()
 	if err != nil {

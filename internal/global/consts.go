@@ -18,9 +18,12 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.14.6"
+	ProgVersion string = "v0.14.7"
+	SendMode    string = "send"
+	RecvMode    string = "receive"
 
 	// Context keys
+	CtxModeKey string = "mode"    // Identifying if program is in sender or receiver mode
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
 	LogTagsKey CtxKey = "logtags" // List of tags in order of broad->specific appended/popped at various parts of the program
 

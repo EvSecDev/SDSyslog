@@ -15,7 +15,7 @@ func SendMode(ctx context.Context, cliOpts *global.CommandSet, commandname strin
 	var configPath string
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	requestedLogLevel := SetGlobalArguments(commandFlags)
-	SetCommon(commandFlags, &configPath, "send")
+	SetCommon(commandFlags, &configPath, commandname)
 
 	commandFlags.Usage = func() {
 		PrintHelpMenu(commandFlags, commandname, cliOpts)
@@ -28,6 +28,9 @@ func SendMode(ctx context.Context, cliOpts *global.CommandSet, commandname strin
 
 	// Change log level if verbosity argument was given at this command level
 	logctx.SetLogLevel(ctx, *requestedLogLevel)
+
+	// Embed mode name in context
+	ctx = context.WithValue(ctx, global.CtxModeKey, commandname)
 
 	jsonCfg, err := sender.LoadConfig(configPath)
 	if err != nil {

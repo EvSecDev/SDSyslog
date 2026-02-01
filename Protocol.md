@@ -1,4 +1,4 @@
-# Protocol Specification
+# Direct through Diode to Destination Protocol (D3P) Specification
 
 ## Introduction
 
@@ -267,7 +267,7 @@ This section describes fragmentation behavior for messages exceeding the maximum
 Creation:
 
 - Protocol header (inner) MUST be sent with every packet.
-- Total transport payload length MUST not exceed the transport layer MTU minus the total maximum protocol field lengths minus maximum trailer length.
+- Total transport payload length MUST not exceed the transport layer MTU minus the total maximum protocol field lengths minus per-packet trailer (padding) length.
 - Creation of individual packets from a singular message MUST start fragment sequences at 0 and increment up by 1 each packet.
 - Individual fragments MUST fill the maximum inner payload size, excluding the trailer.
 

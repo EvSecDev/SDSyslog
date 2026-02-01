@@ -4,7 +4,7 @@ A program to securely transmit and receive log messages across untrusted and/or 
 
 This program prioritizes unidirectional networking and data confidentiality/integrity to improve upon the UDP syslog protocol (RFC5424).
 
-For technical details about this program's protocol, see `Protocol.md`.
+For technical details about the protocol used (D3P), see `Protocol.md`.
 For technical details about this program's architecture, see `Architecture.md`.
 
 Warning: This program is early in its development and *does* contain bugs.

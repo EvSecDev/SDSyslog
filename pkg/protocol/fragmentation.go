@@ -37,7 +37,9 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 		// Compute the expected max fragment size for this fragment only
 		maxMessageSize := maxPayloadSize - fixedProtocolSize - payloadFragment.PaddingLen
 		if maxMessageSize <= 0 {
-			err = fmt.Errorf("payload size is too small for the padding length (payload size=%d, current padding=%d)", maxPayloadSize, payloadFragment.PaddingLen)
+			err = fmt.Errorf("max_payload_size=%d bytes < protocol_overhead=%d bytes", maxPayloadSize, fixedProtocolSize+payloadFragment.PaddingLen)
+			err = fmt.Errorf("no room left for message in packet: %w", err)
+			err = fmt.Errorf("protocol overhead (including custom fields) exceeded max payload size: %w", err)
 			return
 		}
 

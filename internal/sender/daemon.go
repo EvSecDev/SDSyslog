@@ -36,8 +36,8 @@ func NewDaemon(cfg Config) (new *Daemon) {
 // Starts pipeline worker threads in background - gracefully shuts down if startup error is encountered
 func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err error) {
 	// New context for the daemon
-	daemon.ctx, daemon.cancel = context.WithCancel(context.Background())
-	daemon.ctx = context.WithValue(globalCtx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
+	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
+	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
 	daemon.ctx = context.WithValue(daemon.ctx, global.LoggerKey, logctx.GetLogger(globalCtx))
 
 	// Top level tag for daemon logs
@@ -312,7 +312,7 @@ func (daemon *Daemon) Shutdown() {
 		logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
 			"Daemon shutdown completed successfully\n")
 	case <-time.After(global.ReceiveShutdownTimeout):
-		logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
+		logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
 			"Timeout: send daemon did not shutdown within %v seconds",
 			global.ReceiveShutdownTimeout.Seconds())
 		return

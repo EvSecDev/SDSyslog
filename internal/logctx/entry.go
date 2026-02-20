@@ -11,6 +11,7 @@ import (
 // Entry for logging events.
 // If event level is above the current set logger level, message will not be recorded.
 // If severity is an error, event level is not considered and message is recorded.
+// Log buffer is backed by deduplication volume to ensure consecutive identical messages do not flood logs.
 func LogEvent(ctx context.Context, eventLevel int, severity string, message string, vars ...any) {
 	// Retrieve current tag list
 	tags := GetTagList(ctx)

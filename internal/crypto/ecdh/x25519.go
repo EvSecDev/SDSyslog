@@ -21,13 +21,21 @@ func CreatePersistentKey() (private, public []byte, err error) {
 		return
 	}
 
-	// Generate the corresponding public key
-	public, err = curve25519.X25519(private, curve25519.Basepoint)
+	public, err = DerivePersistentPublicKey(private)
 	if err != nil {
-		err = fmt.Errorf("failed to generate public key: %w", err)
 		return
 	}
 
+	return
+}
+
+// Using existing asymmetric private key (x25519) to derive the associated public key
+func DerivePersistentPublicKey(private []byte) (public []byte, err error) {
+	public, err = curve25519.X25519(private, curve25519.Basepoint)
+	if err != nil {
+		err = fmt.Errorf("failed to derive public key: %w", err)
+		return
+	}
 	return
 }
 

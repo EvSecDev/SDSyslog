@@ -1,3 +1,4 @@
 /changelog.txt
 /ebpf/include/*
 /internal/ebpf/static-files/*.o
+sdsyslog

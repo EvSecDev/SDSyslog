@@ -22,7 +22,7 @@ function check_for_dev_artifacts() {
 
 	# Exit if version number hasn't been upped since last commit
 	if [[ $lastReleaseVersionNumber == $currentVersionNumber ]] && ! [[ $headCommitHash == $lastReleaseCommitHash ]] && [[ -n $lastReleaseVersionNumber ]]; then
-		echo -e "   ${RED}[-] ERROR${RESET}: Version number in $src/main.go has not been bumped since last commit, exiting build"
+		echo -e "${RED}[-] ERROR${RESET}: Version number in $src/main.go has not been bumped since last commit, exiting build"
 		exit 1
 	fi
 
@@ -38,5 +38,5 @@ function check_for_dev_artifacts() {
 	set -e
 	cd "$repoDir"/
 
-	echo -e "   ${GREEN}[+] DONE${RESET}"
+	echo -e "${GREEN}[+] DONE${RESET}"
 }

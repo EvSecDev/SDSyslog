@@ -72,7 +72,6 @@ function compile_program_prechecks() {
 }
 
 function compile_program() {
-	local GOARCH GOOS buildFull deployedBinaryPath buildVersion skipTests intenseTests
 	GOARCH=$1
 	GOOS=$2
 	buildFull=$3
@@ -86,12 +85,10 @@ function compile_program() {
 
 	if [[ $skipTests != 'true' ]]; then
 		# Run tests (excludes unimportant info)
-		echo "[*] Running all tests..."
+		echo "[*] Running tests..."
 
-		local testArgs
 		testArgs=(
 			"-timeout=4m"
-			"-count=1"
 		)
 
 		if [[ $intenseTests == 'true' ]]; then
@@ -101,7 +98,6 @@ function compile_program() {
 			)
 		fi
 
-		local coverProfileOutPkg coverProfileOutSrc coverPercent pkgExitCode internalExitCode
 		coverProfileOutPkg="$repoRoot/coverprofile_pkg.out"
 		coverProfileOutSrc="$repoRoot/coverprofile_src.out"
 
@@ -110,37 +106,82 @@ function compile_program() {
 
 		set +e
 
-		go -C "$repoRoot/pkg" test "${testArgs[@]}" -coverprofile="$coverProfileOutPkg" ./... |
-			grep -Ev "\[no test files\]|^PASS$|coverage: 0.0% of statements$|^coverage: "
+		go -C "$repoRoot/pkg" test "${testArgs[@]}" -coverprofile="$coverProfileOutPkg" ./... \
+			| grep -Ev "\[no test files\]|^PASS$|coverage: 0.0% of statements$|^coverage: "
 		pkgExitCode=${PIPESTATUS[0]}
 
 		if [[ $pkgExitCode != 0 ]]; then
-			echo -e "   ${RED}[-] FAILED TESTS${RESET}"
+			echo -e "${RED}[-] FAILED TESTS${RESET}"
 			exit 1
 		fi
 
-		go -C "$repoRoot/$SRCdir" test "${testArgs[@]}" -coverprofile="$coverProfileOutSrc" ./... |
-			grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: |coverage: 0.0% of statements$|^coverage: "
+		# shellcheck disable=SC2046
+		go -C "$repoRoot/$SRCdir" test "${testArgs[@]}" -coverprofile="$coverProfileOutSrc" \
+			$(go list ./... | grep -Ev "internal/tests/integration|pkg/") \
+			| grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: |coverage: 0.0% of statements$|^coverage: "
 		internalExitCode=${PIPESTATUS[0]}
 
 		if [[ $internalExitCode != 0 ]]; then
-			echo -e "   ${RED}[-] FAILED TESTS${RESET}"
+			echo -e "${RED}[-] FAILED TESTS${RESET}"
 			exit 1
 		fi
 
-		set -e
-		echo -e "   ${GREEN}[+] DONE${RESET}"
+		echo -e "${GREEN}[+] DONE${RESET}"
+
 		echo "[*] Test Coverage Totals:"
 
 		coverPercent=$(go tool cover -func="$coverProfileOutPkg" | grep "^total:" | awk '{print $3}')
-		echo " Protocol Coverage: $coverPercent"
+		echo -e "   [*] Package Coverage: ${BOLD}$coverPercent${RESET}"
 		rm "$coverProfileOutPkg"
 
 		coverPercent=$(go tool cover -func="$coverProfileOutSrc" | grep "^total:" | awk '{print $3}')
-		echo " Internal Coverage: $coverPercent"
+		echo -e "   [*] Internal Coverage: ${BOLD}$coverPercent${RESET}"
 		rm "$coverProfileOutSrc"
 
-		echo -e "   ${GREEN}[+] DONE${RESET}"
+		set -e
+
+		echo -e "${GREEN}[+] DONE${RESET}"
+
+		if [[ $intenseTests == 'true' ]]; then
+			# Running integ tests one by one for specific coverage calculations
+			integrationDir="$repoRoot/$SRCdir/tests/integration"
+			integrationTests=(
+				"TestSendReceivePipeline:sdsyslog/$SRCdir/receiver,sdsyslog/$SRCdir/sender"
+				"TestRecvConstantFlow:sdsyslog/$SRCdir/receiver"
+			)
+
+			coverProfileInteg="$repoRoot/coverprofile_integ.out"
+			# shellcheck disable=SC2064
+			trap "rm -f $coverProfileInteg" EXIT
+
+			for testEntry in "${integrationTests[@]}"; do
+				IFS=":" read -r testFunc coverPkg <<<"$testEntry"
+
+				echo -e "[*] Running Integration Test ${BLUE}$testFunc${RESET}"
+				set +e
+				go -C "$repoRoot/$SRCdir" test -p 1 "${testArgs[@]}" \
+					-covermode=atomic \
+					-coverpkg="$coverPkg" \
+					-coverprofile="$coverProfileInteg" \
+					-run "^$testFunc$" \
+					"$integrationDir" \
+					| grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: |coverage: 0.0% of statements$|^coverage: "
+				exitCode=${PIPESTATUS[0]}
+
+				if [[ $exitCode != 0 ]]; then
+					echo -e "${RED}[-] FAILED TEST: $testFunc${RESET}"
+					exit 1
+				fi
+
+				coverPercent=$(go tool cover -func="$coverProfileInteg" | grep "^total:" | awk '{print $3}')
+				echo -e "   [*] Integ Coverage: ${BOLD}$coverPercent${RESET}"
+				rm -f "$coverProfileInteg"
+
+				set -e
+
+				echo -e "${GREEN}[+] DONE${RESET}"
+			done
+		fi
 	fi
 
 	echo "[*] Compiling program binary..."
@@ -173,7 +214,8 @@ function compile_program() {
 		update_readme "$helpMenu" "$srcHelpMenuStartDelimiter" "$readmeHelpMenuStartDelimiter"
 	fi
 
-	echo -e "   ${GREEN}[+] DONE${RESET}: Built version ${BOLD}${BLUE}$progVersion${RESET}"
+	echo -e "   [*] Built version ${BOLD}${BLUE}$progVersion${RESET}"
+	echo -e "${GREEN}[+] DONE${RESET}"
 }
 
 ##################################
@@ -206,38 +248,38 @@ intenseTests='false'
 # Argument parsing
 while getopts 'a:o:P:bfunph' opt; do
 	case "$opt" in
-	'a')
-		architecture="$OPTARG"
-		;;
-	'b')
-		buildmode='true'
-		;;
-	'n')
-		skipTests='true'
-		;;
-	'f')
-		intenseTests='true'
-		;;
-	'o')
-		os="$OPTARG"
-		;;
-	'u')
-		updatepackages='true'
-		;;
-	'p')
-		prepareRelease='true'
-		;;
-	'P')
-		publishVersion="$OPTARG"
-		;;
-	'h')
-		usage
-		exit 0
-		;;
-	*)
-		usage
-		exit 0
-		;;
+		'a')
+			architecture="$OPTARG"
+			;;
+		'b')
+			buildmode='true'
+			;;
+		'n')
+			skipTests='true'
+			;;
+		'f')
+			intenseTests='true'
+			;;
+		'o')
+			os="$OPTARG"
+			;;
+		'u')
+			updatepackages='true'
+			;;
+		'p')
+			prepareRelease='true'
+			;;
+		'P')
+			publishVersion="$OPTARG"
+			;;
+		'h')
+			usage
+			exit 0
+			;;
+		*)
+			usage
+			exit 0
+			;;
 	esac
 done
 

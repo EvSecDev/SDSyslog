@@ -3,6 +3,7 @@ package scaling
 import (
 	"context"
 	"sdsyslog/internal/calc"
+	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
@@ -13,20 +14,24 @@ import (
 )
 
 func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, inMgr *in.InstanceManager) {
-	// No scaling if we are at the min/max
 	inMgr.Mu.Lock()
-	instanceCount := len(inMgr.Instances)
+	instances := inMgr.Instances
+	maxInstances := inMgr.MaxInstCount
+	minInstances := inMgr.MinInstCount
+	instanceCount := len(instances)
 	inMgr.Mu.Unlock()
-	if instanceCount == inMgr.MaxInstCount || instanceCount == inMgr.MinInstCount {
+
+	// No scaling if we are at the min/max
+	if instanceCount == maxInstances || instanceCount == minInstances {
 		return
 	}
 
 	const pastNIntervals = 5
 
 	// Get the last x scaling polling intervals worth of load data and average
-	instValues := make([][]float64, 0, len(inMgr.Instances))
+	instValues := make([][]float64, 0, len(instances))
 
-	for id := range inMgr.Instances {
+	for id := 0; id <= instanceCount-1; id++ {
 		metrics := metricStore.Search(
 			"busy_time_percent",
 			[]string{global.NSRecv, global.NSmIngest, strconv.Itoa(id)},
@@ -73,11 +78,13 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 		}
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up listener\n")
 	} else if scaleDown {
-		// Picking effectively a random instance (map keys)
-		for instanceId := range inMgr.Instances {
-			inMgr.RemoveInstance(instanceId)
-			break
+		instanceId, err := random.NumberInRange(0, instanceCount-1)
+		if err != nil {
+			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed to generate random instance ID in instance map: %w\n", err)
+			return
 		}
+		inMgr.RemoveInstance(instanceId)
+
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled down listener\n")
 	}
 }

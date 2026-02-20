@@ -58,19 +58,19 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			innerPayload, err := protocol.DeconstructOuterPayload(data)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%s\n", err.Error())
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed outer payload deconstruction: %s\n", err.Error())
 				return
 			}
 
 			payload, err := protocol.DeconstructInnerPayload(innerPayload)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%s\n", err.Error())
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed inner payload deconstruction: %s\n", err.Error())
 				return
 			}
 
 			msg, err := protocol.ParsePayload(payload)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%s\n", err.Error())
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "invalid payload: %s\n", err.Error())
 				return
 			}
 

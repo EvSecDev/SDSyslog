@@ -7,7 +7,6 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
-	"time"
 )
 
 // Create new defrag manager
@@ -27,7 +26,7 @@ func NewInstanceManager(ctx context.Context, outbox *mpmc.Queue[protocol.Payload
 		outQueue:      outbox,
 		ctx:           ctx,
 	}
-	new.PacketDeadline.Store(int64(50 * time.Millisecond)) // Default starting deadline
+	new.PacketDeadline.Store(int64(global.DefaultMinPacketDeadline))
 	new.Routing = &RoutingState{
 		Manager:   new,
 		Overrides: make(map[string]int),

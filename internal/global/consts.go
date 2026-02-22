@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.15.0"
+	ProgVersion string = "v0.15.1"
 	SendMode    string = "send"
 	RecvMode    string = "receive"
 
@@ -40,7 +40,7 @@ const (
 	DefaultReceiverPort      int           = 8514
 	DefaultMinQueueSize      int           = 512
 	DefaultMaxQueueSize      int           = 4096
-	DefaultMinPacketDeadline time.Duration = 50 * time.Millisecond
+	DefaultMinPacketDeadline time.Duration = 200 * time.Millisecond // Also default starting deadline
 	DefaultMaxPacketDeadline time.Duration = 1 * time.Second
 
 	// Custom Fields (internally required, not protocol required)

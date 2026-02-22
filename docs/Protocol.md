@@ -193,15 +193,15 @@ If the supplied data is empty, the empty character MUST be used to satisfy 1 byt
 Type byte table:
 
 | Byte | Type    | Matching `NXTLEN` length | Notes                     |
-|------|---------|------------------------|---------------------------|
-| 0x01 | int8    | 1 byte                 | Signed 8-bit integer      |
-| 0x02 | int16   | 2 bytes                | Signed 16-bit integer     |
-| 0x03 | int32   | 4 bytes                | Signed 32-bit integer     |
-| 0x04 | int64   | 8 bytes                | Signed 64-bit integer     |
-| 0x05 | float32 | 4 bytes                | IEEE 754 single-precision |
-| 0x06 | float64 | 8 bytes                | IEEE 754 double-precision |
-| 0x07 | bool    | 1 byte                 | 0x00=false, 0x01=true     |
-| 0x08 | string  | 1-255 bytes            | UTF-8 string              |
+|------|---------|--------------------------|---------------------------|
+| 0x01 | int8    | 1 byte                   | Signed 8-bit integer      |
+| 0x02 | int16   | 2 bytes                  | Signed 16-bit integer     |
+| 0x03 | int32   | 4 bytes                  | Signed 32-bit integer     |
+| 0x04 | int64   | 8 bytes                  | Signed 64-bit integer     |
+| 0x05 | float32 | 4 bytes                  | IEEE 754 single-precision |
+| 0x06 | float64 | 8 bytes                  | IEEE 754 double-precision |
+| 0x07 | bool    | 1 byte                   | 0x00=false, 0x01=true     |
+| 0x08 | string  | 1-255 bytes              | UTF-8 string              |
 
 For fixed-width types, `NXTLEN` MUST exactly match the required length. If the length does not match, the entire fragment MUST be discarded.
 
@@ -285,15 +285,15 @@ The placeholder string MUST NOT be subject to further parsing or interpretation.
 
 ## Multi-packet reconstruction (and deadline)
 
-By default, multi-packet messages SHOULD be considered fully delivered after `50` milliseconds of idle wait time after the last reception of a given msg ID.
-Packets for the same msg ID received within `50` milliseconds MUST be considered part of the same message and each new received packet MUST reset the idle wait timer.
+By default, multi-packet messages SHOULD be considered fully delivered after `200` milliseconds of idle wait time after the last reception of a given msg ID.
+Packets for the same msg ID received within `200` milliseconds MUST be considered part of the same message and each new received packet MUST reset the idle wait timer.
 
-Multi-packet messages that contain an identical msg ID that are received more than `50` milliseconds apart MUST be considered separate messages and processed as such.
+Multi-packet messages that contain an identical msg ID that are received more than `200` milliseconds apart MUST be considered separate messages and processed as such.
 
 Encountered multi-packet messages that overlap in sequence ID MUST both be stored and the later message fragment included in brackets in final message text.
 Overlaps in message sequence ID more than once (i.e. more than 3 of the same sequence within deadline) MUST discard all further duplicates and consider that sequence ID finalized.
 
-Allowances for shorter idle wait time or longer idle wait time is permitted only once a sufficiently large dataset average is calculated based on previous multi-packet message arrival times.
+Allowances for longer idle wait time is permitted only once a sufficiently large dataset average is calculated based on previous multi-packet message arrival times.
 
 Runtime calculated idle wait times MUST never be cached to disk and are only to be used for the duration of program uptime.
 

@@ -25,11 +25,14 @@ type Instance struct {
 }
 
 // Interface for making fragment routing decisions
+// Source functions are located in the Defrag manager package at 'internal/receiver/managers/defrag/routing.go'
 type RoutingView interface {
 	GetShardCount() int
 	GetShard(index int) *Instance
 	IsShardShutdown(index int) bool
 	BucketExists(index int, bucketKey string) bool
+	BucketExistsAnywhere(bucketKey string) bool
+	ShardsAvailable() (running bool, draining bool)
 
 	GetOverride(bucketKey string) (int, bool)
 	SetOverride(bucketKey string, index int)

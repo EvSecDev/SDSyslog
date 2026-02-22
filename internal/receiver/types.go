@@ -5,6 +5,7 @@ import (
 	"net/http"
 	metricGlb "sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/metrics"
+	"sdsyslog/internal/receiver/shard/fiprrecv"
 	"sdsyslog/internal/receiver/shared"
 	"sync"
 	"time"
@@ -85,6 +86,7 @@ type Daemon struct {
 	wg sync.WaitGroup
 
 	Mgrs               shared.Managers
+	fipr               *fiprrecv.Instance
 	metricsCollector   *metrics.Gatherer
 	MetricServer       *http.Server
 	MetricDataSearcher func(name string, namespacePrefix []string, start, end time.Time) []metricGlb.Metric

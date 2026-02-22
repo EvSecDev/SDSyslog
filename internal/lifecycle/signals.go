@@ -13,6 +13,8 @@ import (
 type DaemonLike interface {
 	Start(context.Context, []byte) (err error)
 	Shutdown()
+	StartFIPR() (err error)
+	StopFIPR()
 }
 
 // Handles all incoming signals from external sources.
@@ -40,6 +42,22 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 			err := NotifyReload(ctx)
 			if err != nil {
 				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Systemd notify failed: %v\n", sig)
+
+				err = NotifyStatus(ctx, "Reload failed due to internal error. Check daemon logs.")
+				if err != nil {
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Systemd notify status failed: %v\n", sig)
+				}
+				err = NotifyReady(ctx)
+				if err != nil {
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Systemd notify reload failed: %v\n", sig)
+				}
+				continue
+			}
+
+			// Start inter-process fragment receiver to accept fragments that ended up in the temp child process that are partial fragments for this process
+			err = daemonManager.StartFIPR()
+			if err != nil {
+				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Reload Error: %w\n", err)
 
 				err = NotifyStatus(ctx, "Reload failed due to internal error. Check daemon logs.")
 				if err != nil {

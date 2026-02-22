@@ -108,6 +108,12 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	// Save collected metrics to the registry
 	gatherer.Registry.Add(timeSlice, collection)
 
+	// FIPR (if present)
+	if gatherer.Mgrs.FIPR != nil {
+		m1 := gatherer.Mgrs.FIPR.CollectMetrics(interval)
+		gatherer.Registry.Add(timeSlice, m1)
+	}
+
 	// Output
 	// Inbox Queue
 	metrics := gatherer.Mgrs.Output.Queue.CollectMetrics(interval)

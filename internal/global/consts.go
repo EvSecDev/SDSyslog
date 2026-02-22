@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.14.7"
+	ProgVersion string = "v0.15.0"
 	SendMode    string = "send"
 	RecvMode    string = "receive"
 
@@ -36,6 +36,7 @@ const (
 	DefaultAAProfName        string        = "usr.local.bin." + ProgBaseName
 	DefaultStateDir          string        = "/var/cache/" + ProgBaseName
 	DefaultStateFile         string        = DefaultStateDir + "/last.state"
+	DefaultSocketDir         string        = DefaultStateDir + "/ipc"
 	DefaultReceiverPort      int           = 8514
 	DefaultMinQueueSize      int           = 512
 	DefaultMaxQueueSize      int           = 4096
@@ -48,6 +49,10 @@ const (
 	CFseverity  string = "Severity"
 	CFprocessid string = "ProcessID"
 	CFappname   string = "ApplicationName"
+
+	// FIPR socket names like "proc_47243.sock"
+	SocketFileNamePrefix string = "proc_"
+	SocketFileNameSuffix string = ".sock"
 
 	// IO Modules
 	DefaultJournaldURL string = "http://localhost:19532"
@@ -97,6 +102,7 @@ const (
 	NSmOutput   string = "Out"
 	NSmPack     string = "Packaging"
 	NSmDefrag   string = "Defrag"
+	NSmFIPR     string = "FIPR"
 	NSoFile     string = "File"
 	NSoStdIn    string = "Stdin"
 	NSoJrnl     string = "Journal"

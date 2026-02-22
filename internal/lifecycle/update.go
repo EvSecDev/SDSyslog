@@ -80,6 +80,7 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 		return
 	}
 
+	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Temporary Child Process is ready, proceeding with update\n")
 	childProc = cmd
 	return
 }
@@ -134,17 +135,44 @@ func updateAndExit(ctx context.Context, daemonManager DaemonLike, childProc *exe
 	}
 }
 
+// Runs pre-full-startup actions that a temporary child process running under an update should do.
+// No-op when the temp child env variable is not present.
+func TempChildActions(ctx context.Context, daemonManager DaemonLike) {
+	_, isTempChild := os.LookupEnv(EnvNameReadinessFD)
+	if !isTempChild {
+		return // not running as temp process during update
+	}
+
+	// Start the receiver to get fragments from the shutting down main process
+	err := daemonManager.StartFIPR()
+	if err != nil {
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+			"failed to start inter-process fragment temporary receiver (multi-packet messages might be missing fragments): %w\n", err)
+	}
+
+	// FIPR shutdown can be handled normally through daemon shutdown.
+}
+
 // Runs post-update (post-execve) actions.
 // Kills child PID by env variable.
 // All errors non-fatal, sent to context log buffer.
-func PostUpdateActions(ctx context.Context) {
+func PostUpdateActions(ctx context.Context, daemonManager DaemonLike) {
 	childPID := os.Getenv(EnvNameSelfUpdate)
 	if childPID == "" {
 		return // not running post update
 	}
 
+	// Need to restart FIPR receiver for receiving fragments from child process
+	err := daemonManager.StartFIPR()
+	if err != nil {
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+			"failed to start inter-process fragment receiver (multi-packet messages might be missing fragments): %w\n", err)
+	}
+	// Shutdown FIPR when done - not needed when another process is not running
+	defer daemonManager.StopFIPR()
+
 	// Cleanup update variable
-	err := os.Unsetenv(EnvNameSelfUpdate)
+	err = os.Unsetenv(EnvNameSelfUpdate)
 	if err != nil {
 		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
 			"failed to unset environment variable %s (future updates may use wrong PID): %w\n", EnvNameSelfUpdate, err)

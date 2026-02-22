@@ -44,6 +44,23 @@ func (rs *RoutingState) BucketExists(shardID int, bucketKey string) (present boo
 	return
 }
 
+// Checks if any shard contains a particular bucket
+func (rs *RoutingState) BucketExistsAnywhere(bucketKey string) (bucketExists bool) {
+	rs.Manager.Mu.RLock()
+	defer rs.Manager.Mu.RUnlock()
+	for _, pair := range rs.Manager.InstancePairs {
+		pair.Shard.Mu.Lock()
+		_, bucketExists = pair.Shard.Buckets[bucketKey]
+		pair.Shard.Mu.Unlock()
+
+		if bucketExists {
+			return
+		}
+	}
+
+	return
+}
+
 // Retrieves bucket overridden shard destination, if any
 func (rs *RoutingState) GetOverride(bucketKey string) (overrideShard int, hasOverride bool) {
 	rs.Mu.Lock()
@@ -79,5 +96,31 @@ func (rs *RoutingState) FindAlternativeShard(origShardID int) (newShardID int) {
 
 	// Should never hit this
 	newShardID = origShardID
+	return
+}
+
+// Identifies if there is any single shard in a non-draining state (accepting new and existing fragments).
+// Running is true when at least one shard is accepting new and existing.
+// If no shards could be found, returns false for running and draining.
+func (rs *RoutingState) ShardsAvailable() (running bool, draining bool) {
+	rs.Manager.Mu.RLock()
+	defer rs.Manager.Mu.RUnlock()
+
+	if len(rs.Manager.InstancePairs) == 0 {
+		return
+	}
+
+	for _, pair := range rs.Manager.InstancePairs {
+		pair.Shard.Mu.Lock()
+		shardDraining := pair.Shard.InShutdown
+		pair.Shard.Mu.Unlock()
+
+		// Found a shard accepting new fragments
+		if !shardDraining {
+			running = true
+			return
+		}
+	}
+
 	return
 }

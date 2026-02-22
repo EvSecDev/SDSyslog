@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"sdsyslog/internal/atomics"
+	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/externalio/server"
@@ -19,6 +20,7 @@ import (
 	"sdsyslog/internal/receiver/managers/proc"
 	"sdsyslog/internal/receiver/metrics"
 	"sdsyslog/internal/receiver/scaling"
+	"sdsyslog/internal/receiver/shard/fiprrecv"
 	"sdsyslog/internal/syslog"
 	"strings"
 	"time"
@@ -46,9 +48,23 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Pre-startup
 	syslog.InitBidiMaps()
+	serverPub, err := ecdh.DerivePersistentPublicKey(serverPriv)
+	if err != nil {
+		return
+	}
+	err = wrappers.SetupEncryptInnerPayload(serverPub) // Specifically for shard FIPR
+	if err != nil {
+		err = fmt.Errorf("failed to setup encryption function: %w", err)
+		return
+	}
 	err = wrappers.SetupDecryptInnerPayload(serverPriv)
 	if err != nil {
 		err = fmt.Errorf("failed to setup decryption function: %w", err)
+		return
+	}
+	err = wrappers.SetupGetSharedSecret(serverPriv)
+	if err != nil {
+		err = fmt.Errorf("failed to setup shared secret function: %w", err)
 		return
 	}
 	daemon.cfg.setDefaults()
@@ -91,6 +107,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
 		"%d defrag instance(s) started successfully\n", daemon.cfg.MinDefrags)
+
+	// Stage 2.9 - FIPR receiver (optional - only started under temp process during updates)
+	lifecycle.TempChildActions(daemon.ctx, daemon)
 
 	// Stage 2 - Processor
 	daemon.Mgrs.Proc, err = proc.NewInstanceManager(daemon.ctx,
@@ -190,7 +209,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		daemon.Shutdown()
 		return
 	}
-	lifecycle.PostUpdateActions(daemon.ctx)
+	lifecycle.PostUpdateActions(daemon.ctx, daemon)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to systemd: %w", err)
@@ -201,6 +220,35 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
 		"Startup complete (%s). Listening for messages on %s:%d\n", global.ProgVersion, daemon.cfg.ListenIP, daemon.cfg.ListenPort)
 	return
+}
+
+// Dedicated entry point for starting inter-process fragment routing
+func (daemon *Daemon) StartFIPR() (err error) {
+	daemon.fipr = fiprrecv.New(daemon.ctx, global.DefaultSocketDir, daemon.Mgrs.Defrag.Routing)
+	daemon.Mgrs.FIPR = daemon.fipr
+	err = daemon.fipr.Start()
+	if err != nil {
+		err = fmt.Errorf("failed to start FIPR receiver: %w\n", err)
+		return
+	}
+	return
+}
+
+// Dedicated entry point for stopping inter-process fragment routing (while daemon is still running)
+func (daemon *Daemon) StopFIPR() {
+	if daemon.fipr == nil {
+		return
+	}
+
+	// After the packet deadline, there should be no more existing fragments that we could consume from other processes
+	// Assuming other processes are already killed.
+	currentPacketDeadline := daemon.Mgrs.Defrag.PacketDeadline.Load()
+	drainingPeriod := time.Duration(currentPacketDeadline)
+	time.Sleep(drainingPeriod)
+
+	daemon.fipr.Stop()
+	daemon.Mgrs.FIPR = nil
+	daemon.fipr = nil
 }
 
 // Blocking daemon waiter
@@ -249,6 +297,9 @@ func (daemon *Daemon) Shutdown() {
 			daemon.Mgrs.Defrag.RemoveInstance(instanceID)
 		}
 	}
+
+	// Stop Fragment Inter-Process Routing
+	daemon.StopFIPR()
 
 	// Stop output worker
 	if daemon.Mgrs.Output != nil {

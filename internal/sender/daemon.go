@@ -218,7 +218,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		daemon.Shutdown()
 		return
 	}
-	lifecycle.PostUpdateActions(daemon.ctx)
+	lifecycle.PostUpdateActions(daemon.ctx, daemon)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to systemd: %w", err)
@@ -229,6 +229,15 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
 		"Startup complete (%s). Sending messages to %s:%d\n", global.ProgVersion, daemon.cfg.DestinationIP, daemon.cfg.DestinationPort)
 	return
+}
+
+// No-op to satisfy DaemonLike type
+func (daemon *Daemon) StartFIPR() (err error) {
+	return
+}
+
+// No-op to satisfy DaemonLike type
+func (daemon *Daemon) StopFIPR() {
 }
 
 // Blocking daemon waiter

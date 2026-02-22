@@ -4,10 +4,13 @@ package shard
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
+	"sdsyslog/internal/receiver/shard/fiprsend"
 	"sdsyslog/pkg/protocol"
 	"sync/atomic"
 	"time"
@@ -25,41 +28,87 @@ func New(namespace []string, buffer int, packetDeadlinePtr *atomic.Int64) (new *
 	return
 }
 
-// Route a fragment to a shard. Deterministic for all fragments of a message.
-// Dynamically reroutes and tracks when targeted shard is shutdown.
+// Route a fragment to a shard/process. Deterministic for all fragments of a message.
+// Dynamically reroutes and tracks when targeted shard/process is shutdown.
 func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fragment protocol.Payload, processingStartTime time.Time) (success bool) {
 	// Convert IP to integer
 	ipIntH, ipIntL, err := network.IPtoIntegers(remoteAddress)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, err.Error(), "")
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%s\n", err.Error())
 		return
 	}
 
-	numShards := rv.GetShardCount()
-	if numShards == 0 {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "no shards available")
-		return
+	var remoteShards []string
+	if fragment.MessageSeqMax > 0 {
+		// FIPR should only ever be used with fragmented messages
+		remoteShards, err = fiprsend.GetSocketFileList(global.DefaultSocketDir, os.Getpid())
+		if err != nil {
+			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%s\n", err.Error())
+			return
+		}
 	}
 
-	// Compute default shard index
-	defaultIndex := (ipIntH + ipIntL + fragment.HostID + fragment.MsgID) % numShards
+	// One-off route decision retries
+	// Not great, but I like this switch decision tree as is
+retryRoute:
+
+	// Identifier for all fragments within a given message per host
+	messageRoutingID := ipIntH + ipIntL + fragment.HostID + fragment.MsgID
 	bucketKey := fmt.Sprintf("%s-%d-%d", remoteAddress, fragment.HostID, fragment.MsgID)
 
-	// Send to a shard
+	// Route Destination
+	numShards := rv.GetShardCount()
+	if numShards == 0 {
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "no shards available\n")
+		return
+	}
+	defaultIndex := messageRoutingID % numShards
+
+	// Check for routing overrides for associated bucket
+	override, overridePresent := rv.GetOverride(bucketKey)
+
+	// Decision Tree - Send to a shard
 	var routedIndex int
-	if rv.BucketExists(defaultIndex, bucketKey) {
-		// Send to default shard
+	var routedDest string
+	switch {
+	case rv.BucketExists(defaultIndex, bucketKey):
+		// Existing message - Send to default shard
 		shard := rv.GetShard(defaultIndex)
 		shard.push(ctx, bucketKey, fragment, processingStartTime)
 
+		routedDest = "shard"
 		routedIndex = defaultIndex
-	} else if override, ok := rv.GetOverride(bucketKey); ok {
+	case overridePresent:
 		// Existing message - Fragment has an entry in routing override - follow immediately
 		shard := rv.GetShard(override)
 		shard.push(ctx, bucketKey, fragment, processingStartTime)
 
+		routedDest = "shard"
 		routedIndex = override
-	} else if rv.IsShardShutdown(defaultIndex) {
+	case len(remoteShards) > 0:
+		// New (to local) Message - Remote shards available
+
+		// Route Destination
+		routeIndex := messageRoutingID % len(remoteShards)
+		socketPath := filepath.Join(global.DefaultSocketDir, remoteShards[routeIndex])
+
+		// Fragments only get one chance to route remotely, otherwise they are forced local
+		remoteShards = nil // Prevents endless loop
+
+		rerouteLocal, err := fiprsend.RouteFragment(socketPath, bucketKey, remoteAddress, fragment)
+		if err != nil {
+			logctx.LogEvent(ctx, global.VerbosityData, global.ErrorLog,
+				"failed to route message fragment to remote process (id '%s' will route to local): %w\n", bucketKey, err)
+			goto retryRoute
+		}
+		if rerouteLocal {
+			// At this point we know the fragment does not exist local and does not exist remote
+			goto retryRoute
+		}
+
+		routedDest = "process"
+		routedIndex = fiprsend.GetSocketIdentity(socketPath)
+	case rv.IsShardShutdown(defaultIndex):
 		// New Message - Default shard is in shutdown - reroute to temporary
 		newIndex := rv.FindAlternativeShard(defaultIndex)
 		rv.SetOverride(bucketKey, newIndex)
@@ -67,16 +116,18 @@ func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fr
 		shard := rv.GetShard(newIndex)
 		shard.push(ctx, bucketKey, fragment, processingStartTime)
 
+		routedDest = "shard"
 		routedIndex = newIndex
-	} else {
+	default:
 		// New Message - Bucket not in shutdown
 		shard := rv.GetShard(defaultIndex)
 		shard.push(ctx, bucketKey, fragment, processingStartTime)
 
+		routedDest = "shard"
 		routedIndex = defaultIndex
 	}
 
-	logctx.LogEvent(ctx, global.VerbosityData, global.InfoLog, "Sent message ID %d to shard %d\n", fragment.MsgID, routedIndex)
+	logctx.LogEvent(ctx, global.VerbosityData, global.InfoLog, "Sent message ID %d to %s %d\n", fragment.MsgID, routedDest, routedIndex)
 	success = true
 	return
 }

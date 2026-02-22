@@ -41,7 +41,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Top level tag for daemon logs
 	daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSRecv)
-	defer func() { daemon.ctx = logctx.RemoveLastCtxTag(daemon.ctx) }()
 
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon (%s)...\n", global.ProgVersion)
 
@@ -200,7 +199,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-		"Startup complete. Listening for messages on %s:%d\n", daemon.cfg.ListenIP, daemon.cfg.ListenPort)
+		"Startup complete (%s). Listening for messages on %s:%d\n", global.ProgVersion, daemon.cfg.ListenIP, daemon.cfg.ListenPort)
 	return
 }
 
@@ -212,9 +211,6 @@ func (daemon *Daemon) Run() {
 
 // Gracefully shutdown pipeline worker threads (errors are printed to program log buffer)
 func (daemon *Daemon) Shutdown() {
-	daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSRecv)
-	defer func() { daemon.ctx = logctx.RemoveLastCtxTag(daemon.ctx) }()
-
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
 		"Daemon shutdown started (%s)...\n", global.ProgVersion)
 

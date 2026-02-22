@@ -92,18 +92,20 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	gatherer.Registry.Add(timeSlice, procCollect)
 
 	// Defrag
-	gatherer.Mgrs.Defrag.Mu.RLock()
 	var collection []metrics.Metric // collection for all pairs
-	for _, instance := range gatherer.Mgrs.Defrag.InstancePairs {
+	for _, instancePair := range gatherer.Mgrs.Defrag.RoutingView.GetInstancePairs() {
+		if instancePair == nil {
+			continue
+		}
+
 		// Shard
-		m1 := instance.Shard.CollectMetrics(interval)
+		m1 := instancePair.Shard.CollectMetrics(interval)
 		collection = append(collection, m1...)
 
 		// Assembler
-		m2 := instance.Assembler.CollectMetrics(interval)
+		m2 := instancePair.Assembler.CollectMetrics(interval)
 		collection = append(collection, m2...)
 	}
-	gatherer.Mgrs.Defrag.Mu.RUnlock()
 
 	// Save collected metrics to the registry
 	gatherer.Registry.Add(timeSlice, collection)

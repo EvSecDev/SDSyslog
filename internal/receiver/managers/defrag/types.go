@@ -11,14 +11,20 @@ import (
 )
 
 type InstanceManager struct {
-	Mu             sync.RWMutex // For scaling operations
-	InstancePairs  []*InstancePair
-	MinInstCount   int // Minimum number of instances at any one time
-	MaxInstCount   int // Maximum number of instances at any one time
-	outQueue       *mpmc.Queue[protocol.Payload]
-	PacketDeadline atomic.Int64 // Manager owns this value
-	Routing        *RoutingState
+	scalingMutex   sync.Mutex                      // Serializes add/remove - scaling operations are single-threaded
+	nextInstanceID uint16                          // Next instance pair ID
+	routing        atomic.Pointer[routingSnapshot] // Atomic pointer to immutable routing snapshot used by hot-path readers
+	RoutingView    *RoutingState                   // External read-only by method for viewing routing - prevents direct manager access and import cycles
+	minInstCount   int                             // Minimum number of instances at any one time
+	maxInstCount   int                             // Maximum number of instances at any one time
+	outQueue       *mpmc.Queue[protocol.Payload]   // Next pipeline stage queue (not owned by this manager)
+	PacketDeadline atomic.Int64                    // Manager owns this value
 	ctx            context.Context
+}
+
+type routingSnapshot struct {
+	pairs map[string]*InstancePair
+	ids   []string // FIFO pool of IDs for routing (also used as sliding window for wraparound mitigation)
 }
 
 type InstancePair struct {
@@ -30,8 +36,5 @@ type InstancePair struct {
 }
 
 type RoutingState struct {
-	Mu sync.Mutex
-
-	Manager   *InstanceManager
-	Overrides map[string]int
+	manager *InstanceManager
 }

@@ -8,22 +8,15 @@ import (
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/managers/defrag"
 	"sdsyslog/internal/receiver/shard"
-	"strconv"
 	"time"
 )
 
 func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, defragMgr *defrag.InstanceManager) {
-	// Grab required info under lock
-	defragMgr.Mu.RLock()
-	instanceCount := len(defragMgr.InstancePairs)
-	var instanceIDs []int
-	for id := range defragMgr.InstancePairs {
-		instanceIDs = append(instanceIDs, id)
-	}
-	defragMgr.Mu.RUnlock()
+	// Grab required info
+	instanceCount := len(defragMgr.RoutingView.GetNonDrainingIDs())
 
 	// No scaling if we are at the min/max
-	if instanceCount == defragMgr.MaxInstCount || instanceCount == defragMgr.MinInstCount {
+	if instanceCount == defragMgr.GetMaximumInstances() || instanceCount == defragMgr.GetMinimumInstances() {
 		return
 	}
 
@@ -32,10 +25,10 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	// Get the last x scaling polling intervals worth of load data and average
 	instValues := make([][]uint64, 0, instanceCount)
 
-	for id := range instanceIDs {
+	for _, id := range defragMgr.RoutingView.GetNonDrainingIDs() {
 		metrics := metricStore.Search(
 			"total_buckets",
-			[]string{global.NSRecv, global.NSmDefrag, strconv.Itoa(id)},
+			[]string{global.NSRecv, global.NSmDefrag, id},
 			time.Now().Add(-time.Duration(pastNIntervals)*interval),
 			time.Now(),
 		)
@@ -72,14 +65,10 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	scaleUp, scaleDown := shard.Trend(values)
 
 	if scaleUp {
-		defragMgr.AddInstance()
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up assembler\n")
+		newID := defragMgr.AddInstance()
+		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up assembler (added id %s)\n", newID)
 	} else if scaleDown {
-		// Picking just the first (valid) one
-		for instanceId := range defragMgr.InstancePairs {
-			defragMgr.RemoveInstance(instanceId)
-			break
-		}
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled down assembler\n")
+		delID := defragMgr.RemoveOldestInstance()
+		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled down assembler (removed id %s)\n", delID)
 	}
 }

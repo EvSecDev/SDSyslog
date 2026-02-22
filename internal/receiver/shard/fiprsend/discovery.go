@@ -3,7 +3,6 @@ package fiprsend
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"sdsyslog/internal/global"
 	"sort"
 	"strconv"
@@ -48,22 +47,5 @@ func GetSocketFileList(socketDir string, selfID int) (fileList []string, err err
 	sort.SliceStable(fileList, func(a, b int) bool {
 		return fileList[a] < fileList[b]
 	})
-	return
-}
-
-// Extracts process PID of a given socket file name or path.
-func GetSocketIdentity(input string) (id int) {
-	file := filepath.Base(input)
-	if !strings.HasPrefix(file, global.SocketFileNamePrefix) ||
-		!strings.HasSuffix(file, global.SocketFileNameSuffix) {
-		return
-	}
-
-	file = strings.TrimPrefix(file, global.SocketFileNamePrefix)
-	pid := strings.TrimSuffix(file, global.SocketFileNameSuffix)
-	id, err := strconv.Atoi(pid)
-	if err != nil {
-		id = 0
-	}
 	return
 }

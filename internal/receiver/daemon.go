@@ -113,7 +113,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Stage 2 - Processor
 	daemon.Mgrs.Proc, err = proc.NewInstanceManager(daemon.ctx,
-		daemon.Mgrs.Defrag.Routing,
+		daemon.Mgrs.Defrag.RoutingView,
 		daemon.cfg.MinProcessors,
 		daemon.cfg.MaxProcessors,
 		daemon.cfg.MinProcessorQueueSize,
@@ -224,7 +224,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 // Dedicated entry point for starting inter-process fragment routing
 func (daemon *Daemon) StartFIPR() (err error) {
-	daemon.fipr = fiprrecv.New(daemon.ctx, global.DefaultSocketDir, daemon.Mgrs.Defrag.Routing)
+	daemon.fipr = fiprrecv.New(daemon.ctx, global.DefaultSocketDir, daemon.Mgrs.Defrag.RoutingView)
 	daemon.Mgrs.FIPR = daemon.fipr
 	err = daemon.fipr.Start()
 	if err != nil {
@@ -293,8 +293,11 @@ func (daemon *Daemon) Shutdown() {
 
 	// Stop defrag and shards
 	if daemon.Mgrs.Defrag != nil {
-		for instanceID := range daemon.Mgrs.Defrag.InstancePairs {
-			daemon.Mgrs.Defrag.RemoveInstance(instanceID)
+		for {
+			removedID := daemon.Mgrs.Defrag.RemoveOldestInstance()
+			if removedID == "" {
+				break
+			}
 		}
 	}
 

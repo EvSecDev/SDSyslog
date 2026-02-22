@@ -8,7 +8,6 @@ import (
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/managers/defrag"
 	"sdsyslog/internal/receiver/shard"
-	"strconv"
 	"time"
 )
 
@@ -30,8 +29,8 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	aggFragments := make([][]uint64, pastNIntervals)
 	aggTimeouts := make([][]uint64, pastNIntervals)
 
-	for id := range defragMgr.InstancePairs {
-		ns := []string{global.NSRecv, global.NSmDefrag, strconv.Itoa(id)}
+	for _, id := range defragMgr.RoutingView.GetNonDrainingIDs() {
+		ns := []string{global.NSRecv, global.NSmDefrag, id}
 
 		sumSpacingMetrics := metricStore.Search("sum_time_between_fragments", ns, start, end)
 		fragmentsMetrics := metricStore.Search("push_ctn", ns, start, end)

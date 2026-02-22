@@ -10,6 +10,5 @@ type Instance struct {
 	Namespace []string
 	shardInst *shard.Instance
 	outbox    *mpmc.Queue[protocol.Payload]
-	cleaner   shard.OverrideCleaner
 	Metrics   MetricStorage
 }

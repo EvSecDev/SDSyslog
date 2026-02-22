@@ -12,12 +12,11 @@ import (
 	"time"
 )
 
-func New(namespace []string, shard *shard.Instance, outQueue *mpmc.Queue[protocol.Payload], overrideClear shard.OverrideCleaner) (new *Instance) {
+func New(namespace []string, shard *shard.Instance, outQueue *mpmc.Queue[protocol.Payload]) (new *Instance) {
 	new = &Instance{
 		Namespace: append(namespace, global.NSAssm),
 		shardInst: shard,
 		outbox:    outQueue,
-		cleaner:   overrideClear,
 		Metrics:   MetricStorage{},
 	}
 	return
@@ -59,8 +58,6 @@ func (instance *Instance) Run(ctx context.Context) {
 			if notExist {
 				return
 			}
-
-			instance.cleaner.ClearOverride(bucketKey)
 
 			var fragSlice []protocol.Payload
 			for _, fragment := range bucket.Fragments {

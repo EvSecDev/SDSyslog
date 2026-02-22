@@ -20,27 +20,17 @@ type Instance struct {
 	Buckets        map[string]*Bucket // keyed by bucket ID
 	KeyQueue       chan string        // FIFO of filled bucket keys
 	PacketDeadline *atomic.Int64      // Owned by manager
-	InShutdown     bool               // Blocks new bucket creation
+	InShutdown     atomic.Bool        // Blocks new bucket creation
 	Metrics        MetricStorage
 }
 
 // Interface for making fragment routing decisions
 // Source functions are located in the Defrag manager package at 'internal/receiver/managers/defrag/routing.go'
 type RoutingView interface {
-	GetShardCount() int
-	GetShard(index int) *Instance
-	IsShardShutdown(index int) bool
-	BucketExists(index int, bucketKey string) bool
-	BucketExistsAnywhere(bucketKey string) bool
-	ShardsAvailable() (running bool, draining bool)
-
-	GetOverride(bucketKey string) (int, bool)
-	SetOverride(bucketKey string, index int)
-
-	FindAlternativeShard(orig int) int
-}
-
-// Interface for cleaning up temporary fragment routing overrides
-type OverrideCleaner interface {
-	ClearOverride(bucketKey string)
+	GetAllIDs() (shardIDs []string)
+	GetNonDrainingIDs() (availShardIDs []string)
+	BucketExists(shardID string, bucketKey string) (present bool)
+	GetShard(shardID string) (shardInst *Instance)
+	IsShardShutdown(shardID string) (shutdown bool)
+	BucketExistsAnywhere(bucketKey string) (present bool)
 }

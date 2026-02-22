@@ -19,17 +19,34 @@ func NewInstanceManager(ctx context.Context, outbox *mpmc.Queue[protocol.Payload
 	ctx = logctx.AppendCtxTag(ctx, global.NSmDefrag)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
+	startRouteSnapshot := routingSnapshot{
+		pairs: make(map[string]*InstancePair, minInsts),
+		ids:   make([]string, minInsts),
+	}
+
 	new = &InstanceManager{
-		InstancePairs: make([]*InstancePair, 0),
-		MinInstCount:  maxInsts,
-		MaxInstCount:  maxInsts,
-		outQueue:      outbox,
-		ctx:           ctx,
+		minInstCount: minInsts,
+		maxInstCount: maxInsts,
+		outQueue:     outbox,
+		ctx:          ctx,
 	}
+
 	new.PacketDeadline.Store(int64(global.DefaultMinPacketDeadline))
-	new.Routing = &RoutingState{
-		Manager:   new,
-		Overrides: make(map[string]int),
+	new.routing.Store(&startRouteSnapshot)
+	new.RoutingView = &RoutingState{
+		manager: new,
 	}
+	return
+}
+
+// Configured (static) minimum instance count
+func (manager *InstanceManager) GetMinimumInstances() (min int) {
+	min = manager.minInstCount
+	return
+}
+
+// Configured (static) maximum instance count
+func (manager *InstanceManager) GetMaximumInstances() (max int) {
+	max = manager.maxInstCount
 	return
 }

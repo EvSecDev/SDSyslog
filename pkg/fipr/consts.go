@@ -49,6 +49,7 @@ const (
 
 var (
 	ErrTransportFailure   = errors.New("transport layer encountered an error")
+	ErrTransportWasClosed = errors.New("transport layer was closed while attempting to use it")
 	ErrFrameHasPayload    = errors.New("frame has opcode that requires empty payload but has a non-empty payload")
 	ErrFrameHasNoPayload  = errors.New("frame has opcode that requires non-empty payload but has an empty payload")
 	ErrInvalidFrameLen    = errors.New("frame from transport layer has invalid length field")

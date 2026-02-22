@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"strings"
@@ -80,8 +79,8 @@ func TestPublic_Full(t *testing.T) {
 			fragment:          "", // no fragment sent
 			acceptFragment:    false,
 			clientNoSendFrag:  true,
-			expectedClientErr: nil,              // client closes cleanly, no error
-			expectedServerErr: io.ErrClosedPipe, // server sees EOF/closed waiting for fragment
+			expectedClientErr: nil,                   // client closes cleanly, no error
+			expectedServerErr: ErrTransportWasClosed, // server sees EOF/closed waiting for fragment - closes session
 		},
 	}
 

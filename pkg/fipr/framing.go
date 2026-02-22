@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"time"
 )
@@ -13,7 +14,8 @@ func (session *Session) writeFrame(wireFrame []byte) (err error) {
 	// Safety only
 	err = session.conn.SetReadDeadline(time.Now().Add(maxWaitTimeForSend))
 	if err != nil {
-		if errors.Is(err, net.ErrClosed) {
+		if transportWasClosed(err) {
+			err = ErrTransportWasClosed
 			session.Close()
 		} else {
 			err = fmt.Errorf("failed setting write deadline: %w", err)
@@ -26,7 +28,12 @@ func (session *Session) writeFrame(wireFrame []byte) (err error) {
 		var n int
 		n, err = session.conn.Write(wireFrame)
 		if err != nil {
-			err = fmt.Errorf("write: %w: %w", ErrTransportFailure, err)
+			if transportWasClosed(err) {
+				err = ErrTransportWasClosed
+				session.Close()
+			} else {
+				err = fmt.Errorf("write: %w: %w", ErrTransportFailure, err)
+			}
 			return
 		}
 		wireFrame = wireFrame[n:]
@@ -39,7 +46,8 @@ func (session *Session) readFrame() (wireFrame []byte, err error) {
 	// Safety only
 	err = session.conn.SetReadDeadline(time.Now().Add(maxWaitTimeForFrame))
 	if err != nil {
-		if errors.Is(err, net.ErrClosed) {
+		if transportWasClosed(err) {
+			err = ErrTransportWasClosed
 			session.Close()
 		} else {
 			err = fmt.Errorf("failed setting read deadline: %w", err)
@@ -63,7 +71,12 @@ func (session *Session) readFrame() (wireFrame []byte, err error) {
 		tmp := make([]byte, 4096)
 		n, err = session.conn.Read(tmp)
 		if err != nil {
-			err = fmt.Errorf("read: %w: %w", ErrTransportFailure, err)
+			if transportWasClosed(err) {
+				err = ErrTransportWasClosed
+				session.Close()
+			} else {
+				err = fmt.Errorf("read: %w: %w", ErrTransportFailure, err)
+			}
 			return
 		}
 		session.transportBuffer = append(session.transportBuffer, tmp[:n]...)
@@ -98,5 +111,21 @@ func tryParseFrame(buf []byte) (consumed int, frame []byte, err error) {
 	// We have a full frame
 	frame = buf[:totalLen]
 	consumed = totalLen
+	return
+}
+
+// Checks if supplied error is an error encountered when transport layer connection is closed
+func transportWasClosed(err error) (closed bool) {
+	if err == nil {
+		return
+	}
+	switch {
+	case errors.Is(err, io.EOF):
+		closed = true
+	case errors.Is(err, io.ErrClosedPipe):
+		closed = true
+	case errors.Is(err, net.ErrClosed):
+		closed = true
+	}
 	return
 }

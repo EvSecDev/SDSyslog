@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"runtime/debug"
 	"sdsyslog/internal/global"
@@ -118,7 +117,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 
 	rawFragment, err := session.WaitFragment()
 	if err != nil {
-		if errors.Is(err, io.EOF) {
+		if errors.Is(err, fipr.ErrTransportWasClosed) {
 			// Client decided not to route and closed connection - no error
 			return
 		}

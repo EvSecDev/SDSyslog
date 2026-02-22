@@ -132,7 +132,7 @@ func filterLogBuffer(ctx context.Context, searchText, searchTag, searchSeverity 
 	var dedupFoundLines []string
 	seenMessages := make(map[string]bool, len(foundLines))
 	for _, foundLine := range foundLines {
-		metaLastIndex := strings.LastIndex(foundLine, "]")
+		metaLastIndex := strings.LastIndex(foundLine, "] ")
 		lineLog := foundLine[metaLastIndex:]
 
 		if seenMessages[lineLog] {

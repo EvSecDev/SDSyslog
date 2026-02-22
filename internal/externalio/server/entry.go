@@ -104,7 +104,7 @@ func Start(ctx context.Context, server *http.Server) {
 		return
 	}
 
-	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Starting metric query server on %s (http://%s/)\n",
+	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Starting metric query server at http://%s/\n",
 		server.Addr,
 		server.Addr,
 	)

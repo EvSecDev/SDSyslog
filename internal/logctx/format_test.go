@@ -116,7 +116,7 @@ func TestPadTimestamp(t *testing.T) {
 		{
 			name:      "zero nanoseconds",
 			input:     time.Date(2026, 1, 31, 12, 34, 56, 0, time.UTC),
-			expected:  "2026-01-31T12:34:56Z",
+			expected:  "2026-01-31T12:34:56.000000000Z",
 			expectEnd: "Z",
 		},
 	}
@@ -131,6 +131,44 @@ func TestPadTimestamp(t *testing.T) {
 			}
 			if !strings.HasSuffix(got, tt.expectEnd) {
 				t.Errorf("\nsuffix:\n got  %q\n want %q", got, tt.expectEnd)
+			}
+		})
+		t.Run(tt.name+"_roundtrip", func(t *testing.T) {
+			got := padTimestamp(tt.input)
+
+			parsed, err := time.Parse(time.RFC3339Nano, got)
+			if err != nil {
+				t.Fatalf("failed to parse formatted timestamp: %v", err)
+			}
+
+			if !parsed.Equal(tt.input) {
+				t.Errorf("roundtrip mismatch:\n got  %v\n want %v", parsed, tt.input)
+			}
+		})
+		t.Run(tt.name+"_nanoseconds_preserved", func(t *testing.T) {
+			got := padTimestamp(tt.input)
+
+			parsed, _ := time.Parse(time.RFC3339Nano, got)
+
+			if parsed.Nanosecond() != tt.input.Nanosecond() {
+				t.Errorf("nanoseconds changed:\n got  %d\n want %d",
+					parsed.Nanosecond(),
+					tt.input.Nanosecond())
+			}
+		})
+		t.Run(tt.name+"_fraction_width", func(t *testing.T) {
+			got := padTimestamp(tt.input)
+
+			parts := strings.Split(got, ".")
+			if len(parts) < 2 {
+				t.Fatalf("missing fractional part: %s", got)
+			}
+
+			frac := parts[1]
+			frac = strings.TrimSuffix(frac, tt.expectEnd)
+
+			if len(frac) != 9 {
+				t.Errorf("fraction not 9 digits:\n got %q (len=%d)", frac, len(frac))
 			}
 		})
 	}

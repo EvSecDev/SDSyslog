@@ -38,9 +38,30 @@ func (event Event) Format() (text string) {
 func padTimestamp(timestamp time.Time) (formatted string) {
 	formatted = timestamp.Format(time.RFC3339Nano)
 
-	majorFields := strings.Split(formatted, ".")
-	if len(majorFields) != 2 {
+	lastColon := strings.LastIndex(formatted, ":")
+	if lastColon == -1 {
+		// malformed, return as-is
 		return
+	}
+
+	majorFields := strings.Split(formatted, ".")
+	if len(majorFields) > 2 || len(majorFields) < 1 {
+		// malformed
+		return
+	}
+	if len(majorFields) == 1 {
+		// No nanoseconds (at 0) - add padding
+		formattedPrefix := formatted[:lastColon+3]
+		formattedSuffix := formatted[lastColon+3:]
+		newFormatted := formattedPrefix + ".000000000" + formattedSuffix
+
+		// Re-split
+		majorFields = strings.Split(newFormatted, ".")
+		if len(majorFields) != 2 {
+			// failed parsing, return as is
+			return
+		}
+		formatted = newFormatted
 	}
 
 	minorFields := strings.Split(majorFields[1], "-")

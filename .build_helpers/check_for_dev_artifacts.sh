@@ -31,6 +31,11 @@ function check_for_dev_artifacts() {
 		echo -e "   ${YELLOW}[?] WARNING${RESET}: Debug print found in source code. You might want to remove that before release."
 	fi
 
+	# Want functions that have an actual body attached (safety)
+	if grep -RIn --include="*.go" -E 'var[[:space:]]+[a-zA-Z0-9_]+[[:space:]]+func\(' . | grep -Ev ") = "; then
+		echo -e "   ${YELLOW}[?] WARNING${RESET}: Found function variables that do not have an actualy function set."
+	fi
+
 	# Quick staticcheck check - ignoring punctuation in error strings
 	cd "$src"
 	set +e

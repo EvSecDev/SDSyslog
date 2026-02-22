@@ -8,7 +8,12 @@ import (
 
 // Retrieves shared secret for whole program use (and inter-process communication).
 // Secret is derived using known private key through a key derivation function at program startup.
-var GetSharedSecret func() (programSecret []byte)
+var GetSharedSecret func() (programSecret []byte) = getSharedSecretSafeFail
+
+// Ensure uninitialized function produces panic when called
+func getSharedSecretSafeFail() (programSecret []byte) {
+	panic("function GetSharedSecret was not initialized")
+}
 
 // Sets up shared secret getter function injecting the derived secret from the private key to the local scope.
 // Does not set the function if key is empty. Will throw error if function is not initialized and no key is provided.

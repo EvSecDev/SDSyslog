@@ -11,10 +11,28 @@ import (
 )
 
 // Wrapper to encrypt an inner payload into cipher text
-var EncryptInnerPayload func(payload []byte, suiteID uint8) (ciphertext, ephemeralPub, nonce []byte, err error)
+var EncryptInnerPayload func(payload []byte, suiteID uint8) (ciphertext, ephemeralPub, nonce []byte, err error) = encryptInnerSafeFail
+
+// Ensure uninitialized function produces an error when called
+func encryptInnerSafeFail(payload []byte, suiteID uint8) (ciphertext, ephemeralPub, nonce []byte, err error) {
+	_ = payload
+	_ = suiteID
+	err = fmt.Errorf("function EncryptInnerPayload was not initialized")
+	return
+}
 
 // Wrapper to decrypt an inner payload from cipher text to clear text
-var DecryptInnerPayload func(ciphertext, ephemeralPub, nonce []byte, suiteID uint8) (innerPayload []byte, err error)
+var DecryptInnerPayload func(ciphertext, ephemeralPub, nonce []byte, suiteID uint8) (innerPayload []byte, err error) = decryptInnerSafeFail
+
+// Ensure uninitialized function produces an error when called
+func decryptInnerSafeFail(ciphertext, ephemeralPub, nonce []byte, suiteID uint8) (innerPayload []byte, err error) {
+	_ = ciphertext
+	_ = ephemeralPub
+	_ = nonce
+	_ = suiteID
+	err = fmt.Errorf("function DecryptInnerPayload was not initialized")
+	return
+}
 
 // Sets up encryption wrapper function injecting the public key to the local scope.
 // Does not set the function if key is empty. Will throw error if function is not initialized and no key is provided.

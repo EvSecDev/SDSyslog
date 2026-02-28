@@ -22,7 +22,6 @@ Stage 1 - Listener (fixed - no scaling)
 - One thread started per input type
   - File
   - Journald
-  - Syslog
 - Reads any metadata (if any) from the specific source and attaches to message.
 - Parses message text and extracts relevant metadata into common format
 - Pushes to central assembly queue
@@ -71,6 +70,7 @@ Stage 1 - Listeners
 - Conducts pre-validation checks in order:
   - Discards if payload is not the protocol's minimum length
   - Peeks first byte to validate crypto suite ID (discards immediately if invalid)
+  - Discards if ephemeral public key in packet has been seen within defined time window
 - Pushes transport payload into queue
 
 Stage 2 - Processors
@@ -81,7 +81,8 @@ Stage 2 - Processors
   - Parsing/Validation of outer payload
   - Decryption of the inner payload
   - Parsing/Validation of inner payload
-- Choose a destination shard: Hash of source IP, host ID, log ID modulus the current number of shards
+- Discards validated payload when timestamp is outside configured allowed time window
+- Choose a destination shard: Hash of source IP, host ID, log ID weighted against the current number of shards (HRW)
 - Fragment is pushed into a bucket within the shard
   - Processing start time for each newest fragment is attached to each bucket (every time)
   - When the seq == seqmax has been reached for a given bucket, the bucket is considered filled
@@ -103,7 +104,7 @@ Stage 4 - IOWorker
 - Copy send to each destination by external source(s):
   - File
   - Journald
-  - Syslog
+  - Beats (Lumberjack)
 - Pushes events to configured external source(s)
 
 ### Receiver Queues
@@ -128,7 +129,8 @@ If the program is being shutdown (internally or external signal):
 
 Receiver:
 
-- If on Linux (eBPF supported), mark sockets as draining to prevent additional packets from being read
+- If on Linux (eBPF supported):
+  - Mark sockets as draining to prevent additional packets from being read
 - Wait for OS socket buffers to empty
 - Close all listener sockets
 - Manager issues cancel to listener workers
@@ -192,11 +194,14 @@ The program can self update without dropping any traffic by starting a temporary
 Two-Stage Hot Swap Process:
 
 - Primary_Process     - Receives signal SIGHUP
+- Primary_Process     - Start inter-process fragment receiver (FIPR)
 - Primary_Process     - Create communication pipe
 - Primary_Process     - Signal handler starts Temp_Process (child) with shared pipe via environment variable (for FD number)
 - Primary_Process     - Wait for Temp_Process to signal it is fully started with Read pipe
 - Temp_Process        - Start daemon
-- Temp_Process        - Once daemon is started, send readiness signal to Primary_Process (parent)
+- Temp_Process        - Daemon startup complete
+- Temp_Process        - Start inter-process fragment receiver (FIPR)
+- Temp_Process        - Send readiness signal to Primary_Process (parent)
 - Primary_Process     - Receives Temp_Process readiness signal
 - Primary_Process     - Set update environment variable with Temp_Process PID for next in-place program
 - Primary_Process     - Start shutdown process
@@ -204,13 +209,17 @@ Two-Stage Hot Swap Process:
 - Primary_Process     - Right before normal os exit, re-exec self with new binary file from disk
 - Primary_Process_New - Start all components
 - Primary_Process_New - All components successfully started
-- Primary_Process_New - Notifies systemd READY (if under systemd)
 - Primary_Process_New - Check for update environment variable
-- Primary_Process_New - If update environment variable exists, get value (Temp_Process pid)
+- Primary_Process_New - Update environment variable exists
+- Primary_Process_New - Start inter-process fragment receiver (FIPR)
+- Primary_Process_New - Get update env var value (Temp_Process pid)
 - Primary_Process_New - Send signal SIGTERM to Temp_Process PID
 - Temp_Process        - Receive SIGTERM signal
 - Temp_Process        - Starts normal shutdown procedure
-- Primary_Process_New - Cleans up exited Temp_Process
+- Primary_Process_New - Wait with timeout for Temp_Process to exit
+- Temp_Process        - Process exits
+- Primary_Process_New - Stop inter-process fragment receiver (FIPR)
+- Primary_Process_New - Notifies systemd READY (if under systemd)
 - Primary_Process_New - Continues on as normal
 
 ## Encryption

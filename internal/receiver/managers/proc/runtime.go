@@ -20,7 +20,11 @@ func (manager *InstanceManager) AddInstance() (id int) {
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 
 	ingestInstance := &Instance{
-		Processor: processor.New(logctx.GetTagList(manager.ctx), manager.Inbox, manager.routingView),
+		Processor: processor.New(logctx.GetTagList(manager.ctx),
+			manager.Inbox,
+			manager.routingView,
+			manager.pastMsgCutoff,
+			manager.futureMsgCutoff),
 	}
 
 	manager.Instances[id] = ingestInstance

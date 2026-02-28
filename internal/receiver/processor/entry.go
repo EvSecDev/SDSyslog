@@ -14,12 +14,16 @@ import (
 )
 
 // Creates new processor with requested queue as inbox
-func New(namespace []string, queue *mpmc.Queue[listener.Container], shardRouting shard.RoutingView) (new *Instance) {
+func New(namespace []string,
+	queue *mpmc.Queue[listener.Container], shardRouting shard.RoutingView,
+	maxPastMsgAge, maxFutureMsgAge time.Duration) (new *Instance) {
 	new = &Instance{
-		Namespace:   append(namespace, logctx.NSWorker),
-		inbox:       queue,
-		routingView: shardRouting,
-		Metrics:     MetricStorage{},
+		Namespace:            append(namespace, logctx.NSWorker),
+		pastTimestampLimit:   maxPastMsgAge,
+		futureTimestampLimit: maxFutureMsgAge,
+		inbox:                queue,
+		routingView:          shardRouting,
+		Metrics:              MetricStorage{},
 	}
 	return
 }
@@ -75,6 +79,19 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			// Inject remote IP to actual message
 			msg.RemoteIP = queueEntry.Meta.RemoteIP
+
+			// Validate timestamp - disallow extremes always
+			if msg.Timestamp.After(processingStartTime.Add(instance.futureTimestampLimit)) {
+				logctx.LogStdErr(ctx,
+					"message from %s (msgID: %s) has a timestamp too far in the future (>=%d hours), dropping\n",
+					msg.RemoteIP, msg.MsgID, instance.futureTimestampLimit.Hours())
+				return
+			} else if msg.Timestamp.Before(processingStartTime.Add(-instance.pastTimestampLimit)) {
+				logctx.LogStdErr(ctx,
+					"message from %s (msgID: %s) has a timestamp too far in the past (<%d hours), dropping\n",
+					msg.RemoteIP, msg.MsgID, instance.pastTimestampLimit.Hours())
+				return
+			}
 
 			// Record time metrics post-validation
 			durNs := time.Since(processingStartTime).Nanoseconds()

@@ -10,7 +10,11 @@ import (
 )
 
 // Creates new instance manager
-func NewInstanceManager(ctx context.Context, port int, outQueue *mpmc.Queue[listener.Container], minInsts, maxInsts int) (new *InstanceManager) {
+func NewInstanceManager(ctx context.Context,
+	port int, outQueue *mpmc.Queue[listener.Container],
+	minInsts, maxInsts int,
+	replayProtectionWindow time.Duration) (new *InstanceManager) {
+
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSmIngest)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
@@ -20,8 +24,8 @@ func NewInstanceManager(ctx context.Context, port int, outQueue *mpmc.Queue[list
 		MaxInstCount:        maxInsts,
 		port:                port,
 		outbox:              outQueue,
-		replayCleanInterval: 5 * time.Minute,
-		replayCache:         newReplayCacheWithShards(maxInsts, 600),
+		replayCleanInterval: replayProtectionWindow / 2,
+		replayCache:         newReplayCacheWithShards(maxInsts, int64(replayProtectionWindow.Seconds())),
 		ctx:                 ctx,
 	}
 

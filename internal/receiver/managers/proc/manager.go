@@ -7,10 +7,15 @@ import (
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/shard"
+	"time"
 )
 
 // Creates new instance manager
-func NewInstanceManager(ctx context.Context, shardRouting shard.RoutingView, minInsts, maxInsts int, minQsize, maxQsize int) (new *InstanceManager, err error) {
+func NewInstanceManager(ctx context.Context,
+	shardRouting shard.RoutingView,
+	minInsts, maxInsts int,
+	minQsize, maxQsize int,
+	oldMsgCutoff, futureMsgCutoff time.Duration) (new *InstanceManager, err error) {
 	// Add log context
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSProc)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
@@ -21,12 +26,14 @@ func NewInstanceManager(ctx context.Context, shardRouting shard.RoutingView, min
 	}
 
 	new = &InstanceManager{
-		Instances:    make(map[int]*Instance),
-		MinInstCount: minInsts,
-		MaxInstCount: maxInsts,
-		Inbox:        inQueue,
-		routingView:  shardRouting,
-		ctx:          ctx,
+		Instances:       make(map[int]*Instance),
+		MinInstCount:    minInsts,
+		MaxInstCount:    maxInsts,
+		pastMsgCutoff:   oldMsgCutoff,
+		futureMsgCutoff: futureMsgCutoff,
+		Inbox:           inQueue,
+		routingView:     shardRouting,
+		ctx:             ctx,
 	}
 	return
 }

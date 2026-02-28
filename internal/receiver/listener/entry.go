@@ -76,7 +76,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			}
 
 			// Replay attack protection - level 1
-			pubKey := payload[1 : suiteInfo.KeySize+1]
+			pubKey := payload[crypto.SuiteIDLen : crypto.SuiteIDLen+suiteInfo.KeySize]
 			if instance.isReplayed(pubKey) {
 				instance.Metrics.InvalidPackets.Add(1)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
@@ -104,10 +104,13 @@ func (instance *Instance) Run(ctx context.Context) {
 			}
 
 			instance.Outbox.Push(newQueueEntry)
+
 			// Add data size to sum
 			size := len(newQueueEntry.Data) + len(newQueueEntry.Meta.RemoteIP)
 			instance.Outbox.ActiveWrite.Load().Metrics.Bytes.Add(uint64(size))
+
 			instance.Metrics.ValidPackets.Add(1) // increment success after push
+
 			instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
 		}()
 	}

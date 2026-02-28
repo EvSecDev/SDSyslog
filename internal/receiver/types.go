@@ -66,6 +66,11 @@ type Config struct {
 	MinProcessorQueueSize int
 	MaxProcessorQueueSize int
 
+	// Message validity
+	ReplayProtectionWindow time.Duration // Short term replay protection window size (For Listener)
+	PastValidityWindow     time.Duration // Time window where old timestamps are still accepted (relative to processing time)
+	FutureValidityWindow   time.Duration // Time window where future timestamps are still accepted (relative to processing time)
+
 	// Outputs
 	OutputFilePath string
 	JournaldURL    string

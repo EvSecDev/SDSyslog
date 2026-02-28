@@ -118,10 +118,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	// Stage 2 - Processor
 	daemon.Mgrs.Proc, err = proc.NewInstanceManager(daemon.ctx,
 		daemon.Mgrs.Defrag.RoutingView,
-		daemon.cfg.MinProcessors,
-		daemon.cfg.MaxProcessors,
-		daemon.cfg.MinProcessorQueueSize,
-		daemon.cfg.MaxProcessorQueueSize)
+		daemon.cfg.MinProcessors, daemon.cfg.MaxProcessors,
+		daemon.cfg.MinProcessorQueueSize, daemon.cfg.MaxProcessorQueueSize,
+		daemon.cfg.PastValidityWindow, daemon.cfg.FutureValidityWindow)
 	if err != nil {
 		err = fmt.Errorf("failed adding new processor manager: %w", err)
 		daemon.Shutdown()
@@ -138,7 +137,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		daemon.cfg.ListenPort,
 		daemon.Mgrs.Proc.Inbox,
 		daemon.cfg.MinListeners,
-		daemon.cfg.MaxListeners)
+		daemon.cfg.MaxListeners,
+		daemon.cfg.ReplayProtectionWindow)
 	for i := 0; i < daemon.cfg.MinListeners; i++ {
 		_, err = daemon.Mgrs.Input.AddInstance()
 		if err != nil {

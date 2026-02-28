@@ -109,6 +109,17 @@ func (cfg *Config) setDefaults() {
 		cfg.MinOutputQueueSize = global.DefaultMinQueueSize
 	}
 
+	// Message validity
+	if cfg.ReplayProtectionWindow == 0 {
+		cfg.ReplayProtectionWindow = DefaultReplayWindow
+	}
+	if cfg.PastValidityWindow == 0 {
+		cfg.PastValidityWindow = DefaultPastValidityWindow
+	}
+	if cfg.FutureValidityWindow == 0 {
+		cfg.FutureValidityWindow = DefaultFutureValidityWindow
+	}
+
 	// Network
 	if cfg.ListenIP == "" {
 		cfg.ListenIP = "::"

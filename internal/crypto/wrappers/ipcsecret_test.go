@@ -3,6 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"sdsyslog/internal/crypto/ecdh"
+	"sdsyslog/internal/crypto/random"
 	"testing"
 )
 
@@ -47,10 +48,16 @@ func TestSetupGetSharedSecret(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use the mock key if test key is zero length
 			key := tt.privKey
 			if key == nil && tt.expectSecret {
+				// Use the mock key if test key is zero length
 				key = priv
+			} else {
+				// Populate key
+				err := random.PopulateEmptySlice(&tt.privKey, len(tt.privKey))
+				if err != nil {
+					t.Fatalf("expected no error from key setup, but got %v", err)
+				}
 			}
 
 			// Reset global before each test

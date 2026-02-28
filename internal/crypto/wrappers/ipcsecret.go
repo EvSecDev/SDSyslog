@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"fmt"
+	"sdsyslog/internal/crypto"
 	"sdsyslog/internal/crypto/hkdf"
 	"sdsyslog/pkg/fipr"
 )
@@ -22,6 +23,10 @@ func SetupGetSharedSecret(serverPriv []byte) (err error) {
 		if GetSharedSecret == nil {
 			err = fmt.Errorf("provided no private key and shared secret function is not already initialized")
 		}
+		return
+	}
+	if crypto.IsZero(serverPriv) {
+		err = fmt.Errorf("private key empty: all bytes are zero")
 		return
 	}
 

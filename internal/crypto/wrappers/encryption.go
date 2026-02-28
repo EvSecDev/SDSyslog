@@ -50,6 +50,11 @@ func SetupEncryptInnerPayload(serverPub []byte) (err error) {
 			return
 		}
 
+		if crypto.IsZero(serverPub) {
+			err = fmt.Errorf("public key empty: all bytes are zero")
+			return
+		}
+
 		sharedSecret, ephemeralPub, err := ecdh.CreateSharedSecret(serverPub)
 		if err != nil {
 			err = fmt.Errorf("failed to create secret: %w", err)
@@ -101,6 +106,11 @@ func SetupDecryptInnerPayload(privateKey []byte) (err error) {
 	DecryptInnerPayload = func(ciphertext, ephemeralPub, nonce []byte, suiteID uint8) (innerPayload []byte, err error) {
 		if len(privateKey) == 0 {
 			err = fmt.Errorf("private key empty: attempted call to uninitialized function")
+			return
+		}
+
+		if crypto.IsZero(privateKey) {
+			err = fmt.Errorf("private key empty: all bytes are zero")
 			return
 		}
 

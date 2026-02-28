@@ -89,3 +89,61 @@ func TestMemzero(t *testing.T) {
 		})
 	}
 }
+
+func TestIsZero(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []byte
+		want  bool
+	}{
+		{
+			name:  "nil slice",
+			input: nil,
+			want:  true,
+		},
+		{
+			name:  "empty slice",
+			input: []byte{},
+			want:  true,
+		},
+		{
+			name:  "all zeros small",
+			input: []byte{0, 0, 0},
+			want:  true,
+		},
+		{
+			name:  "all zeros large",
+			input: make([]byte, 1024),
+			want:  true,
+		},
+		{
+			name:  "single non-zero at start",
+			input: []byte{1, 0, 0},
+			want:  false,
+		},
+		{
+			name:  "single non-zero in middle",
+			input: []byte{0, 2, 0},
+			want:  false,
+		},
+		{
+			name:  "single non-zero at end",
+			input: []byte{0, 0, 3},
+			want:  false,
+		},
+		{
+			name:  "all non-zero",
+			input: []byte{1, 2, 3},
+			want:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsZero(tt.input)
+			if got != tt.want {
+				t.Fatalf("input=%v, got %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}

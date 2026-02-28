@@ -13,13 +13,14 @@ import (
 	"time"
 )
 
-func New(namespace []string, conn *net.UDPConn, queue *mpmc.Queue[Container]) (new *Instance) {
+func New(namespace []string, conn *net.UDPConn, queue *mpmc.Queue[Container], replayCheck func(pubKey []byte) (replayed bool)) (new *Instance) {
 	new = &Instance{
-		Namespace: append(namespace, logctx.NSListen),
-		conn:      conn,
-		Outbox:    queue,
-		minLen:    protocol.MinOuterPayloadLen,
-		Metrics:   MetricStorage{},
+		Namespace:  append(namespace, logctx.NSListen),
+		conn:       conn,
+		Outbox:     queue,
+		minLen:     protocol.MinOuterPayloadLen,
+		Metrics:    MetricStorage{},
+		isReplayed: replayCheck,
 	}
 	return
 }
@@ -66,11 +67,20 @@ func (instance *Instance) Run(ctx context.Context) {
 			payload := append([]byte(nil), buffer[:endIndex]...)
 
 			// Pre validation
-			_, validSuiteID := crypto.GetSuiteInfo(payload[0])
+			suiteInfo, validSuiteID := crypto.GetSuiteInfo(payload[0])
 			if len(payload) < instance.minLen || !validSuiteID {
 				instance.Metrics.InvalidPackets.Add(1)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
 				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog, "Received invalid outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
+				return
+			}
+
+			// Replay attack protection - level 1
+			pubKey := payload[1 : suiteInfo.KeySize+1]
+			if instance.isReplayed(pubKey) {
+				instance.Metrics.InvalidPackets.Add(1)
+				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
+				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog, "Received replayed outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
 				return
 			}
 

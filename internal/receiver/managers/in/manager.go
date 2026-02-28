@@ -6,6 +6,7 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/internal/receiver/listener"
+	"time"
 )
 
 // Creates new instance manager
@@ -14,12 +15,18 @@ func NewInstanceManager(ctx context.Context, port int, outQueue *mpmc.Queue[list
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	new = &InstanceManager{
-		Instances:    make(map[int]*Instance),
-		MinInstCount: minInsts,
-		MaxInstCount: maxInsts,
-		port:         port,
-		outbox:       outQueue,
-		ctx:          ctx,
+		Instances:           make(map[int]*Instance),
+		MinInstCount:        minInsts,
+		MaxInstCount:        maxInsts,
+		port:                port,
+		outbox:              outQueue,
+		replayCleanInterval: 5 * time.Minute,
+		replayCache:         newReplayCacheWithShards(maxInsts, 600),
+		ctx:                 ctx,
 	}
+
+	// Background cleanup loop for replay protection cache
+	go new.replayCache.cleanupLoop(ctx, new.replayCleanInterval)
+
 	return
 }

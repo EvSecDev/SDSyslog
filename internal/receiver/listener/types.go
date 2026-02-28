@@ -6,11 +6,12 @@ import (
 )
 
 type Instance struct {
-	Namespace []string
-	conn      *net.UDPConn
-	Outbox    *mpmc.Queue[Container]
-	minLen    int
-	Metrics   MetricStorage
+	Namespace  []string
+	conn       *net.UDPConn
+	Outbox     *mpmc.Queue[Container]
+	minLen     int
+	Metrics    MetricStorage
+	isReplayed func(pubKey []byte) (replayed bool)
 }
 
 // For SPSC queue

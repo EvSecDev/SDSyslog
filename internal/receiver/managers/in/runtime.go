@@ -29,8 +29,11 @@ func (manager *InstanceManager) AddInstance() (id int, err error) {
 	}
 
 	ingestInstance := &Instance{
-		conn:     conn,
-		Listener: listener.New(logctx.GetTagList(manager.ctx), conn, manager.outbox),
+		conn: conn,
+		Listener: listener.New(logctx.GetTagList(manager.ctx),
+			conn,
+			manager.outbox,
+			manager.replayCache.isReplayed),
 	}
 
 	manager.Instances[id] = ingestInstance

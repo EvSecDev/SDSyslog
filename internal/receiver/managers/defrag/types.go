@@ -19,6 +19,7 @@ type InstanceManager struct {
 	maxInstCount   int                             // Maximum number of instances at any one time
 	outQueue       *mpmc.Queue[protocol.Payload]   // Next pipeline stage queue (not owned by this manager)
 	PacketDeadline atomic.Int64                    // Manager owns this value
+	FIPRRunning    atomic.Bool                     // Syncs fipr send to local fipr receive to gate hot path from checking socket directory unnecessarily
 	ctx            context.Context
 }
 

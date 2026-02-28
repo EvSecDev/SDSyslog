@@ -33,4 +33,5 @@ type RoutingView interface {
 	GetShard(shardID string) (shardInst *Instance)
 	IsShardShutdown(shardID string) (shutdown bool)
 	BucketExistsAnywhere(bucketKey string) (present bool)
+	IsFIPRRunning() (running bool)
 }

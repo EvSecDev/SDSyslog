@@ -91,3 +91,9 @@ func (rs *RoutingState) IsShardShutdown(shardID string) (shutdown bool) {
 	shutdown = shardInst.InShutdown.Load()
 	return
 }
+
+// Checks if the local FIPR receiver go routine has been started
+func (rs *RoutingState) IsFIPRRunning() (running bool) {
+	running = rs.manager.FIPRRunning.Load()
+	return
+}

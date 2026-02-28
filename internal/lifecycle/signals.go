@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"syscall"
 )
@@ -91,7 +92,7 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 					"Restarting daemon after self update failure\n")
 				lerr = daemonManager.Start(ctx, []byte{}) // No private key since it was already initialized
 				if lerr != nil {
-					logctx.LogStdErr(ctx,
+					logctx.LogEvent(ctx, global.VerbosityStandard, global.FatalLog,
 						"Failed to restart daemon after update failure: %w (original error: %w)\n", lerr, err)
 					// Restart failed is fatal at this point, die.
 					return

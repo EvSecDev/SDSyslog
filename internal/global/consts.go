@@ -12,13 +12,14 @@ const (
 	VerbosityDebug
 
 	// Descriptive names for available severity levels
+	FatalLog string = "Fatal"
 	ErrorLog string = "Error"
 	WarnLog  string = "Warn"
 	InfoLog  string = "Info"
 )
 
 const (
-	ProgVersion string = "v0.15.4"
+	ProgVersion string = "v0.15.5"
 	SendMode    string = "send"
 	RecvMode    string = "receive"
 

@@ -3,7 +3,6 @@ package shard
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sdsyslog/internal/crypto/hash"
@@ -11,6 +10,7 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/shard/fiprsend"
 	"sdsyslog/pkg/protocol"
+	"strconv"
 	"time"
 )
 
@@ -18,8 +18,8 @@ import (
 // Dynamically reroutes and tracks when targeted shard/process is shutdown.
 func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fragment protocol.Payload, processingStartTime time.Time) (success bool) {
 	var remoteShards []string
-	if fragment.MessageSeqMax > 0 {
-		// FIPR should only ever be used with fragmented messages
+	if rv.IsFIPRRunning() && fragment.MessageSeqMax > 0 {
+		// FIPR should only ever be used with fragmented messages and when FIPR receiver is running
 		var err error
 		remoteShards, err = fiprsend.GetSocketFileList(global.DefaultSocketDir, os.Getpid())
 		if err != nil {
@@ -28,12 +28,14 @@ func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fr
 		}
 	}
 
+	// Identifier for all fragments within a given message per host
+	bucketKey := remoteAddress +
+		"-" + strconv.FormatInt(int64(fragment.HostID), 10) +
+		"-" + strconv.FormatInt(int64(fragment.MsgID), 10)
+
 	// One-off route decision retries
 	// Not great, but I like this switch decision tree as is
 retryRoute:
-
-	// Identifier for all fragments within a given message per host
-	bucketKey := fmt.Sprintf("%s-%d-%d", remoteAddress, fragment.HostID, fragment.MsgID)
 
 	// Route Destination
 	shardList := rv.GetAllIDs()

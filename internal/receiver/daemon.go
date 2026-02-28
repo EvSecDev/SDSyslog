@@ -231,6 +231,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 func (daemon *Daemon) StartFIPR() (err error) {
 	daemon.fipr = fiprrecv.New(daemon.ctx, global.DefaultSocketDir, daemon.Mgrs.Defrag.RoutingView)
 	daemon.Mgrs.FIPR = daemon.fipr
+	daemon.Mgrs.Defrag.FIPRRunning.Store(true)
 	err = daemon.fipr.Start()
 	if err != nil {
 		err = fmt.Errorf("failed to start FIPR receiver: %w\n", err)
@@ -252,6 +253,7 @@ func (daemon *Daemon) StopFIPR() {
 	time.Sleep(drainingPeriod)
 
 	daemon.fipr.Stop()
+	daemon.Mgrs.Defrag.FIPRRunning.Store(false)
 	daemon.Mgrs.FIPR = nil
 	daemon.fipr = nil
 }

@@ -10,7 +10,11 @@ import (
 
 // Block (with timeout) until child sends readiness message over file descriptor.
 func readinessReceiver(readyReader *os.File) (err error) {
-	readyReader.SetReadDeadline(time.Now().Add(DefaultMaxWaitForUpdate))
+	err = readyReader.SetReadDeadline(time.Now().Add(DefaultMaxWaitForUpdate))
+	if err != nil && err != os.ErrNoDeadline {
+		err = fmt.Errorf("failed setting timeout for readiness receiver: %w", err)
+		return
+	}
 
 	// Wait for ready message
 	buf := make([]byte, len(ReadyMessage))

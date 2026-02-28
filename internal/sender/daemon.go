@@ -21,6 +21,7 @@ import (
 	"sdsyslog/internal/sender/metrics"
 	"sdsyslog/internal/sender/scaling"
 	"sdsyslog/internal/syslog"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -40,8 +41,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
 	daemon.ctx = context.WithValue(daemon.ctx, global.LoggerKey, logctx.GetLogger(globalCtx))
 
-	// Top level tag for daemon logs
-	daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSSend)
+	// Top level tag for daemon logs (avoid duplicates)
+	currentTags := logctx.GetTagList(daemon.ctx)
+	if !slices.Equal(currentTags, []string{global.NSSend}) {
+		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSSend)
+	}
 
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon (%s)...\n", global.ProgVersion)
 
@@ -218,7 +222,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		daemon.Shutdown()
 		return
 	}
-	lifecycle.PostUpdateActions(daemon.ctx, daemon)
+	lifecycle.PostUpdateActions(daemon.ctx, daemon, 2*time.Second)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to systemd: %w", err)

@@ -22,6 +22,7 @@ import (
 	"sdsyslog/internal/receiver/scaling"
 	"sdsyslog/internal/receiver/shard/fiprrecv"
 	"sdsyslog/internal/syslog"
+	"slices"
 	"strings"
 	"time"
 )
@@ -41,8 +42,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
 	daemon.ctx = context.WithValue(daemon.ctx, global.LoggerKey, logctx.GetLogger(globalCtx))
 
-	// Top level tag for daemon logs
-	daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSRecv)
+	// Top level tag for daemon logs (avoid duplicates)
+	currentTags := logctx.GetTagList(daemon.ctx)
+	if !slices.Equal(currentTags, []string{global.NSRecv}) {
+		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSRecv)
+	}
 
 	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon (%s)...\n", global.ProgVersion)
 
@@ -209,7 +213,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		daemon.Shutdown()
 		return
 	}
-	lifecycle.PostUpdateActions(daemon.ctx, daemon)
+	lifecycle.PostUpdateActions(daemon.ctx, daemon, global.ReceiveShutdownTimeout)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to systemd: %w", err)
@@ -223,6 +227,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 }
 
 // Dedicated entry point for starting inter-process fragment routing
+// Accept fragments that ended up in other processes that are partial fragments for this process
 func (daemon *Daemon) StartFIPR() (err error) {
 	daemon.fipr = fiprrecv.New(daemon.ctx, global.DefaultSocketDir, daemon.Mgrs.Defrag.RoutingView)
 	daemon.Mgrs.FIPR = daemon.fipr

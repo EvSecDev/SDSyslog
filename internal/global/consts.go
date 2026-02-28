@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProgVersion string = "v0.15.2"
+	ProgVersion string = "v0.15.3"
 	SendMode    string = "send"
 	RecvMode    string = "receive"
 

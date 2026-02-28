@@ -44,6 +44,20 @@ func NotifyStatus(ctx context.Context, msg string) (err error) {
 	return
 }
 
+// Logs failure and handles notifying systemd of failure.
+func logNotifyFailed(ctx context.Context, sig os.Signal, msg string, err error) {
+	logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%s: %w\n", msg, err)
+
+	err = NotifyStatus(ctx, "Reload failed due to internal error. Check daemon logs.")
+	if err != nil {
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Systemd notify status failed: %v\n", sig)
+	}
+	err = NotifyReady(ctx)
+	if err != nil {
+		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Systemd notify reload failed: %v\n", sig)
+	}
+}
+
 // Sends a raw sd_notify message.
 // If NOTIFY_SOCKET is unset, this is a no-op and returns nil.
 func notify(ctx context.Context, msg string) (err error) {

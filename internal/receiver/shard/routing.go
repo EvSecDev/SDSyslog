@@ -23,7 +23,7 @@ func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fr
 		var err error
 		remoteShards, err = fiprsend.GetSocketFileList(global.DefaultSocketDir, os.Getpid())
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%s\n", err.Error())
+			logctx.LogStdErr(ctx, "%s\n", err.Error())
 			return
 		}
 	}
@@ -38,7 +38,7 @@ retryRoute:
 	// Route Destination
 	shardList := rv.GetAllIDs()
 	if len(shardList) == 0 {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "no shards available\n")
+		logctx.LogStdErr(ctx, "no shards available\n")
 		return
 	}
 	defaultIndex := hrwSelect(bucketKey, shardList)
@@ -50,7 +50,7 @@ retryRoute:
 		// Existing message - Send to default shard
 		shard := rv.GetShard(defaultIndex)
 		if shard == nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"shard ID %s disappeared while attempting to route fragment from message ID %d\n", defaultIndex, fragment.MsgID)
 			return
 		}
@@ -85,14 +85,14 @@ retryRoute:
 		// New Message - Default shard is in shutdown - reroute to next highest weight
 		nonDrainingIDs := rv.GetNonDrainingIDs()
 		if len(nonDrainingIDs) == 0 {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "no active shards available\n")
+			logctx.LogStdErr(ctx, "no active shards available\n")
 			return
 		}
 		newIndex := hrwSelect(bucketKey, nonDrainingIDs)
 
 		shard := rv.GetShard(newIndex)
 		if shard == nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"shard ID %s disappeared while attempting to route fragment from message ID %d\n", defaultIndex, fragment.MsgID)
 			return
 		}
@@ -104,7 +104,7 @@ retryRoute:
 		// New Message - Bucket not in shutdown
 		shard := rv.GetShard(defaultIndex)
 		if shard == nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"shard ID %s disappeared while attempting to route fragment from message ID %d\n", defaultIndex, fragment.MsgID)
 			return
 		}

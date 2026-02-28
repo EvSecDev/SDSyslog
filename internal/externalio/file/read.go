@@ -13,13 +13,13 @@ import (
 func (mod *InModule) Reader(ctx context.Context) {
 	logFileInode, logFileOffset, err := getLastPosition(mod.filePath, mod.stateFile)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+		logctx.LogStdWarn(ctx,
 			"failed to get position of last source file read for '%s': %w\n", mod.filePath, err)
 	}
 
 	_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"failed to resume last source file read position for '%s': %w\n", mod.filePath, err)
 	}
 
@@ -28,7 +28,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 	const refreshMask = 1024 - 1
 	localHostname, err = os.Hostname()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+		logctx.LogStdWarn(ctx,
 			"failed to retrieve current local hostname: %w\n", err)
 		localHostname = "-"
 		err = nil
@@ -47,7 +47,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			// Record current file position before read
 			startOfChunk, err := mod.sink.Seek(0, io.SeekCurrent)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"failed to retrieve current position in log file: %w\n", err)
 			}
 
@@ -59,7 +59,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 				// no more bytes available, break to outer select for blocking
 				break
 			} else if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "read error: %w", err)
+				logctx.LogStdErr(ctx, "read error: %w", err)
 				break
 			}
 
@@ -102,7 +102,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 		case <-ctx.Done():
 			err := savePosition(mod.stateFile, logFileInode, logFileOffset)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"failed to save position in file source '%s': %w\n", mod.filePath, err)
 			}
 			return
@@ -114,7 +114,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 				mod.sink.Close()
 				mod.sink, err = os.Open(mod.filePath)
 				if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"failed to reopen rotated log file: %w\n", err)
 					continue
 				}
@@ -122,7 +122,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 				// Retrieve new file inode
 				fileInfo, err := os.Stat(mod.filePath)
 				if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"unable to stat new source file: %w\n", err)
 					continue
 				}
@@ -143,7 +143,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			if err == nil && newName != localHostname {
 				localHostname = newName
 			} else if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+				logctx.LogStdWarn(ctx,
 					"failed to refresh current local hostname: %w\n", err)
 			}
 		}
@@ -151,7 +151,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 		// Re-scan for new lines after the last offset
 		_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"failed to seek to last offset: %w\n", err)
 		}
 	}

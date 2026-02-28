@@ -47,7 +47,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSSend)
 	}
 
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon (%s)...\n", global.ProgVersion)
+	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
 
 	// Setup destination network "connection"
 	if daemon.cfg.DestinationIP == "" {
@@ -230,8 +230,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		return
 	}
 
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-		"Startup complete (%s). Sending messages to %s:%d\n", global.ProgVersion, daemon.cfg.DestinationIP, daemon.cfg.DestinationPort)
+	logctx.LogStdInfo(daemon.ctx, "Startup complete (%s). Sending messages to %s:%d\n",
+		global.ProgVersion, daemon.cfg.DestinationIP, daemon.cfg.DestinationPort)
 	return
 }
 
@@ -252,16 +252,14 @@ func (daemon *Daemon) Run() {
 
 // Gracefully shutdown pipeline worker threads
 func (daemon *Daemon) Shutdown() {
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-		"Daemon shutdown started (%s)...\n", global.ProgVersion)
+	logctx.LogStdInfo(daemon.ctx, "Daemon shutdown started (%s)...\n", global.ProgVersion)
 
 	// Stop metric server
 	if daemon.cfg.MetricQueryServerEnabled {
 		if daemon.MetricServer != nil {
 			err := daemon.MetricServer.Shutdown(daemon.ctx)
 			if err != nil && err != http.ErrServerClosed {
-				logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-					"metric HTTP server did not shutdown gracefully: %w\n", err)
+				logctx.LogStdWarn(daemon.ctx, "metric HTTP server did not shutdown gracefully: %w\n", err)
 			}
 		}
 	}
@@ -271,8 +269,7 @@ func (daemon *Daemon) Shutdown() {
 		for filename := range daemon.Mgrs.In.FileSources {
 			err := daemon.Mgrs.In.RemoveFileInstance(filename)
 			if err != nil {
-				logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-					"ingest worker shutdown failed: %w\n", err)
+				logctx.LogStdWarn(daemon.ctx, "ingest worker shutdown failed: %w\n", err)
 			}
 		}
 		if daemon.Mgrs.In.JournalSource != nil {
@@ -285,8 +282,7 @@ func (daemon *Daemon) Shutdown() {
 		queue := daemon.Mgrs.Assem.InQueue.ActiveWrite.Load()
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
-			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-				"assembler inbox queue did not empty in time: dropped %d messages\n", last)
+			logctx.LogStdWarn(daemon.ctx, "assembler inbox queue did not empty in time: dropped %d messages\n", last)
 		}
 		for instanceID := range daemon.Mgrs.Assem.Instances {
 			daemon.Mgrs.Assem.RemoveInstance(instanceID)
@@ -298,8 +294,7 @@ func (daemon *Daemon) Shutdown() {
 		queue := daemon.Mgrs.Out.InQueue.ActiveWrite.Load()
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
-			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-				"output inbox queue did not empty in time: dropped %d messages\n", last)
+			logctx.LogStdWarn(daemon.ctx, "output inbox queue did not empty in time: dropped %d messages\n", last)
 		}
 		for instanceID := range daemon.Mgrs.Out.Instances {
 			daemon.Mgrs.Out.RemoveInstance(instanceID)
@@ -318,11 +313,9 @@ func (daemon *Daemon) Shutdown() {
 
 	select {
 	case <-done:
-		logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-			"Daemon shutdown completed successfully\n")
+		logctx.LogStdInfo(daemon.ctx, "Daemon shutdown completed successfully\n")
 	case <-time.After(global.ReceiveShutdownTimeout):
-		logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-			"Timeout: send daemon did not shutdown within %v seconds",
+		logctx.LogStdWarn(daemon.ctx, "Timeout: send daemon did not shutdown within %v seconds",
 			global.ReceiveShutdownTimeout.Seconds())
 		return
 	}

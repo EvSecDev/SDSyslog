@@ -123,14 +123,16 @@ func (manager *InstanceManager) removeInstance(instanceID string) {
 	instancePair.Shard.InShutdown.Store(true)
 	success, last := atomics.WaitUntilZero(&instancePair.Shard.Metrics.TotalBuckets, 15*time.Second) // Wait for buckets to fill or timeout
 	if !success {
-		logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.WarnLog,
-			"assembler id %s: shard total buckets did not empty in time: dropped %d messages\n", instanceID, last)
+		logctx.LogStdWarn(manager.ctx,
+			"assembler id %s: shard total buckets did not empty in time: dropped %d messages\n",
+			instanceID, last)
 	}
 
 	success, last = atomics.WaitUntilZero(&instancePair.Shard.Metrics.WaitingBuckets, 15*time.Second) // Wait for assembler to pull last bucket
 	if !success {
-		logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.WarnLog,
-			"assembler id %s: shard waiting buckets queue did not empty in time: dropped %d messages\n", instanceID, last)
+		logctx.LogStdWarn(manager.ctx,
+			"assembler id %s: shard waiting buckets queue did not empty in time: dropped %d messages\n",
+			instanceID, last)
 	}
 
 	if instancePair.cancel != nil {

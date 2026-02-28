@@ -23,7 +23,7 @@ func BenchmarkLogEvent_SingleProducer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "benchmark message %d", i)
+		LogStdInfo(ctx, "benchmark message %d", i)
 	}
 }
 
@@ -51,7 +51,7 @@ func BenchmarkLogEvent_MultiProducer(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		localCount := 0
 		for pb.Next() {
-			LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "parallel benchmark message")
+			LogStdInfo(ctx, "parallel benchmark message")
 			localCount++
 
 			if localCount%256 == 0 {

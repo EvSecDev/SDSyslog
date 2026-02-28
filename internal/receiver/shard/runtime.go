@@ -27,7 +27,7 @@ func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
 			defer func() {
 				if fatalError := recover(); fatalError != nil {
 					stack := debug.Stack()
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"panic in shard watcher thread: %v\n%s", fatalError, stack)
 				}
 			}()
@@ -49,7 +49,7 @@ func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
 
 				if time.Since(bucket.lastProcessStartTime) > packetDeadline {
 					// If the bucket has timed out, process it
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "Bucket %s timed out\n", bucketKey)
+					logctx.LogStdWarn(ctx, "Bucket %s timed out\n", bucketKey)
 
 					// Process the bucket
 					bucket.filled = true

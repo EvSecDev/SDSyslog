@@ -73,14 +73,14 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 	if scaleUp {
 		_, err := inMgr.AddInstance()
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed to scale up listener instances: %w\n", err)
+			logctx.LogStdErr(ctx, "Failed to scale up listener instances: %w\n", err)
 			return
 		}
 		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up listener\n")
 	} else if scaleDown {
 		instanceId, err := random.NumberInRange(0, instanceCount-1)
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed to generate random instance ID in instance map: %w\n", err)
+			logctx.LogStdErr(ctx, "Failed to generate random instance ID in instance map: %w\n", err)
 			return
 		}
 		inMgr.RemoveInstance(instanceId)

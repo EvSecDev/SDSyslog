@@ -99,19 +99,19 @@ func Start(ctx context.Context, server *http.Server) {
 	// Reuse existing port in case we are starting under a parent process (updating)
 	conn, err := network.ReuseTCPPort(server.Addr)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"Metric query server failed to bind: %w\n", err)
 		return
 	}
 
-	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Starting metric query server at http://%s/\n",
+	logctx.LogStdInfo(ctx, "Starting metric query server at http://%s/\n",
 		server.Addr,
 		server.Addr,
 	)
 
 	err = server.Serve(conn)
 	if err != nil && err != http.ErrServerClosed {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Metric query server failed to start: %w\n", err)
+		logctx.LogStdErr(ctx, "Metric query server failed to start: %w\n", err)
 	}
 }
 
@@ -120,7 +120,7 @@ func jResp(ctx context.Context, serverResponder http.ResponseWriter, content any
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(content); err != nil {
 		serverResponder.WriteHeader(http.StatusInternalServerError)
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed marshaling metric results: %w\n", err)
+		logctx.LogStdErr(ctx, "Failed marshaling metric results: %w\n", err)
 		return
 	}
 	serverResponder.Header().Set("Content-Type", "application/json")

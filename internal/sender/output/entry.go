@@ -34,7 +34,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			defer func() {
 				if fatalError := recover(); fatalError != nil {
 					stack := debug.Stack()
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"panic in output worker thread: %v\n%s", fatalError, stack)
 				}
 			}()
@@ -48,7 +48,7 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			_, err := instance.conn.Write(frag)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"Failed to send fragment: %w\n", err)
 				return
 			}

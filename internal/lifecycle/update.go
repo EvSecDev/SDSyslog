@@ -71,7 +71,7 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 		err = fmt.Errorf("failed to start new process: %w", err)
 		return
 	}
-	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
+	logctx.LogStdInfo(ctx,
 		"Started temporary child process with PID %d\n", cmd.Process.Pid)
 
 	// Wait for child to successfully start
@@ -81,7 +81,7 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 		return
 	}
 
-	logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog, "Temporary Child Process is ready, proceeding with update\n")
+	logctx.LogStdInfo(ctx, "Temporary Child Process is ready, proceeding with update\n")
 	childProc = cmd
 	return
 }
@@ -116,7 +116,7 @@ func TempChildActions(ctx context.Context, daemonManager DaemonLike) {
 	// Start the receiver to get fragments from the shutting down main process
 	err := daemonManager.StartFIPR()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+		logctx.LogStdWarn(ctx,
 			"failed to start inter-process fragment temporary receiver (multi-packet messages might be missing fragments): %w\n", err)
 	}
 
@@ -135,7 +135,7 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 	// Need to restart FIPR receiver for receiving fragments from child process
 	err := daemonManager.StartFIPR()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+		logctx.LogStdWarn(ctx,
 			"failed to start inter-process fragment receiver (multi-packet messages might be missing fragments): %w\n", err)
 	}
 	// Shutdown FIPR when done - not needed when another process is not running
@@ -144,13 +144,13 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 	// Cleanup update variable
 	err = os.Unsetenv(EnvNameSelfUpdate)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+		logctx.LogStdWarn(ctx,
 			"failed to unset environment variable %s (future updates may use wrong PID): %w\n", EnvNameSelfUpdate, err)
 	}
 
 	pid, err := strconv.Atoi(childPID)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"failed to convert child PID '%s' to integer (child process still running): %w\n", childPID, err)
 		return
 	}
@@ -158,7 +158,7 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 	// Graceful shutdown of child
 	err = syscallKill(pid, syscall.SIGTERM)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"failed to issue SIGTERM to child PID %d to integer (child process still running): %w\n", pid, err)
 		return
 	}
@@ -172,26 +172,26 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 		// Try to reap child (non-blocking)
 		wpid, err := syscallWait4(pid, &status, syscall.WNOHANG, nil)
 		if wpid == pid {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
+			logctx.LogStdInfo(ctx,
 				"Child PID %d exited and was reaped (status=%v)\n", pid, status)
 			return
 		}
 
 		if errors.Is(err, syscall.ECHILD) {
 			// Already reaped or not our child anymore
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
+			logctx.LogStdInfo(ctx,
 				"Child PID %d already reaped or no longer a child\n", pid)
 			return
 		}
 
 		if time.Now().After(deadline) {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+			logctx.LogStdWarn(ctx,
 				"Child PID %d did not exit gracefully, forcing shutdown\n", pid)
 
 			// Force kill
 			err = syscallKill(pid, syscall.SIGKILL)
 			if err != nil && err != syscall.ESRCH {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"failed to issue SIGKILL to child PID %d (child process might be still running): %w\n", pid, err)
 				return
 			}
@@ -200,17 +200,17 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 			for {
 				wpid, err := syscallWait4(pid, &status, 0, nil)
 				if wpid == pid {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+					logctx.LogStdWarn(ctx,
 						"Child PID %d killed and reaped (status=%v)\n", pid, status)
 					return
 				}
 				if err != nil && err != syscall.ECHILD {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"failed to wait for child PID %d (child process might be a zombie): %w\n", pid, err)
 					return
 				}
 				if err == syscall.ECHILD {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
+					logctx.LogStdInfo(ctx,
 						"Child PID %d force killed and was cleaned up by something else\n", pid)
 					break
 				}
@@ -228,13 +228,13 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 func terminateChildProcess(ctx context.Context, cmd *exec.Cmd) {
 	killErr := cmdProcSignal(cmd, syscall.Signal(0))
 	if killErr == nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+		logctx.LogStdWarn(ctx,
 			"Found child PID %d still alive despite not sending readiness signal\n", cmd.Process.Pid)
 
 		// Attempt graceful shutdown
 		lerr := cmdProcSignal(cmd, syscall.SIGTERM)
 		if lerr != nil {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+			logctx.LogStdWarn(ctx,
 				"Failed to send graceful shutdown signal to child PID %d: %w\n", cmd.Process.Pid, lerr)
 		}
 
@@ -245,17 +245,17 @@ func terminateChildProcess(ctx context.Context, cmd *exec.Cmd) {
 
 		select {
 		case <-time.After(10 * time.Second):
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+			logctx.LogStdWarn(ctx,
 				"Child PID %d did not exit gracefully, forcing shutdown\n", cmd.Process.Pid)
 
 			lerr := cmdProcKill(cmd)
 			if lerr != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+				logctx.LogStdWarn(ctx,
 					"Failed to force shutdown for child PID %d: %w\n", cmd.Process.Pid, lerr)
 			}
 			<-done
 		case <-done:
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
+			logctx.LogStdInfo(ctx,
 				"Child PID %d exited gracefully\n", cmd.Process.Pid)
 		}
 	}

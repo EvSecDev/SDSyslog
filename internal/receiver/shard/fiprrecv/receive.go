@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"runtime/debug"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/shard"
 	"sdsyslog/pkg/fipr"
@@ -27,7 +26,7 @@ func (instance *Instance) Run(ctx context.Context) {
 		conn, err := instance.listener.Accept()
 		if err != nil {
 			if !errors.Is(err, net.ErrClosed) {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"failed accepting connection: %w\n", err)
 			}
 			continue
@@ -45,7 +44,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 		// Record panics and continue listening
 		if fatalError := recover(); fatalError != nil {
 			stack := debug.Stack()
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"panic in shard inter-process fragment instance receiver thread: %v\n%s", fatalError, stack)
 			return
 		}
@@ -53,28 +52,28 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 
 	session, err := fipr.New(conn, instance.hmacSecret)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"session creation failed: %w\n", err)
 		return
 	}
 
 	err = session.WaitStart()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"failed handshake with new client: %w\n", err)
 		return
 	}
 
 	err = session.WaitOnBehalfOf()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"error waiting for original sender address: %w\n", err)
 		return
 	}
 
 	err = session.WaitShardCheck()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"error waiting for shard check: %w\n", err)
 		return
 	}
@@ -91,7 +90,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 	}
 	err = session.SendShardStatus(running, draining)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"error sending shard status: %w\n", err)
 		return
 	}
@@ -102,7 +101,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 
 	err = session.WaitMessageCheck()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"error waiting for message check: %w\n", err)
 		return
 	}
@@ -110,7 +109,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 	exists := instance.localRoutingView.BucketExistsAnywhere(session.MessageID())
 	err = session.SendMessageStatus(exists)
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"error preparing message status: %w\n", err)
 		return
 	}
@@ -121,7 +120,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 			// Client decided not to route and closed connection - no error
 			return
 		}
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"error waiting for fragment: %w\n", err)
 		return
 	}
@@ -133,10 +132,10 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 
 		lerr := session.SendReject()
 		if lerr != nil && lerr != fipr.ErrSessionClosed {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"failed encoding reject response frame: %w (original error: %w)\n", lerr, err)
 		} else {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%w\n", err)
+			logctx.LogStdErr(ctx, "%w\n", err)
 		}
 
 		instance.Metrics.RejectedFragments.Add(1)
@@ -148,10 +147,10 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 
 		lerr := session.SendReject()
 		if lerr != nil && lerr != fipr.ErrSessionClosed {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"failed encoding reject response frame: %w (original error: %w)\n", lerr, err)
 		} else {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%w\n", err)
+			logctx.LogStdErr(ctx, "%w\n", err)
 		}
 
 		instance.Metrics.RejectedFragments.Add(1)
@@ -165,10 +164,10 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 
 		lerr := session.SendReject()
 		if lerr != nil && lerr != fipr.ErrSessionClosed {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"failed to send rejection: %w (original error: %w)\n", lerr, err)
 		} else {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "%w\n", err)
+			logctx.LogStdErr(ctx, "%w\n", err)
 		}
 
 		instance.Metrics.RejectedFragments.Add(1)
@@ -177,7 +176,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 
 	err = session.SendAccept()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+		logctx.LogStdErr(ctx,
 			"error sending accept message: %w\n", err)
 	}
 

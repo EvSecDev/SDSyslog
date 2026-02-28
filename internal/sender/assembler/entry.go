@@ -36,7 +36,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			defer func() {
 				if fatalError := recover(); fatalError != nil {
 					stack := debug.Stack()
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"panic in assembler worker thread: %v\n%s", fatalError, stack)
 				}
 			}()
@@ -73,7 +73,7 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			packets, err := protocol.Create(newMsg, instance.hostID, instance.maxPayloadSize)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed serialization: %w", err)
+				logctx.LogStdErr(ctx, "failed serialization: %w", err)
 				return
 			}
 
@@ -89,7 +89,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			for _, packet := range packets {
 				success := instance.outbox.Push(packet)
 				if !success {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"Sender queue full, fragment dropped\n")
 					continue
 				}

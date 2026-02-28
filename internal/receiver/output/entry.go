@@ -66,13 +66,13 @@ func (instance *Instance) Run(ctx context.Context) {
 				defer func() {
 					if fatalError := recover(); fatalError != nil {
 						stack := debug.Stack()
-						logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+						logctx.LogStdErr(ctx,
 							"panic in file output worker thread: %v\n%s", fatalError, stack)
 					}
 				}()
 
 				if !ok {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+					logctx.LogStdWarn(ctx,
 						"failed to retrieve waiting log message from assembler to output queue\n")
 					return
 				}
@@ -81,21 +81,21 @@ func (instance *Instance) Run(ctx context.Context) {
 				// Write message to all outputs
 				n, err := instance.FileMod.Write(ctx, msg)
 				if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to file output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulFileWrites.Add(uint64(n))
 
 				n, err = instance.JrnlMod.Write(ctx, msg)
 				if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to journald output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulJrnlWrites.Add(uint64(n))
 
 				n, err = instance.BeatsMod.Write(ctx, msg)
 				if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to beats output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulBeatsWrites.Add(uint64(n))

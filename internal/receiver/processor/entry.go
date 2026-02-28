@@ -39,7 +39,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			defer func() {
 				if fatalError := recover(); fatalError != nil {
 					stack := debug.Stack()
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"panic in processor worker thread: %v\n%s", fatalError, stack)
 				}
 			}()
@@ -58,19 +58,19 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			innerPayload, err := protocol.DeconstructOuterPayload(data)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed outer payload deconstruction: %s\n", err.Error())
+				logctx.LogStdErr(ctx, "failed outer payload deconstruction: %s\n", err.Error())
 				return
 			}
 
 			payload, err := protocol.DeconstructInnerPayload(innerPayload)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "failed inner payload deconstruction: %s\n", err.Error())
+				logctx.LogStdErr(ctx, "failed inner payload deconstruction: %s\n", err.Error())
 				return
 			}
 
 			msg, err := protocol.ParsePayload(payload)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "invalid payload: %s\n", err.Error())
+				logctx.LogStdErr(ctx, "invalid payload: %s\n", err.Error())
 				return
 			}
 

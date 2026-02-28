@@ -103,8 +103,9 @@ func (instance *Instance) Stop() {
 	// Cleanup socket file
 	err := os.Remove(instance.socketPath)
 	if err != nil && !os.IsNotExist(err) {
-		logctx.LogEvent(instance.ctx, global.VerbosityStandard, global.WarnLog,
-			"Fragment Inter-Process Router socket file %s: removal failed, this could cause slow downs in future packet processing: %w\n", instance.socketPath, err)
+		logctx.LogStdWarn(instance.ctx,
+			"Fragment Inter-Process Router socket file %s: removal failed, this could cause slow downs in future packet processing: %w\n",
+			instance.socketPath, err)
 	}
 
 	instance.wg.Wait()

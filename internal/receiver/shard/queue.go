@@ -108,7 +108,7 @@ func (queue *Instance) PopKey(ctx context.Context) (key string, ok bool) {
 			success := atomics.Subtract(&queue.Metrics.WaitingBuckets, 1, 1) // max retries set low due to single consumer (assembler itself)
 			queue.Mu.Unlock()
 			if !success {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+				logctx.LogStdWarn(ctx,
 					"failed to decrement waiting bucket metric after successful bucket key retrieval\n")
 			}
 			return
@@ -143,7 +143,7 @@ func (queue *Instance) DrainBucket(ctx context.Context, key string) (bucket *Buc
 	// Decrement bucket count
 	success := atomics.Subtract(&queue.Metrics.TotalBuckets, 1, 1) // max retries set low due to single consumer (assembler itself)
 	if !success {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+		logctx.LogStdWarn(ctx,
 			"failed to decrement total bucket metric after successful bucket deletion\n")
 	}
 	return

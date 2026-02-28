@@ -62,7 +62,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	defer func() {
 		if fatalError := recover(); fatalError != nil {
 			stack := debug.Stack()
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"panic in receiver metric collector thread: %v\n%s", fatalError, stack)
 		}
 	}()

@@ -4,9 +4,25 @@ package logctx
 import (
 	"context"
 	"fmt"
+	"sdsyslog/internal/global"
 	"sort"
 	"strings"
 )
+
+// Wrapper - log event as Standard verbosity and Info severity
+func LogStdInfo(ctx context.Context, message string, vars ...any) {
+	LogEvent(ctx, global.VerbosityStandard, global.InfoLog, message, vars...)
+}
+
+// Wrapper - log event as Standard verbosity and Warning severity
+func LogStdWarn(ctx context.Context, message string, vars ...any) {
+	LogEvent(ctx, global.VerbosityStandard, global.WarnLog, message, vars...)
+}
+
+// Wrapper - log event as Standard verbosity and Error severity
+func LogStdErr(ctx context.Context, message string, vars ...any) {
+	LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, message, vars...)
+}
 
 // Entry for logging events.
 // If event level is above the current set logger level, message will not be recorded.

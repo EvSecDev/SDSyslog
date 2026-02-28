@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"os/exec"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"syscall"
 )
@@ -35,12 +34,12 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 			return
 		case sig = <-sigChan:
 		}
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
+		logctx.LogStdInfo(ctx,
 			"Received signal: %v\n", sig)
 
 		recvSignal, ok := sig.(syscall.Signal)
 		if !ok {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+			logctx.LogStdErr(ctx,
 				"Failed to type assert received signal: %v\n", sig)
 			continue
 		}
@@ -48,7 +47,7 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 		// Reload (Update) signal
 		var childProc *exec.Cmd
 		if recvSignal == syscall.SIGHUP {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
+			logctx.LogStdInfo(ctx,
 				"Beginning reload...\n")
 
 			err := NotifyReload(ctx)
@@ -84,16 +83,15 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 				// Cleanup update variable
 				lerr := os.Unsetenv(EnvNameSelfUpdate)
 				if lerr != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-						"failed to unset environment variable %s (future updates may use wrong PID): %w\n", EnvNameSelfUpdate, lerr)
+					logctx.LogStdWarn(ctx, "failed to unset environment variable %s (future updates may use wrong PID): %w\n", EnvNameSelfUpdate, lerr)
 				}
 
 				// Start daemon back up
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.InfoLog,
+				logctx.LogStdInfo(ctx,
 					"Restarting daemon after self update failure\n")
 				lerr = daemonManager.Start(ctx, []byte{}) // No private key since it was already initialized
 				if lerr != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"Failed to restart daemon after update failure: %w (original error: %w)\n", lerr, err)
 					// Restart failed is fatal at this point, die.
 					return

@@ -19,7 +19,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 	const refreshMask = 1024 - 1
 	localHostname, err := os.Hostname()
 	if err != nil {
-		logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to retrieve current local hostname: %w\n", err)
+		logctx.LogStdWarn(ctx, "failed to retrieve current local hostname: %w\n", err)
 		localHostname = "-"
 		err = nil
 	}
@@ -30,7 +30,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 		case <-ctx.Done():
 			err := savePosition(readPosition, mod.stateFile)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"failed to save position in journal source: %w\n", err)
 			}
 			return
@@ -42,7 +42,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			defer func() {
 				if fatalError := recover(); fatalError != nil {
 					stack := debug.Stack()
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+					logctx.LogStdErr(ctx,
 						"panic in journal reader worker thread: %v\n%s", fatalError, stack)
 				}
 			}()
@@ -56,7 +56,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 					// Shutdown
 					return
 				}
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"error reading journal output: %w\n", err)
 				return
 			}
@@ -68,7 +68,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			var fieldPresent bool
 			readPosition, fieldPresent = fields["__CURSOR"]
 			if !fieldPresent {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"failed cursor extraction\n")
 			}
 
@@ -78,7 +78,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 				if err == io.EOF {
 					return
 				}
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"field parse error: %w\n", err)
 				return
 			}
@@ -96,7 +96,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 				if err == nil && newName != localHostname {
 					localHostname = newName
 				} else if err != nil {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "failed to refresh current local hostname: %w\n", err)
+					logctx.LogStdWarn(ctx, "failed to refresh current local hostname: %w\n", err)
 				}
 			}
 		}()

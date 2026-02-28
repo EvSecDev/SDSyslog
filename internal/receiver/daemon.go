@@ -48,7 +48,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSRecv)
 	}
 
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog, "Starting new daemon (%s)...\n", global.ProgVersion)
+	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
 
 	// Pre-startup
 	syslog.InitBidiMaps()
@@ -221,8 +221,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		return
 	}
 
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-		"Startup complete (%s). Listening for messages on %s:%d\n", global.ProgVersion, daemon.cfg.ListenIP, daemon.cfg.ListenPort)
+	logctx.LogStdInfo(daemon.ctx, "Startup complete (%s). Listening for messages on %s:%d\n",
+		global.ProgVersion, daemon.cfg.ListenIP, daemon.cfg.ListenPort)
 	return
 }
 
@@ -264,15 +264,13 @@ func (daemon *Daemon) Run() {
 
 // Gracefully shutdown pipeline worker threads (errors are printed to program log buffer)
 func (daemon *Daemon) Shutdown() {
-	logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-		"Daemon shutdown started (%s)...\n", global.ProgVersion)
+	logctx.LogStdInfo(daemon.ctx, "Daemon shutdown started (%s)...\n", global.ProgVersion)
 
 	// Stop metric server
 	if daemon.cfg.MetricQueryServerEnabled {
 		err := daemon.MetricServer.Shutdown(daemon.ctx)
 		if err != nil && err != http.ErrServerClosed {
-			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-				"metric HTTP server did not shutdown gracefully: %w\n", err)
+			logctx.LogStdWarn(daemon.ctx, "metric HTTP server did not shutdown gracefully: %w\n", err)
 		}
 	}
 
@@ -288,8 +286,7 @@ func (daemon *Daemon) Shutdown() {
 		queue := daemon.Mgrs.Proc.Inbox.ActiveWrite.Load()
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
-			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-				"assembler inbox queue did not empty in time: dropped %d messages\n", last)
+			logctx.LogStdWarn(daemon.ctx, "assembler inbox queue did not empty in time: dropped %d messages\n", last)
 		}
 		for instanceID := range daemon.Mgrs.Proc.Instances {
 			daemon.Mgrs.Proc.RemoveInstance(instanceID)
@@ -316,8 +313,7 @@ func (daemon *Daemon) Shutdown() {
 		// Wait here before shutting down (active write always has newest data)
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
-			logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-				"output inbox queue did not empty in time: dropped %d messages\n", last)
+			logctx.LogStdWarn(daemon.ctx, "output inbox queue did not empty in time: dropped %d messages\n", last)
 		}
 		daemon.Mgrs.Output.RemoveInstance()
 	}
@@ -334,11 +330,9 @@ func (daemon *Daemon) Shutdown() {
 
 	select {
 	case <-done:
-		logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.InfoLog,
-			"Daemon shutdown completed successfully\n")
+		logctx.LogStdInfo(daemon.ctx, "Daemon shutdown completed successfully\n")
 	case <-time.After(global.ReceiveShutdownTimeout):
-		logctx.LogEvent(daemon.ctx, global.VerbosityStandard, global.WarnLog,
-			"Timeout: receive daemon did not shutdown within %v seconds",
+		logctx.LogStdWarn(daemon.ctx, "Timeout: receive daemon did not shutdown within %v seconds",
 			global.ReceiveShutdownTimeout.Seconds())
 		return
 	}

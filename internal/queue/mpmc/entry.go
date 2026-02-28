@@ -176,7 +176,7 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 				queue.Metrics.PopSuccess.Add(1)
 				ok := atomics.Subtract(&queue.Metrics.Depth, 1, 4) // max retries set at 4
 				if !ok {
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+					logctx.LogStdWarn(ctx,
 						"failed to decrement queue depth metric after successful pop\n")
 				}
 

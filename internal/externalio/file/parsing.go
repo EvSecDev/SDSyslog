@@ -255,7 +255,7 @@ func formatAsText(ctx context.Context, msg protocol.Payload) (text string, err e
 		// Other fields get added to suffix
 		fmtVal := protocol.FormatValue(value)
 		if fmtVal == "" {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog, "invalid custom field '%s': invalid type", key)
+			logctx.LogStdWarn(ctx, "invalid custom field '%s': invalid type", key)
 			continue
 		}
 

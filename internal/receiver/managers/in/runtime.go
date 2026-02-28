@@ -62,20 +62,20 @@ func (manager *InstanceManager) RemoveInstance(id int) {
 			// Mark draining (if supported)
 			cookie, err := ebpf.GetSocketCookie(ingestInstance.conn)
 			if err != nil {
-				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(manager.ctx,
 					"Listener %d: failed to get cookie for socket: %w\n", id, err)
 			}
 
 			err = ebpf.MarkSocketDraining(ebpf.KernelDrainMapPath, cookie)
 			if err != nil {
-				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(manager.ctx,
 					"Listener %d: failed to set socket as draining: %w\n", id, err)
 			}
 
 			// Wait for drain
 			dataLeft, err = network.WaitUntilEmptySocket(ingestInstance.conn)
 			if err != nil {
-				logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(manager.ctx,
 					"Listener %d: failed to check current socket buffer size: %w\n", id, err)
 			}
 		}
@@ -89,7 +89,7 @@ func (manager *InstanceManager) RemoveInstance(id int) {
 		}
 
 		if dataLeft > 0 {
-			logctx.LogEvent(manager.ctx, global.VerbosityStandard, global.WarnLog,
+			logctx.LogStdWarn(manager.ctx,
 				"Listener %d: Socket was closed with %d bytes left in the buffer\n", id, dataLeft)
 		}
 

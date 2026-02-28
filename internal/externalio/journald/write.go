@@ -31,7 +31,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 
 		text := protocol.FormatValue(value)
 		if text == "" {
-			logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
+			logctx.LogStdWarn(ctx,
 				"invalid field type for key '%s'\n", key)
 		} else {
 			fields[key] = text

@@ -40,7 +40,7 @@ func (instance *Instance) Run(ctx context.Context) {
 				// Record panics and continue listening
 				if fatalError := recover(); fatalError != nil {
 					stack := debug.Stack()
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "panic in listener worker thread: %v\n%s", fatalError, stack)
+					logctx.LogStdErr(ctx, "panic in listener worker thread: %v\n%s", fatalError, stack)
 				}
 			}()
 
@@ -59,7 +59,7 @@ func (instance *Instance) Run(ctx context.Context) {
 				}
 
 				// Otherwise, regular error
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, "Failed reading data from socket: %w\n", err)
+				logctx.LogStdErr(ctx, "Failed reading data from socket: %w\n", err)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
 				return
 			}

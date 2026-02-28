@@ -36,8 +36,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			defer func() {
 				if fatalError := recover(); fatalError != nil {
 					stack := debug.Stack()
-					logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-						"panic in assembler worker thread: %v\n%s", fatalError, stack)
+					logctx.LogStdErr(ctx, "panic in assembler worker thread: %v\n%s", fatalError, stack)
 				}
 			}()
 
@@ -48,8 +47,7 @@ func (instance *Instance) Run(ctx context.Context) {
 					return
 				}
 
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.WarnLog,
-					"failed to retrieve waiting bucket from shard-to-assembler queue\n")
+				logctx.LogStdWarn(ctx, "failed to retrieve waiting bucket from shard-to-assembler queue\n")
 				return
 			}
 
@@ -66,8 +64,7 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			finalMsg, err := protocol.Defragment(fragSlice)
 			if err != nil {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
-					"Failed assembler: %w\n", err)
+				logctx.LogStdErr(ctx, "Failed assembler: %w\n", err)
 				return
 			}
 
@@ -102,7 +99,7 @@ func (instance *Instance) Run(ctx context.Context) {
 				time.Sleep(retryWait)
 			}
 			if !success {
-				logctx.LogEvent(ctx, global.VerbosityStandard, global.ErrorLog,
+				logctx.LogStdErr(ctx,
 					"Failed to push message to output queue: host id %d, message id %d, hostname %s\n",
 					finalMsg.HostID, finalMsg.MsgID, finalMsg.Hostname)
 				return

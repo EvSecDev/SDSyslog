@@ -126,4 +126,14 @@ func (cfg *Config) setDefaults() {
 	if cfg.MetricCollectionInterval == 0 {
 		cfg.MetricCollectionInterval = time.Duration(15 * time.Second)
 	}
+
+	// Scaler
+	if cfg.AutoscaleCheckInterval < 1*time.Second {
+		// Protect routing algorithm from multi-step scaling within packet deadline
+		cfg.AutoscaleCheckInterval = 2 * global.DefaultMaxPacketDeadline
+	}
+	if cfg.AutoscaleCheckInterval > 1*time.Minute {
+		// Longer times are not useful
+		cfg.AutoscaleCheckInterval = 1 * time.Minute
+	}
 }

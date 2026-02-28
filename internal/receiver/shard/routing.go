@@ -2,10 +2,11 @@ package shard
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
-	"hash/fnv"
 	"os"
 	"path/filepath"
+	"sdsyslog/internal/crypto/hash"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/shard/fiprsend"
@@ -121,11 +122,8 @@ retryRoute:
 func hrwSelect(key string, candidates []string) (selected string) {
 	var maxScore uint64
 	for i, id := range candidates {
-		h := fnv.New64a()
-		h.Write([]byte(key))
-		h.Write([]byte(id))
-
-		score := h.Sum64()
+		sum := hash.SHA256([]byte(key + id))
+		score := binary.BigEndian.Uint64(sum[:8])
 
 		if i == 0 || score > maxScore {
 			maxScore = score

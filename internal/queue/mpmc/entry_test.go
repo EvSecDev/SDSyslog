@@ -3,6 +3,7 @@ package mpmc
 import (
 	"context"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"testing"
 	"time"
 )
@@ -63,7 +64,7 @@ func TestQueue_PushPopScenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := New[int]([]string{global.NSTest}, tt.capacity, 2, global.DefaultMaxQueueSize)
+			q, err := New[int]([]string{logctx.NSTest}, tt.capacity, 2, global.DefaultMaxQueueSize)
 			if err != nil {
 				t.Fatalf("expected no error in creating queue, but got '%v'", err)
 			}
@@ -98,7 +99,7 @@ func TestNewQueue_InvalidCapacity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := New[int]([]string{global.NSTest}, tt.capacity, 2, global.DefaultMaxQueueSize)
+			_, err := New[int]([]string{logctx.NSTest}, tt.capacity, 2, global.DefaultMaxQueueSize)
 			if err == nil {
 				t.Fatalf("expected error in creating queue, but got nil")
 			}
@@ -120,7 +121,7 @@ func TestPushFailures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := New[int]([]string{global.NSTest}, tt.capacity, 2, global.DefaultMaxQueueSize)
+			q, err := New[int]([]string{logctx.NSTest}, tt.capacity, 2, global.DefaultMaxQueueSize)
 			if err != nil {
 				t.Fatalf("expected no error in creating queue, but got '%v'", err)
 			}
@@ -146,7 +147,7 @@ func TestPushFailures(t *testing.T) {
 }
 
 func TestNotEmptyChannel(t *testing.T) {
-	queue, err := New[int]([]string{global.NSTest}, 8, 2, global.DefaultMaxQueueSize)
+	queue, err := New[int]([]string{logctx.NSTest}, 8, 2, global.DefaultMaxQueueSize)
 	if err != nil {
 		t.Fatalf("expected no error in creating queue, but got '%v'", err)
 	}
@@ -172,7 +173,7 @@ func TestNotEmptyChannel(t *testing.T) {
 }
 
 func TestQueueThroughput(t *testing.T) {
-	queue, err := New[int]([]string{global.NSTest}, 16777216, 2, global.DefaultMaxQueueSize)
+	queue, err := New[int]([]string{logctx.NSTest}, 16777216, 2, global.DefaultMaxQueueSize)
 	if err != nil {
 		t.Fatalf("expected no error in creating queue, but got '%v'", err)
 	}

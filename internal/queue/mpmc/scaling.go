@@ -2,7 +2,6 @@ package mpmc
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 
 	"github.com/pbnjay/memory"
@@ -54,7 +53,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 				"Failed to scale queue capacity: %w\n", err)
 			return
 		}
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog,
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog,
 			"Scaled up queue from %d to %d capacity\n", currentCapacity, nextPowerOfTwo(currentCapacity))
 	} else if scaleDown {
 		newSize := uint64(prevPowerOfTwo(currentCapacity))
@@ -65,7 +64,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 				"Failed to scale queue capacity: %w\n", err)
 			return
 		}
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog,
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog,
 			"Scaled down queue from %d to %d capacity\n", currentCapacity, prevPowerOfTwo(currentCapacity))
 	}
 }

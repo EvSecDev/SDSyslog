@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"sdsyslog/internal/global"
 	"sync"
 	"testing"
 )
 
 func ctxWithTags(tags []string) context.Context {
-	return context.WithValue(context.Background(), global.LogTagsKey, tags)
+	return context.WithValue(context.Background(), LogTagsKey, tags)
 }
 
 func assertTags(t *testing.T, ctx context.Context, want []string) {
@@ -43,7 +42,7 @@ func TestGetTagList(t *testing.T) {
 		},
 		{
 			name: "wrong type stored",
-			ctx:  context.WithValue(context.Background(), global.LogTagsKey, "nope"),
+			ctx:  context.WithValue(context.Background(), LogTagsKey, "nope"),
 			want: []string{},
 		},
 	}

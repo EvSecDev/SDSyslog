@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"runtime"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sync/atomic"
 	"time"
@@ -75,7 +74,7 @@ func newQueueInst[T any](namespace []string, capacity uint64) (new *QueueInst[T]
 	}
 
 	new = &QueueInst[T]{
-		Namespace: append(namespace, global.NSQueue),
+		Namespace: append(namespace, logctx.NSQueue),
 		Size:      int(capacity),
 		mask:      atomic.Uint64{},
 		buf:       buf,

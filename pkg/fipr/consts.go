@@ -6,6 +6,10 @@ import (
 )
 
 const (
+	// Socket names like "proc_47243.sock"
+	SocketFileNamePrefix string = "proc_"
+	SocketFileNameSuffix string = ".sock"
+
 	HMACSize         int = lenFieldHMAC
 	lenFieldFrameLen int = 4
 	lenFieldSequence int = 2

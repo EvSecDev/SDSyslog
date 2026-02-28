@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
-	"sdsyslog/internal/global"
+	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/logctx"
 	"strings"
 	"syscall"
@@ -80,7 +80,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 
 				msg := parseLine(string(lineBuf), localHostname)
 
-				msg.Fields[global.IOCtxKey] = strings.Join(mod.Namespace, "/")
+				msg.Fields[externalio.CtxKey] = strings.Join(mod.Namespace, "/")
 
 				mod.outbox.PushBlocking(ctx, msg, msg.Size())
 				mod.metrics.Success.Add(1)

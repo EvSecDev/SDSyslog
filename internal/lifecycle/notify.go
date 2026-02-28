@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 
 	"golang.org/x/sys/unix"
@@ -85,6 +84,6 @@ func notify(ctx context.Context, msg string) (err error) {
 		return
 	}
 
-	logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Successfully notified systemd with message '%s'\n", msg)
+	logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Successfully notified systemd with message '%s'\n", msg)
 	return
 }

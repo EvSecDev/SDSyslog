@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"sdsyslog/internal/externalio/file"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 )
 
@@ -22,7 +21,7 @@ func (manager *InstanceManager) AddFileInstance(filePath string, stateFile strin
 		return
 	}
 
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, global.NSoFile)
+	manager.ctx = logctx.AppendCtxTag(manager.ctx, logctx.NSoFile)
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, filename)
 	defer func() {
 		manager.ctx = logctx.RemoveLastCtxTag(manager.ctx)
@@ -38,7 +37,7 @@ func (manager *InstanceManager) AddFileInstance(filePath string, stateFile strin
 
 	// Create new context
 	ingestCtx, cancelInstances := context.WithCancel(context.Background())
-	ingestCtx = context.WithValue(ingestCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
+	ingestCtx = context.WithValue(ingestCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 	manager.FileSources[filePath] = ingestInstance
 	ingestInstance.cancel = cancelInstances
 

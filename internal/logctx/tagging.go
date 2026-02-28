@@ -2,7 +2,6 @@ package logctx
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 )
 
 // Append new tag to tag list.
@@ -13,7 +12,7 @@ func AppendCtxTag(ctx context.Context, newTag string) (newCtx context.Context) {
 	// Copy old slice, prevents mutation by parent context
 	copiedTags := append(append([]string(nil), oldTags...), newTag)
 
-	newCtx = context.WithValue(ctx, global.LogTagsKey, copiedTags)
+	newCtx = context.WithValue(ctx, LogTagsKey, copiedTags)
 	return
 }
 
@@ -29,7 +28,7 @@ func RemoveLastCtxTag(ctx context.Context) (newCtx context.Context) {
 		copiedTags = copiedTags[:len(copiedTags)-1]
 	}
 
-	newCtx = context.WithValue(ctx, global.LogTagsKey, copiedTags)
+	newCtx = context.WithValue(ctx, LogTagsKey, copiedTags)
 	return
 }
 
@@ -39,13 +38,13 @@ func OverwriteCtxTag(ctx context.Context, newTags []string) (newCtx context.Cont
 	// Copy old slice, prevents mutation by parent context
 	copiedTags := append([]string(nil), newTags...)
 
-	newCtx = context.WithValue(ctx, global.LogTagsKey, copiedTags)
+	newCtx = context.WithValue(ctx, LogTagsKey, copiedTags)
 	return
 }
 
 // Extracts and copies tag list from context or returns empty array if no tags exist on context.
 func GetTagList(ctx context.Context) (tagListCopy []string) {
-	currentTags, validAssert := ctx.Value(global.LogTagsKey).([]string)
+	currentTags, validAssert := ctx.Value(LogTagsKey).([]string)
 	if !validAssert {
 		tagListCopy = []string{}
 		return

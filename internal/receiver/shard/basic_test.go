@@ -3,7 +3,7 @@ package shard
 import (
 	"context"
 	"sdsyslog/internal/crypto/random"
-	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
 	"strconv"
 	"sync"
@@ -71,7 +71,7 @@ func TestPushPop_Basic(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			queue := New([]string{global.NSTest}, 10, &mockDeadline)
+			queue := New([]string{logctx.NSTest}, 10, &mockDeadline)
 
 			// inject fragments
 			for _, frag := range tt.fragments {
@@ -119,7 +119,7 @@ func TestPushPop_Parallel(t *testing.T) {
 	var mockDeadline atomic.Int64
 	mockDeadline.Store(50 * int64(time.Millisecond))
 
-	queue := New([]string{global.NSTest}, 10, &mockDeadline)
+	queue := New([]string{logctx.NSTest}, 10, &mockDeadline)
 	ctx := context.Background()
 	numProducers := 3
 	fragsPerProducer := 5

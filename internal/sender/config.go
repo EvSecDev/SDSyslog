@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
 	"time"
 )
@@ -121,7 +122,7 @@ func (cfg *Config) setDefaults() {
 		cfg.MetricMaxAge = 1 * time.Hour
 	}
 	if cfg.MetricQueryServerPort == 0 {
-		cfg.MetricQueryServerPort = global.HTTPListenPortSender
+		cfg.MetricQueryServerPort = server.ListenPortSender
 	}
 	if cfg.MetricCollectionInterval == 0 {
 		cfg.MetricCollectionInterval = time.Duration(15 * time.Second)

@@ -1,4 +1,4 @@
-package global
+package cli
 
 type CommandSet struct {
 	CommandName     string                 // Exact name of cli command
@@ -7,5 +7,3 @@ type CommandSet struct {
 	FullDescription string                 // Long text displayed on current command
 	ChildCommands   map[string]*CommandSet // Available subcommands
 }
-
-type CtxKey string

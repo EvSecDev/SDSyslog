@@ -3,7 +3,6 @@ package logctx
 import (
 	"context"
 	"runtime"
-	"sdsyslog/internal/global"
 	"testing"
 )
 
@@ -11,7 +10,7 @@ func BenchmarkLogEvent_SingleProducer(b *testing.B) {
 	ctx := context.Background()
 	done := make(chan struct{})
 
-	ctx = New(ctx, global.NSTest, 5, done)
+	ctx = New(ctx, NSTest, 5, done)
 	logger := GetLogger(ctx)
 
 	if logger == nil {
@@ -34,7 +33,7 @@ func BenchmarkLogEvent_MultiProducer(b *testing.B) {
 	ctx := context.Background()
 	done := make(chan struct{})
 
-	ctx = New(ctx, global.NSTest, 5, done)
+	ctx = New(ctx, NSTest, 5, done)
 	logger := GetLogger(ctx)
 
 	if logger == nil {

@@ -4,7 +4,6 @@ package shard
 import (
 	"context"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
 	"sync/atomic"
@@ -14,7 +13,7 @@ import (
 // Create new shard
 func New(namespace []string, buffer int, packetDeadlinePtr *atomic.Int64) (new *Instance) {
 	new = &Instance{
-		Namespace:      append(namespace, global.NSQueue),
+		Namespace:      append(namespace, logctx.NSQueue),
 		Buckets:        make(map[string]*Bucket),
 		KeyQueue:       make(chan string, buffer),
 		PacketDeadline: packetDeadlinePtr,

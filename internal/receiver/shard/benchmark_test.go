@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
 	"strconv"
 	"sync/atomic"
@@ -36,7 +37,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 		PaddingLen:    6,
 	}
 
-	queue := New([]string{global.NSTest}, global.DefaultMinQueueSize, &mockDeadline)
+	queue := New([]string{logctx.NSTest}, global.DefaultMinQueueSize, &mockDeadline)
 
 	// Warm-up to stabilize caches, allocator, CPU frequency, ect
 	for i := 0; i < 1000; i++ {

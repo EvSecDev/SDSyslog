@@ -5,7 +5,6 @@ import (
 	"context"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
@@ -15,7 +14,7 @@ import (
 // Creates new worker instance
 func New(namespace []string, inQueue *mpmc.Queue[protocol.Payload]) (new *Instance) {
 	new = &Instance{
-		Namespace: append(namespace, global.NSWorker),
+		Namespace: append(namespace, logctx.NSWorker),
 		Inbox:     inQueue,
 		Metrics:   MetricStorage{},
 	}

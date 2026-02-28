@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/metrics"
 	"strings"
 	"testing"
@@ -51,19 +50,19 @@ func TestSetupListener_RoutingAndHTML(t *testing.T) {
 		{
 			name:       "data incorrect method",
 			method:     http.MethodPost,
-			path:       global.DataPath,
+			path:       DataPath,
 			wantStatus: http.StatusMethodNotAllowed,
 		},
 		{
 			name:       "discover incorrect method",
 			method:     http.MethodPatch,
-			path:       global.DiscoveryPath,
+			path:       DiscoveryPath,
 			wantStatus: http.StatusMethodNotAllowed,
 		},
 		{
 			name:       "aggregation incorrect method",
 			method:     http.MethodDelete,
-			path:       global.AggregationPath,
+			path:       AggregationPath,
 			wantStatus: http.StatusMethodNotAllowed,
 		},
 		{

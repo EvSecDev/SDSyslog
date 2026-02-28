@@ -7,19 +7,19 @@ import (
 	"os"
 	"path/filepath"
 	"sdsyslog/internal/crypto/wrappers"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/shard"
+	"sdsyslog/pkg/fipr"
 	"strconv"
 	"time"
 )
 
 // Creates new fragment inter-process routing receiver instance
 func New(ctx context.Context, socketDirectoryPath string, localRouterView shard.RoutingView) (instance *Instance) {
-	fileName := global.SocketFileNamePrefix + strconv.Itoa(os.Getpid()) + global.SocketFileNameSuffix
+	fileName := fipr.SocketFileNamePrefix + strconv.Itoa(os.Getpid()) + fipr.SocketFileNameSuffix
 	path := filepath.Join(socketDirectoryPath, fileName)
 
-	ctx = logctx.AppendCtxTag(ctx, global.NSmFIPR)
+	ctx = logctx.AppendCtxTag(ctx, logctx.NSmFIPR)
 
 	instance = &Instance{
 		Namespace:        logctx.GetTagList(ctx),
@@ -67,7 +67,7 @@ func (instance *Instance) Start() (err error) {
 
 	workerCtx, cancel := context.WithCancel(context.Background())
 	instance.cancel = cancel
-	workerCtx = context.WithValue(workerCtx, global.LoggerKey, logctx.GetLogger(instance.ctx))
+	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(instance.ctx))
 
 	instance.wg.Add(1)
 	go func() {

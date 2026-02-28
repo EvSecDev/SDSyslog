@@ -2,7 +2,6 @@ package logctx
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 	"sync"
 	"time"
 )
@@ -31,7 +30,7 @@ func New(baseCtx context.Context, id string, logLevel int, done <-chan struct{})
 	}
 	logger.cond = sync.NewCond(&logger.mutex)
 
-	ctxLogger = context.WithValue(baseCtx, global.LoggerKey, logger)
+	ctxLogger = context.WithValue(baseCtx, LoggerKey, logger)
 	return
 }
 
@@ -47,7 +46,7 @@ func SetLogLevel(ctx context.Context, newLevel int) {
 
 // Extracts Logger from context or returns nil
 func GetLogger(ctx context.Context) (logger *Logger) {
-	logger, ok := ctx.Value(global.LoggerKey).(*Logger)
+	logger, ok := ctx.Value(LoggerKey).(*Logger)
 	if ok {
 		return
 	}

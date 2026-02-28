@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"fmt"
-	"sdsyslog/internal/global"
 	"sort"
 	"strconv"
 	"strings"
@@ -102,11 +101,11 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 		}
 
 		switch aggType {
-		case global.MetricSum:
+		case MetricSum:
 			aggregatedValue += value
-		case global.MetricAvg:
+		case MetricAvg:
 			aggregatedValue += value
-		case global.MetricMin:
+		case MetricMin:
 			if idx == 0 {
 				aggregatedValue = value
 			}
@@ -114,7 +113,7 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 			if value < aggregatedValue {
 				aggregatedValue = value
 			}
-		case global.MetricMax:
+		case MetricMax:
 			if idx == 0 {
 				aggregatedValue = value
 			}
@@ -128,7 +127,7 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 		}
 	}
 
-	if aggType == global.MetricAvg {
+	if aggType == MetricAvg {
 		aggregatedValue /= float64(count)
 	}
 

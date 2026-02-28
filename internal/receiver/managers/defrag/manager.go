@@ -16,7 +16,7 @@ func NewInstanceManager(ctx context.Context, outbox *mpmc.Queue[protocol.Payload
 		panic("FATAL: Receiver Defrag manager received empty outbox queue variable")
 	}
 
-	ctx = logctx.AppendCtxTag(ctx, global.NSmDefrag)
+	ctx = logctx.AppendCtxTag(ctx, logctx.NSmDefrag)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	startRouteSnapshot := routingSnapshot{

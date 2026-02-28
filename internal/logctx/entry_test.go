@@ -2,7 +2,6 @@ package logctx
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 	"strings"
 	"testing"
 	"time"
@@ -16,7 +15,7 @@ func TestLogEvent(t *testing.T) {
 
 	ctx := New(
 		baseCtx,
-		global.NSTest,
+		NSTest,
 		2, // PrintLevel
 		done,
 	)
@@ -40,7 +39,7 @@ func TestLogEvent(t *testing.T) {
 			name:          "event level <= print level is logged",
 			logLevel:      2,
 			eventLevel:    1,
-			severity:      global.InfoLog,
+			severity:      InfoLog,
 			message:       "hello world",
 			expectEvents:  1,
 			expectMessage: "hello world",
@@ -49,7 +48,7 @@ func TestLogEvent(t *testing.T) {
 			name:         "event level > print level is dropped",
 			logLevel:     1,
 			eventLevel:   3,
-			severity:     global.InfoLog,
+			severity:     InfoLog,
 			message:      "should not appear",
 			expectEvents: 0,
 		},
@@ -57,7 +56,7 @@ func TestLogEvent(t *testing.T) {
 			name:          "error severity bypasses level filtering",
 			logLevel:      0,
 			eventLevel:    5,
-			severity:      global.ErrorLog,
+			severity:      ErrorLog,
 			message:       "fatal error",
 			expectEvents:  1,
 			expectMessage: "fatal error",
@@ -66,7 +65,7 @@ func TestLogEvent(t *testing.T) {
 			name:          "formatted message with vars",
 			logLevel:      3,
 			eventLevel:    2,
-			severity:      global.InfoLog,
+			severity:      InfoLog,
 			message:       "value=%d",
 			vars:          []any{42},
 			expectEvents:  1,
@@ -76,7 +75,7 @@ func TestLogEvent(t *testing.T) {
 			name:          "no formatting when no format verbs",
 			logLevel:      3,
 			eventLevel:    2,
-			severity:      global.InfoLog,
+			severity:      InfoLog,
 			message:       "log this message",
 			vars:          []any{123},
 			expectEvents:  1,
@@ -86,7 +85,7 @@ func TestLogEvent(t *testing.T) {
 			name:          "format verb but no variables for format",
 			logLevel:      3,
 			eventLevel:    2,
-			severity:      global.InfoLog,
+			severity:      InfoLog,
 			message:       "log this message %d",
 			vars:          []any{},
 			expectEvents:  1,
@@ -145,7 +144,7 @@ func TestGetFormattedLogLines_ChronologicalBatching(t *testing.T) {
 
 	ctx := New(
 		context.Background(),
-		global.NSTest,
+		NSTest,
 		5,
 		done,
 	)
@@ -160,22 +159,22 @@ func TestGetFormattedLogLines_ChronologicalBatching(t *testing.T) {
 	// Construct deliberately out-of-order events
 	e1 := Event{
 		Timestamp: base.Add(3 * time.Second),
-		Severity:  global.InfoLog,
+		Severity:  InfoLog,
 		Message:   "third",
 	}
 	e2 := Event{
 		Timestamp: base.Add(1 * time.Second),
-		Severity:  global.InfoLog,
+		Severity:  InfoLog,
 		Message:   "first",
 	}
 	e3 := Event{
 		Timestamp: base.Add(2 * time.Second),
-		Severity:  global.InfoLog,
+		Severity:  InfoLog,
 		Message:   "second",
 	}
 	e4 := Event{
 		Timestamp: time.Time{}, // zero timestamp
-		Severity:  global.InfoLog,
+		Severity:  InfoLog,
 		Message:   "zero",
 	}
 

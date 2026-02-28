@@ -1,7 +1,6 @@
 package logctx
 
 import (
-	"sdsyslog/internal/global"
 	"time"
 )
 
@@ -11,7 +10,7 @@ func (logger *Logger) log(eventLevel int, eventSeverity string, tags []string, f
 	currentLevel := logger.PrintLevel
 	logger.mutex.Unlock()
 
-	if eventLevel > currentLevel && eventSeverity != global.ErrorLog {
+	if eventLevel > currentLevel && eventSeverity != ErrorLog {
 		return
 	}
 

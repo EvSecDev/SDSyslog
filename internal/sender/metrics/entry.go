@@ -4,7 +4,6 @@ package metrics
 import (
 	"context"
 	"runtime/debug"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/sender/managers/ingest"
@@ -26,7 +25,7 @@ func New(ingestMgr *ingest.InstanceManager, packMgr *packaging.InstanceManager, 
 }
 
 func (gatherer *Gatherer) Run(ctx context.Context) {
-	ctx = logctx.AppendCtxTag(ctx, global.NSMetric)
+	ctx = logctx.AppendCtxTag(ctx, logctx.NSMetric)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	// Tracking last interval run time

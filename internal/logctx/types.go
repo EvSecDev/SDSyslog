@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type CtxKey string
+
 // Log Event Structure
 type Event struct {
 	Timestamp time.Time // Time when event enters log buffer

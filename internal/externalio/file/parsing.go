@@ -3,7 +3,7 @@ package file
 import (
 	"context"
 	"os"
-	"sdsyslog/internal/global"
+	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
 	"strconv"
@@ -37,14 +37,14 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 
 					// app[pid] or app
 					if lb := strings.IndexByte(header, '['); lb > 0 {
-						message.Fields[global.CFappname] = header[:lb]
+						message.Fields[externalio.CFappname] = header[:lb]
 						if rb := strings.IndexByte(header, ']'); rb > lb+1 {
 							if pid, err := strconv.Atoi(header[lb+1 : rb]); err == nil {
-								message.Fields[global.CFprocessid] = pid
+								message.Fields[externalio.CFprocessid] = pid
 							}
 						}
 					} else {
-						message.Fields[global.CFappname] = header
+						message.Fields[externalio.CFappname] = header
 					}
 
 					message.Timestamp = withCurrentYear(ts)
@@ -76,12 +76,12 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 				pidEnd := strings.Index(rest, "]")
 				if pidStart > 0 && pidEnd > pidStart {
 					// Process includes PID in square brackets
-					message.Fields[global.CFappname] = rest[:pidStart]
+					message.Fields[externalio.CFappname] = rest[:pidStart]
 					pidStr := rest[pidStart+1 : pidEnd]
 
 					// Convert PID to an integer
 					if pid, err := strconv.Atoi(pidStr); err == nil {
-						message.Fields[global.CFprocessid] = pid
+						message.Fields[externalio.CFprocessid] = pid
 					}
 
 					// Extract the message text after the PID part
@@ -90,7 +90,7 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 					// No PID, extract ApplicationName before the colon
 					colonIndex := strings.Index(rest, ":")
 					if colonIndex > 0 {
-						message.Fields[global.CFappname] = rest[:colonIndex]
+						message.Fields[externalio.CFappname] = rest[:colonIndex]
 						rest = rest[colonIndex+1:] // Everything after the colon is the message text
 					}
 				}
@@ -112,13 +112,13 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 
 			if strings.HasPrefix(rest, "[") {
 				if rb := strings.Index(rest, "]"); rb > 1 {
-					message.Fields[global.CFseverity] = strings.ToLower(rest[1:rb])
+					message.Fields[externalio.CFseverity] = strings.ToLower(rest[1:rb])
 					rest = strings.TrimSpace(rest[rb+1:])
 
 					if hash := strings.Index(rest, "#"); hash > 0 {
 						if colon := strings.Index(rest, ":"); colon > hash {
 							if pid, err := strconv.Atoi(rest[:hash]); err == nil {
-								message.Fields[global.CFprocessid] = pid
+								message.Fields[externalio.CFprocessid] = pid
 							}
 							message.Data = strings.TrimSpace(rest[colon+1:])
 							message.Timestamp = ts
@@ -203,21 +203,21 @@ func setDefaults(old protocol.Message, raw string, localHostname string) (new pr
 		new.Data = raw
 	}
 
-	_, ok := new.Fields[global.CFappname]
+	_, ok := new.Fields[externalio.CFappname]
 	if !ok {
-		new.Fields[global.CFappname] = "-"
+		new.Fields[externalio.CFappname] = "-"
 	}
-	_, ok = new.Fields[global.CFprocessid]
+	_, ok = new.Fields[externalio.CFprocessid]
 	if !ok {
-		new.Fields[global.CFprocessid] = os.Getpid()
+		new.Fields[externalio.CFprocessid] = os.Getpid()
 	}
-	_, ok = new.Fields[global.CFfacility]
+	_, ok = new.Fields[externalio.CFfacility]
 	if !ok {
-		new.Fields[global.CFfacility] = global.DefaultFacility
+		new.Fields[externalio.CFfacility] = externalio.DefaultFacility
 	}
-	_, ok = new.Fields[global.CFseverity]
+	_, ok = new.Fields[externalio.CFseverity]
 	if !ok {
-		new.Fields[global.CFseverity] = global.DefaultSeverity
+		new.Fields[externalio.CFseverity] = externalio.DefaultSeverity
 	}
 	return
 }
@@ -238,16 +238,16 @@ func formatAsText(ctx context.Context, msg protocol.Payload) (text string, err e
 	var appname, processid, facility, severity string
 	for key, value := range msg.CustomFields {
 		switch key {
-		case global.CFappname:
+		case externalio.CFappname:
 			appname = protocol.FormatValue(value)
 			continue
-		case global.CFprocessid:
+		case externalio.CFprocessid:
 			processid = protocol.FormatValue(value)
 			continue
-		case global.CFfacility:
+		case externalio.CFfacility:
 			facility = protocol.FormatValue(value)
 			continue
-		case global.CFseverity:
+		case externalio.CFseverity:
 			severity = protocol.FormatValue(value)
 			continue
 		}

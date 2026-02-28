@@ -4,12 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/install"
 )
 
 // Setup/installation options
-func SetupMode(cliOpts *global.CommandSet, commandname string, args []string) {
+func SetupMode(cliOpts *CommandSet, commandname string, args []string) {
 	var newKeyPair bool
 	var newSendConf bool
 	var newRecvConf bool

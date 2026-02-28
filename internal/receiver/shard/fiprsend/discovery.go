@@ -3,7 +3,7 @@ package fiprsend
 import (
 	"fmt"
 	"os"
-	"sdsyslog/internal/global"
+	"sdsyslog/pkg/fipr"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,7 +23,7 @@ func GetSocketFileList(socketDir string, selfID int) (fileList []string, err err
 		return
 	}
 
-	selfSocketFile := global.SocketFileNamePrefix + strconv.Itoa(selfID) + global.SocketFileNameSuffix
+	selfSocketFile := fipr.SocketFileNamePrefix + strconv.Itoa(selfID) + fipr.SocketFileNameSuffix
 
 	for _, entry := range entries {
 		// Skip any normal files/dirs
@@ -31,10 +31,10 @@ func GetSocketFileList(socketDir string, selfID int) (fileList []string, err err
 			continue
 		}
 
-		if !strings.HasSuffix(entry.Name(), global.SocketFileNameSuffix) {
+		if !strings.HasSuffix(entry.Name(), fipr.SocketFileNameSuffix) {
 			continue
 		}
-		if !strings.HasPrefix(entry.Name(), global.SocketFileNamePrefix) {
+		if !strings.HasPrefix(entry.Name(), fipr.SocketFileNamePrefix) {
 			continue
 		}
 

@@ -3,7 +3,6 @@ package scaling
 import (
 	"context"
 	"sdsyslog/internal/calc"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/managers/defrag"
@@ -28,7 +27,7 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	for _, id := range defragMgr.RoutingView.GetNonDrainingIDs() {
 		metrics := metricStore.Search(
 			"total_buckets",
-			[]string{global.NSRecv, global.NSmDefrag, id},
+			[]string{logctx.NSRecv, logctx.NSmDefrag, id},
 			time.Now().Add(-time.Duration(pastNIntervals)*interval),
 			time.Now(),
 		)
@@ -66,9 +65,9 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 
 	if scaleUp {
 		newID := defragMgr.AddInstance()
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up assembler (added id %s)\n", newID)
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up assembler (added id %s)\n", newID)
 	} else if scaleDown {
 		delID := defragMgr.RemoveOldestInstance()
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled down assembler (removed id %s)\n", delID)
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down assembler (removed id %s)\n", delID)
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
-	"sdsyslog/internal/global"
+	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/logctx"
 	"strings"
 )
@@ -84,7 +84,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			}
 			mod.metrics.LinesRead.Add(1)
 
-			msg.Fields[global.IOCtxKey] = strings.Join(mod.Namespace, "/")
+			msg.Fields[externalio.CtxKey] = strings.Join(mod.Namespace, "/")
 
 			mod.outbox.PushBlocking(ctx, msg, msg.Size())
 			mod.metrics.Success.Add(1)

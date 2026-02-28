@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"os"
 	"sdsyslog/internal/crypto/ecdh"
+	"sdsyslog/internal/externalio/beats"
+	"sdsyslog/internal/externalio/journald"
+	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
@@ -68,7 +71,7 @@ func installConfig(mode string) (err error) {
 			return
 		}
 
-		_, err = os.Stat(global.DefaultPrivKeyPath)
+		_, err = os.Stat(DefaultPrivKeyPath)
 		if err != nil {
 			if !os.IsNotExist(err) {
 				err = fmt.Errorf("failed checking private key file existence: %w", err)
@@ -76,7 +79,7 @@ func installConfig(mode string) (err error) {
 			}
 
 			var privKeyFile *os.File
-			privKeyFile, err = os.OpenFile(global.DefaultPrivKeyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+			privKeyFile, err = os.OpenFile(DefaultPrivKeyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 			if err != nil {
 				err = fmt.Errorf("failed to open private key file: %w", err)
 				return
@@ -87,7 +90,7 @@ func installConfig(mode string) (err error) {
 				err = fmt.Errorf("failed to write new private key: %w", err)
 				return
 			}
-			fmt.Printf("Successfully wrote new private key file to '%s'\n", global.DefaultPrivKeyPath)
+			fmt.Printf("Successfully wrote new private key file to '%s'\n", DefaultPrivKeyPath)
 			fmt.Printf("  IMPORTANT: Public key (use this for all senders): %s\n", base64.StdEncoding.EncodeToString(public))
 		}
 
@@ -106,14 +109,14 @@ func installConfig(mode string) (err error) {
 
 func uninstallConfig(mode string) (err error) {
 	if mode == "receive" {
-		err = os.Remove(global.DefaultPrivKeyPath)
+		err = os.Remove(DefaultPrivKeyPath)
 		if err != nil && !os.IsNotExist(err) {
 			err = fmt.Errorf("failed to remove private key file: %w", err)
 			return
 		} else {
 			err = nil
 		}
-		fmt.Printf("Successfully removed private key file '%s'\n", global.DefaultPrivKeyPath)
+		fmt.Printf("Successfully removed private key file '%s'\n", DefaultPrivKeyPath)
 	}
 
 	err = os.RemoveAll(global.DefaultConfigDir)
@@ -160,7 +163,7 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 
 	newCfg.Metrics.MaxAge = "72h"
 	newCfg.Metrics.Interval = "5s"
-	newCfg.Metrics.QueryServerPort = global.HTTPListenPortSender
+	newCfg.Metrics.QueryServerPort = server.ListenPortSender
 
 	newCfg.Network.Address = "[::1]"
 	newCfg.Network.Port = global.DefaultReceiverPort
@@ -204,14 +207,14 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	newCfg.AutoScaling.MaxDefrags = 16
 
 	newCfg.Outputs.FilePath = "/var/log/all.log"
-	newCfg.Outputs.JournaldURL = global.DefaultJournaldURL
-	newCfg.Outputs.BeatsAddress = global.DefaultBeatsAddr
+	newCfg.Outputs.JournaldURL = journald.DefaultURL
+	newCfg.Outputs.BeatsAddress = beats.DefaultAddress
 
-	newCfg.PrivateKeyFile = global.DefaultPrivKeyPath
+	newCfg.PrivateKeyFile = DefaultPrivKeyPath
 
 	newCfg.Metrics.MaxAge = "72h"
 	newCfg.Metrics.Interval = "5s"
-	newCfg.Metrics.QueryServerPort = global.HTTPListenPortReceiver
+	newCfg.Metrics.QueryServerPort = server.ListenPortReceiver
 
 	newCfg.Network.Address = "[::1]"
 	newCfg.Network.Port = global.DefaultReceiverPort

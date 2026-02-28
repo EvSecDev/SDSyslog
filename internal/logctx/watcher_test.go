@@ -3,7 +3,6 @@ package logctx
 import (
 	"bytes"
 	"context"
-	"sdsyslog/internal/global"
 	"strings"
 	"testing"
 )
@@ -13,7 +12,7 @@ func TestWatcher_WaitWakeAndDedup(t *testing.T) {
 
 	ctx := New(
 		context.Background(),
-		global.NSTest,
+		NSTest,
 		5,
 		done,
 	)
@@ -43,7 +42,7 @@ func TestWatcher_WaitWakeAndDedup(t *testing.T) {
 	msg := "duplicate-message"
 
 	for i := 0; i < repeats; i++ {
-		LogEvent(ctx, 1, global.InfoLog, msg)
+		LogEvent(ctx, 1, InfoLog, msg)
 	}
 
 	// Wake watcher in case it is waiting

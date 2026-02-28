@@ -7,7 +7,6 @@ import (
 	"net"
 	"runtime/debug"
 	"sdsyslog/internal/crypto"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
@@ -16,7 +15,7 @@ import (
 
 func New(namespace []string, conn *net.UDPConn, queue *mpmc.Queue[Container]) (new *Instance) {
 	new = &Instance{
-		Namespace: append(namespace, global.NSListen),
+		Namespace: append(namespace, logctx.NSListen),
 		conn:      conn,
 		Outbox:    queue,
 		minLen:    protocol.MinOuterPayloadLen,
@@ -71,7 +70,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			if len(payload) < instance.minLen || !validSuiteID {
 				instance.Metrics.InvalidPackets.Add(1)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
-				logctx.LogEvent(ctx, global.VerbosityProgress, global.WarnLog, "Received invalid outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
+				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog, "Received invalid outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
 				return
 			}
 

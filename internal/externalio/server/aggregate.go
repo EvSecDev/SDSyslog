@@ -3,14 +3,13 @@ package server
 import (
 	"context"
 	"net/http"
-	"sdsyslog/internal/global"
 	"strings"
 	"time"
 )
 
 // Handles metric search requests based on time and aggregation type
 func handleAggregation(baseCtx context.Context, search AggSearcher, serverResponder http.ResponseWriter, clientRequest *http.Request) {
-	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, global.AggregationPath)
+	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, AggregationPath)
 	reqNamespace := strings.Split(rawNamespace, "/")
 
 	reqName := clientRequest.FormValue("name")

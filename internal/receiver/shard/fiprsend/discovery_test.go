@@ -4,7 +4,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"sdsyslog/internal/global"
+	"sdsyslog/pkg/fipr"
 	"strings"
 	"testing"
 )
@@ -19,14 +19,14 @@ func TestGetSocketFileList(t *testing.T) {
 		{
 			name: "exclude self, normal sorting",
 			files: []string{
-				global.SocketFileNamePrefix + "2" + global.SocketFileNameSuffix,
-				global.SocketFileNamePrefix + "1" + global.SocketFileNameSuffix,
-				global.SocketFileNamePrefix + "3" + global.SocketFileNameSuffix,
+				fipr.SocketFileNamePrefix + "2" + fipr.SocketFileNameSuffix,
+				fipr.SocketFileNamePrefix + "1" + fipr.SocketFileNameSuffix,
+				fipr.SocketFileNamePrefix + "3" + fipr.SocketFileNameSuffix,
 			},
 			selfID: 2,
 			expectedList: []string{
-				global.SocketFileNamePrefix + "1" + global.SocketFileNameSuffix,
-				global.SocketFileNamePrefix + "3" + global.SocketFileNameSuffix,
+				fipr.SocketFileNamePrefix + "1" + fipr.SocketFileNameSuffix,
+				fipr.SocketFileNamePrefix + "3" + fipr.SocketFileNameSuffix,
 			},
 		},
 		{
@@ -40,11 +40,11 @@ func TestGetSocketFileList(t *testing.T) {
 			files: []string{
 				"random.txt",
 				"socket-999.sock",
-				global.SocketFileNamePrefix + "5" + global.SocketFileNameSuffix,
+				fipr.SocketFileNamePrefix + "5" + fipr.SocketFileNameSuffix,
 			},
 			selfID: 0,
 			expectedList: []string{
-				global.SocketFileNamePrefix + "5" + global.SocketFileNameSuffix,
+				fipr.SocketFileNamePrefix + "5" + fipr.SocketFileNameSuffix,
 			},
 		},
 	}
@@ -56,7 +56,7 @@ func TestGetSocketFileList(t *testing.T) {
 			for _, f := range tt.files {
 				path := filepath.Join(dir, f)
 
-				if strings.HasSuffix(f, global.SocketFileNameSuffix) && strings.HasPrefix(f, global.SocketFileNamePrefix) {
+				if strings.HasSuffix(f, fipr.SocketFileNameSuffix) && strings.HasPrefix(f, fipr.SocketFileNamePrefix) {
 					// Create an actual UNIX socket
 					addr := &net.UnixAddr{Name: path, Net: "unix"}
 					l, err := net.ListenUnix("unix", addr)

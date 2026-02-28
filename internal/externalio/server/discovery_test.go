@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/metrics"
 	"testing"
 )
@@ -72,7 +71,7 @@ func TestHandleDiscovery(t *testing.T) {
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(
 				http.MethodGet,
-				global.DiscoveryPath+tt.query,
+				DiscoveryPath+tt.query,
 				nil,
 			)
 

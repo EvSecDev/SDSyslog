@@ -6,7 +6,6 @@ import (
 	"sdsyslog/internal/externalio/beats"
 	"sdsyslog/internal/externalio/file"
 	"sdsyslog/internal/externalio/journald"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/output"
 )
@@ -20,7 +19,7 @@ func (manager *InstanceManager) AddInstance(filePath string, journaldURL string,
 
 	// Create new context for output instance
 	workerCtx, cancelInstance := context.WithCancel(context.Background())
-	workerCtx = context.WithValue(workerCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
+	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	instance := &OutputInstance{
 		Worker: output.New(logctx.GetTagList(manager.ctx), manager.Queue),

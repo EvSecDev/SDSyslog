@@ -3,7 +3,6 @@ package logctx
 import (
 	"fmt"
 	"io"
-	"sdsyslog/internal/global"
 	"strings"
 	"time"
 )
@@ -79,7 +78,7 @@ func StartWatcher(logger *Logger, output io.Writer) {
 						"[%s] [%s] [%s] Suppressed %d repeated messages: %s\n",
 						padTimestamp(event.Timestamp),
 						strings.Join(event.Tags, "/"),
-						global.InfoLog,
+						InfoLog,
 						dedup.repeatCount,
 						dedup.lastMsg)
 

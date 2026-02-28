@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/ebpf"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
 	"sdsyslog/internal/receiver/listener"
@@ -39,7 +38,7 @@ func (manager *InstanceManager) AddInstance() (id int, err error) {
 	// Create new context for both watcher/assembler
 	ingestCtx, cancelInstances := context.WithCancel(context.Background())
 	ingestInstance.cancel = cancelInstances
-	ingestCtx = context.WithValue(ingestCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
+	ingestCtx = context.WithValue(ingestCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	ingestInstance.wg.Add(1)
 	go func() {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/externalio/journald"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 )
 
@@ -15,7 +14,7 @@ func (manager *InstanceManager) AddJrnlInstance(stateFile string) (err error) {
 		return
 	}
 
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, global.NSoJrnl)
+	manager.ctx = logctx.AppendCtxTag(manager.ctx, logctx.NSoJrnl)
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 
 	new, err := journald.NewInput(logctx.GetTagList(manager.ctx), stateFile, manager.outQueue)
@@ -25,7 +24,7 @@ func (manager *InstanceManager) AddJrnlInstance(stateFile string) (err error) {
 
 	// Create new context
 	ingestCtx, cancelInstances := context.WithCancel(context.Background())
-	ingestCtx = context.WithValue(ingestCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
+	ingestCtx = context.WithValue(ingestCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	// Worker for local journal
 	ingestInstance := &JrnlWorker{

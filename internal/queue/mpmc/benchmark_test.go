@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"testing"
 )
 
@@ -16,7 +17,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 	perOp := make([]float64, len(sizes))
 
 	for idx, n := range sizes {
-		queue, err := New[int]([]string{global.NSTest}, uint64(n*2), 2, global.DefaultMaxQueueSize)
+		queue, err := New[int]([]string{logctx.NSTest}, uint64(n*2), 2, global.DefaultMaxQueueSize)
 		if err != nil {
 			b.Fatalf("expected no error in creating queue, but got '%v'", err)
 		}
@@ -46,7 +47,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 }
 
 func BenchmarkQueue_PushAllocations(b *testing.B) {
-	queue, err := New[int]([]string{global.NSTest}, 4, 2, global.DefaultMaxQueueSize)
+	queue, err := New[int]([]string{logctx.NSTest}, 4, 2, global.DefaultMaxQueueSize)
 	if err != nil {
 		b.Fatalf("expected no error in creating queue, but got '%v'", err)
 	}

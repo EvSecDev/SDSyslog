@@ -2,7 +2,6 @@ package proc
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/processor"
 	"strconv"
@@ -29,7 +28,7 @@ func (manager *InstanceManager) AddInstance() (id int) {
 	// Create new context for both watcher/assembler
 	ingestCtx, cancelInstances := context.WithCancel(context.Background())
 	ingestInstance.cancel = cancelInstances
-	ingestCtx = context.WithValue(ingestCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
+	ingestCtx = context.WithValue(ingestCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	ingestInstance.wg.Add(1)
 	go func() {

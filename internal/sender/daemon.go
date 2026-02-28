@@ -39,12 +39,12 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	// New context for the daemon
 	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
 	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
-	daemon.ctx = context.WithValue(daemon.ctx, global.LoggerKey, logctx.GetLogger(globalCtx))
+	daemon.ctx = context.WithValue(daemon.ctx, logctx.LoggerKey, logctx.GetLogger(globalCtx))
 
 	// Top level tag for daemon logs (avoid duplicates)
 	currentTags := logctx.GetTagList(daemon.ctx)
-	if !slices.Equal(currentTags, []string{global.NSSend}) {
-		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSSend)
+	if !slices.Equal(currentTags, []string{logctx.NSSend}) {
+		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, logctx.NSSend)
 	}
 
 	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
@@ -109,7 +109,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	for i := 0; i < daemon.cfg.MinOutputs; i++ {
 		_ = daemon.Mgrs.Out.AddInstance()
 	}
-	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d output instance(s) started successfully\n", daemon.cfg.MinOutputs)
 
 	// Stage 2 - Assemblers
@@ -129,7 +129,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	for i := 0; i < daemon.cfg.MinAssemblers; i++ {
 		_ = daemon.Mgrs.Assem.AddInstance()
 	}
-	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d assembler instance(s) started successfully\n", daemon.cfg.MinAssemblers)
 
 	// Stage 1 - Listeners(Readers)
@@ -152,7 +152,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			return
 		}
 	}
-	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"ingest instance started successfully\n")
 
 	// Metrics Collector
@@ -194,8 +194,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	if daemon.cfg.MetricQueryServerEnabled {
 		// Top level tag for metric server logs (copy so return doesn't strip ns tags)
 		serverCtx := daemon.ctx
-		serverCtx = logctx.AppendCtxTag(serverCtx, global.NSMetric)
-		serverCtx = logctx.AppendCtxTag(serverCtx, global.NSMetricSrv)
+		serverCtx = logctx.AppendCtxTag(serverCtx, logctx.NSMetric)
+		serverCtx = logctx.AppendCtxTag(serverCtx, logctx.NSMetricSrv)
 
 		daemon.MetricServer, err = server.SetupListener(serverCtx,
 			daemon.cfg.MetricQueryServerPort,
@@ -314,9 +314,9 @@ func (daemon *Daemon) Shutdown() {
 	select {
 	case <-done:
 		logctx.LogStdInfo(daemon.ctx, "Daemon shutdown completed successfully\n")
-	case <-time.After(global.ReceiveShutdownTimeout):
+	case <-time.After(ShutdownTimeout):
 		logctx.LogStdWarn(daemon.ctx, "Timeout: send daemon did not shutdown within %v seconds",
-			global.ReceiveShutdownTimeout.Seconds())
+			ShutdownTimeout.Seconds())
 		return
 	}
 }

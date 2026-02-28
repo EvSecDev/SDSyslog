@@ -30,7 +30,7 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	aggTimeouts := make([][]uint64, pastNIntervals)
 
 	for _, id := range defragMgr.RoutingView.GetNonDrainingIDs() {
-		ns := []string{global.NSRecv, global.NSmDefrag, id}
+		ns := []string{logctx.NSRecv, logctx.NSmDefrag, id}
 
 		sumSpacingMetrics := metricStore.Search("sum_time_between_fragments", ns, start, end)
 		fragmentsMetrics := metricStore.Search("push_ctn", ns, start, end)
@@ -84,10 +84,10 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	if stepUp {
 		newDeadline := deadlineDur + 10*time.Millisecond
 		defragMgr.PacketDeadline.Store(int64(newDeadline))
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
 	} else if stepDown {
 		newDeadline := deadlineDur - 10*time.Millisecond
 		defragMgr.PacketDeadline.Store(int64(newDeadline))
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled down packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
 	}
 }

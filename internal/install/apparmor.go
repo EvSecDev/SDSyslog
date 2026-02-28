@@ -11,8 +11,8 @@ import (
 
 // If apparmor LSM is available on this system and running as root, auto install the profile - failures are not printed under normal verbosity
 func installAAProfile() (err error) {
-	const appArmorProfilePath string = "/etc/apparmor.d/" + global.DefaultAAProfName
-	appArmorProfile, err := installationFiles.ReadFile("static-files/" + global.DefaultAAProfName)
+	const appArmorProfilePath string = "/etc/apparmor.d/" + DefaultAAProfName
+	appArmorProfile, err := installationFiles.ReadFile("static-files/" + DefaultAAProfName)
 	if err != nil {
 		err = fmt.Errorf("Unable to retrieve configuration file from embedded filesystem: %w", err)
 		return
@@ -21,7 +21,7 @@ func installAAProfile() (err error) {
 	// Inject variables into config
 	newaaProf := strings.Replace(string(appArmorProfile), "=$executableFilePath", "="+global.DefaultBinaryPath, 1)
 	newaaProf = strings.Replace(newaaProf, "=$configurationDirPath", "="+global.DefaultConfigDir, 1)
-	newaaProf = strings.Replace(newaaProf, "=$privateKeyFilePath", "="+global.DefaultPrivKeyPath, 1)
+	newaaProf = strings.Replace(newaaProf, "=$privateKeyFilePath", "="+DefaultPrivKeyPath, 1)
 	newaaProf = strings.Replace(newaaProf, "=$progStateDirPath", "="+global.DefaultStateDir, 1)
 	newaaProf = strings.Replace(newaaProf, "=$drainingSocketsMapPinPath", "="+ebpf.KernelDrainMapPath, 1)
 	newaaProf = strings.Replace(newaaProf, "=$drainingSocketsFuncPinPath", "="+ebpf.KernelSocketRouteFunc, 1)
@@ -59,7 +59,7 @@ func installAAProfile() (err error) {
 }
 
 func uninstallAAProfile() (err error) {
-	const appArmorProfilePath string = "/etc/apparmor.d/" + global.DefaultAAProfName
+	const appArmorProfilePath string = DefaultAAProfDir + DefaultAAProfName
 
 	// Check if apparmor /sys path exists
 	systemAAPath := "/sys/kernel/security/apparmor/profiles"

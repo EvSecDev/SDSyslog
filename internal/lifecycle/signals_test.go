@@ -98,7 +98,7 @@ func TestSignalHandling(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			baseCtx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			ctx := logctx.New(baseCtx, "test", global.VerbosityStandard, baseCtx.Done())
+			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, baseCtx.Done())
 			ctx = context.WithValue(ctx, global.CtxModeKey, global.RecvMode)
 
 			// Setup real notify socket
@@ -207,7 +207,7 @@ func TestSignalHandling(t *testing.T) {
 			logLines := logger.GetFormattedLogLines()
 			var foundErrors []string
 			for _, line := range logLines {
-				if strings.Contains(line, "["+global.InfoLog+"]") {
+				if strings.Contains(line, "["+logctx.InfoLog+"]") {
 					continue
 				}
 				if checkLogForErrors(line, tt.fail) {

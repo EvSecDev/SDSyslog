@@ -11,6 +11,7 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/hash"
+	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver"
@@ -86,7 +87,7 @@ func TestSendReceivePipeline(t *testing.T) {
 	time.Sleep(2 * newCfg.MetricCollectionInterval)
 
 	// Check for any errors in the log buffer
-	errors, errorsFound := filterLogBuffer(globalCtx, "", "", global.ErrorLog)
+	errors, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
 	if errorsFound {
 		t.Fatalf("expected no start-up errors in receive pipeline, but found: %v\n", errors)
 	}
@@ -128,7 +129,7 @@ func TestSendReceivePipeline(t *testing.T) {
 	time.Sleep(2 * newSendCfg.MetricCollectionInterval)
 
 	// Check for any errors in the log buffer
-	errors, errorsFound = filterLogBuffer(globalCtx, "", "", global.ErrorLog)
+	errors, errorsFound = filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
 	if errorsFound {
 		t.Fatalf("expected no start-up errors in sending pipeline, but found: %v\n", errors)
 	}
@@ -193,8 +194,8 @@ func TestSendReceivePipeline(t *testing.T) {
 			}
 
 			// Hash input as source of truth for checking output integrity
-			expectedNamespace := []string{global.NSSend, global.NSmIngest, global.NSoFile, testInputFileName}
-			expectedOutput := tt.inputText + " (" + global.IOCtxKey + "=" + strings.Join(expectedNamespace, "/") + ")" + "\n"
+			expectedNamespace := []string{logctx.NSSend, logctx.NSmIngest, logctx.NSoFile, testInputFileName}
+			expectedOutput := tt.inputText + " (" + externalio.CtxKey + "=" + strings.Join(expectedNamespace, "/") + ")" + "\n"
 
 			inputHash, err := hash.MultipleSlices([]byte(expectedOutput))
 			if err != nil {
@@ -219,7 +220,7 @@ func TestSendReceivePipeline(t *testing.T) {
 			}
 
 			// Check for errors in input side
-			errors, errorsFound = filterLogBuffer(globalCtx, "", global.NSSend, global.ErrorLog)
+			errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSSend, logctx.ErrorLog)
 			if errorsFound && !tt.expectedSendErr {
 				t.Errorf("expected no errors in sending pipeline, but found: %v\n", errors)
 			}
@@ -228,7 +229,7 @@ func TestSendReceivePipeline(t *testing.T) {
 			}
 
 			// check for errors in the output side
-			errors, errorsFound = filterLogBuffer(globalCtx, "", global.NSRecv, global.ErrorLog)
+			errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
 			if errorsFound && !tt.expectedRecvErr {
 				t.Errorf("expected no errors in receiving pipeline, but found: %v\n", errors)
 			}
@@ -261,19 +262,19 @@ func TestSendReceivePipeline(t *testing.T) {
 	logger.Wait()
 
 	// Check for errors post-shutdown
-	errors, errorsFound = filterLogBuffer(globalCtx, "", global.NSSend, global.ErrorLog)
+	errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSSend, logctx.ErrorLog)
 	if errorsFound {
 		t.Errorf("expected no errors in send daemon shutdown, but found:\n%s", errors)
 	}
-	warns, warnsFound := filterLogBuffer(globalCtx, "", global.NSSend, global.WarnLog)
+	warns, warnsFound := filterLogBuffer(globalCtx, "", logctx.NSSend, logctx.WarnLog)
 	if warnsFound {
 		t.Errorf("expected no warnings in send daemon shutdown, but found:\n%v", warns)
 	}
-	errors, errorsFound = filterLogBuffer(globalCtx, "", global.NSRecv, global.ErrorLog)
+	errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
 	if errorsFound {
 		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%s", errors)
 	}
-	warns, warnsFound = filterLogBuffer(globalCtx, "", global.NSRecv, global.WarnLog)
+	warns, warnsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.WarnLog)
 	if warnsFound {
 		t.Errorf("expected no warnings in receive daemon shutdown, but found:\n%v", warns)
 	}

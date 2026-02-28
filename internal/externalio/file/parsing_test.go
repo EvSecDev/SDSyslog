@@ -2,7 +2,7 @@ package file
 
 import (
 	"os"
-	"sdsyslog/internal/global"
+	"sdsyslog/internal/externalio"
 	"sdsyslog/pkg/protocol"
 	"testing"
 	"time"
@@ -30,10 +30,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: time.Now(),
 				Fields: map[string]any{
-					global.CFappname:   "-",
-					global.CFprocessid: testPid,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "-",
+					externalio.CFprocessid: testPid,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -45,10 +45,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: time.Now(),
 				Fields: map[string]any{
-					global.CFappname:   "-",
-					global.CFprocessid: testPid,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "-",
+					externalio.CFprocessid: testPid,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -60,10 +60,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Jul  9 18:05:33"),
 				Fields: map[string]any{
-					global.CFappname:   "rsyslogd",
-					global.CFprocessid: testPid,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "rsyslogd",
+					externalio.CFprocessid: testPid,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -75,10 +75,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Nov 17 09:52:41"),
 				Fields: map[string]any{
-					global.CFappname:   "kernel",
-					global.CFprocessid: testPid,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "kernel",
+					externalio.CFprocessid: testPid,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -90,10 +90,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Nov 17 12:18:00"),
 				Fields: map[string]any{
-					global.CFappname:   "audisp-syslog",
-					global.CFprocessid: 1135,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "audisp-syslog",
+					externalio.CFprocessid: 1135,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -105,10 +105,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: timeParse2Panic("2025/03/15 10:47:59"),
 				Fields: map[string]any{
-					global.CFappname:   "-",
-					global.CFprocessid: 33709,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  "notice",
+					externalio.CFappname:   "-",
+					externalio.CFprocessid: 33709,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  "notice",
 				},
 			},
 		},
@@ -120,10 +120,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: timeParse3Panic("2025-12-03 17:46:26"),
 				Fields: map[string]any{
-					global.CFappname:   "-",
-					global.CFprocessid: testPid,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "-",
+					externalio.CFprocessid: testPid,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -135,10 +135,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: timeParse5Panic("28/Jul/2024:03:58:35 -0700"),
 				Fields: map[string]any{
-					global.CFappname:   "-",
-					global.CFprocessid: testPid,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "-",
+					externalio.CFprocessid: testPid,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -150,10 +150,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: timeParse4Panic("19-Sep-2023 16:52:51"),
 				Fields: map[string]any{
-					global.CFappname:   "-",
-					global.CFprocessid: testPid,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "-",
+					externalio.CFprocessid: testPid,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -165,10 +165,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse6Panic("2025-12-21T18:39:01.211585-08:00"),
 				Fields: map[string]any{
-					global.CFappname:   "systemd",
-					global.CFprocessid: 1,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "systemd",
+					externalio.CFprocessid: 1,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -180,10 +180,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse6Panic("2025-12-21T19:08:28.506905-08:00"),
 				Fields: map[string]any{
-					global.CFappname:   "php8.4-cgi",
-					global.CFprocessid: testPid,
-					global.CFfacility:  global.DefaultFacility,
-					global.CFseverity:  global.DefaultSeverity,
+					externalio.CFappname:   "php8.4-cgi",
+					externalio.CFprocessid: testPid,
+					externalio.CFfacility:  externalio.DefaultFacility,
+					externalio.CFseverity:  externalio.DefaultSeverity,
 				},
 			},
 		},
@@ -207,40 +207,40 @@ func TestParseLine(t *testing.T) {
 				t.Errorf("expected Hostname to be '%s', but got '%s'", tt.expectedOutput.Hostname, output.Hostname)
 			}
 
-			expected := tt.expectedOutput.Fields[global.CFappname]
-			got, ok := output.Fields[global.CFappname]
+			expected := tt.expectedOutput.Fields[externalio.CFappname]
+			got, ok := output.Fields[externalio.CFappname]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", global.CFappname)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFappname)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", global.CFappname, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFappname, expected, got)
 			}
 
-			expected = tt.expectedOutput.Fields[global.CFfacility]
-			got, ok = output.Fields[global.CFfacility]
+			expected = tt.expectedOutput.Fields[externalio.CFfacility]
+			got, ok = output.Fields[externalio.CFfacility]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", global.CFfacility)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFfacility)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", global.CFfacility, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFfacility, expected, got)
 			}
 
-			expected = tt.expectedOutput.Fields[global.CFprocessid]
-			got, ok = output.Fields[global.CFprocessid]
+			expected = tt.expectedOutput.Fields[externalio.CFprocessid]
+			got, ok = output.Fields[externalio.CFprocessid]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", global.CFprocessid)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFprocessid)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", global.CFprocessid, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFprocessid, expected, got)
 			}
 
-			expected = tt.expectedOutput.Fields[global.CFseverity]
-			got, ok = output.Fields[global.CFseverity]
+			expected = tt.expectedOutput.Fields[externalio.CFseverity]
+			got, ok = output.Fields[externalio.CFseverity]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", global.CFseverity)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFseverity)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", global.CFseverity, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFseverity, expected, got)
 			}
 		})
 	}

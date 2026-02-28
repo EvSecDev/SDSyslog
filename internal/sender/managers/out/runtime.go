@@ -2,7 +2,6 @@ package out
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/sender/output"
 	"strconv"
@@ -33,7 +32,7 @@ func (manager *InstanceManager) AddInstance() (instanceID int) {
 	// Create new context
 	workerCtx, cancelInstances := context.WithCancel(context.Background())
 	newWorker.cancel = cancelInstances
-	workerCtx = context.WithValue(workerCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
+	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	newWorker.wg.Add(1)
 	go func() {

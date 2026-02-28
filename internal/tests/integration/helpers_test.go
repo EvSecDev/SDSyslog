@@ -11,7 +11,6 @@ import (
 	"sdsyslog/internal/crypto/hash"
 	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/crypto/wrappers"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
@@ -263,7 +262,7 @@ func checkPipelineCounts(expectedCount int, startTime time.Time, senderDaemon *s
 
 	// Send - Input
 	var totalSendInCtn int
-	sendInMetrics := senderDaemon.MetricDataSearcher("lines_read", []string{global.NSSend, global.NSmIngest}, startTime, endTime)
+	sendInMetrics := senderDaemon.MetricDataSearcher("lines_read", []string{logctx.NSSend, logctx.NSmIngest}, startTime, endTime)
 	for _, metric := range sendInMetrics {
 		cnt, ok := metric.Value.Raw.(uint64)
 		if !ok {
@@ -279,7 +278,7 @@ func checkPipelineCounts(expectedCount int, startTime time.Time, senderDaemon *s
 
 	// Receive - Output
 	var totalRecvOutCtn int
-	recvOutMetrics := recvDaemon.MetricDataSearcher("success_writes", []string{global.NSRecv, global.NSmOutput}, startTime, endTime)
+	recvOutMetrics := recvDaemon.MetricDataSearcher("success_writes", []string{logctx.NSRecv, logctx.NSmOutput}, startTime, endTime)
 	for _, metric := range recvOutMetrics {
 		cnt, ok := metric.Value.Raw.(uint64)
 		if !ok {
@@ -295,7 +294,7 @@ func checkPipelineCounts(expectedCount int, startTime time.Time, senderDaemon *s
 
 	// Receive timeouts
 	var totalBucketTimeoutsCtn int
-	timeouts := recvDaemon.MetricDataSearcher("timed_out_buckets", []string{global.NSRecv, global.NSmDefrag}, startTime, endTime)
+	timeouts := recvDaemon.MetricDataSearcher("timed_out_buckets", []string{logctx.NSRecv, logctx.NSmDefrag}, startTime, endTime)
 	for _, metric := range timeouts {
 		cnt, ok := metric.Value.Raw.(uint64)
 		if !ok {

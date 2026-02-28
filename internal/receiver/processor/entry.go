@@ -5,7 +5,6 @@ import (
 	"context"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/internal/receiver/listener"
@@ -17,7 +16,7 @@ import (
 // Creates new processor with requested queue as inbox
 func New(namespace []string, queue *mpmc.Queue[listener.Container], shardRouting shard.RoutingView) (new *Instance) {
 	new = &Instance{
-		Namespace:   append(namespace, global.NSWorker),
+		Namespace:   append(namespace, logctx.NSWorker),
 		inbox:       queue,
 		routingView: shardRouting,
 		Metrics:     MetricStorage{},

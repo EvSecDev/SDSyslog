@@ -72,7 +72,7 @@ retryRoute:
 
 		rerouteLocal, err := fiprsend.RouteFragment(socketPath, bucketKey, remoteAddress, fragment)
 		if err != nil {
-			logctx.LogEvent(ctx, global.VerbosityData, global.ErrorLog,
+			logctx.LogEvent(ctx, logctx.VerbosityData, logctx.ErrorLog,
 				"failed to route message fragment to remote process (id '%s' will route to local): %w\n", bucketKey, err)
 			goto retryRoute
 		}
@@ -116,7 +116,7 @@ retryRoute:
 		routedIndex = defaultIndex
 	}
 
-	logctx.LogEvent(ctx, global.VerbosityData, global.InfoLog, "Sent message ID %d to %s %s\n", fragment.MsgID, routedDest, routedIndex)
+	logctx.LogEvent(ctx, logctx.VerbosityData, logctx.InfoLog, "Sent message ID %d to %s %s\n", fragment.MsgID, routedDest, routedIndex)
 	success = true
 	return
 }

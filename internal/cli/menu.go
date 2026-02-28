@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sdsyslog/internal/global"
 	"sort"
 	"strings"
 )
@@ -19,11 +18,11 @@ General help using GNU software: <https://www.gnu.org/gethelp/>
 )
 
 // Full standardized help menu (wraps option printer as well)
-func PrintHelpMenu(fs *flag.FlagSet, command string, rootCmd *global.CommandSet) {
+func PrintHelpMenu(fs *flag.FlagSet, command string, rootCmd *CommandSet) {
 	const baseIndentSpaces = 2
 
-	var curCmdSet *global.CommandSet
-	var parentStack []*global.CommandSet
+	var curCmdSet *CommandSet
+	var parentStack []*CommandSet
 
 	// Find the command in tree
 	if command == "" || command == RootCLICommand {

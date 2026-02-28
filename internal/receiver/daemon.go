@@ -40,12 +40,12 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	// New context for the daemon
 	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
 	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
-	daemon.ctx = context.WithValue(daemon.ctx, global.LoggerKey, logctx.GetLogger(globalCtx))
+	daemon.ctx = context.WithValue(daemon.ctx, logctx.LoggerKey, logctx.GetLogger(globalCtx))
 
 	// Top level tag for daemon logs (avoid duplicates)
 	currentTags := logctx.GetTagList(daemon.ctx)
-	if !slices.Equal(currentTags, []string{global.NSRecv}) {
-		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, global.NSRecv)
+	if !slices.Equal(currentTags, []string{logctx.NSRecv}) {
+		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, logctx.NSRecv)
 	}
 
 	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
@@ -98,7 +98,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		err = fmt.Errorf("failed starting output: %w", err)
 		return
 	}
-	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"output instance started successfully\n")
 
 	// Stage 3 - Shard+Assembler
@@ -109,7 +109,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	for i := 0; i < daemon.cfg.MinDefrags; i++ {
 		_ = daemon.Mgrs.Defrag.AddInstance()
 	}
-	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d defrag instance(s) started successfully\n", daemon.cfg.MinDefrags)
 
 	// Stage 2.9 - FIPR receiver (optional - only started under temp process during updates)
@@ -130,7 +130,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	for i := 0; i < daemon.cfg.MinProcessors; i++ {
 		daemon.Mgrs.Proc.AddInstance()
 	}
-	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d processor instance(s) started successfully\n", daemon.cfg.MinProcessors)
 
 	// Stage 1 - Listener
@@ -147,7 +147,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 			return
 		}
 	}
-	logctx.LogEvent(daemon.ctx, global.VerbosityProgress, global.InfoLog,
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d listener instance(s) started successfully\n", daemon.cfg.MinProcessors)
 
 	// Metrics Collector
@@ -185,8 +185,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	if daemon.cfg.MetricQueryServerEnabled {
 		// Top level tag for metric server logs (copy so return doesn't strip ns tags)
 		serverCtx := daemon.ctx
-		serverCtx = logctx.AppendCtxTag(serverCtx, global.NSMetric)
-		serverCtx = logctx.AppendCtxTag(serverCtx, global.NSMetricSrv)
+		serverCtx = logctx.AppendCtxTag(serverCtx, logctx.NSMetric)
+		serverCtx = logctx.AppendCtxTag(serverCtx, logctx.NSMetricSrv)
 
 		daemon.MetricServer, err = server.SetupListener(serverCtx,
 			daemon.cfg.MetricQueryServerPort,
@@ -213,7 +213,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		daemon.Shutdown()
 		return
 	}
-	lifecycle.PostUpdateActions(daemon.ctx, daemon, global.ReceiveShutdownTimeout)
+	lifecycle.PostUpdateActions(daemon.ctx, daemon, ShutdownTimeout)
 	err = lifecycle.NotifyReady(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error sending readiness to systemd: %w", err)
@@ -333,9 +333,9 @@ func (daemon *Daemon) Shutdown() {
 	select {
 	case <-done:
 		logctx.LogStdInfo(daemon.ctx, "Daemon shutdown completed successfully\n")
-	case <-time.After(global.ReceiveShutdownTimeout):
+	case <-time.After(ShutdownTimeout):
 		logctx.LogStdWarn(daemon.ctx, "Timeout: receive daemon did not shutdown within %v seconds",
-			global.ReceiveShutdownTimeout.Seconds())
+			ShutdownTimeout.Seconds())
 		return
 	}
 }

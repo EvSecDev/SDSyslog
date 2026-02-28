@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"strings"
 	"syscall"
@@ -58,7 +57,7 @@ func TestPostUpdateActions_ErrorPaths(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			baseCtx := context.Background()
-			ctx := logctx.New(baseCtx, "test", global.VerbosityStandard, nil)
+			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, nil)
 
 			os.Setenv(EnvNameSelfUpdate, tt.envValue)
 			defer os.Unsetenv(EnvNameSelfUpdate)
@@ -130,7 +129,7 @@ func TestTerminateChildProcess_ErrorPaths(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			baseCtx := context.Background()
-			ctx := logctx.New(baseCtx, "test", global.VerbosityStandard, nil)
+			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, nil)
 
 			cmd := &exec.Cmd{
 				Process: &os.Process{Pid: 999},

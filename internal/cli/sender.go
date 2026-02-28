@@ -11,7 +11,7 @@ import (
 	"sdsyslog/internal/sender"
 )
 
-func SendMode(ctx context.Context, cliOpts *global.CommandSet, commandname string, args []string) {
+func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args []string) {
 	var configPath string
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	requestedLogLevel := SetGlobalArguments(commandFlags)

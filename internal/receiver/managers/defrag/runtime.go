@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/shard"
@@ -39,7 +38,7 @@ func (manager *InstanceManager) AddInstance() (instanceID string) {
 
 	// Create new context for both watcher/assembler
 	workerCtx, cancelInstances := context.WithCancel(context.Background())
-	workerCtx = context.WithValue(workerCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
+	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	// Cancel for both instances
 	instancePair.cancel = cancelInstances

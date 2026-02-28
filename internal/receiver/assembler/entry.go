@@ -4,7 +4,6 @@ package assembler
 import (
 	"context"
 	"runtime/debug"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/internal/receiver/shard"
@@ -14,7 +13,7 @@ import (
 
 func New(namespace []string, shard *shard.Instance, outQueue *mpmc.Queue[protocol.Payload]) (new *Instance) {
 	new = &Instance{
-		Namespace: append(namespace, global.NSAssm),
+		Namespace: append(namespace, logctx.NSAssm),
 		shardInst: shard,
 		outbox:    outQueue,
 		Metrics:   MetricStorage{},
@@ -107,7 +106,7 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			instance.Metrics.ProcessedBuckets.Add(1) // increment success after push
 
-			logctx.LogEvent(ctx, global.VerbosityData, global.InfoLog, "Processed bucket %v\n", bucketKey)
+			logctx.LogEvent(ctx, logctx.VerbosityData, logctx.InfoLog, "Processed bucket %v\n", bucketKey)
 		}()
 	}
 }

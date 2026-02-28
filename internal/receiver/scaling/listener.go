@@ -4,7 +4,6 @@ import (
 	"context"
 	"sdsyslog/internal/calc"
 	"sdsyslog/internal/crypto/random"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/listener"
@@ -34,7 +33,7 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 	for id := 0; id <= instanceCount-1; id++ {
 		metrics := metricStore.Search(
 			"busy_time_percent",
-			[]string{global.NSRecv, global.NSmIngest, strconv.Itoa(id)},
+			[]string{logctx.NSRecv, logctx.NSmIngest, strconv.Itoa(id)},
 			time.Now().Add(-time.Duration(pastNIntervals)*interval),
 			time.Now(),
 		)
@@ -76,7 +75,7 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 			logctx.LogStdErr(ctx, "Failed to scale up listener instances: %w\n", err)
 			return
 		}
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up listener\n")
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up listener\n")
 	} else if scaleDown {
 		instanceId, err := random.NumberInRange(0, instanceCount-1)
 		if err != nil {
@@ -85,6 +84,6 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 		}
 		inMgr.RemoveInstance(instanceId)
 
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled down listener\n")
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down listener\n")
 	}
 }

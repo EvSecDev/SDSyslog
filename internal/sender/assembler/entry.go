@@ -5,7 +5,6 @@ import (
 	"context"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
@@ -13,7 +12,7 @@ import (
 
 func New(namespace []string, inQueue *mpmc.Queue[protocol.Message], outQueue *mpmc.Queue[[]byte], hostID, maxPayloadSize int) (new *Instance) {
 	new = &Instance{
-		Namespace:      append(namespace, global.NSAssm),
+		Namespace:      append(namespace, logctx.NSAssm),
 		inbox:          inQueue,
 		outbox:         outQueue,
 		hostID:         hostID,

@@ -6,14 +6,13 @@ import (
 	"net"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 )
 
 func New(namespace []string, inQueue *mpmc.Queue[[]byte], conn *net.UDPConn) (new *Instance) {
 	new = &Instance{
-		Namespace: append(namespace, global.NSWorker),
+		Namespace: append(namespace, logctx.NSWorker),
 		inbox:     inQueue,
 		conn:      conn,
 		Metrics:   MetricStorage{},
@@ -63,7 +62,7 @@ func (instance *Instance) Run(ctx context.Context) {
 
 			instance.Metrics.TotalPackets.Add(1)
 
-			logctx.LogEvent(ctx, global.VerbosityData, global.InfoLog,
+			logctx.LogEvent(ctx, logctx.VerbosityData, logctx.InfoLog,
 				"Sent fragment (size %d) to %s\n", len(frag), instance.conn.RemoteAddr())
 		}()
 	}

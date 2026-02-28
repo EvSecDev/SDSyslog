@@ -3,6 +3,7 @@ package mpmc
 import (
 	"context"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"sync"
 	"testing"
 	"time"
@@ -53,7 +54,7 @@ func TestQueueMigration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := New[int]([]string{global.NSTest}, tt.initialSize, 2, global.DefaultMaxQueueSize) // min/max not used here
+			q, err := New[int]([]string{logctx.NSTest}, tt.initialSize, 2, global.DefaultMaxQueueSize) // min/max not used here
 			if err != nil {
 				t.Fatalf("failed to create queue: %v", err)
 			}

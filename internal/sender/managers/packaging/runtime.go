@@ -2,7 +2,6 @@ package packaging
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/sender/assembler"
 	"strconv"
@@ -19,7 +18,7 @@ func (manager *InstanceManager) AddInstance() (instanceID int) {
 	manager.nextID++
 
 	// Add log context
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, global.NSmPack)
+	manager.ctx = logctx.AppendCtxTag(manager.ctx, logctx.NSmPack)
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, strconv.Itoa(instanceID))
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
@@ -35,7 +34,7 @@ func (manager *InstanceManager) AddInstance() (instanceID int) {
 	// Create new context
 	workerCtx, cancelInstances := context.WithCancel(context.Background())
 	newWorker.cancel = cancelInstances
-	workerCtx = context.WithValue(workerCtx, global.LoggerKey, logctx.GetLogger(manager.ctx))
+	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	newWorker.wg.Add(1)
 	go func() {

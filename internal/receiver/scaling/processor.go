@@ -2,7 +2,6 @@ package scaling
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/queue/mpmc"
@@ -22,7 +21,7 @@ func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval
 	const pastNIntervals = 5
 
 	// Get the last x scaling polling intervals worth of load data and average
-	metrics := metricStore.Search("depth", []string{global.NSRecv, global.NSProc, global.NSQueue}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
+	metrics := metricStore.Search("depth", []string{logctx.NSRecv, logctx.NSProc, logctx.NSQueue}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
 	if len(metrics) < pastNIntervals {
 		// Not enough data, ignoring
 		return
@@ -40,14 +39,14 @@ func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval
 
 	if scaleUp {
 		procMgr.AddInstance()
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled up processor\n")
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up processor\n")
 	} else if scaleDown {
 		// Picking effectively a random instance (map keys)
 		for instanceId := range procMgr.Instances {
 			procMgr.RemoveInstance(instanceId)
 			break
 		}
-		logctx.LogEvent(ctx, global.VerbosityProgress, global.InfoLog, "Scaled down processor\n")
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down processor\n")
 	}
 
 	// Check queue for scaling

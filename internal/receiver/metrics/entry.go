@@ -4,7 +4,6 @@ package metrics
 import (
 	"context"
 	"runtime/debug"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/shared"
@@ -22,7 +21,7 @@ func New(mgrs shared.Managers, interval time.Duration, maximumMetricAge time.Dur
 }
 
 func (gatherer *Gatherer) Run(ctx context.Context) {
-	ctx = logctx.AppendCtxTag(ctx, global.NSMetric)
+	ctx = logctx.AppendCtxTag(ctx, logctx.NSMetric)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	// Track last run times for each interval

@@ -2,17 +2,17 @@ package cli
 
 import "sdsyslog/internal/global"
 
-func DefineOptions() (cmdOpts *global.CommandSet) {
+func DefineOptions() (cmdOpts *CommandSet) {
 	// Root level
-	root := &global.CommandSet{
+	root := &CommandSet{
 		Description:     "Secure Diode System Logger (SDSyslog)",
 		FullDescription: "  Encrypts and transfers messages over unidirectional networks",
 		CommandName:     RootCLICommand,
-		ChildCommands:   make(map[string]*global.CommandSet),
+		ChildCommands:   make(map[string]*CommandSet),
 	}
 
 	// Sending
-	root.ChildCommands[global.SendMode] = &global.CommandSet{
+	root.ChildCommands[global.SendMode] = &CommandSet{
 		CommandName:     global.SendMode,
 		Description:     "Send Messages",
 		FullDescription: "Reads messages from external sources, encrypts, fragments and transmits to configured destination",
@@ -20,7 +20,7 @@ func DefineOptions() (cmdOpts *global.CommandSet) {
 	}
 
 	// Receiving
-	root.ChildCommands[global.RecvMode] = &global.CommandSet{
+	root.ChildCommands[global.RecvMode] = &CommandSet{
 		CommandName:     global.RecvMode,
 		Description:     "Receive Messages",
 		FullDescription: "Receives network packets, decrypts, reassembles, and sends messages to configured outputs",
@@ -28,7 +28,7 @@ func DefineOptions() (cmdOpts *global.CommandSet) {
 	}
 
 	// Setup
-	root.ChildCommands["configure"] = &global.CommandSet{
+	root.ChildCommands["configure"] = &CommandSet{
 		CommandName:     "configure",
 		Description:     "Setup Actions",
 		FullDescription: "Configure various aspects of installation, generation, and runtime",
@@ -36,7 +36,7 @@ func DefineOptions() (cmdOpts *global.CommandSet) {
 	}
 
 	// Version Info
-	root.ChildCommands["version"] = &global.CommandSet{
+	root.ChildCommands["version"] = &CommandSet{
 		CommandName:     "version",
 		Description:     "Show Version Information",
 		FullDescription: "Display meta information about program",

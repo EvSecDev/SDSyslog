@@ -2,7 +2,7 @@ package mpmc
 
 import (
 	"context"
-	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"testing"
 )
 
@@ -70,7 +70,7 @@ func TestQueueScaleCapacity_DecisionOnly(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := New[int]([]string{global.NSTest}, tt.initialCap, tt.minCap, tt.maxCap)
+			q, err := New[int]([]string{logctx.NSTest}, tt.initialCap, tt.minCap, tt.maxCap)
 			if err != nil {
 				t.Fatalf("new queue: %v", err)
 			}

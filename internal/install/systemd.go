@@ -14,11 +14,11 @@ func installService(mode string) (err error) {
 	var templateFile string
 	switch mode {
 	case "send":
-		unitFilePath = "/etc/systemd/system/sdsyslog-send.service"
-		templateFile = "static-files/sdsyslog-sender.service"
+		unitFilePath = DefaultSystemdUnitDir + global.ProgBaseName + "-send.service"
+		templateFile = "static-files/" + global.ProgBaseName + "-sender.service"
 	case "receive":
-		unitFilePath = "/etc/systemd/system/sdsyslog.service"
-		templateFile = "static-files/sdsyslog.service"
+		unitFilePath = DefaultSystemdUnitDir + global.ProgBaseName + ".service"
+		templateFile = "static-files/" + global.ProgBaseName + ".service"
 	default:
 		err = fmt.Errorf("unknown mode '%s'", mode)
 		return
@@ -81,9 +81,9 @@ func uninstallService(mode string) (err error) {
 	var unitFilePath string
 	switch mode {
 	case "send":
-		unitFilePath = "/etc/systemd/system/sdsyslog-send.service"
+		unitFilePath = DefaultSystemdUnitDir + global.ProgBaseName + "-send.service"
 	case "receive":
-		unitFilePath = "/etc/systemd/system/sdsyslog.service"
+		unitFilePath = DefaultSystemdUnitDir + global.ProgBaseName + ".service"
 	default:
 		err = fmt.Errorf("unknown mode '%s'", mode)
 		return

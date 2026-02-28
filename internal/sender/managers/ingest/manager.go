@@ -3,7 +3,6 @@ package ingest
 
 import (
 	"context"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
@@ -17,7 +16,7 @@ func NewInstanceManager(ctx context.Context, outbox *mpmc.Queue[protocol.Message
 	}
 
 	// Add log context
-	ctx = logctx.AppendCtxTag(ctx, global.NSmIngest)
+	ctx = logctx.AppendCtxTag(ctx, logctx.NSmIngest)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	new = &InstanceManager{

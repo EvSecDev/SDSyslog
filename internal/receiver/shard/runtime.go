@@ -3,14 +3,13 @@ package shard
 import (
 	"context"
 	"runtime/debug"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"time"
 )
 
 // Shard deadline watcher - ensures buckets that exceed deadline are marked filled
 func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
-	ctx = logctx.AppendCtxTag(ctx, global.NSWatcher)
+	ctx = logctx.AppendCtxTag(ctx, logctx.NSWatcher)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	deadlinePtr := shard.PacketDeadline

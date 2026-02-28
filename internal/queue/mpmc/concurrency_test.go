@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"runtime"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 	"sync"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func TestQueue_Concurrency(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			queue, err := New[int]([]string{global.NSTest}, tt.capacity, 2, global.DefaultMaxQueueSize)
+			queue, err := New[int]([]string{logctx.NSTest}, tt.capacity, 2, global.DefaultMaxQueueSize)
 			if err != nil {
 				t.Fatalf("expected no error in creating queue, but got '%v'", err)
 			}
@@ -61,7 +62,7 @@ func TestQueue_Concurrency(t *testing.T) {
 
 func TestQueue_ContextBehavior(t *testing.T) {
 	t.Run("PopBlocksUntilPush", func(t *testing.T) {
-		queue, err := New[int]([]string{global.NSTest}, 2, 2, global.DefaultMaxQueueSize)
+		queue, err := New[int]([]string{logctx.NSTest}, 2, 2, global.DefaultMaxQueueSize)
 		if err != nil {
 			t.Fatalf("expected no error in creating queue, but got '%v'", err)
 		}
@@ -80,7 +81,7 @@ func TestQueue_ContextBehavior(t *testing.T) {
 	})
 
 	t.Run("PopTimeout", func(t *testing.T) {
-		queue, err := New[int]([]string{global.NSTest}, 2, 2, global.DefaultMaxQueueSize)
+		queue, err := New[int]([]string{logctx.NSTest}, 2, 2, global.DefaultMaxQueueSize)
 		if err != nil {
 			t.Fatalf("expected no error in creating queue, but got '%v'", err)
 		}
@@ -94,7 +95,7 @@ func TestQueue_ContextBehavior(t *testing.T) {
 	})
 
 	t.Run("PopContextCancel", func(t *testing.T) {
-		queue, err := New[int]([]string{global.NSTest}, 2, 2, global.DefaultMaxQueueSize)
+		queue, err := New[int]([]string{logctx.NSTest}, 2, 2, global.DefaultMaxQueueSize)
 		if err != nil {
 			t.Fatalf("expected no error in creating queue, but got '%v'", err)
 		}
@@ -111,7 +112,7 @@ func TestQueue_ContextBehavior(t *testing.T) {
 
 func TestQueue_StressIntegrity(t *testing.T) {
 	// Create a queue instance with a given namespace and size
-	queue, err := New[int]([]string{global.NSTest}, 512, 2, global.DefaultMaxQueueSize)
+	queue, err := New[int]([]string{logctx.NSTest}, 512, 2, global.DefaultMaxQueueSize)
 	if err != nil {
 		t.Fatalf("expected no error in creating queue, but got '%v'", err)
 	}

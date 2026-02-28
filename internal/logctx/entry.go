@@ -4,24 +4,23 @@ package logctx
 import (
 	"context"
 	"fmt"
-	"sdsyslog/internal/global"
 	"sort"
 	"strings"
 )
 
 // Wrapper - log event as Standard verbosity and Info severity
 func LogStdInfo(ctx context.Context, message string, vars ...any) {
-	LogEvent(ctx, global.VerbosityStandard, global.InfoLog, message, vars...)
+	LogEvent(ctx, VerbosityStandard, InfoLog, message, vars...)
 }
 
 // Wrapper - log event as Standard verbosity and Warning severity
 func LogStdWarn(ctx context.Context, message string, vars ...any) {
-	LogEvent(ctx, global.VerbosityStandard, global.WarnLog, message, vars...)
+	LogEvent(ctx, VerbosityStandard, WarnLog, message, vars...)
 }
 
 // Wrapper - log event as Standard verbosity and Error severity
 func LogStdErr(ctx context.Context, message string, vars ...any) {
-	LogEvent(ctx, global.VerbosityStandard, global.ErrorLog, message, vars...)
+	LogEvent(ctx, VerbosityStandard, ErrorLog, message, vars...)
 }
 
 // Entry for logging events.

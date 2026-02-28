@@ -3,7 +3,7 @@ package journald
 import (
 	"fmt"
 	"os"
-	"sdsyslog/internal/global"
+	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/syslog"
 	"sdsyslog/pkg/protocol"
 	"strconv"
@@ -43,11 +43,11 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 	candidates := []string{"SYSLOG_IDENTIFIER", "_SYSTEMD_USER_UNIT", "_SYSTEMD_UNIT"}
 	for _, key := range candidates {
 		if val, ok := fields[key]; ok {
-			message.Fields[global.CFappname] = val
+			message.Fields[externalio.CFappname] = val
 			break
 		}
 	}
-	_, ok = message.Fields[global.CFappname]
+	_, ok = message.Fields[externalio.CFappname]
 	if !ok {
 		err = fmt.Errorf("journal entry has no unit field")
 		return
@@ -70,7 +70,7 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 		err = fmt.Errorf("journal message priority '%s' is invalid: %w", journalPriority, err)
 		return
 	}
-	message.Fields[global.CFseverity], err = syslog.CodeToSeverity(uint16(jrnlPriInt))
+	message.Fields[externalio.CFseverity], err = syslog.CodeToSeverity(uint16(jrnlPriInt))
 	if err != nil {
 		err = fmt.Errorf("invalid severity '%d': %w", jrnlPriInt, err)
 		return
@@ -86,14 +86,14 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 		}
 	}
 	if pidStr != "" {
-		message.Fields[global.CFprocessid], err = strconv.Atoi(pidStr)
+		message.Fields[externalio.CFprocessid], err = strconv.Atoi(pidStr)
 		if err != nil {
 			err = fmt.Errorf("invalid pid '%s': %w", pidStr, err)
 			return
 		}
 	} else {
 		// Using self for missing pid
-		message.Fields[global.CFprocessid] = os.Getpid()
+		message.Fields[externalio.CFprocessid] = os.Getpid()
 	}
 
 	// FACILITY
@@ -106,7 +106,7 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 		err = fmt.Errorf("journal message priority '%s' is invalid: %w", journalFacility, err)
 		return
 	}
-	message.Fields[global.CFfacility], err = syslog.CodeToFacility(uint16(jrnlSeverityInt))
+	message.Fields[externalio.CFfacility], err = syslog.CodeToFacility(uint16(jrnlSeverityInt))
 	if err != nil {
 		err = fmt.Errorf("invalid severity '%d': %w", jrnlSeverityInt, err)
 		return

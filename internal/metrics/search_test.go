@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"sdsyslog/internal/global"
 	"testing"
 	"time"
 )
@@ -46,12 +45,12 @@ func TestRegistry_Aggregate(t *testing.T) {
 		want      float64
 		wantError bool
 	}{
-		{"sum mixed types", global.MetricSum, "queue_depth", 25, false}, // 10 + 20 + (-5)
-		{"min negative", global.MetricMin, "queue_depth", -5, false},
-		{"max mixed types", global.MetricMax, "queue_depth", 20, false},
-		{"avg mixed types", global.MetricAvg, "queue_depth", 25.0 / 3.0, false},
-		{"string numeric aggregation", global.MetricSum, "elapsed_time", 250, false},
-		{"non-numeric error", global.MetricSum, "bad_metric", 0, true},
+		{"sum mixed types", MetricSum, "queue_depth", 25, false}, // 10 + 20 + (-5)
+		{"min negative", MetricMin, "queue_depth", -5, false},
+		{"max mixed types", MetricMax, "queue_depth", 20, false},
+		{"avg mixed types", MetricAvg, "queue_depth", 25.0 / 3.0, false},
+		{"string numeric aggregation", MetricSum, "elapsed_time", 250, false},
+		{"non-numeric error", MetricSum, "bad_metric", 0, true},
 	}
 
 	for _, tt := range tests {
@@ -85,7 +84,7 @@ func TestRegistry_Aggregate(t *testing.T) {
 func TestRegistry_Aggregate_NoResults(t *testing.T) {
 	reg, _ := setupRegistryWithData(t)
 	_, err := reg.Aggregate(
-		global.MetricSum,
+		MetricSum,
 		"missing",
 		[]string{"Receiver"},
 		time.Time{},

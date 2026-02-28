@@ -11,7 +11,7 @@ import (
 	"sdsyslog/internal/receiver"
 )
 
-func ReceiveMode(ctx context.Context, cliOpts *global.CommandSet, commandname string, args []string) {
+func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, args []string) {
 	var configPath string
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	requestedLogLevel := SetGlobalArguments(commandFlags)

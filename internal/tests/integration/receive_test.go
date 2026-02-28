@@ -87,7 +87,7 @@ func TestRecvConstantFlow(t *testing.T) {
 	time.Sleep(2 * newCfg.MetricCollectionInterval)
 
 	// Check for any errors in the log buffer
-	errors, errorsFound := filterLogBuffer(globalCtx, "", "", global.ErrorLog)
+	errors, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
 	if errorsFound {
 		t.Fatalf("expected no start-up errors in receive pipeline, but found: %v\n", errors)
 	}
@@ -157,12 +157,12 @@ func TestRecvConstantFlow(t *testing.T) {
 			break
 		}
 
-		errors, foundError := filterLogBuffer(globalCtx, "", "Receiver", global.ErrorLog)
+		errors, foundError := filterLogBuffer(globalCtx, "", "Receiver", logctx.ErrorLog)
 		if foundError {
 			t.Fatalf("expected no errors from receiver, but got:\n%s\n", errors)
 		}
 
-		warnings, foundWarn := filterLogBuffer(globalCtx, "", "Receiver", global.WarnLog)
+		warnings, foundWarn := filterLogBuffer(globalCtx, "", "Receiver", logctx.WarnLog)
 		if foundWarn {
 			t.Errorf("expected no warnings from receiver, but got:\n%s\n", warnings)
 		}
@@ -194,11 +194,11 @@ func TestRecvConstantFlow(t *testing.T) {
 	}
 
 	// Check for errors post-shutdown
-	errors, errorsFound = filterLogBuffer(globalCtx, "", global.NSRecv, global.ErrorLog)
+	errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
 	if errorsFound {
 		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%s", errors)
 	}
-	warns, warnsFound := filterLogBuffer(globalCtx, "", global.NSRecv, global.WarnLog)
+	warns, warnsFound := filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.WarnLog)
 	if warnsFound {
 		t.Errorf("expected no warnings in receive daemon shutdown, but found:\n%s", warns)
 	}

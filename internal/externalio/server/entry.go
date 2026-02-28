@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
 	"strconv"
@@ -32,11 +31,11 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 	}
 
 	// Replace variables in html with globals
-	helpPage = bytes.ReplaceAll(helpPage, []byte("{LISTEN_ADDR}"), []byte(global.HTTPListenAddr))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{LISTEN_ADDR}"), []byte(ListenAddr))
 	helpPage = bytes.ReplaceAll(helpPage, []byte("{LISTEN_PORT}"), []byte(strconv.Itoa(port)))
-	helpPage = bytes.ReplaceAll(helpPage, []byte("{DATA_PATH}"), []byte(global.DataPath))
-	helpPage = bytes.ReplaceAll(helpPage, []byte("{DISCOVER_PATH}"), []byte(global.DiscoveryPath))
-	helpPage = bytes.ReplaceAll(helpPage, []byte("{AGGREGATION_PATH}"), []byte(global.AggregationPath))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{DATA_PATH}"), []byte(DataPath))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{DISCOVER_PATH}"), []byte(DiscoveryPath))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{AGGREGATION_PATH}"), []byte(AggregationPath))
 
 	// Root help page
 	requestMultiplexer.HandleFunc("/", func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
@@ -55,7 +54,7 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 	})
 
 	// Metric Discovery Requests
-	requestMultiplexer.HandleFunc(global.DiscoveryPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
+	requestMultiplexer.HandleFunc(DiscoveryPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
 		if clientRequest.Method != http.MethodGet {
 			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
 			return
@@ -64,7 +63,7 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 	})
 
 	// Metric Data Requests
-	requestMultiplexer.HandleFunc(global.DataPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
+	requestMultiplexer.HandleFunc(DataPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
 		if clientRequest.Method != http.MethodGet {
 			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
 			return
@@ -73,7 +72,7 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 	})
 
 	// Metric Aggregation Requests
-	requestMultiplexer.HandleFunc(global.AggregationPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
+	requestMultiplexer.HandleFunc(AggregationPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
 		if clientRequest.Method != http.MethodGet {
 			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
 			return
@@ -83,11 +82,11 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 
 	// Server configuration
 	server = &http.Server{
-		Addr:         global.HTTPListenAddr + ":" + strconv.Itoa(port),
+		Addr:         ListenAddr + ":" + strconv.Itoa(port),
 		Handler:      requestMultiplexer,
-		ReadTimeout:  global.HTTPReadTimeout,
-		WriteTimeout: global.HTTPWriteTimeout,
-		IdleTimeout:  global.HTTPIdleTimeout,
+		ReadTimeout:  ReadTimeout,
+		WriteTimeout: WriteTimeout,
+		IdleTimeout:  IdleTimeout,
 		ErrorLog:     log.New(httpLogWriter{ctx: ctx}, "", 0),
 	}
 
@@ -136,8 +135,8 @@ func (logWriter httpLogWriter) Write(p []byte) (n int, err error) {
 	}
 	logctx.LogEvent(
 		logWriter.ctx,
-		global.VerbosityStandard,
-		global.ErrorLog,
+		logctx.VerbosityStandard,
+		logctx.ErrorLog,
 		"%s\n", strings.TrimSpace(string(p)),
 	)
 	return

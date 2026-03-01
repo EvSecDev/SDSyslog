@@ -76,7 +76,12 @@ func notify(ctx context.Context, msg string) (err error) {
 		err = fmt.Errorf("notify dial failed: %w", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		lerr := conn.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed closing socket connection: %w", lerr)
+		}
+	}()
 
 	_, err = conn.Write([]byte(msg))
 	if err != nil {

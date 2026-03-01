@@ -19,13 +19,21 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 		logctx.LogStdErr(ctx, "failed to initialize inotify: %w\n", err)
 		return
 	}
-	defer syscall.Close(fd)
+	defer func() {
+		err := syscall.Close(fd)
+		if err != nil {
+			logctx.LogStdErr(ctx, "failed to close inotify watcher file descriptor: %w\n", err)
+		}
+	}()
 
 	// Track active watcher fd's for dynamic cleanup
 	watchDescriptors := make(map[string]int)
 	defer func() {
 		for _, descriptor := range watchDescriptors {
-			syscall.InotifyRmWatch(fd, uint32(descriptor))
+			_, err := syscall.InotifyRmWatch(fd, uint32(descriptor))
+			if err != nil {
+				logctx.LogStdErr(ctx, "failed to remove inotify watcher for '%s': %w\n", logFileInput, err)
+			}
 		}
 	}()
 
@@ -89,7 +97,10 @@ func watcher(ctx context.Context, logFileInput string, fileHasChanged chan bool,
 				if event.Wd == int32(watchDescriptorDir) && name == logFileName {
 					if (event.Mask & (syscall.IN_MOVED_FROM | syscall.IN_MOVED_TO | syscall.IN_DELETE | syscall.IN_CREATE)) != 0 {
 						// Cleanup watcher for old inode
-						syscall.InotifyRmWatch(fd, uint32(watchDescriptorFile))
+						_, err = syscall.InotifyRmWatch(fd, uint32(watchDescriptorFile))
+						if err != nil {
+							logctx.LogStdWarn(ctx, "failed to remove previous inotify watcher for '%s': %w\n", logFileInput, err)
+						}
 
 						maxRetries := 5
 						delay := 100 * time.Millisecond

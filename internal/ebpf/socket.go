@@ -20,7 +20,12 @@ func GetSocketCookie(conn *net.UDPConn) (cookie uint64, err error) {
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer func() {
+		lerr := file.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed to close connection: %w", lerr)
+		}
+	}()
 
 	fd := int(file.Fd())
 
@@ -62,11 +67,16 @@ func MarkSocketDraining(pinnedMapPath string, socketCookie uint64) (err error) {
 		err = fmt.Errorf("failed to load eBPF map: %w", err)
 		return
 	}
-	defer socketMap.Close()
+	defer func() {
+		lerr := socketMap.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed to close socket map: %w", lerr)
+		}
+	}()
 
 	err = socketMap.Put(socketCookie, uint8(DrainSocket))
 	if err != nil {
-		err = fmt.Errorf("failed to mark socket draining: %w\n", err)
+		err = fmt.Errorf("failed to mark socket draining: %w", err)
 		return
 	}
 

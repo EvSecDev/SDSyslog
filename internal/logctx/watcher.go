@@ -73,15 +73,16 @@ func StartWatcher(logger *Logger, output io.Writer) {
 				dedup.repeatCount++
 				// Only print suppression message once per minute
 				if dedup.repeatCount >= minRepeats && now.Sub(dedup.lastSuppressTime) >= suppressCooldown {
-
-					fmt.Fprintf(output,
+					_, err := fmt.Fprintf(output,
 						"[%s] [%s] [%s] Suppressed %d repeated messages: %s\n",
 						padTimestamp(event.Timestamp),
 						strings.Join(event.Tags, "/"),
 						InfoLog,
 						dedup.repeatCount,
 						dedup.lastMsg)
-
+					if err != nil {
+						panic("encountered failure writing to log output sink: " + err.Error())
+					}
 					dedup.lastSuppressTime = now
 					dedup.repeatCount = 0
 				}
@@ -94,7 +95,10 @@ func StartWatcher(logger *Logger, output io.Writer) {
 				dedup.repeatCount = 1
 			}
 
-			fmt.Fprintf(output, "%s", event.Format())
+			_, err := fmt.Fprintf(output, "%s", event.Format())
+			if err != nil {
+				panic("encountered failure writing to log output sink: " + err.Error())
+			}
 		}
 	}()
 }

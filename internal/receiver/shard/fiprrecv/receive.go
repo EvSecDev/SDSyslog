@@ -38,8 +38,13 @@ func (instance *Instance) Run(ctx context.Context) {
 }
 
 func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGroup, conn net.Conn) {
-	defer wg.Done()
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			logctx.LogStdErr(ctx, "failed closing connection: %w\n", err)
+		}
+		wg.Done()
+	}()
 	defer func() {
 		// Record panics and continue listening
 		if fatalError := recover(); fatalError != nil {

@@ -336,7 +336,11 @@ func mockPackets(numMessages int, rawMessage string, maxPayloadSize int, publicK
 
 	// Pre-startup
 	syslog.InitBidiMaps()
-	wrappers.SetupEncryptInnerPayload(publicKey)
+	err = wrappers.SetupEncryptInnerPayload(publicKey)
+	if err != nil {
+		err = fmt.Errorf("failed setting up encryption function: %w", err)
+		return
+	}
 
 	mainHostID, err := random.FourByte()
 	if err != nil {

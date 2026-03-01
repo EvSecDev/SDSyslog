@@ -19,12 +19,23 @@ func TestReadinessHandshake(t *testing.T) {
 			name: "receiver success",
 			run: func(t *testing.T) {
 				r, w, _ := os.Pipe()
-				defer r.Close()
-				defer w.Close()
+				defer func() {
+					err := r.Close()
+					if err != nil {
+						t.Fatalf("failed closing pipe reader: %v", err)
+					}
+					err = w.Close()
+					if err != nil {
+						t.Fatalf("failed closing pipe writer: %v", err)
+					}
+				}()
 
 				go func() {
 					time.Sleep(10 * time.Millisecond)
-					w.Write([]byte(ReadyMessage))
+					_, err := w.Write([]byte(ReadyMessage))
+					if err != nil {
+						t.Logf("unexpected error writing to pipe: %v", err)
+					}
 				}()
 
 				if err := readinessReceiver(r); err != nil {
@@ -36,11 +47,22 @@ func TestReadinessHandshake(t *testing.T) {
 			name: "receiver wrong message",
 			run: func(t *testing.T) {
 				r, w, _ := os.Pipe()
-				defer r.Close()
-				defer w.Close()
+				defer func() {
+					err := r.Close()
+					if err != nil {
+						t.Fatalf("failed closing pipe reader: %v", err)
+					}
+					err = w.Close()
+					if err != nil {
+						t.Fatalf("failed closing pipe writer: %v", err)
+					}
+				}()
 
 				go func() {
-					w.Write([]byte("WRONGMSG"))
+					_, err := w.Write([]byte("WRONGMSG"))
+					if err != nil {
+						t.Logf("unexpected error writing to pipe: %v", err)
+					}
 				}()
 
 				if err := readinessReceiver(r); err == nil {
@@ -52,11 +74,22 @@ func TestReadinessHandshake(t *testing.T) {
 			name: "receiver short read",
 			run: func(t *testing.T) {
 				r, w, _ := os.Pipe()
-				defer r.Close()
+				defer func() {
+					err := r.Close()
+					if err != nil {
+						t.Fatalf("failed closing pipe reader: %v", err)
+					}
+				}()
 
 				go func() {
-					w.Write([]byte(ReadyMessage[:1]))
-					w.Close()
+					_, err := w.Write([]byte(ReadyMessage[:1]))
+					if err != nil {
+						t.Logf("unexpected error writing to pipe: %v", err)
+					}
+					err = w.Close()
+					if err != nil {
+						t.Logf("failed closing pipe writer: %v", err)
+					}
 				}()
 
 				if err := readinessReceiver(r); err == nil {
@@ -67,7 +100,10 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender no env",
 			run: func(t *testing.T) {
-				os.Unsetenv(EnvNameReadinessFD)
+				err := os.Unsetenv(EnvNameReadinessFD)
+				if err != nil {
+					t.Fatalf("unexpected error setting environment variable: %v", err)
+				}
 				if err := ReadinessSender(); err != nil {
 					t.Fatalf("expected nil, got %v", err)
 				}
@@ -76,8 +112,16 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender invalid env",
 			run: func(t *testing.T) {
-				os.Setenv(EnvNameReadinessFD, "bad")
-				defer os.Unsetenv(EnvNameReadinessFD)
+				err := os.Setenv(EnvNameReadinessFD, "bad")
+				if err != nil {
+					t.Fatalf("unexpected error setting environment variable: %v", err)
+				}
+				defer func() {
+					err := os.Unsetenv(EnvNameReadinessFD)
+					if err != nil {
+						t.Fatalf("failed unsetting env variable: %v", err)
+					}
+				}()
 
 				if err := ReadinessSender(); err == nil {
 					t.Fatal("expected error")
@@ -87,8 +131,16 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender bad fd",
 			run: func(t *testing.T) {
-				os.Setenv(EnvNameReadinessFD, "999999")
-				defer os.Unsetenv(EnvNameReadinessFD)
+				err := os.Setenv(EnvNameReadinessFD, "999999")
+				if err != nil {
+					t.Fatalf("unexpected error setting environment variable: %v", err)
+				}
+				defer func() {
+					err := os.Unsetenv(EnvNameReadinessFD)
+					if err != nil {
+						t.Fatalf("failed unsetting env variable: %v", err)
+					}
+				}()
 
 				if err := ReadinessSender(); err == nil {
 					t.Fatal("expected error")
@@ -99,10 +151,23 @@ func TestReadinessHandshake(t *testing.T) {
 			name: "sender success",
 			run: func(t *testing.T) {
 				r, w, _ := os.Pipe()
-				defer r.Close()
+				defer func() {
+					err := r.Close()
+					if err != nil {
+						t.Fatalf("failed closing pipe reader: %v", err)
+					}
+				}()
 
-				os.Setenv(EnvNameReadinessFD, strconv.Itoa(int(w.Fd())))
-				defer os.Unsetenv(EnvNameReadinessFD)
+				err := os.Setenv(EnvNameReadinessFD, strconv.Itoa(int(w.Fd())))
+				if err != nil {
+					t.Fatalf("unexpected error setting environment variable: %v", err)
+				}
+				defer func() {
+					err := os.Unsetenv(EnvNameReadinessFD)
+					if err != nil {
+						t.Fatalf("failed unsetting env variable: %v", err)
+					}
+				}()
 
 				if err := ReadinessSender(); err != nil {
 					t.Fatalf("unexpected error: %v", err)

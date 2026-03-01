@@ -37,7 +37,6 @@ func FindSendingMaxUDPPayload(destination string) (maxPayloadSize int, err error
 	if err != nil {
 		// If it's not in host:port format, assume it's just a host or IP
 		destinationIP = destination
-		err = nil
 	} else {
 		destinationIP = host
 	}

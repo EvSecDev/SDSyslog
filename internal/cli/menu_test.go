@@ -27,9 +27,15 @@ func TestPrintHelpMenu_RootOutput(t *testing.T) {
 
 	PrintHelpMenu(fs, "", root)
 
-	w.Close()
+	err := w.Close()
+	if err != nil {
+		t.Fatalf("unexpected error when closing stdout write pipe: %v", err)
+	}
 	os.Stdout = origStdout
-	buf.ReadFrom(r)
+	_, err = buf.ReadFrom(r)
+	if err != nil {
+		t.Fatalf("unexpected error when reading from stdout: %v", err)
+	}
 
 	got := buf.String()
 	got = strings.ReplaceAll(got, "\r\n", "\n")

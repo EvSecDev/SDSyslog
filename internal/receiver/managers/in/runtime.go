@@ -87,7 +87,11 @@ func (manager *InstanceManager) RemoveInstance(id int) {
 		if ingestInstance.conn != nil {
 			// Required for listener to process cancellation when blocked
 			// Theoretically... can cause deadlocks on shutdown due to close not breaking blocking read syscall
-			ingestInstance.conn.Close()
+			err := ingestInstance.conn.Close()
+			if err != nil {
+				logctx.LogStdErr(manager.ctx,
+					"Listener %d: failed to close socket: %w\n", id, err)
+			}
 		}
 
 		if dataLeft > 0 {

@@ -27,7 +27,12 @@ func sendJournalExport(client *http.Client, url string, payload []byte) (err err
 		err = fmt.Errorf("failed HTTP request: %w", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		lerr := resp.Body.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed to close response body: %w", lerr)
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		err = fmt.Errorf("received HTTP status '%s'", resp.Status)

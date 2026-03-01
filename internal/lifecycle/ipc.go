@@ -53,7 +53,12 @@ func ReadinessSender() (err error) {
 		err = fmt.Errorf("failed to open %s=%d", EnvNameReadinessFD, fd)
 		return
 	}
-	defer readyPipe.Close()
+	defer func() {
+		lerr := readyPipe.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed closing ready pipe: %w", lerr)
+		}
+	}()
 
 	// Send readiness message
 	msg := []byte(ReadyMessage)

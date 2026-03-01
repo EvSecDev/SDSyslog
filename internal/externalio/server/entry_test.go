@@ -80,7 +80,12 @@ func TestSetupListener_RoutingAndHTML(t *testing.T) {
 			if err != nil {
 				t.Fatalf("http request failed: %v", err)
 			}
-			defer resp.Body.Close()
+			defer func() {
+				err = resp.Body.Close()
+				if err != nil {
+					t.Fatalf("failed closing response body: %v", err)
+				}
+			}()
 
 			if resp.StatusCode != tt.wantStatus {
 				t.Fatalf("status=%d want=%d", resp.StatusCode, tt.wantStatus)

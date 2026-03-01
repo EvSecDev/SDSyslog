@@ -30,7 +30,9 @@ func getLastPosition(stateFilePath string) (cursor string, err error) {
 		err = fmt.Errorf("failed to open state file: %w", err)
 		return
 	}
-	defer stateFile.Close()
+	defer func() {
+		_ = stateFile.Close()
+	}()
 
 	// Retrieve cached data
 	data := make([]byte, 256)
@@ -82,7 +84,9 @@ func savePosition(cursor string, stateFilePath string) (err error) {
 		err = fmt.Errorf("failed to open state file: %w", err)
 		return
 	}
-	defer stateFile.Close()
+	defer func() {
+		_ = stateFile.Close()
+	}()
 
 	_, err = fmt.Fprintf(stateFile, "%s", cursor)
 	if err != nil {

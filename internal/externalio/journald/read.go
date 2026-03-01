@@ -21,7 +21,6 @@ func (mod *InModule) Reader(ctx context.Context) {
 	if err != nil {
 		logctx.LogStdWarn(ctx, "failed to retrieve current local hostname: %w\n", err)
 		localHostname = "-"
-		err = nil
 	}
 
 	var readPosition string

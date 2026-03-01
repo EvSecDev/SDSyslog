@@ -22,7 +22,12 @@ func (mod *InModule) Start() (err error) {
 func (mod *InModule) CheckError() (err error) {
 	// Assert to file to set a deadline
 	errFile := mod.err.(*os.File)
-	defer errFile.Close()
+	defer func() {
+		lerr := errFile.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed to close stderr file: %w", lerr)
+		}
+	}()
 	err = errFile.SetReadDeadline(time.Now().Add(25 * time.Millisecond))
 	if err != nil {
 		err = fmt.Errorf("failed to set deadline on stderr reader: %w", err)
@@ -47,7 +52,11 @@ func (mod *InModule) CheckError() (err error) {
 	}
 
 	// Remove deadline for future blocking reads (just in case)
-	errFile.SetReadDeadline(time.Time{})
+	err = errFile.SetReadDeadline(time.Time{})
+	if err != nil {
+		err = fmt.Errorf("failed to clear read deadline on stderr reader: %w", err)
+		return
+	}
 	return
 }
 

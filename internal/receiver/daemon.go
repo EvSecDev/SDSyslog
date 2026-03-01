@@ -234,7 +234,7 @@ func (daemon *Daemon) StartFIPR() (err error) {
 	daemon.Mgrs.Defrag.FIPRRunning.Store(true)
 	err = daemon.fipr.Start()
 	if err != nil {
-		err = fmt.Errorf("failed to start FIPR receiver: %w\n", err)
+		err = fmt.Errorf("failed to start FIPR receiver: %w", err)
 		return
 	}
 	return

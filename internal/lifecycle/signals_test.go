@@ -104,8 +104,16 @@ func TestSignalHandling(t *testing.T) {
 			// Setup real notify socket
 			socketPath, msgChan, cleanup := setupNotifySocket(t)
 			defer cleanup()
-			os.Setenv("NOTIFY_SOCKET", socketPath)
-			defer os.Unsetenv("NOTIFY_SOCKET")
+			err := os.Setenv("NOTIFY_SOCKET", socketPath)
+			if err != nil {
+				t.Fatalf("unexpected error setting env variable: %v", err)
+			}
+			defer func() {
+				err := os.Unsetenv("NOTIFY_SOCKET")
+				if err != nil {
+					t.Fatalf("failed unsetting env var: %v", err)
+				}
+			}()
 
 			// Mock low-level dependencies
 			mockReader, mockWriter, err := os.Pipe()
@@ -118,9 +126,11 @@ func TestSignalHandling(t *testing.T) {
 				writer = mockWriter
 				return
 			}
-			defer mockReader.Close()
-			defer mockWriter.Close()
-			defer func() { osPipe = origOSPipe }()
+			defer func() {
+				_ = mockReader.Close()
+				_ = mockWriter.Close()
+				osPipe = origOSPipe
+			}()
 
 			origExe := osExecutable
 			osExecutable = func() (string, error) {
@@ -154,7 +164,10 @@ func TestSignalHandling(t *testing.T) {
 			if tt.fail.startFIPRErr == nil && tt.fail.cmdStartErr == nil {
 				go func() {
 					time.Sleep(50 * time.Millisecond)
-					mockWriter.Write([]byte(ReadyMessage))
+					_, err := mockWriter.Write([]byte(ReadyMessage))
+					if err != nil {
+						t.Logf("unexpected error writing to mock writer: %v", err)
+					}
 				}()
 			}
 

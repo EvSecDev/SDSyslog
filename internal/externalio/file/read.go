@@ -31,7 +31,6 @@ func (mod *InModule) Reader(ctx context.Context) {
 		logctx.LogStdWarn(ctx,
 			"failed to retrieve current local hostname: %w\n", err)
 		localHostname = "-"
-		err = nil
 	}
 
 	// Create inotify background watcher
@@ -111,7 +110,11 @@ func (mod *InModule) Reader(ctx context.Context) {
 		case reopenLogFile := <-fileHasRotated:
 			if reopenLogFile {
 				// Reopen at file path
-				mod.sink.Close()
+				err := mod.sink.Close()
+				if err != nil {
+					logctx.LogStdErr(ctx,
+						"failed to close previous file '%s': %w\n", mod.filePath, err)
+				}
 				mod.sink, err = os.Open(mod.filePath)
 				if err != nil {
 					logctx.LogStdErr(ctx,

@@ -31,7 +31,12 @@ func getInterfaceForDestination(destination string) (iface *net.Interface, err e
 		err = fmt.Errorf("failed to find interface for destination %s: %w", formattedIP, dialErr)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		lerr := conn.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed closing udp socket: %w", lerr)
+		}
+	}()
 
 	// Get the interface for the local half of the connection
 	localAddr := conn.LocalAddr().(*net.UDPAddr)

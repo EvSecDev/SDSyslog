@@ -59,8 +59,16 @@ func TestPostUpdateActions_ErrorPaths(t *testing.T) {
 			baseCtx := context.Background()
 			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, nil)
 
-			os.Setenv(EnvNameSelfUpdate, tt.envValue)
-			defer os.Unsetenv(EnvNameSelfUpdate)
+			err := os.Setenv(EnvNameSelfUpdate, tt.envValue)
+			if err != nil {
+				t.Fatalf("unexpected error setting env var: %v", err)
+			}
+			defer func() {
+				err := os.Unsetenv(EnvNameSelfUpdate)
+				if err != nil {
+					t.Fatalf("failed unsetting env var: %v", err)
+				}
+			}()
 
 			origKill := syscallKill
 			syscallKill = func(int, syscall.Signal) error {

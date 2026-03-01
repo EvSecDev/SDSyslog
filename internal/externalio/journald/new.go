@@ -123,7 +123,11 @@ func NewOutput(endpoint string) (module *OutModule, err error) {
 		err = fmt.Errorf("failed to test HTTP connection to journald: %w", err)
 		return
 	}
-	resp.Body.Close()
+	err = resp.Body.Close()
+	if err != nil {
+		err = fmt.Errorf("failed to close response body: %w", err)
+		return
+	}
 
 	module = new
 	return

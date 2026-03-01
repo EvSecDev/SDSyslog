@@ -42,11 +42,17 @@ func TestDecryptWithAssociatedData(t *testing.T) {
 	// Common use case
 	suiteID := uint8(1)
 	ephemPub := make([]byte, 32)
-	rand.Read(ephemPub)
+	_, err := rand.Read(ephemPub)
+	if err != nil {
+		t.Fatalf("unexpected error reading random bytes: %v", err)
+	}
 
 	// Exact use case
 	ephemeralPriv := make([]byte, ecdh.KeyLen)
-	rand.Read(ephemeralPriv)
+	_, err = rand.Read(ephemeralPriv)
+	if err != nil {
+		t.Fatalf("unexpected error reading random bytes: %v", err)
+	}
 	realPublic, _ := curve25519.X25519(ephemeralPriv, curve25519.Basepoint)
 
 	// Define test cases with different encryption and decryption AAD variations

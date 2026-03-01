@@ -10,13 +10,13 @@ func installBashAutocomplete() (err error) {
 	const sysAutocompleteDir string = "/usr/share/bash-completion/completions"
 	autoCompleteFunc, err := installationFiles.ReadFile("static-files/autocomplete.sh")
 	if err != nil {
-		err = fmt.Errorf("Unable to retrieve autocomplete file from embedded filesystem: %w", err)
+		err = fmt.Errorf("unable to retrieve autocomplete file from embedded filesystem: %w", err)
 		return
 	}
 
 	executablePath, err := filepath.Abs(os.Args[0])
 	if err != nil {
-		err = fmt.Errorf("Failed to retrieve absolute executable path for profile installation: %w", err)
+		err = fmt.Errorf("failed to retrieve absolute executable path for profile installation: %w", err)
 		return
 	}
 	executableName := filepath.Base(executablePath)
@@ -30,16 +30,15 @@ func installBashAutocomplete() (err error) {
 		var homeDir string
 		homeDir, err = os.UserHomeDir()
 		if err != nil {
-			err = fmt.Errorf("Failed to find user home directory: %w", err)
+			err = fmt.Errorf("failed to find user home directory: %w", err)
 			return
 		}
 		userDir := filepath.Join(homeDir, ".bash_completion.d")
 		err = os.MkdirAll(userDir, 0750)
 		if err != nil {
-			err = fmt.Errorf("Failed to create user autocomplete dir: %w", err)
+			err = fmt.Errorf("failed to create user autocomplete dir: %w", err)
 			return
 		}
-		err = nil
 
 		autoCompleteFilePath = filepath.Join(userDir, executableName)
 		fmt.Printf("System completion dir missing, installing bash completion at %s\n", autoCompleteFilePath)
@@ -48,7 +47,7 @@ func installBashAutocomplete() (err error) {
 
 	err = os.WriteFile(autoCompleteFilePath, autoCompleteFunc, 0644)
 	if err != nil {
-		err = fmt.Errorf("Failed to write autocompletion file: %w", err)
+		err = fmt.Errorf("failed to write autocompletion file: %w", err)
 		return
 	}
 	return
@@ -59,7 +58,7 @@ func uninstallBashAutocomplete() (err error) {
 
 	executablePath, err := filepath.Abs(os.Args[0])
 	if err != nil {
-		err = fmt.Errorf("Failed to retrieve absolute executable path for profile installation: %w", err)
+		err = fmt.Errorf("failed to retrieve absolute executable path for profile installation: %w", err)
 		return
 	}
 	executableName := filepath.Base(executablePath)
@@ -73,7 +72,7 @@ func uninstallBashAutocomplete() (err error) {
 		var homeDir string
 		homeDir, err = os.UserHomeDir()
 		if err != nil {
-			err = fmt.Errorf("Failed to find user home directory: %w", err)
+			err = fmt.Errorf("failed to find user home directory: %w", err)
 			return
 		}
 		userDir := filepath.Join(homeDir, ".bash_completion.d")
@@ -82,7 +81,7 @@ func uninstallBashAutocomplete() (err error) {
 
 	err = os.Remove(autoCompleteFilePath)
 	if err != nil && !os.IsNotExist(err) {
-		err = fmt.Errorf("Failed to remove autocompletion file: %w", err)
+		err = fmt.Errorf("failed to remove autocompletion file: %w", err)
 		return
 	} else {
 		err = nil

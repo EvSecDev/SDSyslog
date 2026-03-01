@@ -25,12 +25,17 @@ func RouteFragment(socketPath string, messageID string, remoteAddress string, fr
 		err = fmt.Errorf("failed to connect to remote shard: %w", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		lerr := conn.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed closing connection: %w", lerr)
+		}
+	}()
 
 	// New fipr session
 	session, err := fipr.New(conn, wrappers.GetSharedSecret())
 	if err != nil {
-		err = fmt.Errorf("session creation failed: %w\n", err)
+		err = fmt.Errorf("session creation failed: %w", err)
 		return
 	}
 

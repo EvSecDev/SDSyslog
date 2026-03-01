@@ -20,7 +20,7 @@ func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
 	cfg := net.ListenConfig{
 		Control: func(network, address string, c syscall.RawConn) error {
 			var ctrlErr error
-			c.Control(func(fd uintptr) {
+			ctrlErr = c.Control(func(fd uintptr) {
 				// Always set SO_REUSEADDR and SO_REUSEPORT
 				err := unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
 				if err != nil {
@@ -39,7 +39,13 @@ func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
 					// eBPF not available; silently fall back to normal reuseport
 					return
 				}
-				defer prog.Close()
+				defer func() {
+					err := prog.Close()
+					if err != nil && ctrlErr == nil {
+						ctrlErr = fmt.Errorf("failed closing eBPF program: %w", err)
+						return
+					}
+				}()
 
 				progFD := int(prog.Fd())
 				err = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_ATTACH_REUSEPORT_EBPF, progFD)
@@ -68,7 +74,7 @@ func ReuseTCPPort(addr string) (conn net.Listener, err error) {
 	cfg := net.ListenConfig{
 		Control: func(network, address string, c syscall.RawConn) error {
 			var err error
-			c.Control(func(fd uintptr) {
+			err = c.Control(func(fd uintptr) {
 				// Allow port reuse
 				err = unix.SetsockoptInt(
 					int(fd),
@@ -113,7 +119,12 @@ func WaitUntilEmptySocket(conn *net.UDPConn) (remainingBytes int, err error) {
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer func() {
+		lerr := file.Close()
+		if lerr != nil && err == nil {
+			err = fmt.Errorf("failed closing connection: %v", lerr)
+		}
+	}()
 
 	fd := int(file.Fd())
 

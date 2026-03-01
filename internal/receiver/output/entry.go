@@ -50,14 +50,22 @@ func (instance *Instance) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			if instance.FileMod != nil {
-				instance.FileMod.FlushBuffer()
+				_, err := instance.FileMod.FlushBuffer()
+				if err != nil {
+					logctx.LogStdErr(ctx,
+						"failed to flush file line buffer to disk: %w\n", err)
+				}
 			}
 			return
 		case <-ticker.C:
 			if instance.FileMod != nil {
 				// Periodic flush of file output event buffer
 				// Buffer might never fill and flush if we don't get enough messages
-				instance.FileMod.FlushBuffer()
+				_, err := instance.FileMod.FlushBuffer()
+				if err != nil {
+					logctx.LogStdErr(ctx,
+						"failed to flush file line buffer to disk: %w\n", err)
+				}
 			}
 		case msg, ok := <-popCh:
 			func() {

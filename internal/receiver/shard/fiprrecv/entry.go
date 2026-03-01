@@ -97,7 +97,11 @@ func (instance *Instance) Stop() {
 		instance.cancel()
 	}
 	if instance.listener != nil {
-		instance.listener.Close()
+		err := instance.listener.Close()
+		if err != nil {
+			logctx.LogStdErr(instance.ctx,
+				"failed to close socket listener: %w\n", err)
+		}
 	}
 
 	// Cleanup socket file

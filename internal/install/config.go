@@ -113,8 +113,6 @@ func uninstallConfig(mode string) (err error) {
 		if err != nil && !os.IsNotExist(err) {
 			err = fmt.Errorf("failed to remove private key file: %w", err)
 			return
-		} else {
-			err = nil
 		}
 		fmt.Printf("Successfully removed private key file '%s'\n", DefaultPrivKeyPath)
 	}
@@ -140,7 +138,9 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 	if err != nil {
 		return
 	}
-	defer newConfFile.Close()
+	defer func() {
+		_ = newConfFile.Close()
+	}()
 
 	var newCfg sender.JSONConfig
 	newCfg.AutoScaling.Enabled = true
@@ -194,7 +194,9 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	if err != nil {
 		return
 	}
-	defer newConfFile.Close()
+	defer func() {
+		_ = newConfFile.Close()
+	}()
 
 	var newCfg receiver.JSONConfig
 	newCfg.AutoScaling.Enabled = true

@@ -26,7 +26,7 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 
 	helpPage, err := webFiles.ReadFile("static-files/metric-help.html")
 	if err != nil {
-		err = fmt.Errorf("failed reading metric help html page from internal fs: %w\n", err)
+		err = fmt.Errorf("failed reading metric help html page from internal fs: %w", err)
 		return
 	}
 
@@ -50,7 +50,7 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 
 		serverResponder.Header().Set("Content-Type", "text/html; charset=utf-8")
 		serverResponder.WriteHeader(http.StatusOK)
-		serverResponder.Write(helpPage)
+		_, _ = serverResponder.Write(helpPage)
 	})
 
 	// Metric Discovery Requests
@@ -124,7 +124,7 @@ func jResp(ctx context.Context, serverResponder http.ResponseWriter, content any
 	}
 	serverResponder.Header().Set("Content-Type", "application/json")
 	serverResponder.WriteHeader(http.StatusOK)
-	serverResponder.Write(buf.Bytes())
+	_, _ = serverResponder.Write(buf.Bytes())
 }
 
 // Logs HTTP server errors to internal program buffer (via context logger)

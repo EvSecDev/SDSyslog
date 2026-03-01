@@ -71,7 +71,10 @@ func setupNotifySocket(t *testing.T) (socketPath string, msgChannel <-chan strin
 	}()
 
 	cleanup = func() {
-		conn.Close()
+		err := conn.Close()
+		if err != nil {
+			t.Fatalf("unexpected error closing connection: %v", err)
+		}
 	}
 
 	msgChannel = messages

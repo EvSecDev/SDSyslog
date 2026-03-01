@@ -36,9 +36,11 @@ func SetupMode(cliOpts *CommandSet, commandname string, args []string) {
 		PrintHelpMenu(commandFlags, commandname, cliOpts)
 		os.Exit(1)
 	}
-	commandFlags.Parse(args[0:])
-
-	var err error
+	err := commandFlags.Parse(args[0:])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	if newKeyPair {
 		err = install.GeneratePrivateKeys()

@@ -269,11 +269,14 @@ func (daemon *Daemon) Shutdown() {
 		for filename := range daemon.Mgrs.In.FileSources {
 			err := daemon.Mgrs.In.RemoveFileInstance(filename)
 			if err != nil {
-				logctx.LogStdWarn(daemon.ctx, "ingest worker shutdown failed: %w\n", err)
+				logctx.LogStdWarn(daemon.ctx, "ingest file worker shutdown failed: %w\n", err)
 			}
 		}
 		if daemon.Mgrs.In.JournalSource != nil {
-			daemon.Mgrs.In.RemoveJrnlInstance()
+			err := daemon.Mgrs.In.RemoveJrnlInstance()
+			if err != nil {
+				logctx.LogStdWarn(daemon.ctx, "ingest journal worker shutdown failed: %w\n", err)
+			}
 		}
 	}
 

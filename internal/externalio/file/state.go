@@ -34,7 +34,9 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 		err = fmt.Errorf("failed to open state file: %w", err)
 		return
 	}
-	defer stateFile.Close()
+	defer func() {
+		_ = stateFile.Close()
+	}()
 
 	// Retrieve cached data
 	data := make([]byte, 128)
@@ -57,7 +59,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 		// Remove any invalid state data in state file
 		err = stateFile.Truncate(0)
 		if err != nil {
-			err = fmt.Errorf("error truncating file: %w\n", err)
+			err = fmt.Errorf("error truncating file: %w", err)
 			return
 		}
 
@@ -70,7 +72,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 		// Remove any invalid state data in state file
 		err = stateFile.Truncate(0)
 		if err != nil {
-			err = fmt.Errorf("error truncating file: %w\n", err)
+			err = fmt.Errorf("error truncating file: %w", err)
 			return
 		}
 
@@ -126,7 +128,9 @@ func savePosition(stateFilePath string, inode uint64, position int64) (err error
 		err = fmt.Errorf("failed to open state file: %w", err)
 		return
 	}
-	defer stateFile.Close()
+	defer func() {
+		_ = stateFile.Close()
+	}()
 
 	_, err = fmt.Fprintf(stateFile, "%d %d", inode, position)
 	if err != nil {

@@ -1,6 +1,7 @@
 package fiprsend
 
 import (
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
@@ -63,10 +64,22 @@ func TestGetSocketFileList(t *testing.T) {
 					if err != nil {
 						t.Fatalf("failed to create unix socket: %v", err)
 					}
-					t.Cleanup(func() { l.Close(); os.Remove(path) })
+					t.Cleanup(func() {
+						err := l.Close()
+						if err != nil {
+							t.Errorf("failed to close unix listener: %v", err)
+						}
+						err = os.Remove(path)
+						if err != nil && !errors.Is(err, os.ErrNotExist) {
+							t.Errorf("failed to remove unix socket file: %v", err)
+						}
+					})
 				} else {
 					// non-socket file
-					os.WriteFile(path, []byte{}, 0644)
+					err := os.WriteFile(path, []byte{}, 0644)
+					if err != nil {
+						t.Fatalf("unexpected error writing file contents: %v", err)
+					}
 				}
 			}
 

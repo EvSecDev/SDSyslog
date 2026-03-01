@@ -35,8 +35,10 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 		err = fmt.Errorf("failed to create readiness pipe for new process: %w", err)
 		return
 	}
-	defer readyR.Close()
-	defer readyW.Close()
+	defer func() {
+		_ = readyR.Close()
+		_ = readyW.Close()
+	}()
 
 	// Copy ourselves
 	exePath, err := osExecutable()

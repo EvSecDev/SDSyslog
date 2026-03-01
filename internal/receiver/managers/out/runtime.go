@@ -62,7 +62,19 @@ func (manager *InstanceManager) RemoveInstance() {
 	}
 	manager.Instance.wg.Wait()
 
-	manager.Instance.Worker.FileMod.Shutdown()
-	manager.Instance.Worker.JrnlMod.Shutdown()
-	manager.Instance.Worker.BeatsMod.Shutdown()
+	err := manager.Instance.Worker.FileMod.Shutdown()
+	if err != nil {
+		logctx.LogStdErr(manager.ctx,
+			"failed to shutdown file module: %w\n", err)
+	}
+	err = manager.Instance.Worker.JrnlMod.Shutdown()
+	if err != nil {
+		logctx.LogStdErr(manager.ctx,
+			"failed to shutdown journal module: %w\n", err)
+	}
+	err = manager.Instance.Worker.BeatsMod.Shutdown()
+	if err != nil {
+		logctx.LogStdErr(manager.ctx,
+			"failed to shutdown beats module: %w\n", err)
+	}
 }

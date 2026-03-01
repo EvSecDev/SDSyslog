@@ -24,7 +24,11 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 		PrintHelpMenu(commandFlags, commandname, cliOpts)
 		os.Exit(1)
 	}
-	commandFlags.Parse(args[0:])
+	err := commandFlags.Parse(args[0:])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Change log level if verbosity argument was given at this command level
 	logctx.SetLogLevel(ctx, *requestedLogLevel)

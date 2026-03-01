@@ -26,7 +26,7 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 
 	for _, id := range defragMgr.RoutingView.GetNonDrainingIDs() {
 		metrics := metricStore.Search(
-			"total_buckets",
+			shard.MTTotalBuckets,
 			[]string{logctx.NSRecv, logctx.NSmDefrag, id},
 			time.Now().Add(-time.Duration(pastNIntervals)*interval),
 			time.Now(),

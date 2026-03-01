@@ -75,7 +75,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	// Ingest
 
 	// File input
-	gatherer.Ingest.Mu.Lock()
+	gatherer.Ingest.Mu.RLock()
 	for _, inst := range gatherer.Ingest.FileSources {
 		if inst == nil {
 			// Should only happen at daemon shutdown
@@ -84,7 +84,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 		m1 := inst.Worker.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m1)
 	}
-	gatherer.Ingest.Mu.Unlock()
+	gatherer.Ingest.Mu.RUnlock()
 
 	// Journal input
 	if gatherer.Ingest.JournalSource != nil {
@@ -98,21 +98,21 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	m1 := gatherer.Packaging.InQueue.CollectMetrics(interval)
 	gatherer.Registry.Add(timeSlice, m1)
 
-	gatherer.Packaging.Mu.Lock()
+	gatherer.Packaging.Mu.RLock()
 	for _, instance := range gatherer.Packaging.Instances {
 		m2 := instance.Worker.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m2)
 	}
-	gatherer.Packaging.Mu.Unlock()
+	gatherer.Packaging.Mu.RUnlock()
 
 	// Output
 	collection := gatherer.Output.InQueue.CollectMetrics(interval)
 	gatherer.Registry.Add(timeSlice, collection)
 
-	gatherer.Output.Mu.Lock()
+	gatherer.Output.Mu.RLock()
 	for _, instance := range gatherer.Output.Instances {
 		m2 := instance.Worker.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m2)
 	}
-	gatherer.Output.Mu.Unlock()
+	gatherer.Output.Mu.RUnlock()
 }

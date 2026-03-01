@@ -11,8 +11,8 @@ import (
 )
 
 type InstanceManager struct {
-	Mu              sync.Mutex        // For scaling operations
-	nextID          int               // Next free ID for new pair
+	Mu              sync.RWMutex      // For scaling operations
+	NextID          int               // Next free ID for new pair
 	Instances       map[int]*Instance // Existing running
 	MinInstCount    int               // Minimum number of instances at any one time
 	MaxInstCount    int               // Maximum number of instances at any one time

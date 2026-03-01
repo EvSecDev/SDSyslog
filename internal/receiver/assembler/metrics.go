@@ -12,6 +12,13 @@ type MetricStorage struct {
 	MaxNs            atomic.Uint64 // max observed op duration
 }
 
+// Metric Names
+const (
+	MTProcessBuckets string = "processed_buckets"
+	MTSumWorkTime    string = "elapsed_time_sum_ns"
+	MTMaxWorkTime    string = "elapsed_time_max_ns"
+)
+
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
 	valid := instance.Metrics.ProcessedBuckets.Swap(0)
@@ -21,14 +28,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	var avgNs uint64
-	if valid > 0 {
-		avgNs = sumNs / valid
-	}
-
 	collection = []metrics.Metric{
 		{
-			Name:        "processed_buckets",
+			Name:        MTProcessBuckets,
 			Description: "Number of buckets successfully processed in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -40,7 +42,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "elapsed_time_sum_ns",
+			Name:        MTSumWorkTime,
 			Description: "Total time spent processing buckets in the interval (excludes pop/push from queues)",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -52,19 +54,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "elapsed_time_avg_ns",
-			Description: "Average time spent processing buckets in the interval (excludes pop/push from queues)",
-			Namespace:   instance.Namespace,
-			Value: metrics.MetricValue{
-				Raw:      avgNs,
-				Unit:     "ns",
-				Interval: interval,
-			},
-			Type:      metrics.Summary,
-			Timestamp: recordTime,
-		},
-		{
-			Name:        "elapsed_time_max_ns",
+			Name:        MTMaxWorkTime,
 			Description: "Maximum (seen) time spent processing buckets in the interval (excludes pop/push from queues)",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{

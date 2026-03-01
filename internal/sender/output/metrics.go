@@ -12,6 +12,13 @@ type MetricStorage struct {
 	MaxPacketBytes atomic.Uint64
 }
 
+// Metric Names
+const (
+	MTSentPackets string = "total_sent_packets"
+	MTSumPktSizes string = "sum_packet_size"
+	MTMaxPktSize  string = "maximum_packet_size"
+)
+
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
 	totalPkts := instance.Metrics.TotalPackets.Swap(0)
@@ -21,14 +28,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	var avgPktSize uint64
-	if totalPkts > 0 {
-		avgPktSize = sumPktSizeB / totalPkts
-	}
-
 	collection = []metrics.Metric{
 		{
-			Name:        "total_sent_packets",
+			Name:        MTSentPackets,
 			Description: "Total packets sent in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -40,7 +42,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "sum_packet_size",
+			Name:        MTSumPktSizes,
 			Description: "Total size of all packets sent in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -52,7 +54,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "maximum_packet_size",
+			Name:        MTMaxPktSize,
 			Description: "Maximum (seen) size across all packets sent in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -61,18 +63,6 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 				Interval: interval,
 			},
 			Type:      metrics.Gauge,
-			Timestamp: recordTime,
-		},
-		{
-			Name:        "average_packet_size",
-			Description: "Average size across all packets sent in the interval",
-			Namespace:   instance.Namespace,
-			Value: metrics.MetricValue{
-				Raw:      avgPktSize,
-				Unit:     "bytes",
-				Interval: interval,
-			},
-			Type:      metrics.Summary,
 			Timestamp: recordTime,
 		},
 	}

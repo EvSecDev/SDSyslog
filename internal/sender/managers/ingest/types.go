@@ -10,7 +10,7 @@ import (
 )
 
 type InstanceManager struct {
-	Mu            sync.Mutex
+	Mu            sync.RWMutex
 	FileSources   map[string]*FileWorker // File sources keyed by path
 	JournalSource *JrnlWorker
 	outQueue      *mpmc.Queue[protocol.Message] // Queue for worked completed by the pair

@@ -32,9 +32,9 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	for _, id := range defragMgr.RoutingView.GetNonDrainingIDs() {
 		ns := []string{logctx.NSRecv, logctx.NSmDefrag, id}
 
-		sumSpacingMetrics := metricStore.Search("sum_time_between_fragments", ns, start, end)
-		fragmentsMetrics := metricStore.Search("push_ctn", ns, start, end)
-		timeoutsMetrics := metricStore.Search("timed_out_buckets", ns, start, end)
+		sumSpacingMetrics := metricStore.Search(shard.MTTimeBtwFragments, ns, start, end)
+		fragmentsMetrics := metricStore.Search(shard.MTPushCnt, ns, start, end)
+		timeoutsMetrics := metricStore.Search(shard.MTTimedOutBuckets, ns, start, end)
 
 		if len(sumSpacingMetrics) < pastNIntervals ||
 			len(fragmentsMetrics) < pastNIntervals ||

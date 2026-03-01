@@ -16,6 +16,16 @@ type MetricStorage struct {
 	PopCount               atomic.Uint64 // Total items popped (or attempted to pop) from the queue
 }
 
+// Metric Names
+const (
+	MTTotalBuckets     string = "total_buckets"
+	MTWaitingBuckets   string = "waiting_buckets"
+	MTTimedOutBuckets  string = "timed_out_buckets"
+	MTTimeBtwFragments string = "sum_time_between_fragments"
+	MTPushCnt          string = "push_ctn"
+	MTPopCnt           string = "pop_ctn"
+)
+
 func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
 	totalBuckets := queue.Metrics.TotalBuckets.Load()
@@ -28,17 +38,9 @@ func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metr
 	// Record read time
 	recordTime := time.Now()
 
-	// Calculate average fragment arrival (processing) time spacing
-	var avgFragmentTimetoArrival uint64
-	if pushCtn > 0 {
-		avgFragmentTimetoArrival = sumFragmentSpacing / pushCtn // push count effectively is fragment count
-	} else {
-		avgFragmentTimetoArrival = 0
-	}
-
 	collection = []metrics.Metric{
 		{
-			Name:        "total_buckets",
+			Name:        MTTotalBuckets,
 			Description: "Total buckets currently in the queue (not counting ones waiting for processing)",
 			Namespace:   queue.Namespace,
 			Value: metrics.MetricValue{
@@ -50,7 +52,7 @@ func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metr
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "waiting_buckets",
+			Name:        MTWaitingBuckets,
 			Description: "Total buckets waiting to be processed",
 			Namespace:   queue.Namespace,
 			Value: metrics.MetricValue{
@@ -62,7 +64,7 @@ func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metr
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "timed_out_buckets",
+			Name:        MTTimedOutBuckets,
 			Description: "Total buckets that did not receive all fragments of a message in the interval",
 			Namespace:   queue.Namespace,
 			Value: metrics.MetricValue{
@@ -74,7 +76,7 @@ func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metr
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "sum_time_between_fragments",
+			Name:        MTTimeBtwFragments,
 			Description: "Sum of time to arrival between fragments in the interval",
 			Namespace:   queue.Namespace,
 			Value: metrics.MetricValue{
@@ -85,21 +87,8 @@ func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metr
 			Type:      metrics.Counter,
 			Timestamp: recordTime,
 		},
-
 		{
-			Name:        "average_time_between_fragments",
-			Description: "Average time to arrival between fragments in the interval",
-			Namespace:   queue.Namespace,
-			Value: metrics.MetricValue{
-				Raw:      avgFragmentTimetoArrival,
-				Unit:     "ns",
-				Interval: interval,
-			},
-			Type:      metrics.Counter,
-			Timestamp: recordTime,
-		},
-		{
-			Name:        "push_ctn",
+			Name:        MTPushCnt,
 			Description: "Total buckets sent into the queue in the interval",
 			Namespace:   queue.Namespace,
 			Value: metrics.MetricValue{
@@ -111,7 +100,7 @@ func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metr
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "pop_ctn",
+			Name:        MTPopCnt,
 			Description: "Total buckets received from the queue in the interval",
 			Namespace:   queue.Namespace,
 			Value: metrics.MetricValue{

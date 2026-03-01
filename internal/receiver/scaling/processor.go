@@ -11,9 +11,10 @@ import (
 
 func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, procMgr *proc.InstanceManager) {
 	// No scaling if we are at the min/max
-	procMgr.Mu.Lock()
+	procMgr.Mu.RLock()
 	instanceCount := len(procMgr.Instances)
-	procMgr.Mu.Unlock()
+	instanceID := procMgr.NextID - 1
+	procMgr.Mu.RUnlock()
 	if instanceCount == procMgr.MaxInstCount || instanceCount == procMgr.MinInstCount {
 		return
 	}
@@ -21,7 +22,7 @@ func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval
 	const pastNIntervals = 5
 
 	// Get the last x scaling polling intervals worth of load data and average
-	metrics := metricStore.Search("depth", []string{logctx.NSRecv, logctx.NSProc, logctx.NSQueue}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
+	metrics := metricStore.Search(mpmc.MTDepth, []string{logctx.NSRecv, logctx.NSProc, logctx.NSQueue}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
 	if len(metrics) < pastNIntervals {
 		// Not enough data, ignoring
 		return
@@ -41,11 +42,7 @@ func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval
 		procMgr.AddInstance()
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up processor\n")
 	} else if scaleDown {
-		// Picking effectively a random instance (map keys)
-		for instanceId := range procMgr.Instances {
-			procMgr.RemoveInstance(instanceId)
-			break
-		}
+		procMgr.RemoveInstance(instanceID)
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down processor\n")
 	}
 

@@ -69,12 +69,12 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	// Gatherer is started post-daemon pipeline startup, therefore certain pointers have to be initialized already (startup is run synchronously)
 
 	// Listener
-	gatherer.Mgrs.Input.Mu.Lock() // Ensure instances don't disappear mid-read
+	gatherer.Mgrs.Input.Mu.RLock() // Ensure instances don't disappear mid-read
 	for _, instance := range gatherer.Mgrs.Input.Instances {
 		m1 := instance.Listener.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m1)
 	}
-	gatherer.Mgrs.Input.Mu.Unlock()
+	gatherer.Mgrs.Input.Mu.RUnlock()
 
 	// Processor
 	// Queue
@@ -82,12 +82,12 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	gatherer.Registry.Add(timeSlice, m1)
 
 	var procCollect []metrics.Metric // collection for all instances
-	gatherer.Mgrs.Proc.Mu.Lock()
+	gatherer.Mgrs.Proc.Mu.RLock()
 	for _, instance := range gatherer.Mgrs.Proc.Instances {
 		m2 := instance.Processor.CollectMetrics(interval)
 		procCollect = append(procCollect, m2...)
 	}
-	gatherer.Mgrs.Proc.Mu.Unlock()
+	gatherer.Mgrs.Proc.Mu.RUnlock()
 	gatherer.Registry.Add(timeSlice, procCollect)
 
 	// Defrag

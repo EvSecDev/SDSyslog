@@ -13,12 +13,12 @@ import (
 )
 
 func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, inMgr *in.InstanceManager) {
-	inMgr.Mu.Lock()
+	inMgr.Mu.RLock()
 	instances := inMgr.Instances
 	maxInstances := inMgr.MaxInstCount
 	minInstances := inMgr.MinInstCount
 	instanceCount := len(instances)
-	inMgr.Mu.Unlock()
+	inMgr.Mu.RUnlock()
 
 	// No scaling if we are at the min/max
 	if instanceCount == maxInstances || instanceCount == minInstances {
@@ -32,7 +32,7 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 
 	for id := 0; id <= instanceCount-1; id++ {
 		metrics := metricStore.Search(
-			"busy_time_percent",
+			listener.MTBusyPct,
 			[]string{logctx.NSRecv, logctx.NSmIngest, strconv.Itoa(id)},
 			time.Now().Add(-time.Duration(pastNIntervals)*interval),
 			time.Now(),

@@ -12,6 +12,13 @@ type MetricStorage struct {
 	MaxNs         atomic.Uint64 // max observed op duration
 }
 
+// Metric Names
+const (
+	MTValidPayloads string = "valid_payloads_total"
+	MTSumWorkTime   string = "elapsed_time_sum_ns"
+	MTMaxWorkTime   string = "elapsed_time_max_ns"
+)
+
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
 	valid := instance.Metrics.ValidPayloads.Swap(0)
@@ -21,14 +28,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	var avgNs uint64
-	if valid > 0 {
-		avgNs = sumNs / valid
-	}
-
 	collection = []metrics.Metric{
 		{
-			Name:        "valid_payloads_total",
+			Name:        MTValidPayloads,
 			Description: "Total validated (parsed) packets in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -40,7 +42,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "elapsed_time_sum_ns",
+			Name:        MTSumWorkTime,
 			Description: "Total time spent processing packets in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -52,19 +54,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "elapsed_time_avg_ns",
-			Description: "Average time spent processing packets in the interval",
-			Namespace:   instance.Namespace,
-			Value: metrics.MetricValue{
-				Raw:      avgNs,
-				Unit:     "ns",
-				Interval: interval,
-			},
-			Type:      metrics.Summary,
-			Timestamp: recordTime,
-		},
-		{
-			Name:        "elapsed_time_max_ns",
+			Name:        MTMaxWorkTime,
 			Description: "Maximum (seen) time spent processing packets in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{

@@ -11,9 +11,9 @@ import (
 
 func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, outMgr *out.InstanceManager) {
 	// No scaling if we are at the min/max
-	outMgr.Mu.Lock()
+	outMgr.Mu.RLock()
 	instanceCount := len(outMgr.Instances)
-	outMgr.Mu.Unlock()
+	outMgr.Mu.RUnlock()
 	if instanceCount == outMgr.MaxInstCount || instanceCount == outMgr.MinInstCount {
 		return
 	}
@@ -21,7 +21,7 @@ func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval ti
 	const pastNIntervals = 5
 
 	// Get the last x scaling polling intervals worth of load data and average
-	metrics := metricStore.Search("depth", []string{logctx.NSRecv, logctx.NSmOutput}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
+	metrics := metricStore.Search(mpmc.MTDepth, []string{logctx.NSRecv, logctx.NSmOutput}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
 	if len(metrics) < pastNIntervals {
 		// Not enough data, ignoring
 		return

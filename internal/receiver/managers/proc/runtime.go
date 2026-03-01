@@ -12,8 +12,8 @@ func (manager *InstanceManager) AddInstance() (id int) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 
-	id = manager.nextID
-	manager.nextID++
+	id = int(manager.NextID)
+	manager.NextID++
 
 	// Add log context
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, strconv.Itoa(id))

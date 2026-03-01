@@ -14,6 +14,15 @@ type MetricStorage struct {
 	MaxNs          atomic.Uint64 // max observed op duration
 }
 
+// Metric Names
+const (
+	MTBusyPct     string = "busy_time_percent"
+	MTValidPkts   string = "valid_packets_total"
+	MTInvalidPkts string = "invalid_packets_total"
+	MTSumWorkTime string = "elapsed_time_sum_ns"
+	MTMaxWorkTime string = "elapsed_time_max_ns"
+)
+
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
 	busyNs := instance.Metrics.BusyNs.Swap(0)
@@ -28,15 +37,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Percent worker was busy
 	busyPct := (float64(busyNs) / float64(interval.Nanoseconds())) * 100
 
-	total := valid + invalid
-	var avgNs uint64
-	if total > 0 {
-		avgNs = sumNs / total
-	}
-
 	collection = []metrics.Metric{
 		{
-			Name:        "busy_time_percent",
+			Name:        MTBusyPct,
 			Description: "Total time spent doing anything in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -48,7 +51,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "valid_packets_total",
+			Name:        MTValidPkts,
 			Description: "Total packets that passed basic validation in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -60,7 +63,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "invalid_packets_total",
+			Name:        MTInvalidPkts,
 			Description: "Total packets that failed basic validation in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -72,19 +75,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "total_packets",
-			Description: "Total packets received in the interval",
-			Namespace:   instance.Namespace,
-			Value: metrics.MetricValue{
-				Raw:      total,
-				Unit:     "count",
-				Interval: interval,
-			},
-			Type:      metrics.Counter,
-			Timestamp: recordTime,
-		},
-		{
-			Name:        "elapsed_time_sum_ns",
+			Name:        MTSumWorkTime,
 			Description: "Total time spent validating packets in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{
@@ -96,19 +87,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "elapsed_time_avg_ns",
-			Description: "Average time spent validating packets in the interval",
-			Namespace:   instance.Namespace,
-			Value: metrics.MetricValue{
-				Raw:      avgNs,
-				Unit:     "ns",
-				Interval: interval,
-			},
-			Type:      metrics.Summary,
-			Timestamp: recordTime,
-		},
-		{
-			Name:        "elapsed_time_max_ns",
+			Name:        MTMaxWorkTime,
 			Description: "Maximum (seen) time spent validating packets in the interval",
 			Namespace:   instance.Namespace,
 			Value: metrics.MetricValue{

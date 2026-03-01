@@ -10,7 +10,7 @@ import (
 )
 
 type InstanceManager struct {
-	Mu                  sync.Mutex        // For scaling operations
+	Mu                  sync.RWMutex      // For scaling operations
 	nextID              int               // Next free ID for new pair
 	Instances           map[int]*Instance // Existing running instances
 	MinInstCount        int               // Minimum number of instances at any one time

@@ -11,9 +11,9 @@ import (
 
 func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, assemMgr *packaging.InstanceManager) {
 	// No scaling if we are at the min/max
-	assemMgr.Mu.Lock()
+	assemMgr.Mu.RLock()
 	instanceCount := len(assemMgr.Instances)
-	assemMgr.Mu.Unlock()
+	assemMgr.Mu.RUnlock()
 	if instanceCount == assemMgr.MaxInstCount || instanceCount == assemMgr.MinInstCount {
 		return
 	}
@@ -21,7 +21,7 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	const pastNIntervals = 5
 
 	// Get the last x scaling polling intervals worth of load data and average
-	metrics := metricStore.Search("depth", []string{logctx.NSRecv, logctx.NSmPack}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
+	metrics := metricStore.Search(mpmc.MTDepth, []string{logctx.NSRecv, logctx.NSmPack}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
 	if len(metrics) < pastNIntervals {
 		// Not enough data, ignoring
 		return

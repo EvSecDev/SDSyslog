@@ -19,6 +19,18 @@ type MetricStorage struct {
 	PopCASRetries atomic.Uint64 // CAS failed
 }
 
+// Metric Names
+const (
+	MTDepth        string = "depth"
+	MTBytes        string = "byte_sum"
+	MTPushAttempt  string = "push_attempts"
+	MTPushSuc      string = "push_success"
+	MTPushCASRetry string = "push_cas_retries"
+	MTPopAttempt   string = "pop_attempts"
+	MTPopSuc       string = "pop_success"
+	MTPopCASRetry  string = "pop_cas_retries"
+)
+
 func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	queues := []*QueueInst[T]{container.ActiveWrite.Load()}
 	readQueue := container.ActiveRead.Load()
@@ -63,14 +75,14 @@ func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []
 		})
 	}
 
-	add("depth", agg.Depth, "count", metrics.Gauge, "Current number of items in the queue")
-	add("byte_sum", agg.Bytes, "bytes", metrics.Gauge, "Byte sum of all items in the queue")
-	add("push_attempts", agg.PushAttempts, "count", metrics.Counter, "Total push attempts in the interval")
-	add("push_success", agg.PushSuccess, "count", metrics.Counter, "Total push attempts that succeeded in the interval")
-	add("push_cas_retries", agg.PushCASRetries, "count", metrics.Counter, "Sum of retries to push in the interval")
-	add("pop_attempts", agg.PopAttempts, "count", metrics.Counter, "Total pop attempts in the interval")
-	add("pop_success", agg.PopSuccess, "count", metrics.Counter, "Total pop attempts that succeeded in the interval")
-	add("pop_cas_retries", agg.PopCASRetries, "count", metrics.Counter, "Sum of retries to pop in the interval")
+	add(MTDepth, agg.Depth, "count", metrics.Gauge, "Current number of items in the queue")
+	add(MTBytes, agg.Bytes, "bytes", metrics.Gauge, "Byte sum of all items in the queue")
+	add(MTPushAttempt, agg.PushAttempts, "count", metrics.Counter, "Total push attempts in the interval")
+	add(MTPushSuc, agg.PushSuccess, "count", metrics.Counter, "Total push attempts that succeeded in the interval")
+	add(MTPushCASRetry, agg.PushCASRetries, "count", metrics.Counter, "Sum of retries to push in the interval")
+	add(MTPopAttempt, agg.PopAttempts, "count", metrics.Counter, "Total pop attempts in the interval")
+	add(MTPopSuc, agg.PopSuccess, "count", metrics.Counter, "Total pop attempts that succeeded in the interval")
+	add(MTPopCASRetry, agg.PopCASRetries, "count", metrics.Counter, "Sum of retries to pop in the interval")
 
 	return
 }

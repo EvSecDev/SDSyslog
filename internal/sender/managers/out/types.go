@@ -9,7 +9,7 @@ import (
 )
 
 type InstanceManager struct {
-	Mu           sync.Mutex          // For adding/removing worker operations
+	Mu           sync.RWMutex        // For adding/removing worker operations
 	nextID       int                 // Next unused output worker id
 	Instances    map[int]*Instance   // Individual output workers
 	MinInstCount int                 // Minimum number of instances at any one time

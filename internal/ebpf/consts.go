@@ -1,3 +1,4 @@
+// Package supporting the use Linux Extended Berkley Packet Filter specifically for loading the socket reuse buffer draining C program
 package ebpf
 
 const (

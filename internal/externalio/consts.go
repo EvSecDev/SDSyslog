@@ -1,3 +1,4 @@
+// Parent package containing all modules for sending or receiving data to/from external sources.
 package externalio
 
 const (

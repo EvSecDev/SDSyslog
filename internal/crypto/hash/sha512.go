@@ -1,3 +1,4 @@
+// Centralized package containing hash algorithms
 package hash
 
 import (

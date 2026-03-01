@@ -1,3 +1,4 @@
+// Package containing lookup information related to the Syslog protocol (for use in parsing elsewhere)
 package syslog
 
 import (

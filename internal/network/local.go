@@ -1,3 +1,4 @@
+// Package containing logic for interacting with the local operating system network stack
 package network
 
 import (

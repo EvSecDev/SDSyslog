@@ -1,3 +1,4 @@
+// Centralized package for any constants/variables/types that are used across the entire program but do not import anything
 package global
 
 import "time"

@@ -1,3 +1,4 @@
+// Centralized package containing all needed cryptographically secure randomization functions
 package random
 
 import (

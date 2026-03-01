@@ -1,3 +1,4 @@
+// Centralized package for calculating and verifying message authentication codes
 package hmac
 
 import (

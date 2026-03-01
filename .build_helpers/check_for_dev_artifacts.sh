@@ -39,7 +39,11 @@ function check_for_dev_artifacts() {
 	# Quick staticcheck check - ignoring punctuation in error strings
 	cd "$src"
 	set +e
-	staticcheck ./... | grep -Ev "error strings should not"
+	staticcheck -checks all ./... | grep -Ev "error strings should not|comment on exported method|package comment should be of the form|comment on exported type|comment on exported function"
+	go vet ./...
+	if [[ -x $(which golangci-lint) ]]; then
+		golangci-lint run ./...
+	fi
 	set -e
 	cd "$repoDir"/
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -131,13 +132,19 @@ func TestReadFrame(t *testing.T) {
 			var wg sync.WaitGroup
 			wg.Add(1)
 
+			errChan := make(chan error, 1)
+
 			expectedWholeFrames := make([][]byte, len(tt.frameChunks)) // source of truth for test output
 			go func() {
 				defer wg.Done()
 				// Inject chunk by chunk into mocked connection buffer
 				for i, frame := range tt.frameChunks {
 					for _, chunk := range frame {
-						server.Write(chunk)
+						_, err := server.Write(chunk)
+						if err != nil {
+							errChan <- fmt.Errorf("unexpected error writing frame chunk: %w", err)
+							return
+						}
 						expectedWholeFrames[i] = append(expectedWholeFrames[i], chunk...)
 					}
 				}
@@ -145,7 +152,10 @@ func TestReadFrame(t *testing.T) {
 
 			// Simulate transport layer closing
 			if tt.expectedErr == ErrTransportFailure {
-				client.Close()
+				err := client.Close()
+				if err != nil {
+					t.Fatalf("unexpected error closing client connection: %v", err)
+				}
 			}
 
 			// Test - get each output frame
@@ -166,6 +176,13 @@ func TestReadFrame(t *testing.T) {
 				gotFrames = append(gotFrames, frame)
 			}
 			wg.Wait()
+
+			if len(errChan) > 0 {
+				mockWriterError := <-errChan
+				if mockWriterError != nil {
+					t.Fatalf("%s", mockWriterError.Error())
+				}
+			}
 
 			// Ensure ordering and contents stayed the same
 			for i, want := range expectedWholeFrames {

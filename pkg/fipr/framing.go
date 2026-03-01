@@ -12,7 +12,7 @@ import (
 // Writes frame to transport layer connection.
 func (session *Session) writeFrame(wireFrame []byte) (err error) {
 	// Safety only
-	err = session.conn.SetReadDeadline(time.Now().Add(maxWaitTimeForSend))
+	err = session.conn.SetWriteDeadline(time.Now().Add(maxWaitTimeForSend))
 	if err != nil {
 		if transportWasClosed(err) {
 			err = ErrTransportWasClosed
@@ -22,7 +22,15 @@ func (session *Session) writeFrame(wireFrame []byte) (err error) {
 		}
 		return
 	}
-	defer session.conn.SetReadDeadline(time.Time{})
+
+	defer func() {
+		if err == nil { // Only reset deadline if no error occurred
+			err = session.conn.SetWriteDeadline(time.Time{})
+			if err != nil {
+				err = fmt.Errorf("failed resetting write deadline: %w", err)
+			}
+		}
+	}()
 
 	for len(wireFrame) > 0 {
 		var n int
@@ -54,7 +62,15 @@ func (session *Session) readFrame() (wireFrame []byte, err error) {
 		}
 		return
 	}
-	defer session.conn.SetReadDeadline(time.Time{})
+
+	defer func() {
+		if err == nil { // Only reset deadline if no error occurred
+			err = session.conn.SetReadDeadline(time.Time{})
+			if err != nil {
+				err = fmt.Errorf("failed resetting read deadline: %w", err)
+			}
+		}
+	}()
 
 	for {
 		// Attempt to extract frame from internal buffer

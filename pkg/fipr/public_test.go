@@ -102,7 +102,7 @@ func TestPublic_Full(t *testing.T) {
 
 			var wg sync.WaitGroup
 
-			clientErrChan := make(chan error, 6) // Buffered to avoid blocking test run
+			clientErrChan := make(chan error, 7) // Buffered to avoid blocking test run
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -130,7 +130,11 @@ func TestPublic_Full(t *testing.T) {
 
 				if tt.clientNoSendFrag {
 					// Simulates client refusing to route a fragment
-					client.Close() // Would happen in the caller
+					err := client.Close() // Would happen in the caller
+					if err != nil {
+						clientErrChan <- fmt.Errorf("unexpected failure closing client connection: %w", err)
+						return
+					}
 					return
 				}
 

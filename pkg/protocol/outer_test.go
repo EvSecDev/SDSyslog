@@ -59,8 +59,14 @@ func TestConstructAndDeconstructouter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.SetupEncryptInnerPayload(tt.pubKey)
-			wrappers.SetupDecryptInnerPayload(priv)
+			err := wrappers.SetupEncryptInnerPayload(tt.pubKey)
+			if err != nil {
+				t.Fatalf("unexpected error setting up encryption function: %v", err)
+			}
+			err = wrappers.SetupDecryptInnerPayload(priv)
+			if err != nil {
+				t.Fatalf("unexpected error setting up decryption function: %v", err)
+			}
 
 			// Test ConstructOuterPayload
 			outerBlob, err := ConstructOuterPayload(tt.payload, tt.suiteID)

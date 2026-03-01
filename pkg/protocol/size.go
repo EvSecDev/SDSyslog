@@ -91,13 +91,15 @@ func valueSizeApprox(v reflect.Value) (byteSize int) {
 	case reflect.Interface:
 		if v.IsNil() {
 			byteSize = 16 // empty interface header
+		} else {
+			byteSize = 16 + valueSizeApprox(v.Elem()) // header + value
 		}
-		byteSize = 16 + valueSizeApprox(v.Elem()) // header + value
 	case reflect.Pointer:
 		if v.IsNil() {
 			byteSize = ptrSize
+		} else {
+			byteSize = ptrSize + valueSizeApprox(v.Elem())
 		}
-		byteSize = ptrSize + valueSizeApprox(v.Elem())
 	case reflect.Struct:
 		size := 0
 		for i := 0; i < v.NumField(); i++ {

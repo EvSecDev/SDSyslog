@@ -133,7 +133,10 @@ func TestResend_MaxRetries(t *testing.T) {
 		t.Fatalf("expected error %v, but got error %v", ErrTooManyResends, err)
 	}
 
-	server.Close() // Simulate server closing connection after failing to wait for valid data
+	err = server.Close() // Simulate server closing connection after failing to wait for valid data
+	if err != nil {
+		t.Fatalf("unexpected error closing server connection: %v", err)
+	}
 	wg.Wait()
 
 	for len(errChan) > 0 {

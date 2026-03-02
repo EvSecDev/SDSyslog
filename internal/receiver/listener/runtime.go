@@ -7,6 +7,7 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
 	"strconv"
+	"time"
 )
 
 // Create additional ingest instance
@@ -79,11 +80,27 @@ func (manager *Manager) RemoveInstance(id int) {
 		}
 		if ingestInstance.conn != nil {
 			// Required for listener to process cancellation when blocked
-			// Theoretically... can cause deadlocks on shutdown due to close not breaking blocking read syscall
-			err := ingestInstance.conn.Close()
-			if err != nil {
-				logctx.LogStdErr(manager.ctx,
-					"Listener %d: failed to close socket: %w\n", id, err)
+
+			// Closing with timeout
+			// Small chance that it causes deadlocks on shutdown due to close not breaking blocking read syscall
+			closeWaitTime := 2 * time.Second
+			done := make(chan struct{})
+			go func() {
+				err := ingestInstance.conn.Close()
+				if err != nil {
+					logctx.LogStdErr(manager.ctx,
+						"Listener %d: failed to close socket: %w\n", id, err)
+				}
+				close(done)
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(closeWaitTime):
+				// Leaving as info print as it's neither warning nor error
+				logctx.LogStdInfo(manager.ctx, "Timeout: listener socket did not close within %v seconds (no error)",
+					closeWaitTime.Seconds())
+				return
 			}
 		}
 

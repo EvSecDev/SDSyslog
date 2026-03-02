@@ -5,11 +5,11 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/internal/sender/managers/packaging"
+	"sdsyslog/internal/sender/assembler"
 	"time"
 )
 
-func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, assemMgr *packaging.Manager) {
+func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, assemMgr *assembler.Manager) {
 	// No scaling if we are at the min/max
 	assemMgr.Mu.RLock()
 	instanceCount := len(assemMgr.Instances)

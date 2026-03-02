@@ -1,49 +1,42 @@
-// Manages assembler worker instances
-package packaging
+// Manages output writer worker instance. Handles writing final fragmented log messages to configured network destinations
+package output
 
 import (
 	"context"
 	"fmt"
-	"sdsyslog/internal/crypto/random"
+	"net"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/network"
 	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/pkg/protocol"
+	"strconv"
 )
 
-// Creates new instance manager
-func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[[]byte]) (new *Manager, err error) {
-	// Double check queue - should never get past build
-	if outbox == nil {
-		panic("FATAL: Sender Packaging manager received empty outbox queue variable")
-	}
-
-	// Add log context
-	ctx = logctx.AppendCtxTag(ctx, logctx.NSmPack)
-	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
-
-	config.HostID, err = random.FourByte()
-	if err != nil {
-		err = fmt.Errorf("failed to generate new unique host identifier: %w", err)
-		return
-	}
-
-	config.MaxPayloadSize, err = network.FindSendingMaxUDPPayload(config.DestinationIP)
-	if err != nil {
-		err = fmt.Errorf("failed to find max payload size: %w", err)
-		return
-	}
-	if config.OverrideMaxPayloadSize != 0 {
-		config.MaxPayloadSize = config.OverrideMaxPayloadSize
-	}
-
+// Creates new instance manager (and its own inbox)
+func (config *ManagerConfig) NewManager(ctx context.Context) (new *Manager, err error) {
 	err = config.validate()
 	if err != nil {
 		err = fmt.Errorf("invalid configuration: %w", err)
 		return
 	}
 
-	inbox, err := mpmc.New[protocol.Message](logctx.GetTagList(ctx),
+	// Add log context
+	ctx = logctx.AppendCtxTag(ctx, logctx.NSmOutput)
+	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
+
+	// Setup destination network connection
+	destAddr, err := net.ResolveUDPAddr("udp", config.DestinationIP+":"+strconv.Itoa(config.DestinationPort))
+	if err != nil {
+		err = fmt.Errorf("failed to resolve destination: %w", err)
+		return
+	}
+
+	destinationConnection, err := net.DialUDP("udp", nil, destAddr)
+	if err != nil {
+		err = fmt.Errorf("failed to open udp socket: %w", err)
+		return
+	}
+
+	// Setup input queue
+	inQueue, err := mpmc.New[[]byte](logctx.GetTagList(ctx),
 		uint64(config.MinQueueCapacity),
 		config.MinQueueCapacity,
 		config.MaxQueueCapacity)
@@ -54,8 +47,8 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 	new = &Manager{
 		Config:    config,
 		Instances: make(map[int]*Instance),
-		InQueue:   inbox,
-		outQueue:  outbox,
+		InQueue:   inQueue,
+		outDest:   destinationConnection,
 		ctx:       ctx,
 	}
 	return
@@ -84,12 +77,8 @@ func (config *ManagerConfig) validate() (err error) {
 	if config.DestinationIP == "" {
 		err = fmt.Errorf("empty destination ip")
 	}
-	if config.HostID == 0 {
-		err = fmt.Errorf("empty host id")
+	if config.DestinationPort == 0 {
+		err = fmt.Errorf("empty destination port")
 	}
-	if config.MaxPayloadSize == 0 {
-		err = fmt.Errorf("empty max payload size")
-	}
-
 	return
 }

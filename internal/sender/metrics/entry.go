@@ -6,17 +6,17 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
-	"sdsyslog/internal/sender/managers/ingest"
-	"sdsyslog/internal/sender/managers/out"
-	"sdsyslog/internal/sender/managers/packaging"
+	"sdsyslog/internal/sender/assembler"
+	"sdsyslog/internal/sender/ingest"
+	"sdsyslog/internal/sender/output"
 	"time"
 )
 
-func New(ingestMgr *ingest.Manager, packMgr *packaging.Manager, outputMgr *out.Manager, interval time.Duration, maximumMetricAge time.Duration) (new *Gatherer) {
+func New(ingestMgr *ingest.Manager, asmMgr *assembler.Manager, outputMgr *output.Manager, interval time.Duration, maximumMetricAge time.Duration) (new *Gatherer) {
 	new = &Gatherer{
 		Registry:  metrics.New(),
 		Ingest:    ingestMgr,
-		Packaging: packMgr,
+		Assembler: asmMgr,
 		Output:    outputMgr,
 		Interval:  interval,
 		Retention: maximumMetricAge,
@@ -95,15 +95,15 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	}
 
 	// Packaging
-	m1 := gatherer.Packaging.InQueue.CollectMetrics(interval)
+	m1 := gatherer.Assembler.InQueue.CollectMetrics(interval)
 	gatherer.Registry.Add(timeSlice, m1)
 
-	gatherer.Packaging.Mu.RLock()
-	for _, instance := range gatherer.Packaging.Instances {
-		m2 := instance.Worker.CollectMetrics(interval)
+	gatherer.Assembler.Mu.RLock()
+	for _, instance := range gatherer.Assembler.Instances {
+		m2 := instance.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m2)
 	}
-	gatherer.Packaging.Mu.RUnlock()
+	gatherer.Assembler.Mu.RUnlock()
 
 	// Output
 	collection := gatherer.Output.InQueue.CollectMetrics(interval)
@@ -111,7 +111,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 
 	gatherer.Output.Mu.RLock()
 	for _, instance := range gatherer.Output.Instances {
-		m2 := instance.Worker.CollectMetrics(interval)
+		m2 := instance.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m2)
 	}
 	gatherer.Output.Mu.RUnlock()

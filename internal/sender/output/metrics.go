@@ -32,7 +32,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSentPackets,
 			Description: "Total packets sent in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      totalPkts,
 				Unit:     "count",
@@ -44,7 +44,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSumPktSizes,
 			Description: "Total size of all packets sent in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumPktSizeB,
 				Unit:     "bytes",
@@ -56,7 +56,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxPktSize,
 			Description: "Maximum (seen) size across all packets sent in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxPktSizeB,
 				Unit:     "bytes",

@@ -1,4 +1,3 @@
-// Handles writing final fragmented log messages to configured network destinations
 package output
 
 import (
@@ -10,9 +9,9 @@ import (
 	"sdsyslog/internal/queue/mpmc"
 )
 
-func New(namespace []string, inQueue *mpmc.Queue[[]byte], conn *net.UDPConn) (new *Instance) {
+func newWorker(namespace []string, inQueue *mpmc.Queue[[]byte], conn *net.UDPConn) (new *Instance) {
 	new = &Instance{
-		Namespace: append(namespace, logctx.NSWorker),
+		namespace: append(namespace, logctx.NSWorker),
 		inbox:     inQueue,
 		conn:      conn,
 		Metrics:   MetricStorage{},
@@ -20,7 +19,7 @@ func New(namespace []string, inQueue *mpmc.Queue[[]byte], conn *net.UDPConn) (ne
 	return
 }
 
-func (instance *Instance) Run(ctx context.Context) {
+func (instance *Instance) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():

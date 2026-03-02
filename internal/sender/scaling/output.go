@@ -5,11 +5,11 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/internal/sender/managers/out"
+	"sdsyslog/internal/sender/output"
 	"time"
 )
 
-func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, outMgr *out.Manager) {
+func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, outMgr *output.Manager) {
 	// No scaling if we are at the min/max
 	outMgr.Mu.RLock()
 	instanceCount := len(outMgr.Instances)

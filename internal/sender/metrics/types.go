@@ -2,9 +2,9 @@ package metrics
 
 import (
 	"sdsyslog/internal/metrics"
-	"sdsyslog/internal/sender/managers/ingest"
-	"sdsyslog/internal/sender/managers/out"
-	"sdsyslog/internal/sender/managers/packaging"
+	"sdsyslog/internal/sender/assembler"
+	"sdsyslog/internal/sender/ingest"
+	"sdsyslog/internal/sender/output"
 	"time"
 )
 
@@ -13,6 +13,6 @@ type Gatherer struct {
 	Retention time.Duration     // Maximum time to maintain metrics for
 	Registry  *metrics.Registry // Storage for metric data
 	Ingest    *ingest.Manager
-	Packaging *packaging.Manager
-	Output    *out.Manager
+	Assembler *assembler.Manager
+	Output    *output.Manager
 }

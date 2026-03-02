@@ -1,9 +1,8 @@
-package packaging
+package output
 
 import (
 	"context"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/sender/assembler"
 	"strconv"
 )
 
@@ -18,20 +17,11 @@ func (manager *Manager) AddInstance() (instanceID int) {
 	manager.nextID++
 
 	// Add log context
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, logctx.NSmPack)
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, strconv.Itoa(instanceID))
-	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 
 	// Create new worker instance
-	newWorker := &Instance{
-		id: instanceID,
-		Worker: assembler.New(logctx.GetTagList(manager.ctx),
-			manager.InQueue,
-			manager.outQueue,
-			manager.Config.HostID,
-			manager.Config.MaxPayloadSize),
-	}
+	newWorker := newWorker(logctx.GetTagList(manager.ctx), manager.InQueue, manager.outDest)
 
 	manager.Instances[instanceID] = newWorker
 
@@ -42,10 +32,10 @@ func (manager *Manager) AddInstance() (instanceID int) {
 
 	newWorker.wg.Add(1)
 	go func() {
-		// Run the assembler
+		// Run the worker
 		defer newWorker.wg.Done()
-		workerCtx := logctx.OverwriteCtxTag(workerCtx, newWorker.Worker.Namespace)
-		newWorker.Worker.Run(workerCtx)
+		workerCtx := logctx.OverwriteCtxTag(workerCtx, newWorker.namespace)
+		newWorker.run(workerCtx)
 	}()
 	return
 }

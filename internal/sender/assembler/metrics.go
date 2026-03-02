@@ -40,7 +40,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTTotalMsgs,
 			Description: "Total received messages in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      totalMsgs,
 				Unit:     "count",
@@ -52,7 +52,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSumMsgSize,
 			Description: "Total of all message sizes in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumMsgSizeB,
 				Unit:     "bytes",
@@ -64,7 +64,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxMsgSize,
 			Description: "Maximum (seen) of all message sizes in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxMsgSizeB,
 				Unit:     "bytes",
@@ -76,7 +76,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTTotalFrags,
 			Description: "Total fragments of all messages in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumFragCtn,
 				Unit:     "count",
@@ -88,7 +88,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxFragsMsg,
 			Description: "Maximum (seen) fragment count of all messages in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxFragCtn,
 				Unit:     "count",

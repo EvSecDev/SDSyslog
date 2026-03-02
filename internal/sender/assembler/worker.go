@@ -1,4 +1,3 @@
-// Fragments log messages into pieces fitting within maximum payload size for network
 package assembler
 
 import (
@@ -10,9 +9,9 @@ import (
 	"sdsyslog/pkg/protocol"
 )
 
-func New(namespace []string, inQueue *mpmc.Queue[protocol.Message], outQueue *mpmc.Queue[[]byte], hostID, maxPayloadSize int) (new *Instance) {
+func newWorker(namespace []string, inQueue *mpmc.Queue[protocol.Message], outQueue *mpmc.Queue[[]byte], hostID, maxPayloadSize int) (new *Instance) {
 	new = &Instance{
-		Namespace:      append(namespace, logctx.NSAssm),
+		namespace:      append(namespace, logctx.NSAssm),
 		inbox:          inQueue,
 		outbox:         outQueue,
 		hostID:         hostID,
@@ -22,7 +21,7 @@ func New(namespace []string, inQueue *mpmc.Queue[protocol.Message], outQueue *mp
 	return
 }
 
-func (instance *Instance) Run(ctx context.Context) {
+func (instance *Instance) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():

@@ -1,14 +1,14 @@
 package shared
 
 import (
-	"sdsyslog/internal/sender/managers/ingest"
-	"sdsyslog/internal/sender/managers/out"
-	"sdsyslog/internal/sender/managers/packaging"
+	"sdsyslog/internal/sender/assembler"
+	"sdsyslog/internal/sender/ingest"
+	"sdsyslog/internal/sender/output"
 )
 
 // Pipeline component trackers (reverse order)
 type Managers struct {
-	Out   *out.Manager
-	Assem *packaging.Manager
+	Out   *output.Manager
+	Assem *assembler.Manager
 	In    *ingest.Manager
 }

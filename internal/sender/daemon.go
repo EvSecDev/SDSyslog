@@ -12,10 +12,10 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/sender/managers/ingest"
-	"sdsyslog/internal/sender/managers/out"
-	"sdsyslog/internal/sender/managers/packaging"
+	"sdsyslog/internal/sender/assembler"
+	"sdsyslog/internal/sender/ingest"
 	"sdsyslog/internal/sender/metrics"
+	"sdsyslog/internal/sender/output"
 	"sdsyslog/internal/sender/scaling"
 	"sdsyslog/internal/syslog"
 	"slices"
@@ -55,7 +55,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	daemon.cfg.setDefaults()
 
 	// Stage 3 - Output Manager
-	outMgrConf := &out.ManagerConfig{
+	outMgrConf := &output.ManagerConfig{
 		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,
 		MaxQueueCapacity: daemon.cfg.MaxOutputQueueSize,
 		DestinationIP:    daemon.cfg.DestinationIP,
@@ -77,7 +77,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		"%d output instance(s) started successfully\n", daemon.cfg.MinOutputs)
 
 	// Stage 2 - Assembler Manager
-	pkgMgrConf := &packaging.ManagerConfig{
+	pkgMgrConf := &assembler.ManagerConfig{
 		MinQueueCapacity:       daemon.cfg.MinAssemblerQueueSize,
 		MaxQueueCapacity:       daemon.cfg.MaxAssemblerQueueSize,
 		OverrideMaxPayloadSize: daemon.cfg.OverrideMaxPayloadSize,

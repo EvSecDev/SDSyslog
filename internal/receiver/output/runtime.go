@@ -21,7 +21,7 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	manager.cancel = cancelInstance
-	manager.Instance = *newWorker(logctx.GetTagList(manager.ctx), manager.Queue)
+	manager.Instance = *manager.newWorker()
 
 	// Add outputs
 	manager.Instance.FileMod, err = file.NewOutput(filePath)

@@ -30,7 +30,7 @@ func (manager *Manager) AddInstance() (instanceID string) {
 
 	// Create new defrag instance
 	shard := shard.New(logctx.GetTagList(manager.ctx), 1024, &manager.Config.PacketDeadline)
-	instance := newWorker(logctx.GetTagList(manager.ctx), shard, manager.outQueue)
+	instance := manager.newWorker(shard)
 
 	// Create new context for both watcher/assembler
 	workerCtx, cancelInstances := context.WithCancel(context.Background())

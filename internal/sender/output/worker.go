@@ -2,18 +2,16 @@ package output
 
 import (
 	"context"
-	"net"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/queue/mpmc"
 )
 
-func newWorker(namespace []string, inQueue *mpmc.Queue[[]byte], conn *net.UDPConn) (new *Instance) {
+func (manager *Manager) newWorker() (new *Instance) {
 	new = &Instance{
-		namespace: append(namespace, logctx.NSWorker),
-		inbox:     inQueue,
-		conn:      conn,
+		namespace: append(logctx.GetTagList(manager.ctx), logctx.NSWorker),
+		inbox:     manager.InQueue,
+		conn:      manager.outDest,
 		Metrics:   MetricStorage{},
 	}
 	return

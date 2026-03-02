@@ -5,23 +5,19 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/shard"
 	"sdsyslog/pkg/protocol"
 	"time"
 )
 
 // Creates new processor with requested queue as inbox
-func newWorker(namespace []string,
-	queue *mpmc.Queue[listener.Container], shardRouting shard.RoutingView,
-	maxPastMsgAge, maxFutureMsgAge time.Duration) (new *Instance) {
+func (manager *Manager) newWorker() (new *Instance) {
 	new = &Instance{
-		namespace:            append(namespace, logctx.NSWorker),
-		pastTimestampLimit:   maxPastMsgAge,
-		futureTimestampLimit: maxFutureMsgAge,
-		inbox:                queue,
-		routingView:          shardRouting,
+		namespace:            append(logctx.GetTagList(manager.ctx), logctx.NSWorker),
+		pastTimestampLimit:   manager.Config.PastMsgCutoff,
+		futureTimestampLimit: manager.Config.FutureMsgCutoff,
+		inbox:                manager.Inbox,
+		routingView:          manager.routingView,
 		Metrics:              MetricStorage{},
 	}
 	return

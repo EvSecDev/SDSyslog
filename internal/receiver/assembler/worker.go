@@ -4,17 +4,16 @@ import (
 	"context"
 	"runtime/debug"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/internal/receiver/shard"
 	"sdsyslog/pkg/protocol"
 	"time"
 )
 
-func newWorker(namespace []string, shard *shard.Instance, outQueue *mpmc.Queue[protocol.Payload]) (new *Instance) {
+func (manager *Manager) newWorker(shard *shard.Instance) (new *Instance) {
 	new = &Instance{
-		namespace: append(namespace, logctx.NSAssm),
+		namespace: append(logctx.GetTagList(manager.ctx), logctx.NSAssm),
 		Shard:     shard,
-		outbox:    outQueue,
+		outbox:    manager.outQueue,
 		Metrics:   MetricStorage{},
 	}
 	return

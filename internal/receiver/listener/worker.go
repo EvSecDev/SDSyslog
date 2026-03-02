@@ -7,19 +7,18 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/crypto"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 	"time"
 )
 
-func newWorker(namespace []string, conn *net.UDPConn, queue *mpmc.Queue[Container], replayCheck func(pubKey []byte) (replayed bool)) (new *Instance) {
+func (manager *Manager) newWorker(conn *net.UDPConn) (new *Instance) {
 	new = &Instance{
-		namespace:  append(namespace, logctx.NSListen),
+		namespace:  append(logctx.GetTagList(manager.ctx), logctx.NSListen),
 		conn:       conn,
-		Outbox:     queue,
+		Outbox:     manager.outbox,
 		minLen:     protocol.MinOuterPayloadLen,
 		Metrics:    MetricStorage{},
-		isReplayed: replayCheck,
+		isReplayed: manager.replayCache.isReplayed,
 	}
 	return
 }

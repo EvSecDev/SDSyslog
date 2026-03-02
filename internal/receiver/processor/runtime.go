@@ -18,11 +18,7 @@ func (manager *Manager) AddInstance() (id int) {
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, strconv.Itoa(id))
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 
-	processor := newWorker(logctx.GetTagList(manager.ctx),
-		manager.Inbox,
-		manager.routingView,
-		manager.Config.PastMsgCutoff,
-		manager.Config.FutureMsgCutoff)
+	processor := manager.newWorker()
 
 	manager.Instances[id] = processor
 

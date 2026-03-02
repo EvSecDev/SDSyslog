@@ -23,11 +23,7 @@ func (manager *Manager) AddInstance() (instanceID int) {
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 
 	// Create new worker instance
-	newWorker := newWorker(logctx.GetTagList(manager.ctx),
-		manager.InQueue,
-		manager.outQueue,
-		manager.Config.HostID,
-		manager.Config.MaxPayloadSize)
+	newWorker := manager.newWorker()
 
 	manager.Instances[instanceID] = newWorker
 

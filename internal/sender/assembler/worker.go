@@ -5,17 +5,16 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 )
 
-func newWorker(namespace []string, inQueue *mpmc.Queue[protocol.Message], outQueue *mpmc.Queue[[]byte], hostID, maxPayloadSize int) (new *Instance) {
+func (manager *Manager) newWorker() (new *Instance) {
 	new = &Instance{
-		namespace:      append(namespace, logctx.NSAssm),
-		inbox:          inQueue,
-		outbox:         outQueue,
-		hostID:         hostID,
-		maxPayloadSize: maxPayloadSize,
+		namespace:      append(logctx.GetTagList(manager.ctx), logctx.NSAssm),
+		inbox:          manager.InQueue,
+		outbox:         manager.outQueue,
+		hostID:         manager.Config.HostID,
+		maxPayloadSize: manager.Config.MaxPayloadSize,
 		Metrics:        MetricStorage{},
 	}
 	return

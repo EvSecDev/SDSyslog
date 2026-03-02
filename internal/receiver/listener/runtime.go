@@ -27,10 +27,7 @@ func (manager *Manager) AddInstance() (id int, err error) {
 		return
 	}
 
-	ingestInstance := newWorker(logctx.GetTagList(manager.ctx),
-		conn,
-		manager.outbox,
-		manager.replayCache.isReplayed)
+	ingestInstance := manager.newWorker(conn)
 
 	manager.Instances[id] = ingestInstance
 

@@ -37,7 +37,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			scaleTimeouts(ctx, instance.MetricStore, instance.PollInterval, instance.Managers.Assembler)
 
 			// Output Queue
-			instance.Managers.Output.Queue.ScaleCapacity(ctx)
+			instance.Managers.Output.Inbox.ScaleCapacity(ctx)
 		}
 	}
 }

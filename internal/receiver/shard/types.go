@@ -18,8 +18,8 @@ type Instance struct {
 	Namespace      []string
 	Mu             sync.Mutex
 	Buckets        map[string]*Bucket // keyed by bucket ID
-	KeyQueue       chan string        // FIFO of filled bucket keys
-	PacketDeadline *atomic.Int64      // Owned by manager
+	keyQueue       chan string        // FIFO of filled bucket keys
+	packetDeadline *atomic.Int64      // Owned by manager
 	InShutdown     atomic.Bool        // Blocks new bucket creation
 	Metrics        MetricStorage
 }

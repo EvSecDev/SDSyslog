@@ -18,13 +18,13 @@ type Manager struct {
 }
 
 type FileWorker struct {
-	Worker *file.InModule
+	Module *file.InModule
 	wg     sync.WaitGroup     // Waiter for instance
 	cancel context.CancelFunc // cancel instance
 }
 
 type JrnlWorker struct {
-	Worker *journald.InModule
+	Module *journald.InModule
 	wg     sync.WaitGroup     // Waiter for instance
 	cancel context.CancelFunc // cancel instance
 }

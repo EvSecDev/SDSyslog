@@ -17,7 +17,7 @@ type ManagerConfig struct {
 
 type Manager struct {
 	Config *ManagerConfig
-	Queue  *mpmc.Queue[protocol.Payload] // Shared queue across all assembler/output instances
+	Inbox  *mpmc.Queue[protocol.Payload] // Shared queue across all assembler/output instances
 
 	Instance Instance           // Output worker writing to all configured outputs
 	wg       sync.WaitGroup     // Waiter for instance
@@ -28,9 +28,9 @@ type Manager struct {
 
 type Instance struct {
 	namespace []string
-	FileMod   *file.OutModule
-	JrnlMod   *journald.OutModule
-	BeatsMod  *beats.OutModule
-	Inbox     *mpmc.Queue[protocol.Payload]
+	fileMod   *file.OutModule
+	jrnlMod   *journald.OutModule
+	beatsMod  *beats.OutModule
+	inbox     *mpmc.Queue[protocol.Payload]
 	Metrics   MetricStorage
 }

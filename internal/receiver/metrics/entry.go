@@ -117,7 +117,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 
 	// Output
 	// Inbox Queue
-	metrics := gatherer.Mgrs.Output.Queue.CollectMetrics(interval)
+	metrics := gatherer.Mgrs.Output.Inbox.CollectMetrics(interval)
 	gatherer.Registry.Add(timeSlice, metrics)
 
 	// Instance

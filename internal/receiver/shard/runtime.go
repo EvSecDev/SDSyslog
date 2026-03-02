@@ -12,7 +12,7 @@ func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSWatcher)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	deadlinePtr := shard.PacketDeadline
+	deadlinePtr := shard.packetDeadline
 
 	for {
 		select {
@@ -60,7 +60,7 @@ func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
 
 			for _, bucketKey := range keysToSend {
 				select {
-				case shard.KeyQueue <- bucketKey:
+				case shard.keyQueue <- bucketKey:
 					shard.Metrics.WaitingBuckets.Add(1)
 				case <-ctx.Done():
 					return

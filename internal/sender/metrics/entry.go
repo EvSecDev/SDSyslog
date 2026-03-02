@@ -81,15 +81,15 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 			// Should only happen at daemon shutdown
 			continue
 		}
-		m1 := inst.Worker.CollectMetrics(interval)
+		m1 := inst.Module.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m1)
 	}
 	gatherer.Ingest.Mu.RUnlock()
 
 	// Journal input
 	if gatherer.Ingest.JournalSource != nil {
-		if gatherer.Ingest.JournalSource.Worker != nil {
-			m0 := gatherer.Ingest.JournalSource.Worker.CollectMetrics(interval)
+		if gatherer.Ingest.JournalSource.Module != nil {
+			m0 := gatherer.Ingest.JournalSource.Module.CollectMetrics(interval)
 			gatherer.Registry.Add(timeSlice, m0)
 		}
 	}

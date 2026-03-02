@@ -15,7 +15,7 @@ func (manager *Manager) newWorker(conn *net.UDPConn) (new *Instance) {
 	new = &Instance{
 		namespace:  append(logctx.GetTagList(manager.ctx), logctx.NSListen),
 		conn:       conn,
-		Outbox:     manager.outbox,
+		outbox:     manager.outbox,
 		minLen:     protocol.MinOuterPayloadLen,
 		Metrics:    MetricStorage{},
 		isReplayed: manager.replayCache.isReplayed,
@@ -101,11 +101,11 @@ func (instance *Instance) run(ctx context.Context) {
 				}
 			}
 
-			instance.Outbox.Push(newQueueEntry)
+			instance.outbox.Push(newQueueEntry)
 
 			// Add data size to sum
 			size := len(newQueueEntry.Data) + len(newQueueEntry.Meta.RemoteIP)
-			instance.Outbox.ActiveWrite.Load().Metrics.Bytes.Add(uint64(size))
+			instance.outbox.ActiveWrite.Load().Metrics.Bytes.Add(uint64(size))
 
 			instance.Metrics.ValidPackets.Add(1) // increment success after push
 

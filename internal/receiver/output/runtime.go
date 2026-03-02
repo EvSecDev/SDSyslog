@@ -24,15 +24,15 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	manager.Instance = *manager.newWorker()
 
 	// Add outputs
-	manager.Instance.FileMod, err = file.NewOutput(filePath)
+	manager.Instance.fileMod, err = file.NewOutput(filePath)
 	if err != nil {
 		return
 	}
-	manager.Instance.JrnlMod, err = journald.NewOutput(journaldURL)
+	manager.Instance.jrnlMod, err = journald.NewOutput(journaldURL)
 	if err != nil {
 		return
 	}
-	manager.Instance.BeatsMod, err = beats.NewOutput(beatsAddress)
+	manager.Instance.beatsMod, err = beats.NewOutput(beatsAddress)
 	if err != nil {
 		return
 	}
@@ -54,17 +54,17 @@ func (manager *Manager) RemoveInstance() {
 	}
 	manager.wg.Wait()
 
-	err := manager.Instance.FileMod.Shutdown()
+	err := manager.Instance.fileMod.Shutdown()
 	if err != nil {
 		logctx.LogStdErr(manager.ctx,
 			"failed to shutdown file module: %w\n", err)
 	}
-	err = manager.Instance.JrnlMod.Shutdown()
+	err = manager.Instance.jrnlMod.Shutdown()
 	if err != nil {
 		logctx.LogStdErr(manager.ctx,
 			"failed to shutdown journal module: %w\n", err)
 	}
-	err = manager.Instance.BeatsMod.Shutdown()
+	err = manager.Instance.beatsMod.Shutdown()
 	if err != nil {
 		logctx.LogStdErr(manager.ctx,
 			"failed to shutdown beats module: %w\n", err)

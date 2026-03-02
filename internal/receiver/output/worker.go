@@ -13,7 +13,7 @@ import (
 func (manager *Manager) newWorker() (new *Instance) {
 	new = &Instance{
 		namespace: append(logctx.GetTagList(manager.ctx), logctx.NSWorker),
-		Inbox:     manager.Queue,
+		inbox:     manager.Inbox,
 		Metrics:   MetricStorage{},
 	}
 	return
@@ -28,7 +28,7 @@ func (instance *Instance) run(ctx context.Context) {
 
 	go func() {
 		for {
-			msg, ok := instance.Inbox.Pop(ctx)
+			msg, ok := instance.inbox.Pop(ctx)
 			if !ok {
 				select {
 				case <-ctx.Done():
@@ -40,15 +40,15 @@ func (instance *Instance) run(ctx context.Context) {
 			popCh <- msg
 			// Subtract data size from sum
 			size := msg.Size()
-			atomics.Subtract(&instance.Inbox.ActiveWrite.Load().Metrics.Bytes, uint64(size), 4)
+			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(size), 4)
 		}
 	}()
 
 	for {
 		select {
 		case <-ctx.Done():
-			if instance.FileMod != nil {
-				_, err := instance.FileMod.FlushBuffer()
+			if instance.fileMod != nil {
+				_, err := instance.fileMod.FlushBuffer()
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"failed to flush file line buffer to disk: %w\n", err)
@@ -56,10 +56,10 @@ func (instance *Instance) run(ctx context.Context) {
 			}
 			return
 		case <-ticker.C:
-			if instance.FileMod != nil {
+			if instance.fileMod != nil {
 				// Periodic flush of file output event buffer
 				// Buffer might never fill and flush if we don't get enough messages
-				_, err := instance.FileMod.FlushBuffer()
+				_, err := instance.fileMod.FlushBuffer()
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"failed to flush file line buffer to disk: %w\n", err)
@@ -84,21 +84,21 @@ func (instance *Instance) run(ctx context.Context) {
 				instance.Metrics.ReceivedMessages.Add(1)
 
 				// Write message to all outputs
-				n, err := instance.FileMod.Write(ctx, msg)
+				n, err := instance.fileMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to file output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulFileWrites.Add(uint64(n))
 
-				n, err = instance.JrnlMod.Write(ctx, msg)
+				n, err = instance.jrnlMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to journald output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulJrnlWrites.Add(uint64(n))
 
-				n, err = instance.BeatsMod.Write(ctx, msg)
+				n, err = instance.beatsMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to beats output: %w\n", err)

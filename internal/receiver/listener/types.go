@@ -41,7 +41,7 @@ type replayCache struct {
 type Instance struct {
 	namespace  []string
 	conn       *net.UDPConn
-	Outbox     *mpmc.Queue[Container]
+	outbox     *mpmc.Queue[Container]
 	minLen     int
 	Metrics    MetricStorage
 	isReplayed func(pubKey []byte) (replayed bool)

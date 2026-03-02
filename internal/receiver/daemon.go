@@ -111,7 +111,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	dfrgMgrConf := &assembler.ManagerConfig{}
 	dfrgMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinDefrags))
 	dfrgMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxDefrags))
-	daemon.Mgrs.Assembler, err = dfrgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Output.Queue)
+	daemon.Mgrs.Assembler, err = dfrgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Output.Inbox)
 	if err != nil {
 		err = fmt.Errorf("failed creating defrag manager: %w", err)
 		daemon.Shutdown()
@@ -337,7 +337,7 @@ func (daemon *Daemon) Shutdown() {
 
 	// Stop output worker
 	if daemon.Mgrs.Output != nil {
-		queue := daemon.Mgrs.Output.Queue.ActiveWrite.Load()
+		queue := daemon.Mgrs.Output.Inbox.ActiveWrite.Load()
 
 		// Wait here before shutting down (active write always has newest data)
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)

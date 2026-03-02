@@ -30,7 +30,7 @@ func (manager *Manager) AddFileInstance(filePath string, stateFile string) (err 
 
 	// Worker for this file
 	ingestInstance := &FileWorker{}
-	ingestInstance.Worker, err = file.NewInput(logctx.GetTagList(manager.ctx), filePath, stateFile, manager.outQueue)
+	ingestInstance.Module, err = file.NewInput(logctx.GetTagList(manager.ctx), filePath, stateFile, manager.outQueue)
 	if err != nil {
 		return
 	}
@@ -44,8 +44,8 @@ func (manager *Manager) AddFileInstance(filePath string, stateFile string) (err 
 	ingestInstance.wg.Add(1)
 	go func() {
 		defer ingestInstance.wg.Done()
-		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Worker.Namespace)
-		ingestInstance.Worker.Reader(ingestCtx)
+		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Module.Namespace)
+		ingestInstance.Module.Reader(ingestCtx)
 	}()
 	return
 }
@@ -61,7 +61,7 @@ func (manager *Manager) RemoveFileInstance(filename string) (err error) {
 		return
 	}
 
-	err = fileSource.Worker.Shutdown()
+	err = fileSource.Module.Shutdown()
 	if err != nil {
 		return
 	}

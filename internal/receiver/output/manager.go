@@ -31,7 +31,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context) (new *Manager, err 
 
 	new = &Manager{
 		Config: config,
-		Queue:  inbox,
+		Inbox:  inbox,
 		ctx:    ctx,
 	}
 	return

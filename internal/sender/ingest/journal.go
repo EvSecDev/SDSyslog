@@ -28,7 +28,7 @@ func (manager *Manager) AddJrnlInstance(stateFile string) (err error) {
 
 	// Worker for local journal
 	ingestInstance := &JrnlWorker{
-		Worker: new,
+		Module: new,
 		cancel: cancelInstances,
 	}
 	manager.JournalSource = ingestInstance
@@ -36,8 +36,8 @@ func (manager *Manager) AddJrnlInstance(stateFile string) (err error) {
 	ingestInstance.wg.Add(1)
 	go func() {
 		defer ingestInstance.wg.Done()
-		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Worker.Namespace)
-		ingestInstance.Worker.Reader(ingestCtx)
+		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Module.Namespace)
+		ingestInstance.Module.Reader(ingestCtx)
 	}()
 
 	err = new.Start()
@@ -61,6 +61,6 @@ func (manager *Manager) RemoveJrnlInstance() (err error) {
 		manager.JournalSource.cancel()
 	}
 	manager.JournalSource.wg.Wait()
-	err = manager.JournalSource.Worker.Shutdown()
+	err = manager.JournalSource.Module.Shutdown()
 	return
 }

@@ -15,8 +15,8 @@ func New(namespace []string, buffer int, packetDeadlinePtr *atomic.Int64) (new *
 	new = &Instance{
 		Namespace:      append(namespace, logctx.NSQueue),
 		Buckets:        make(map[string]*Bucket),
-		KeyQueue:       make(chan string, buffer),
-		PacketDeadline: packetDeadlinePtr,
+		keyQueue:       make(chan string, buffer),
+		packetDeadline: packetDeadlinePtr,
 		Metrics:        MetricStorage{},
 	}
 	return
@@ -60,13 +60,13 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment prot
 	bucket.lastProcessStartTime = processingStartTime
 
 	// Even though this should never occur, evaluate deadline anyways in case a remote end tries to sneak a false packet in
-	if time.Since(processingStartTime) > time.Duration(queue.PacketDeadline.Load()) {
+	if time.Since(processingStartTime) > time.Duration(queue.packetDeadline.Load()) {
 		bucket.filled = true
 
 		select {
 		case <-ctx.Done():
 			return
-		case queue.KeyQueue <- bucketKey:
+		case queue.keyQueue <- bucketKey:
 			// success
 			queue.Metrics.WaitingBuckets.Add(1)
 			queue.Metrics.TimedOutBuckets.Add(1)
@@ -85,7 +85,7 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment prot
 		select {
 		case <-ctx.Done():
 			return
-		case queue.KeyQueue <- bucketKey:
+		case queue.keyQueue <- bucketKey:
 			// success
 			queue.Metrics.WaitingBuckets.Add(1)
 			return
@@ -100,7 +100,7 @@ func (queue *Instance) PopKey(ctx context.Context) (key string, ok bool) {
 	select {
 	case <-ctx.Done():
 		return
-	case key, ok = <-queue.KeyQueue:
+	case key, ok = <-queue.keyQueue:
 		if ok {
 			// Protecting subtract - will get out of sync without explicit sync between assembler and processors
 			queue.Mu.Lock()

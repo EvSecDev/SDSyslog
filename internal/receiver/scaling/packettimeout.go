@@ -6,15 +6,15 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
-	"sdsyslog/internal/receiver/managers/defrag"
+	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/shard"
 	"time"
 )
 
 // Changes packet deadline value based on how often buckets are being timed out
-func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, defragMgr *defrag.Manager) {
+func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, asmMgr *assembler.Manager) {
 	// No scaling if we are at the min/max
-	currentDeadline := defragMgr.Config.PacketDeadline.Load()
+	currentDeadline := asmMgr.Config.PacketDeadline.Load()
 	if currentDeadline <= int64(global.DefaultMinPacketDeadline) ||
 		currentDeadline >= int64(global.DefaultMaxPacketDeadline) {
 		return
@@ -30,7 +30,7 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	aggFragments := make([][]uint64, pastNIntervals)
 	aggTimeouts := make([][]uint64, pastNIntervals)
 
-	for _, id := range defragMgr.RoutingView.GetNonDrainingIDs() {
+	for _, id := range asmMgr.RoutingView.GetNonDrainingIDs() {
 		ns := []string{logctx.NSRecv, logctx.NSmDefrag, id}
 
 		sumSpacingMetrics := metricStore.Search(shard.MTTimeBtwFragments, ns, start, end)
@@ -84,11 +84,11 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	deadlineDur := time.Duration(currentDeadline)
 	if stepUp {
 		newDeadline := deadlineDur + 10*time.Millisecond
-		defragMgr.Config.PacketDeadline.Store(int64(newDeadline))
+		asmMgr.Config.PacketDeadline.Store(int64(newDeadline))
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
 	} else if stepDown {
 		newDeadline := deadlineDur - 10*time.Millisecond
-		defragMgr.Config.PacketDeadline.Store(int64(newDeadline))
+		asmMgr.Config.PacketDeadline.Store(int64(newDeadline))
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
 	}
 }

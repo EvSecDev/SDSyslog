@@ -5,11 +5,11 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/internal/receiver/managers/proc"
+	"sdsyslog/internal/receiver/processor"
 	"time"
 )
 
-func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, procMgr *proc.Manager) {
+func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, procMgr *processor.Manager) {
 	// No scaling if we are at the min/max
 	procMgr.Mu.RLock()
 	instanceCount := len(procMgr.Instances)

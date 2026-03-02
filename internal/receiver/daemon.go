@@ -14,11 +14,11 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/receiver/managers/defrag"
-	"sdsyslog/internal/receiver/managers/in"
-	"sdsyslog/internal/receiver/managers/out"
-	"sdsyslog/internal/receiver/managers/proc"
+	"sdsyslog/internal/receiver/assembler"
+	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/metrics"
+	"sdsyslog/internal/receiver/output"
+	"sdsyslog/internal/receiver/processor"
 	"sdsyslog/internal/receiver/scaling"
 	"sdsyslog/internal/receiver/shard/fiprrecv"
 	"sdsyslog/internal/syslog"
@@ -88,7 +88,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	// Stage 4 - Output Manager
-	outMgrConf := &out.ManagerConfig{
+	outMgrConf := &output.ManagerConfig{
 		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,
 		MaxQueueCapacity: daemon.cfg.MaxOutputQueueSize,
 	}
@@ -108,10 +108,10 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		"output instance started successfully\n")
 
 	// Stage 3 - Shard+Assembler Manager
-	dfrgMgrConf := &defrag.ManagerConfig{}
+	dfrgMgrConf := &assembler.ManagerConfig{}
 	dfrgMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinDefrags))
 	dfrgMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxDefrags))
-	daemon.Mgrs.Defrag, err = dfrgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Output.Queue)
+	daemon.Mgrs.Assembler, err = dfrgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Output.Queue)
 	if err != nil {
 		err = fmt.Errorf("failed creating defrag manager: %w", err)
 		daemon.Shutdown()
@@ -120,7 +120,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Stage 3 - Shard+Assembler Instances
 	for i := 0; i < daemon.cfg.MinDefrags; i++ {
-		_ = daemon.Mgrs.Defrag.AddInstance()
+		_ = daemon.Mgrs.Assembler.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d defrag instance(s) started successfully\n", daemon.cfg.MinDefrags)
@@ -129,7 +129,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	lifecycle.TempChildActions(daemon.ctx, daemon)
 
 	// Stage 2 - Processor Manager
-	procMgrConf := &proc.ManagerConfig{
+	procMgrConf := &processor.ManagerConfig{
 		MinQueueCapacity: daemon.cfg.MinProcessorQueueSize,
 		MaxQueueCapacity: daemon.cfg.MaxProcessorQueueSize,
 		PastMsgCutoff:    daemon.cfg.PastValidityWindow,
@@ -137,7 +137,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 	procMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinProcessors))
 	procMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxProcessors))
-	daemon.Mgrs.Proc, err = procMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Defrag.RoutingView)
+	daemon.Mgrs.Proc, err = procMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Assembler.RoutingView)
 	if err != nil {
 		err = fmt.Errorf("failed creating processor manager: %w", err)
 		daemon.Shutdown()
@@ -152,7 +152,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		"%d processor instance(s) started successfully\n", daemon.cfg.MinProcessors)
 
 	// Stage 1 - Listener Manager
-	inMgrConf := &in.ManagerConfig{
+	inMgrConf := &listener.ManagerConfig{
 		Port:                   daemon.cfg.ListenPort,
 		ReplayProtectionWindow: daemon.cfg.ReplayProtectionWindow,
 	}
@@ -256,9 +256,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 // Dedicated entry point for starting inter-process fragment routing
 // Accept fragments that ended up in other processes that are partial fragments for this process
 func (daemon *Daemon) StartFIPR() (err error) {
-	daemon.fipr = fiprrecv.New(daemon.ctx, global.DefaultSocketDir, daemon.Mgrs.Defrag.RoutingView)
+	daemon.fipr = fiprrecv.New(daemon.ctx, global.DefaultSocketDir, daemon.Mgrs.Assembler.RoutingView)
 	daemon.Mgrs.FIPR = daemon.fipr
-	daemon.Mgrs.Defrag.FIPRRunning.Store(true)
+	daemon.Mgrs.Assembler.FIPRRunning.Store(true)
 	err = daemon.fipr.Start()
 	if err != nil {
 		err = fmt.Errorf("failed to start FIPR receiver: %w", err)
@@ -275,12 +275,12 @@ func (daemon *Daemon) StopFIPR() {
 
 	// After the packet deadline, there should be no more existing fragments that we could consume from other processes
 	// Assuming other processes are already killed.
-	currentPacketDeadline := daemon.Mgrs.Defrag.Config.PacketDeadline.Load()
+	currentPacketDeadline := daemon.Mgrs.Assembler.Config.PacketDeadline.Load()
 	drainingPeriod := time.Duration(currentPacketDeadline)
 	time.Sleep(drainingPeriod)
 
 	daemon.fipr.Stop()
-	daemon.Mgrs.Defrag.FIPRRunning.Store(false)
+	daemon.Mgrs.Assembler.FIPRRunning.Store(false)
 	daemon.Mgrs.FIPR = nil
 	daemon.fipr = nil
 }
@@ -323,9 +323,9 @@ func (daemon *Daemon) Shutdown() {
 	}
 
 	// Stop defrag and shards
-	if daemon.Mgrs.Defrag != nil {
+	if daemon.Mgrs.Assembler != nil {
 		for {
-			removedID := daemon.Mgrs.Defrag.RemoveOldestInstance()
+			removedID := daemon.Mgrs.Assembler.RemoveOldestInstance()
 			if removedID == "" {
 				break
 			}

@@ -33,8 +33,8 @@ func (instance *Instance) Run(ctx context.Context) {
 			scaleProcessor(ctx, instance.MetricStore, instance.PollInterval, instance.Managers.Proc)
 
 			// Assemblers+Shards
-			scaleAssembler(ctx, instance.MetricStore, instance.PollInterval, instance.Managers.Defrag)
-			scaleTimeouts(ctx, instance.MetricStore, instance.PollInterval, instance.Managers.Defrag)
+			scaleAssembler(ctx, instance.MetricStore, instance.PollInterval, instance.Managers.Assembler)
+			scaleTimeouts(ctx, instance.MetricStore, instance.PollInterval, instance.Managers.Assembler)
 
 			// Output Queue
 			instance.Managers.Output.Queue.ScaleCapacity(ctx)

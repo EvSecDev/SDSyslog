@@ -7,12 +7,11 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/listener"
-	"sdsyslog/internal/receiver/managers/in"
 	"strconv"
 	"time"
 )
 
-func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, inMgr *in.Manager) {
+func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, inMgr *listener.Manager) {
 	inMgr.Mu.RLock()
 	instances := inMgr.Instances
 	instanceCount := len(instances)

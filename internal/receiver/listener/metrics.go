@@ -41,7 +41,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTBusyPct,
 			Description: "Total time spent doing anything in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      busyPct,
 				Unit:     "%",
@@ -53,7 +53,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTValidPkts,
 			Description: "Total packets that passed basic validation in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      valid,
 				Unit:     "count",
@@ -65,7 +65,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTInvalidPkts,
 			Description: "Total packets that failed basic validation in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      invalid,
 				Unit:     "count",
@@ -77,7 +77,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSumWorkTime,
 			Description: "Total time spent validating packets in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumNs,
 				Unit:     "ns",
@@ -89,7 +89,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxWorkTime,
 			Description: "Maximum (seen) time spent validating packets in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxNs,
 				Unit:     "ns",

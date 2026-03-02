@@ -1,9 +1,8 @@
-package proc
+package processor
 
 import (
 	"context"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/receiver/processor"
 	"strconv"
 )
 
@@ -19,26 +18,24 @@ func (manager *Manager) AddInstance() (id int) {
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, strconv.Itoa(id))
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 
-	ingestInstance := &Instance{
-		Processor: processor.New(logctx.GetTagList(manager.ctx),
-			manager.Inbox,
-			manager.routingView,
-			manager.Config.PastMsgCutoff,
-			manager.Config.FutureMsgCutoff),
-	}
+	processor := newWorker(logctx.GetTagList(manager.ctx),
+		manager.Inbox,
+		manager.routingView,
+		manager.Config.PastMsgCutoff,
+		manager.Config.FutureMsgCutoff)
 
-	manager.Instances[id] = ingestInstance
+	manager.Instances[id] = processor
 
 	// Create new context for both watcher/assembler
 	ingestCtx, cancelInstances := context.WithCancel(context.Background())
-	ingestInstance.cancel = cancelInstances
+	processor.cancel = cancelInstances
 	ingestCtx = context.WithValue(ingestCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
-	ingestInstance.wg.Add(1)
+	processor.wg.Add(1)
 	go func() {
-		defer ingestInstance.wg.Done()
-		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Processor.Namespace)
-		ingestInstance.Processor.Run(ingestCtx)
+		defer processor.wg.Done()
+		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, processor.namespace)
+		processor.run(ingestCtx)
 	}()
 	return
 }
@@ -48,13 +45,13 @@ func (manager *Manager) RemoveInstance(id int) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 
-	ingestInstance, ok := manager.Instances[id]
+	processor, ok := manager.Instances[id]
 	if ok {
-		if ingestInstance.cancel != nil {
-			ingestInstance.cancel()
+		if processor.cancel != nil {
+			processor.cancel()
 		}
 
-		ingestInstance.wg.Wait()
+		processor.wg.Wait()
 
 		delete(manager.Instances, id)
 	}

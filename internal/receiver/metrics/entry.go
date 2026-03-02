@@ -71,7 +71,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	// Listener
 	gatherer.Mgrs.Input.Mu.RLock() // Ensure instances don't disappear mid-read
 	for _, instance := range gatherer.Mgrs.Input.Instances {
-		m1 := instance.Listener.CollectMetrics(interval)
+		m1 := instance.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m1)
 	}
 	gatherer.Mgrs.Input.Mu.RUnlock()
@@ -84,7 +84,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	var procCollect []metrics.Metric // collection for all instances
 	gatherer.Mgrs.Proc.Mu.RLock()
 	for _, instance := range gatherer.Mgrs.Proc.Instances {
-		m2 := instance.Processor.CollectMetrics(interval)
+		m2 := instance.CollectMetrics(interval)
 		procCollect = append(procCollect, m2...)
 	}
 	gatherer.Mgrs.Proc.Mu.RUnlock()
@@ -92,7 +92,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 
 	// Defrag
 	var collection []metrics.Metric // collection for all pairs
-	for _, instancePair := range gatherer.Mgrs.Defrag.RoutingView.GetInstancePairs() {
+	for _, instancePair := range gatherer.Mgrs.Assembler.RoutingView.GetInstancePairs() {
 		if instancePair == nil {
 			continue
 		}
@@ -102,7 +102,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 		collection = append(collection, m1...)
 
 		// Assembler
-		m2 := instancePair.Assembler.CollectMetrics(interval)
+		m2 := instancePair.CollectMetrics(interval)
 		collection = append(collection, m2...)
 	}
 

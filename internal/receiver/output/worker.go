@@ -1,4 +1,3 @@
-// Handles writing final assembled log messages to configured output destinations (file, journald, ect.)
 package output
 
 import (
@@ -12,9 +11,9 @@ import (
 )
 
 // Creates new worker instance
-func New(namespace []string, inQueue *mpmc.Queue[protocol.Payload]) (new *Instance) {
+func newWorker(namespace []string, inQueue *mpmc.Queue[protocol.Payload]) (new *Instance) {
 	new = &Instance{
-		Namespace: append(namespace, logctx.NSWorker),
+		namespace: append(namespace, logctx.NSWorker),
 		Inbox:     inQueue,
 		Metrics:   MetricStorage{},
 	}
@@ -22,7 +21,7 @@ func New(namespace []string, inQueue *mpmc.Queue[protocol.Payload]) (new *Instan
 }
 
 // Take assembled messages and write to configured outputs
-func (instance *Instance) Run(ctx context.Context) {
+func (instance *Instance) run(ctx context.Context) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 

@@ -13,6 +13,14 @@ type MetricStorage struct {
 	SuccessfulBeatsWrites atomic.Uint64
 }
 
+const (
+	MTRecvMsgs       string = "received_messages"
+	MTSentMsgs       string = "written_messages"
+	MTFileWritesSuc  string = "success_file_writes"
+	MTJrnlWritesSuc  string = "success_journal_writes"
+	MTBeatsWritesSuc string = "success_beats_writes"
+)
+
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
 	recvMsgs := instance.Metrics.ReceivedMessages.Swap(0)
@@ -27,9 +35,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 
 	collection = []metrics.Metric{
 		{
-			Name:        "received_messages",
+			Name:        MTRecvMsgs,
 			Description: "Total messages received",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      recvMsgs,
 				Unit:     "count",
@@ -39,9 +47,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "written_messages",
+			Name:        MTSentMsgs,
 			Description: "Total writes to any outputs (across all outputs)",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      totalWrites,
 				Unit:     "count",
@@ -51,9 +59,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "success_file_writes",
+			Name:        MTFileWritesSuc,
 			Description: "Total writes to any file outputs",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      fileWrites,
 				Unit:     "count",
@@ -63,9 +71,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "success_journal_writes",
+			Name:        MTJrnlWritesSuc,
 			Description: "Total writes to journal output",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      jrnlWrites,
 				Unit:     "count",
@@ -75,9 +83,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "success_beats_writes",
+			Name:        MTBeatsWritesSuc,
 			Description: "Total writes to beats output",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      beatsWrites,
 				Unit:     "count",

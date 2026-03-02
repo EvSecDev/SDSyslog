@@ -1,4 +1,3 @@
-// Reassembles message fragments into original message order
 package assembler
 
 import (
@@ -11,17 +10,17 @@ import (
 	"time"
 )
 
-func New(namespace []string, shard *shard.Instance, outQueue *mpmc.Queue[protocol.Payload]) (new *Instance) {
+func newWorker(namespace []string, shard *shard.Instance, outQueue *mpmc.Queue[protocol.Payload]) (new *Instance) {
 	new = &Instance{
-		Namespace: append(namespace, logctx.NSAssm),
-		shardInst: shard,
+		namespace: append(namespace, logctx.NSAssm),
+		Shard:     shard,
 		outbox:    outQueue,
 		Metrics:   MetricStorage{},
 	}
 	return
 }
 
-func (instance *Instance) Run(ctx context.Context) {
+func (instance *Instance) run(ctx context.Context) {
 	for {
 		// Stop this worker when cancel requested
 		select {
@@ -39,7 +38,7 @@ func (instance *Instance) Run(ctx context.Context) {
 				}
 			}()
 
-			bucketKey, ok := instance.shardInst.PopKey(ctx)
+			bucketKey, ok := instance.Shard.PopKey(ctx)
 			if !ok {
 				if ctx.Err() == context.Canceled {
 					// Normal exit procedure
@@ -51,7 +50,7 @@ func (instance *Instance) Run(ctx context.Context) {
 			}
 
 			start := time.Now()
-			bucket, notExist := instance.shardInst.DrainBucket(ctx, bucketKey)
+			bucket, notExist := instance.Shard.DrainBucket(ctx, bucketKey)
 			if notExist {
 				return
 			}

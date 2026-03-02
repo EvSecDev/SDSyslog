@@ -1,17 +1,17 @@
-package defrag
+package assembler
 
 import (
 	"sdsyslog/internal/receiver/shard"
 )
 
 // Returns a shallow copy of all instance pairs in current routing snapshot
-func (rs *RoutingState) GetInstancePairs() (pairs map[string]*InstancePair) {
-	currentPairs := rs.manager.routing.Load().pairs
-	pairs = make(map[string]*InstancePair, len(currentPairs))
+func (rs *RoutingState) GetInstancePairs() (instances map[string]*Instance) {
+	currentInstances := rs.manager.routing.Load().instances
+	instances = make(map[string]*Instance, len(currentInstances))
 
 	// Make a map copy - but preserve the pair pointer value
-	for id, pair := range currentPairs {
-		pairs[id] = pair
+	for id, instance := range currentInstances {
+		instances[id] = instance
 	}
 	return
 }
@@ -26,14 +26,14 @@ func (rs *RoutingState) GetAllIDs() (shardIDs []string) {
 
 // Retrieves list of non-draining instance shard identifiers
 func (rs *RoutingState) GetNonDrainingIDs() (availShardIDs []string) {
-	instancePairs := rs.manager.routing.Load().pairs
-	for id, pair := range instancePairs {
-		pair.Shard.Mu.Lock()
-		if pair.Shard.InShutdown.Load() {
-			pair.Shard.Mu.Unlock()
+	instances := rs.manager.routing.Load().instances
+	for id, instance := range instances {
+		instance.Shard.Mu.Lock()
+		if instance.Shard.InShutdown.Load() {
+			instance.Shard.Mu.Unlock()
 			continue
 		}
-		pair.Shard.Mu.Unlock()
+		instance.Shard.Mu.Unlock()
 
 		availShardIDs = append(availShardIDs, id)
 	}
@@ -42,12 +42,12 @@ func (rs *RoutingState) GetNonDrainingIDs() (availShardIDs []string) {
 
 // Checks if shard contains a particular bucket
 func (rs *RoutingState) BucketExists(shardID string, bucketKey string) (present bool) {
-	instancePairs := rs.manager.routing.Load().pairs
-	pair, ok := instancePairs[shardID]
+	instances := rs.manager.routing.Load().instances
+	instance, ok := instances[shardID]
 	if !ok {
 		return
 	}
-	shard := pair.Shard
+	shard := instance.Shard
 
 	shard.Mu.Lock()
 	defer shard.Mu.Unlock()
@@ -58,8 +58,8 @@ func (rs *RoutingState) BucketExists(shardID string, bucketKey string) (present 
 // Checks if any shard contains the specified bucket.
 // Returns true if any active shard contains the bucket.
 func (rs *RoutingState) BucketExistsAnywhere(bucketKey string) (present bool) {
-	instancePairs := rs.manager.routing.Load().pairs
-	for id := range instancePairs {
+	instances := rs.manager.routing.Load().instances
+	for id := range instances {
 		present = rs.BucketExists(id, bucketKey)
 		if present {
 			return
@@ -70,24 +70,24 @@ func (rs *RoutingState) BucketExistsAnywhere(bucketKey string) (present bool) {
 
 // Retrieves instance pointer for a particular index
 func (rs *RoutingState) GetShard(shardID string) (shardInst *shard.Instance) {
-	instancePairs := rs.manager.routing.Load().pairs
-	pair, ok := instancePairs[shardID]
+	instances := rs.manager.routing.Load().instances
+	instance, ok := instances[shardID]
 	if !ok {
 		return
 	}
-	shardInst = pair.Shard
+	shardInst = instance.Shard
 	return
 }
 
 // Checks if particular instance has been marked as shutdown
 func (rs *RoutingState) IsShardShutdown(shardID string) (shutdown bool) {
-	instancePairs := rs.manager.routing.Load().pairs
-	pair, ok := instancePairs[shardID]
+	instances := rs.manager.routing.Load().instances
+	instance, ok := instances[shardID]
 	if !ok {
 		shutdown = true
 		return
 	}
-	shardInst := pair.Shard
+	shardInst := instance.Shard
 	shutdown = shardInst.InShutdown.Load()
 	return
 }

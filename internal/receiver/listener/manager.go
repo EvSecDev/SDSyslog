@@ -1,16 +1,15 @@
-// Manages packet listener worker instances
-package in
+// Manages packet listener worker instances. Reads packets from the network and conducts pre-validation
+package listener
 
 import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
-	"sdsyslog/internal/receiver/listener"
 )
 
 // Creates new instance manager
-func (config *ManagerConfig) NewManager(ctx context.Context, dataOut *mpmc.Queue[listener.Container]) (new *Manager, err error) {
+func (config *ManagerConfig) NewManager(ctx context.Context, dataOut *mpmc.Queue[Container]) (new *Manager, err error) {
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSmIngest)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 

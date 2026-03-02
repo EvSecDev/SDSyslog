@@ -1,4 +1,3 @@
-// Deserializes and decrypts received packets into message fragments
 package processor
 
 import (
@@ -14,11 +13,11 @@ import (
 )
 
 // Creates new processor with requested queue as inbox
-func New(namespace []string,
+func newWorker(namespace []string,
 	queue *mpmc.Queue[listener.Container], shardRouting shard.RoutingView,
 	maxPastMsgAge, maxFutureMsgAge time.Duration) (new *Instance) {
 	new = &Instance{
-		Namespace:            append(namespace, logctx.NSWorker),
+		namespace:            append(namespace, logctx.NSWorker),
 		pastTimestampLimit:   maxPastMsgAge,
 		futureTimestampLimit: maxFutureMsgAge,
 		inbox:                queue,
@@ -28,7 +27,7 @@ func New(namespace []string,
 	return
 }
 
-func (instance *Instance) Run(ctx context.Context) {
+func (instance *Instance) run(ctx context.Context) {
 	for {
 		// Stop this worker when cancel requested
 		select {

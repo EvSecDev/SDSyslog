@@ -32,7 +32,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTValidPayloads,
 			Description: "Total validated (parsed) packets in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      valid,
 				Unit:     "count",
@@ -44,7 +44,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSumWorkTime,
 			Description: "Total time spent processing packets in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumNs,
 				Unit:     "ns",
@@ -56,7 +56,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxWorkTime,
 			Description: "Maximum (seen) time spent processing packets in the interval",
-			Namespace:   instance.Namespace,
+			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxNs,
 				Unit:     "ns",

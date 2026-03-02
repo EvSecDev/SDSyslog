@@ -1,4 +1,3 @@
-// Reads packets from the network and conducts pre-validation
 package listener
 
 import (
@@ -13,9 +12,9 @@ import (
 	"time"
 )
 
-func New(namespace []string, conn *net.UDPConn, queue *mpmc.Queue[Container], replayCheck func(pubKey []byte) (replayed bool)) (new *Instance) {
+func newWorker(namespace []string, conn *net.UDPConn, queue *mpmc.Queue[Container], replayCheck func(pubKey []byte) (replayed bool)) (new *Instance) {
 	new = &Instance{
-		Namespace:  append(namespace, logctx.NSListen),
+		namespace:  append(namespace, logctx.NSListen),
 		conn:       conn,
 		Outbox:     queue,
 		minLen:     protocol.MinOuterPayloadLen,
@@ -25,7 +24,7 @@ func New(namespace []string, conn *net.UDPConn, queue *mpmc.Queue[Container], re
 	return
 }
 
-func (instance *Instance) Run(ctx context.Context) {
+func (instance *Instance) run(ctx context.Context) {
 	buffer := make([]byte, 65535)
 
 	for {

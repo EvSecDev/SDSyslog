@@ -5,18 +5,18 @@ import (
 	"sdsyslog/internal/calc"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
-	"sdsyslog/internal/receiver/managers/defrag"
+	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/shard"
 	"time"
 )
 
-func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, defragMgr *defrag.Manager) {
+func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, asmMgr *assembler.Manager) {
 	// Grab required info
-	instanceCount := len(defragMgr.RoutingView.GetNonDrainingIDs())
+	instanceCount := len(asmMgr.RoutingView.GetNonDrainingIDs())
 
 	// No scaling if we are at the min/max
-	if instanceCount == int(defragMgr.Config.MaxInstanceCount.Load()) ||
-		instanceCount == int(defragMgr.Config.MinInstanceCount.Load()) {
+	if instanceCount == int(asmMgr.Config.MaxInstanceCount.Load()) ||
+		instanceCount == int(asmMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 
@@ -25,7 +25,7 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	// Get the last x scaling polling intervals worth of load data and average
 	instValues := make([][]uint64, 0, instanceCount)
 
-	for _, id := range defragMgr.RoutingView.GetNonDrainingIDs() {
+	for _, id := range asmMgr.RoutingView.GetNonDrainingIDs() {
 		metrics := metricStore.Search(
 			shard.MTTotalBuckets,
 			[]string{logctx.NSRecv, logctx.NSmDefrag, id},
@@ -65,10 +65,10 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	scaleUp, scaleDown := shard.Trend(values)
 
 	if scaleUp {
-		newID := defragMgr.AddInstance()
+		newID := asmMgr.AddInstance()
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up assembler (added id %s)\n", newID)
 	} else if scaleDown {
-		delID := defragMgr.RemoveOldestInstance()
+		delID := asmMgr.RemoveOldestInstance()
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down assembler (removed id %s)\n", delID)
 	}
 }

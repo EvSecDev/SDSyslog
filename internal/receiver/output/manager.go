@@ -1,5 +1,5 @@
-// Manages output writer worker instance
-package out
+// Manages output writer worker instance. Handles writing final assembled log messages to configured output destinations (file, journald, ect.)
+package output
 
 import (
 	"context"

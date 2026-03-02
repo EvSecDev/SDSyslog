@@ -1,5 +1,5 @@
-// Manages assembler, shard, and deadline evaluator worker instances
-package defrag
+// Manages assembler, shard, and deadline evaluator worker instances. Reassembles message fragments into original message order
+package assembler
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 	}
 
 	startRouteSnapshot := routingSnapshot{
-		pairs: make(map[string]*InstancePair, config.MinInstanceCount.Load()),
+		instances: make(map[string]*Instance, config.MinInstanceCount.Load()),
 		ids:   make([]string, config.MinInstanceCount.Load()),
 	}
 

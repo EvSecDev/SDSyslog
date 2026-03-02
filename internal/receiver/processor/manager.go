@@ -1,5 +1,5 @@
-// Manages processor worker instances
-package proc
+// Manages processor worker instances. Deserializes and decrypts received packets into message fragments
+package processor
 
 import (
 	"context"

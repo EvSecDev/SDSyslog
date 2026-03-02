@@ -1,4 +1,4 @@
-package in
+package listener
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
-	"sdsyslog/internal/receiver/listener"
 	"strconv"
 )
 
@@ -28,13 +27,10 @@ func (manager *Manager) AddInstance() (id int, err error) {
 		return
 	}
 
-	ingestInstance := &Instance{
-		conn: conn,
-		Listener: listener.New(logctx.GetTagList(manager.ctx),
-			conn,
-			manager.outbox,
-			manager.replayCache.isReplayed),
-	}
+	ingestInstance := newWorker(logctx.GetTagList(manager.ctx),
+		conn,
+		manager.outbox,
+		manager.replayCache.isReplayed)
 
 	manager.Instances[id] = ingestInstance
 
@@ -46,8 +42,8 @@ func (manager *Manager) AddInstance() (id int, err error) {
 	ingestInstance.wg.Add(1)
 	go func() {
 		defer ingestInstance.wg.Done()
-		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Listener.Namespace)
-		ingestInstance.Listener.Run(ingestCtx)
+		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.namespace)
+		ingestInstance.run(ingestCtx)
 	}()
 	return
 }

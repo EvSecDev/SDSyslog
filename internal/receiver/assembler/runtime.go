@@ -1,11 +1,10 @@
-package defrag
+package assembler
 
 import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/shard"
 	"time"
 )
@@ -18,7 +17,7 @@ func (manager *Manager) AddInstance() (instanceID string) {
 
 	// Grab the next sequence for ID
 	instanceID = fmt.Sprintf("%d", manager.nextInstanceID)
-	_, ok := manager.routing.Load().pairs[instanceID]
+	_, ok := manager.routing.Load().instances[instanceID]
 	if ok {
 		// Instance already exists, no-op
 		return
@@ -31,52 +30,49 @@ func (manager *Manager) AddInstance() (instanceID string) {
 
 	// Create new defrag instance
 	shard := shard.New(logctx.GetTagList(manager.ctx), 1024, &manager.Config.PacketDeadline)
-	instancePair := &InstancePair{
-		Shard:     shard,
-		Assembler: assembler.New(logctx.GetTagList(manager.ctx), shard, manager.outQueue),
-	}
+	instance := newWorker(logctx.GetTagList(manager.ctx), shard, manager.outQueue)
 
 	// Create new context for both watcher/assembler
 	workerCtx, cancelInstances := context.WithCancel(context.Background())
 	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	// Cancel for both instances
-	instancePair.cancel = cancelInstances
+	instance.cancel = cancelInstances
 
-	instancePair.wg.Add(2)
+	instance.wg.Add(2)
 	go func() {
 		// Run the deadline evaluator
-		defer instancePair.wg.Done()
-		workerCtx := logctx.OverwriteCtxTag(workerCtx, instancePair.Shard.Namespace)
-		instancePair.Shard.StartTimeoutWatcher(workerCtx)
+		defer instance.wg.Done()
+		workerCtx := logctx.OverwriteCtxTag(workerCtx, instance.Shard.Namespace)
+		instance.Shard.StartTimeoutWatcher(workerCtx)
 	}()
 	go func() {
 		// Run the assembler
-		defer instancePair.wg.Done()
-		workerCtx := logctx.OverwriteCtxTag(workerCtx, instancePair.Assembler.Namespace)
-		instancePair.Assembler.Run(workerCtx)
+		defer instance.wg.Done()
+		workerCtx := logctx.OverwriteCtxTag(workerCtx, instance.namespace)
+		instance.run(workerCtx)
 	}()
 
 	// Update routing view
 	for {
 		oldSnap := manager.routing.Load()
 
-		newMap := make(map[string]*InstancePair)
+		newMap := make(map[string]*Instance)
 		var newIDs []string
 
 		if oldSnap != nil {
-			for id, pair := range oldSnap.pairs {
-				newMap[id] = pair
+			for id, instance := range oldSnap.instances {
+				newMap[id] = instance
 				newIDs = append(newIDs, id)
 			}
 		}
 
-		newMap[instanceID] = instancePair
+		newMap[instanceID] = instance
 		newIDs = append(newIDs, instanceID)
 
 		newSnap := &routingSnapshot{
-			pairs: newMap,
-			ids:   newIDs,
+			instances: newMap,
+			ids:       newIDs,
 		}
 
 		if manager.routing.CompareAndSwap(oldSnap, newSnap) {
@@ -109,47 +105,47 @@ func (manager *Manager) removeInstance(instanceID string) {
 		return
 	}
 
-	instancePair, exists := oldSnap.pairs[instanceID]
+	instance, exists := oldSnap.instances[instanceID]
 	if !exists {
 		return
 	}
 
-	if instancePair == nil {
+	if instance == nil {
 		return
 	}
 
 	// Stop new bucket creation in this shard and wait for drain
-	instancePair.Shard.InShutdown.Store(true)
-	success, last := atomics.WaitUntilZero(&instancePair.Shard.Metrics.TotalBuckets, 15*time.Second) // Wait for buckets to fill or timeout
+	instance.Shard.InShutdown.Store(true)
+	success, last := atomics.WaitUntilZero(&instance.Shard.Metrics.TotalBuckets, 15*time.Second) // Wait for buckets to fill or timeout
 	if !success {
 		logctx.LogStdWarn(manager.ctx,
 			"assembler id %s: shard total buckets did not empty in time: dropped %d messages\n",
 			instanceID, last)
 	}
 
-	success, last = atomics.WaitUntilZero(&instancePair.Shard.Metrics.WaitingBuckets, 15*time.Second) // Wait for assembler to pull last bucket
+	success, last = atomics.WaitUntilZero(&instance.Shard.Metrics.WaitingBuckets, 15*time.Second) // Wait for assembler to pull last bucket
 	if !success {
 		logctx.LogStdWarn(manager.ctx,
 			"assembler id %s: shard waiting buckets queue did not empty in time: dropped %d messages\n",
 			instanceID, last)
 	}
 
-	if instancePair.cancel != nil {
-		instancePair.cancel()
+	if instance.cancel != nil {
+		instance.cancel()
 	}
 
-	instancePair.wg.Wait()
+	instance.wg.Wait()
 
 	// Create new routing snapshot
 	for {
-		newMap := make(map[string]*InstancePair, len(oldSnap.pairs)-1)
+		newMap := make(map[string]*Instance, len(oldSnap.instances)-1)
 		newIDs := make([]string, 0, len(oldSnap.ids)-1)
 
-		for id, pair := range oldSnap.pairs {
+		for id, instance := range oldSnap.instances {
 			if id == instanceID {
 				continue
 			}
-			newMap[id] = pair
+			newMap[id] = instance
 		}
 		for _, id := range oldSnap.ids {
 			if id != instanceID {
@@ -158,8 +154,8 @@ func (manager *Manager) removeInstance(instanceID string) {
 		}
 
 		newSnap := &routingSnapshot{
-			pairs: newMap,
-			ids:   newIDs,
+			instances: newMap,
+			ids:       newIDs,
 		}
 
 		if manager.routing.CompareAndSwap(oldSnap, newSnap) {

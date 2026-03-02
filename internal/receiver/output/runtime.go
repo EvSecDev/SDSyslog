@@ -1,4 +1,4 @@
-package out
+package output
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"sdsyslog/internal/externalio/file"
 	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/receiver/output"
 )
 
 // Create and start new output instance
@@ -22,7 +21,7 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
 	manager.cancel = cancelInstance
-	manager.Instance = *output.New(logctx.GetTagList(manager.ctx), manager.Queue)
+	manager.Instance = *newWorker(logctx.GetTagList(manager.ctx), manager.Queue)
 
 	// Add outputs
 	manager.Instance.FileMod, err = file.NewOutput(filePath)
@@ -42,8 +41,8 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	manager.wg.Add(1)
 	go func() {
 		defer manager.wg.Done()
-		workerCtx := logctx.OverwriteCtxTag(workerCtx, manager.Instance.Namespace)
-		manager.Instance.Run(workerCtx)
+		workerCtx := logctx.OverwriteCtxTag(workerCtx, manager.Instance.namespace)
+		manager.Instance.run(workerCtx)
 	}()
 	return
 }

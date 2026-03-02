@@ -51,16 +51,18 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment prot
 	}
 
 	// Record time spacing between fragments
-	elapsed := time.Since(bucket.lastProcessStartTime)
+	var elapsed int64
+	if bucket.lastProcessStartTime.UnixNano() <= 0 {
+		elapsed = time.Since(processingStartTime).Nanoseconds()
+	} else {
+		elapsed = time.Since(bucket.lastProcessStartTime).Nanoseconds()
+	}
 	if elapsed > 0 {
 		queue.Metrics.SumFragmentTimeSpacing.Add(uint64(elapsed))
 	}
 
-	// Update process time always, acts as modified time
-	bucket.lastProcessStartTime = processingStartTime
-
 	// Even though this should never occur, evaluate deadline anyways in case a remote end tries to sneak a false packet in
-	if time.Since(processingStartTime) > time.Duration(queue.packetDeadline.Load()) {
+	if elapsed > queue.packetDeadline.Load() {
 		bucket.filled = true
 
 		select {
@@ -73,6 +75,9 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment prot
 			return
 		}
 	}
+
+	// Update process time always, acts as modified time
+	bucket.lastProcessStartTime = processingStartTime
 
 	// Store fragment by sequence number
 	bucket.Fragments[fragment.MessageSeq] = fragment

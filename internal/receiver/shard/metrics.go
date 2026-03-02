@@ -18,6 +18,7 @@ type MetricStorage struct {
 
 // Metric Names
 const (
+	MTBytes            string = "total_bytes"
 	MTTotalBuckets     string = "total_buckets"
 	MTWaitingBuckets   string = "waiting_buckets"
 	MTTimedOutBuckets  string = "timed_out_buckets"
@@ -28,6 +29,7 @@ const (
 
 func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
+	totalBytes := queue.Metrics.Bytes.Load()
 	totalBuckets := queue.Metrics.TotalBuckets.Load()
 	waitingBuckets := queue.Metrics.WaitingBuckets.Load()
 	timedOutBuckets := queue.Metrics.TimedOutBuckets.Swap(0)
@@ -39,6 +41,18 @@ func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metr
 	recordTime := time.Now()
 
 	collection = []metrics.Metric{
+		{
+			Name:        MTBytes,
+			Description: "Total bytes currently in the queue (includes internal structure overheads)",
+			Namespace:   queue.Namespace,
+			Value: metrics.MetricValue{
+				Raw:      totalBytes,
+				Unit:     "bytes",
+				Interval: interval,
+			},
+			Type:      metrics.Gauge,
+			Timestamp: recordTime,
+		},
 		{
 			Name:        MTTotalBuckets,
 			Description: "Total buckets currently in the queue (not counting ones waiting for processing)",

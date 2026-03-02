@@ -20,7 +20,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSmDefrag)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	config.PacketDeadline.Store(int64(global.DefaultMinPacketDeadline))
+	config.PacketDeadline.Store(global.DefaultMinPacketDeadline.Nanoseconds())
 
 	err = config.validate()
 	if err != nil {
@@ -30,7 +30,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 
 	startRouteSnapshot := routingSnapshot{
 		instances: make(map[string]*Instance, config.MinInstanceCount.Load()),
-		ids:   make([]string, config.MinInstanceCount.Load()),
+		ids:       make([]string, config.MinInstanceCount.Load()),
 	}
 
 	new = &Manager{

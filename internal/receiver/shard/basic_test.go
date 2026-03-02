@@ -19,17 +19,17 @@ func TestPushPop_Basic(t *testing.T) {
 	mockCtx := context.Background()
 
 	tests := []struct {
-		name          string
-		fragments     []protocol.Payload
-		expectedQueue int
-		expectedBytes uint64
+		name                   string
+		fragments              []protocol.Payload
+		pushDelay              time.Duration // Time between fragment push-to-queue
+		expectedTimeOutBuckets int
+		expectedBytes          uint64
 	}{
 		{
 			name: "single fragment completes bucket",
 			fragments: []protocol.Payload{
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 			},
-			expectedQueue: 1,
 			expectedBytes: 1,
 		},
 		{
@@ -38,7 +38,6 @@ func TestPushPop_Basic(t *testing.T) {
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
 				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("B")},
 			},
-			expectedQueue: 1,
 			expectedBytes: 2,
 		},
 		{
@@ -47,7 +46,6 @@ func TestPushPop_Basic(t *testing.T) {
 				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("B")},
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
 			},
-			expectedQueue: 1,
 			expectedBytes: 2,
 		},
 		{
@@ -56,7 +54,6 @@ func TestPushPop_Basic(t *testing.T) {
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 			},
-			expectedQueue: 1,
 			expectedBytes: 1,
 		},
 		{
@@ -64,24 +61,41 @@ func TestPushPop_Basic(t *testing.T) {
 			fragments: []protocol.Payload{
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 2, Data: []byte("A")},
 			},
-			expectedQueue: 1,
-			expectedBytes: 1,
+			expectedTimeOutBuckets: 1,
+			expectedBytes:          1,
+		},
+		{
+			name: "timeout in hot path",
+			fragments: []protocol.Payload{
+				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
+				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("fake")},
+			},
+			pushDelay:              time.Duration(mockDeadline.Load()) + 10*time.Millisecond,
+			expectedTimeOutBuckets: 1,
+			expectedBytes:          1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			queue := New([]string{logctx.NSTest}, 10, &mockDeadline)
+			if tt.name == "timeout triggers bucket fill" {
+				go queue.StartTimeoutWatcher(mockCtx)
+			}
+
+			// Output count is expected post-defragmentation count
+			seenMsgIds := make(map[int]struct{})
+			for _, frag := range tt.fragments {
+				seenMsgIds[frag.MsgID] = struct{}{}
+			}
+			expectedMsgCount := len(seenMsgIds)
 
 			// inject fragments
 			for _, frag := range tt.fragments {
 				queue.push(mockCtx, "bucket1", frag, time.Now())
-			}
-
-			// simulate timeout
-			if tt.name == "timeout triggers bucket fill" {
-				time.Sleep(60 * time.Millisecond)
-				go queue.StartTimeoutWatcher(mockCtx)
+				if tt.pushDelay != 0 {
+					time.Sleep(tt.pushDelay)
+				}
 			}
 
 			// pop bucket
@@ -99,16 +113,39 @@ func TestPushPop_Basic(t *testing.T) {
 			}
 
 			// validate fragments count
-			if got := len(bucket.Fragments); uint64(got) != tt.expectedBytes {
+			got := len(bucket.Fragments)
+			if uint64(got) != tt.expectedBytes {
 				t.Fatalf("expected %d bytes/fragments, got %d", tt.expectedBytes, got)
 			}
 
-			// metrics sanity
-			if queue.Metrics.TotalBuckets.Load() != 0 {
-				t.Fatalf("total buckets should be 0 after pop, got %d", queue.Metrics.TotalBuckets.Load())
-			}
-			if queue.Metrics.WaitingBuckets.Load() != 0 {
-				t.Fatalf("waiting buckets should be 0 after pop, got %d", queue.Metrics.WaitingBuckets.Load())
+			metrics := queue.CollectMetrics(1 * time.Minute)
+
+			// Validate metrics from the collection func point of view
+			for _, metric := range metrics {
+				value := metric.Value.Raw.(uint64)
+				if metric.Name == MTPopCnt && int(value) != expectedMsgCount {
+					t.Errorf("expected metric pop count to be %d, but got %d", expectedMsgCount, value)
+				}
+				if metric.Name == MTPushCnt && int(value) != len(tt.fragments) {
+					t.Errorf("expected metric push count to be %d, but got %d", len(tt.fragments), value)
+				}
+				if metric.Name == MTTotalBuckets && value != 0 {
+					t.Errorf("expected metric total bucket count to be 0 after test, but got %d", value)
+				}
+				if metric.Name == MTWaitingBuckets && value != 0 {
+					t.Errorf("expected metric waiting bucket count to be 0 after test, but got %d", value)
+				}
+				if metric.Name == MTTimedOutBuckets {
+					if value != uint64(tt.expectedTimeOutBuckets) {
+						t.Errorf("expected metric timed out buckets value to be %d, but got %d", tt.expectedTimeOutBuckets, value)
+					}
+				}
+				if metric.Name == MTTimeBtwFragments && value == 0 {
+					t.Errorf("expected metric time between fragments to be above 0")
+				}
+				if metric.Name == MTBytes && value != 0 {
+					t.Errorf("expected metric total bytes to be 0 after tests, but got %d bytes", value)
+				}
 			}
 		})
 	}

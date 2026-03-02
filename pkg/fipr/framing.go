@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"time"
 )
 
@@ -66,7 +67,10 @@ func (session *Session) readFrame() (wireFrame []byte, err error) {
 	defer func() {
 		if err == nil { // Only reset deadline if no error occurred
 			err = session.conn.SetReadDeadline(time.Time{})
-			if err != nil {
+			if err != nil &&
+				!errors.Is(err, os.ErrClosed) &&
+				!errors.Is(err, net.ErrClosed) &&
+				!errors.Is(err, io.ErrClosedPipe) {
 				err = fmt.Errorf("failed resetting read deadline: %w", err)
 			}
 		}

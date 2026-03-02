@@ -88,11 +88,17 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	// Stage 4 - Output Manager
-	daemon.Mgrs.Output, err = out.NewInstanceManager(daemon.ctx, daemon.cfg.MinOutputQueueSize, daemon.cfg.MaxOutputQueueSize)
+	outMgrConf := &out.ManagerConfig{
+		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,
+		MaxQueueCapacity: daemon.cfg.MaxOutputQueueSize,
+	}
+	daemon.Mgrs.Output, err = outMgrConf.NewManager(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("failed creating output instance manager: %w", err)
 		return
 	}
+
+	// Stage 4 - Output Instance
 	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath, daemon.cfg.JournaldURL, daemon.cfg.BeatsEndpoint)
 	if err != nil {
 		err = fmt.Errorf("failed starting output: %w", err)
@@ -101,11 +107,18 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"output instance started successfully\n")
 
-	// Stage 3 - Shard+Assembler
-	daemon.Mgrs.Defrag = defrag.NewInstanceManager(daemon.ctx,
-		daemon.Mgrs.Output.Queue,
-		daemon.cfg.MinDefrags,
-		daemon.cfg.MaxDefrags)
+	// Stage 3 - Shard+Assembler Manager
+	dfrgMgrConf := &defrag.ManagerConfig{}
+	dfrgMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinDefrags))
+	dfrgMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxDefrags))
+	daemon.Mgrs.Defrag, err = dfrgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Output.Queue)
+	if err != nil {
+		err = fmt.Errorf("failed creating defrag manager: %w", err)
+		daemon.Shutdown()
+		return
+	}
+
+	// Stage 3 - Shard+Assembler Instances
 	for i := 0; i < daemon.cfg.MinDefrags; i++ {
 		_ = daemon.Mgrs.Defrag.AddInstance()
 	}
@@ -115,30 +128,44 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	// Stage 2.9 - FIPR receiver (optional - only started under temp process during updates)
 	lifecycle.TempChildActions(daemon.ctx, daemon)
 
-	// Stage 2 - Processor
-	daemon.Mgrs.Proc, err = proc.NewInstanceManager(daemon.ctx,
-		daemon.Mgrs.Defrag.RoutingView,
-		daemon.cfg.MinProcessors, daemon.cfg.MaxProcessors,
-		daemon.cfg.MinProcessorQueueSize, daemon.cfg.MaxProcessorQueueSize,
-		daemon.cfg.PastValidityWindow, daemon.cfg.FutureValidityWindow)
+	// Stage 2 - Processor Manager
+	procMgrConf := &proc.ManagerConfig{
+		MinQueueCapacity: daemon.cfg.MinProcessorQueueSize,
+		MaxQueueCapacity: daemon.cfg.MaxProcessorQueueSize,
+		PastMsgCutoff:    daemon.cfg.PastValidityWindow,
+		FutureMsgCutoff:  daemon.cfg.FutureValidityWindow,
+	}
+	procMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinProcessors))
+	procMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxProcessors))
+	daemon.Mgrs.Proc, err = procMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Defrag.RoutingView)
 	if err != nil {
-		err = fmt.Errorf("failed adding new processor manager: %w", err)
+		err = fmt.Errorf("failed creating processor manager: %w", err)
 		daemon.Shutdown()
 		return
 	}
+
+	// Stage 2 - Processor Instances
 	for i := 0; i < daemon.cfg.MinProcessors; i++ {
 		daemon.Mgrs.Proc.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d processor instance(s) started successfully\n", daemon.cfg.MinProcessors)
 
-	// Stage 1 - Listener
-	daemon.Mgrs.Input = in.NewInstanceManager(daemon.ctx,
-		daemon.cfg.ListenPort,
-		daemon.Mgrs.Proc.Inbox,
-		daemon.cfg.MinListeners,
-		daemon.cfg.MaxListeners,
-		daemon.cfg.ReplayProtectionWindow)
+	// Stage 1 - Listener Manager
+	inMgrConf := &in.ManagerConfig{
+		Port:                   daemon.cfg.ListenPort,
+		ReplayProtectionWindow: daemon.cfg.ReplayProtectionWindow,
+	}
+	inMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxListeners))
+	inMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinListeners))
+	daemon.Mgrs.Input, err = inMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Proc.Inbox)
+	if err != nil {
+		err = fmt.Errorf("failed creating listener manager: %w", err)
+		daemon.Shutdown()
+		return
+	}
+
+	// Stage 1 - Listener Instances
 	for i := 0; i < daemon.cfg.MinListeners; i++ {
 		_, err = daemon.Mgrs.Input.AddInstance()
 		if err != nil {
@@ -248,7 +275,7 @@ func (daemon *Daemon) StopFIPR() {
 
 	// After the packet deadline, there should be no more existing fragments that we could consume from other processes
 	// Assuming other processes are already killed.
-	currentPacketDeadline := daemon.Mgrs.Defrag.PacketDeadline.Load()
+	currentPacketDeadline := daemon.Mgrs.Defrag.Config.PacketDeadline.Load()
 	drainingPeriod := time.Duration(currentPacketDeadline)
 	time.Sleep(drainingPeriod)
 

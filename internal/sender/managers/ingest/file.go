@@ -9,7 +9,7 @@ import (
 )
 
 // Create file ingest instance
-func (manager *InstanceManager) AddFileInstance(filePath string, stateFile string) (err error) {
+func (manager *Manager) AddFileInstance(filePath string, stateFile string) (err error) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 
@@ -51,7 +51,7 @@ func (manager *InstanceManager) AddFileInstance(filePath string, stateFile strin
 }
 
 // Remove existing file ingest instance
-func (manager *InstanceManager) RemoveFileInstance(filename string) (err error) {
+func (manager *Manager) RemoveFileInstance(filename string) (err error) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 

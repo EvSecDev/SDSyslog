@@ -7,20 +7,27 @@ import (
 	"sdsyslog/internal/receiver/processor"
 	"sdsyslog/internal/receiver/shard"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-type InstanceManager struct {
-	Mu              sync.RWMutex      // For scaling operations
-	NextID          int               // Next free ID for new pair
-	Instances       map[int]*Instance // Existing running
-	MinInstCount    int               // Minimum number of instances at any one time
-	MaxInstCount    int               // Maximum number of instances at any one time
-	pastMsgCutoff   time.Duration     // Oldest time in the past messages can have
-	futureMsgCutoff time.Duration     // Max time in the future messages can have
-	Inbox           *mpmc.Queue[listener.Container]
-	routingView     shard.RoutingView // Allows processor to route to shards
-	ctx             context.Context
+type ManagerConfig struct {
+	MinQueueCapacity int           // Minimum queue size (also starting size)
+	MaxQueueCapacity int           // Maximum queue size
+	MinInstanceCount atomic.Uint32 // Minimum number of instances at any one time
+	MaxInstanceCount atomic.Uint32 // Maximum number of instances at any one time
+	PastMsgCutoff    time.Duration // Oldest time in the past messages can have
+	FutureMsgCutoff  time.Duration // Max time in the future messages can have
+}
+
+type Manager struct {
+	Config      *ManagerConfig    // Configuration values
+	Mu          sync.RWMutex      // For scaling operations
+	NextID      int               // Next free ID for new pair
+	Instances   map[int]*Instance // Existing running
+	Inbox       *mpmc.Queue[listener.Container]
+	routingView shard.RoutingView // Allows processor to route to shards
+	ctx         context.Context
 }
 
 type Instance struct {

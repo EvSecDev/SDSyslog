@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-type InstanceManager struct {
+type Manager struct {
 	Mu            sync.RWMutex
 	FileSources   map[string]*FileWorker // File sources keyed by path
 	JournalSource *JrnlWorker

@@ -3,13 +3,16 @@ package packaging
 
 import (
 	"context"
+	"fmt"
+	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/network"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 )
 
 // Creates new instance manager
-func NewInstanceManager(ctx context.Context, inboxSize int, outbox *mpmc.Queue[[]byte], hostID, maxPayloadSize, minInsts, maxInsts, minQsize, maxQsize int) (new *InstanceManager, err error) {
+func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[[]byte]) (new *Manager, err error) {
 	// Double check queue - should never get past build
 	if outbox == nil {
 		panic("FATAL: Sender Packaging manager received empty outbox queue variable")
@@ -19,20 +22,74 @@ func NewInstanceManager(ctx context.Context, inboxSize int, outbox *mpmc.Queue[[
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSmPack)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	inbox, err := mpmc.New[protocol.Message](logctx.GetTagList(ctx), uint64(inboxSize), minQsize, maxQsize)
+	config.HostID, err = random.FourByte()
+	if err != nil {
+		err = fmt.Errorf("failed to generate new unique host identifier: %w", err)
+		return
+	}
+
+	config.MaxPayloadSize, err = network.FindSendingMaxUDPPayload(config.DestinationIP)
+	if err != nil {
+		err = fmt.Errorf("failed to find max payload size: %w", err)
+		return
+	}
+	if config.OverrideMaxPayloadSize != 0 {
+		config.MaxPayloadSize = config.OverrideMaxPayloadSize
+	}
+
+	err = config.validate()
+	if err != nil {
+		err = fmt.Errorf("invalid configuration: %w", err)
+		return
+	}
+
+	inbox, err := mpmc.New[protocol.Message](logctx.GetTagList(ctx),
+		uint64(config.MinQueueCapacity),
+		config.MinQueueCapacity,
+		config.MaxQueueCapacity)
 	if err != nil {
 		return
 	}
 
-	new = &InstanceManager{
-		Instances:      make(map[int]*Instance),
-		MinInstCount:   minInsts,
-		MaxInstCount:   maxInsts,
-		InQueue:        inbox,
-		outQueue:       outbox,
-		hostID:         hostID,
-		maxPayloadSize: maxPayloadSize,
-		ctx:            ctx,
+	new = &Manager{
+		Config:    config,
+		Instances: make(map[int]*Instance),
+		InQueue:   inbox,
+		outQueue:  outbox,
+		ctx:       ctx,
 	}
+	return
+}
+
+// Checks manager configuration for invalid/missing values
+func (config *ManagerConfig) validate() (err error) {
+	if config.MinQueueCapacity == 0 {
+		err = fmt.Errorf("empty MinQueueCapacity")
+	}
+	if config.MaxQueueCapacity == 0 {
+		err = fmt.Errorf("empty MaxQueueCapacity")
+	}
+	if config.MinQueueCapacity >= config.MaxQueueCapacity {
+		err = fmt.Errorf("minimum queue capacity cannot be equal to or less than max queue capacity")
+	}
+	if config.MinInstanceCount.Load() == 0 {
+		err = fmt.Errorf("empty MaxQueueCapacity")
+	}
+	if config.MaxInstanceCount.Load() == 0 {
+		err = fmt.Errorf("empty MaxQueueCapacity")
+	}
+	if config.MinInstanceCount.Load() >= config.MaxInstanceCount.Load() {
+		err = fmt.Errorf("minimum instance count cannot be equal to or less than max instance count")
+	}
+	if config.DestinationIP == "" {
+		err = fmt.Errorf("empty destination ip")
+	}
+	if config.HostID == 0 {
+		err = fmt.Errorf("empty host id")
+	}
+	if config.MaxPayloadSize == 0 {
+		err = fmt.Errorf("empty max payload size")
+	}
+
 	return
 }

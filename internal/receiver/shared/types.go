@@ -10,9 +10,9 @@ import (
 
 // Pipeline component trackers (reverse order)
 type Managers struct {
-	Output *out.InstanceManager
-	Defrag *defrag.InstanceManager
-	Proc   *proc.InstanceManager
-	Input  *in.InstanceManager
+	Output *out.Manager
+	Defrag *defrag.Manager
+	Proc   *proc.Manager
+	Input  *in.Manager
 	FIPR   *fiprrecv.Instance
 }

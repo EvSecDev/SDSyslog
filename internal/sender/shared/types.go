@@ -8,7 +8,7 @@ import (
 
 // Pipeline component trackers (reverse order)
 type Managers struct {
-	Out   *out.InstanceManager
-	Assem *packaging.InstanceManager
-	In    *ingest.InstanceManager
+	Out   *out.Manager
+	Assem *packaging.Manager
+	In    *ingest.Manager
 }

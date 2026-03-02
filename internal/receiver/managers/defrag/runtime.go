@@ -11,7 +11,7 @@ import (
 )
 
 // Create new shard+assembler
-func (manager *InstanceManager) AddInstance() (instanceID string) {
+func (manager *Manager) AddInstance() (instanceID string) {
 	// Only need to add/remove exactly one at a time
 	manager.scalingMutex.Lock()
 	defer manager.scalingMutex.Unlock()
@@ -30,7 +30,7 @@ func (manager *InstanceManager) AddInstance() (instanceID string) {
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 
 	// Create new defrag instance
-	shard := shard.New(logctx.GetTagList(manager.ctx), 1024, &manager.PacketDeadline)
+	shard := shard.New(logctx.GetTagList(manager.ctx), 1024, &manager.Config.PacketDeadline)
 	instancePair := &InstancePair{
 		Shard:     shard,
 		Assembler: assembler.New(logctx.GetTagList(manager.ctx), shard, manager.outQueue),
@@ -88,7 +88,7 @@ func (manager *InstanceManager) AddInstance() (instanceID string) {
 
 // Removes the oldest shard+assembler instance.
 // RemovedID will be empty when there are no more instances to remove
-func (manager *InstanceManager) RemoveOldestInstance() (removedID string) {
+func (manager *Manager) RemoveOldestInstance() (removedID string) {
 	ids := manager.routing.Load().ids
 	if len(ids) == 0 {
 		return
@@ -99,7 +99,7 @@ func (manager *InstanceManager) RemoveOldestInstance() (removedID string) {
 }
 
 // Gracefully shuts down and removes an instance from routing snapshot.
-func (manager *InstanceManager) removeInstance(instanceID string) {
+func (manager *Manager) removeInstance(instanceID string) {
 	// Only need to add/remove exactly one at a time
 	manager.scalingMutex.Lock()
 	defer manager.scalingMutex.Unlock()

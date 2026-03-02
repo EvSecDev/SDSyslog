@@ -12,10 +12,11 @@ import (
 )
 
 // Changes packet deadline value based on how often buckets are being timed out
-func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, defragMgr *defrag.InstanceManager) {
+func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, defragMgr *defrag.Manager) {
 	// No scaling if we are at the min/max
-	currentDeadline := defragMgr.PacketDeadline.Load()
-	if currentDeadline <= int64(global.DefaultMinPacketDeadline) || currentDeadline >= int64(global.DefaultMaxPacketDeadline) {
+	currentDeadline := defragMgr.Config.PacketDeadline.Load()
+	if currentDeadline <= int64(global.DefaultMinPacketDeadline) ||
+		currentDeadline >= int64(global.DefaultMaxPacketDeadline) {
 		return
 	}
 
@@ -83,11 +84,11 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	deadlineDur := time.Duration(currentDeadline)
 	if stepUp {
 		newDeadline := deadlineDur + 10*time.Millisecond
-		defragMgr.PacketDeadline.Store(int64(newDeadline))
+		defragMgr.Config.PacketDeadline.Store(int64(newDeadline))
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
 	} else if stepDown {
 		newDeadline := deadlineDur - 10*time.Millisecond
-		defragMgr.PacketDeadline.Store(int64(newDeadline))
+		defragMgr.Config.PacketDeadline.Store(int64(newDeadline))
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
 	}
 }

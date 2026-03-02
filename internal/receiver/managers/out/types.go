@@ -8,14 +8,18 @@ import (
 	"sync"
 )
 
-type InstanceManager struct {
-	Queue    *mpmc.Queue[protocol.Payload] // Shared queue across all assembler/output instances
-	Instance *OutputInstance               // Worker for writing output
-	ctx      context.Context
+type ManagerConfig struct {
+	MinQueueCapacity int // Minimum queue size (also starting size)
+	MaxQueueCapacity int // Maximum queue size
 }
 
-type OutputInstance struct {
-	Worker *output.Instance   // Individual output worker
-	wg     sync.WaitGroup     // Waiter for instance
-	cancel context.CancelFunc // Stop instance
+type Manager struct {
+	Config *ManagerConfig
+	Queue  *mpmc.Queue[protocol.Payload] // Shared queue across all assembler/output instances
+
+	Instance output.Instance    // Output worker writing to all configured outputs
+	wg       sync.WaitGroup     // Waiter for instance
+	cancel   context.CancelFunc // Stop instance
+
+	ctx context.Context
 }

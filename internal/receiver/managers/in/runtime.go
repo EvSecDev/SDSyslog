@@ -11,7 +11,7 @@ import (
 )
 
 // Create additional ingest instance
-func (manager *InstanceManager) AddInstance() (id int, err error) {
+func (manager *Manager) AddInstance() (id int, err error) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 
@@ -22,7 +22,7 @@ func (manager *InstanceManager) AddInstance() (id int, err error) {
 	manager.ctx = logctx.AppendCtxTag(manager.ctx, strconv.Itoa(id))
 	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
 
-	conn, err := network.ReuseUDPPort(manager.port)
+	conn, err := network.ReuseUDPPort(manager.Config.Port)
 	if err != nil {
 		err = fmt.Errorf("failed to reuse port: %w", err)
 		return
@@ -53,7 +53,7 @@ func (manager *InstanceManager) AddInstance() (id int, err error) {
 }
 
 // Remove existing instance
-func (manager *InstanceManager) RemoveInstance(id int) {
+func (manager *Manager) RemoveInstance(id int) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 

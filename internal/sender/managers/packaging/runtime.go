@@ -8,7 +8,7 @@ import (
 )
 
 // Create new packaging instance
-func (manager *InstanceManager) AddInstance() (instanceID int) {
+func (manager *Manager) AddInstance() (instanceID int) {
 	// Lock manager for new spawn
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
@@ -25,8 +25,12 @@ func (manager *InstanceManager) AddInstance() (instanceID int) {
 
 	// Create new worker instance
 	newWorker := &Instance{
-		id:     instanceID,
-		Worker: assembler.New(logctx.GetTagList(manager.ctx), manager.InQueue, manager.outQueue, manager.hostID, manager.maxPayloadSize),
+		id: instanceID,
+		Worker: assembler.New(logctx.GetTagList(manager.ctx),
+			manager.InQueue,
+			manager.outQueue,
+			manager.Config.HostID,
+			manager.Config.MaxPayloadSize),
 	}
 
 	manager.Instances[instanceID] = newWorker
@@ -47,7 +51,7 @@ func (manager *InstanceManager) AddInstance() (instanceID int) {
 }
 
 // Remove existing packaging instance
-func (manager *InstanceManager) RemoveInstance(instanceID int) {
+func (manager *Manager) RemoveInstance(instanceID int) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 

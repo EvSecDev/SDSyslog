@@ -9,13 +9,15 @@ import (
 	"time"
 )
 
-func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, procMgr *proc.InstanceManager) {
+func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, procMgr *proc.Manager) {
 	// No scaling if we are at the min/max
 	procMgr.Mu.RLock()
 	instanceCount := len(procMgr.Instances)
 	instanceID := procMgr.NextID - 1
 	procMgr.Mu.RUnlock()
-	if instanceCount == procMgr.MaxInstCount || instanceCount == procMgr.MinInstCount {
+
+	if instanceCount == int(procMgr.Config.MaxInstanceCount.Load()) ||
+		instanceCount == int(procMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 

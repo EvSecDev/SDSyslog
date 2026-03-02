@@ -12,16 +12,15 @@ import (
 	"time"
 )
 
-func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, inMgr *in.InstanceManager) {
+func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, inMgr *in.Manager) {
 	inMgr.Mu.RLock()
 	instances := inMgr.Instances
-	maxInstances := inMgr.MaxInstCount
-	minInstances := inMgr.MinInstCount
 	instanceCount := len(instances)
 	inMgr.Mu.RUnlock()
 
 	// No scaling if we are at the min/max
-	if instanceCount == maxInstances || instanceCount == minInstances {
+	if instanceCount == int(inMgr.Config.MaxInstanceCount.Load()) ||
+		instanceCount == int(inMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 

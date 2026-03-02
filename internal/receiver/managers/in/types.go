@@ -6,20 +6,26 @@ import (
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/internal/receiver/listener"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-type InstanceManager struct {
-	Mu                  sync.RWMutex      // For scaling operations
-	nextID              int               // Next free ID for new pair
-	Instances           map[int]*Instance // Existing running instances
-	MinInstCount        int               // Minimum number of instances at any one time
-	MaxInstCount        int               // Maximum number of instances at any one time
-	port                int               // Network listen port
-	replayCleanInterval time.Duration
-	replayCache         *replayCache
-	outbox              *mpmc.Queue[listener.Container]
-	ctx                 context.Context
+type ManagerConfig struct {
+	MinInstanceCount       atomic.Uint32 // Minimum number of instances at any one time
+	MaxInstanceCount       atomic.Uint32 // Maximum number of instances at any one time
+	Port                   int           // Network listen port
+	ReplayProtectionWindow time.Duration // +/- time duration from packet reception time where a duplicate public key will cause packet to be dropped
+	replayCleanInterval    time.Duration // Eviction check interval for seen public keys
+}
+
+type Manager struct {
+	Config      *ManagerConfig    // Configuration values
+	Mu          sync.RWMutex      // For scaling operations
+	nextID      int               // Next free ID for new pair
+	Instances   map[int]*Instance // Existing running instances
+	replayCache *replayCache
+	outbox      *mpmc.Queue[listener.Container]
+	ctx         context.Context
 }
 
 // Replay attack protection for all listener instances

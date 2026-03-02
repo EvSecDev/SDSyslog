@@ -10,12 +10,13 @@ import (
 	"time"
 )
 
-func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, defragMgr *defrag.InstanceManager) {
+func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, defragMgr *defrag.Manager) {
 	// Grab required info
 	instanceCount := len(defragMgr.RoutingView.GetNonDrainingIDs())
 
 	// No scaling if we are at the min/max
-	if instanceCount == defragMgr.GetMaximumInstances() || instanceCount == defragMgr.GetMinimumInstances() {
+	if instanceCount == int(defragMgr.Config.MaxInstanceCount.Load()) ||
+		instanceCount == int(defragMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 

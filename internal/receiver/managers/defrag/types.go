@@ -10,15 +10,19 @@ import (
 	"sync/atomic"
 )
 
-type InstanceManager struct {
+type ManagerConfig struct {
+	MinInstanceCount atomic.Uint32 // Minimum number of instances at any one time
+	MaxInstanceCount atomic.Uint32 // Maximum number of instances at any one time
+	PacketDeadline   atomic.Int64  // Manager owns this value
+}
+
+type Manager struct {
+	Config         *ManagerConfig                  // Configuration values
 	scalingMutex   sync.RWMutex                    // Serializes add/remove - scaling operations are single-threaded
 	nextInstanceID uint16                          // Next instance pair ID
 	routing        atomic.Pointer[routingSnapshot] // Atomic pointer to immutable routing snapshot used by hot-path readers
 	RoutingView    *RoutingState                   // External read-only by method for viewing routing - prevents direct manager access and import cycles
-	minInstCount   int                             // Minimum number of instances at any one time
-	maxInstCount   int                             // Maximum number of instances at any one time
 	outQueue       *mpmc.Queue[protocol.Payload]   // Next pipeline stage queue (not owned by this manager)
-	PacketDeadline atomic.Int64                    // Manager owns this value
 	FIPRRunning    atomic.Bool                     // Syncs fipr send to local fipr receive to gate hot path from checking socket directory unnecessarily
 	ctx            context.Context
 }
@@ -37,5 +41,5 @@ type InstancePair struct {
 }
 
 type RoutingState struct {
-	manager *InstanceManager
+	manager *Manager
 }

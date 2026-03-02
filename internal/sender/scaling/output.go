@@ -9,12 +9,13 @@ import (
 	"time"
 )
 
-func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, outMgr *out.InstanceManager) {
+func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, outMgr *out.Manager) {
 	// No scaling if we are at the min/max
 	outMgr.Mu.RLock()
 	instanceCount := len(outMgr.Instances)
 	outMgr.Mu.RUnlock()
-	if instanceCount == outMgr.MaxInstCount || instanceCount == outMgr.MinInstCount {
+	if instanceCount == int(outMgr.Config.MaxInstanceCount.Load()) ||
+		instanceCount == int(outMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 

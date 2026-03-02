@@ -120,9 +120,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	metrics := gatherer.Mgrs.Output.Queue.CollectMetrics(interval)
 	gatherer.Registry.Add(timeSlice, metrics)
 
-	// Worker
-	if gatherer.Mgrs.Output.Instance.Worker != nil {
-		metrics := gatherer.Mgrs.Output.Instance.Worker.CollectMetrics(interval)
-		gatherer.Registry.Add(timeSlice, metrics)
-	}
+	// Instance
+	metrics = gatherer.Mgrs.Output.Instance.CollectMetrics(interval)
+	gatherer.Registry.Add(timeSlice, metrics)
 }

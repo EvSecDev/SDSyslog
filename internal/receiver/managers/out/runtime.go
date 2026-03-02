@@ -11,7 +11,7 @@ import (
 )
 
 // Create and start new output instance
-func (manager *InstanceManager) AddInstance(filePath string, journaldURL string, beatsAddress string) (err error) {
+func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAddress string) (err error) {
 	if filePath == "" && journaldURL == "" && beatsAddress == "" {
 		err = fmt.Errorf("no outputs enabled/configured")
 		return
@@ -21,58 +21,51 @@ func (manager *InstanceManager) AddInstance(filePath string, journaldURL string,
 	workerCtx, cancelInstance := context.WithCancel(context.Background())
 	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
 
-	instance := &OutputInstance{
-		Worker: output.New(logctx.GetTagList(manager.ctx), manager.Queue),
-		cancel: cancelInstance,
-	}
-
-	manager.Instance = instance
+	manager.cancel = cancelInstance
+	manager.Instance = *output.New(logctx.GetTagList(manager.ctx), manager.Queue)
 
 	// Add outputs
-	instance.Worker.FileMod, err = file.NewOutput(filePath)
+	manager.Instance.FileMod, err = file.NewOutput(filePath)
 	if err != nil {
 		return
 	}
-	instance.Worker.JrnlMod, err = journald.NewOutput(journaldURL)
+	manager.Instance.JrnlMod, err = journald.NewOutput(journaldURL)
 	if err != nil {
 		return
 	}
-	instance.Worker.BeatsMod, err = beats.NewOutput(beatsAddress)
+	manager.Instance.BeatsMod, err = beats.NewOutput(beatsAddress)
 	if err != nil {
 		return
 	}
 
 	// Start worker
-	instance.wg.Add(1)
+	manager.wg.Add(1)
 	go func() {
-		defer instance.wg.Done()
-		workerCtx := logctx.OverwriteCtxTag(workerCtx, instance.Worker.Namespace)
-		instance.Worker.Run(workerCtx)
+		defer manager.wg.Done()
+		workerCtx := logctx.OverwriteCtxTag(workerCtx, manager.Instance.Namespace)
+		manager.Instance.Run(workerCtx)
 	}()
 	return
 }
 
 // Shutdown existing file output instance
-func (manager *InstanceManager) RemoveInstance() {
-	if manager.Instance == nil {
-		return
+func (manager *Manager) RemoveInstance() {
+	if manager.cancel != nil {
+		manager.cancel()
 	}
-	if manager.Instance.cancel != nil {
-		manager.Instance.cancel()
-	}
-	manager.Instance.wg.Wait()
+	manager.wg.Wait()
 
-	err := manager.Instance.Worker.FileMod.Shutdown()
+	err := manager.Instance.FileMod.Shutdown()
 	if err != nil {
 		logctx.LogStdErr(manager.ctx,
 			"failed to shutdown file module: %w\n", err)
 	}
-	err = manager.Instance.Worker.JrnlMod.Shutdown()
+	err = manager.Instance.JrnlMod.Shutdown()
 	if err != nil {
 		logctx.LogStdErr(manager.ctx,
 			"failed to shutdown journal module: %w\n", err)
 	}
-	err = manager.Instance.Worker.BeatsMod.Shutdown()
+	err = manager.Instance.BeatsMod.Shutdown()
 	if err != nil {
 		logctx.LogStdErr(manager.ctx,
 			"failed to shutdown beats module: %w\n", err)

@@ -8,7 +8,7 @@ import (
 )
 
 // Create additional ingest instance
-func (manager *InstanceManager) AddInstance() (id int) {
+func (manager *Manager) AddInstance() (id int) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 
@@ -23,8 +23,8 @@ func (manager *InstanceManager) AddInstance() (id int) {
 		Processor: processor.New(logctx.GetTagList(manager.ctx),
 			manager.Inbox,
 			manager.routingView,
-			manager.pastMsgCutoff,
-			manager.futureMsgCutoff),
+			manager.Config.PastMsgCutoff,
+			manager.Config.FutureMsgCutoff),
 	}
 
 	manager.Instances[id] = ingestInstance
@@ -44,7 +44,7 @@ func (manager *InstanceManager) AddInstance() (id int) {
 }
 
 // Remove existing instance
-func (manager *InstanceManager) RemoveInstance(id int) {
+func (manager *Manager) RemoveInstance(id int) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 

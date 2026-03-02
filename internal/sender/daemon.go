@@ -4,17 +4,14 @@ package sender
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"runtime"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
-	"sdsyslog/internal/network"
 	"sdsyslog/internal/sender/managers/ingest"
 	"sdsyslog/internal/sender/managers/out"
 	"sdsyslog/internal/sender/managers/packaging"
@@ -22,7 +19,6 @@ import (
 	"sdsyslog/internal/sender/scaling"
 	"sdsyslog/internal/syslog"
 	"slices"
-	"strconv"
 	"time"
 )
 
@@ -49,27 +45,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 
 	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
 
-	// Setup destination network "connection"
-	if daemon.cfg.DestinationIP == "" {
-		err = fmt.Errorf("cannot start without a destination address")
-		return
-	}
-	if daemon.cfg.DestinationPort == 0 {
-		daemon.cfg.DestinationPort = global.DefaultReceiverPort
-	}
-
-	destAddr, err := net.ResolveUDPAddr("udp", daemon.cfg.DestinationIP+":"+strconv.Itoa(daemon.cfg.DestinationPort))
-	if err != nil {
-		err = fmt.Errorf("failed to resolve destination: %w", err)
-		return
-	}
-
-	destinationConnection, err := net.DialUDP("udp", nil, destAddr)
-	if err != nil {
-		err = fmt.Errorf("failed to open udp socket: %w", err)
-		return
-	}
-
 	// Pre-startup
 	syslog.InitBidiMaps()
 	err = wrappers.SetupEncryptInnerPayload(serverPub)
@@ -79,53 +54,44 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	}
 	daemon.cfg.setDefaults()
 
-	mainHostID, err := random.FourByte()
-	if err != nil {
-		err = fmt.Errorf("failed to generate new unique host identifier: %w", err)
-		return
-	}
-
-	maxPayloadSize, err := network.FindSendingMaxUDPPayload(daemon.cfg.DestinationIP)
-	if err != nil {
-		err = fmt.Errorf("failed to find max payload size: %w", err)
-		return
-	}
-	if daemon.cfg.OverrideMaxPayloadSize != 0 {
-		maxPayloadSize = daemon.cfg.OverrideMaxPayloadSize
-	}
-
 	// Stage 3 - Output Manager
-	daemon.Mgrs.Out, err = out.NewInstanceManager(daemon.ctx,
-		daemon.cfg.MinOutputQueueSize,
-		destinationConnection,
-		daemon.cfg.MinOutputs,
-		daemon.cfg.MaxOutputs,
-		daemon.cfg.MinOutputQueueSize,
-		daemon.cfg.MaxOutputQueueSize)
+	outMgrConf := &out.ManagerConfig{
+		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,
+		MaxQueueCapacity: daemon.cfg.MaxOutputQueueSize,
+		DestinationIP:    daemon.cfg.DestinationIP,
+		DestinationPort:  daemon.cfg.DestinationPort,
+	}
+	outMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinOutputs))
+	outMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxOutputs))
+	daemon.Mgrs.Out, err = outMgrConf.NewManager(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error creating new output instance manager: %w", err)
 		return
 	}
+
+	// Stage 3 - Output Instances
 	for i := 0; i < daemon.cfg.MinOutputs; i++ {
 		_ = daemon.Mgrs.Out.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d output instance(s) started successfully\n", daemon.cfg.MinOutputs)
 
-	// Stage 2 - Assemblers
-	daemon.Mgrs.Assem, err = packaging.NewInstanceManager(daemon.ctx,
-		daemon.cfg.MinAssemblerQueueSize,
-		daemon.Mgrs.Out.InQueue,
-		mainHostID,
-		maxPayloadSize,
-		daemon.cfg.MinAssemblers,
-		daemon.cfg.MaxAssemblers,
-		daemon.cfg.MinAssemblerQueueSize,
-		daemon.cfg.MaxAssemblerQueueSize)
+	// Stage 2 - Assembler Manager
+	pkgMgrConf := &packaging.ManagerConfig{
+		MinQueueCapacity:       daemon.cfg.MinAssemblerQueueSize,
+		MaxQueueCapacity:       daemon.cfg.MaxAssemblerQueueSize,
+		OverrideMaxPayloadSize: daemon.cfg.OverrideMaxPayloadSize,
+		DestinationIP:          daemon.cfg.DestinationIP,
+	}
+	pkgMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinAssemblers))
+	pkgMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxAssemblers))
+	daemon.Mgrs.Assem, err = pkgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Out.InQueue)
 	if err != nil {
 		err = fmt.Errorf("error creating new assembly instance manager: %w", err)
 		return
 	}
+
+	// Stage 2 - Assembler Instance
 	for i := 0; i < daemon.cfg.MinAssemblers; i++ {
 		_ = daemon.Mgrs.Assem.AddInstance()
 	}
@@ -133,7 +99,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		"%d assembler instance(s) started successfully\n", daemon.cfg.MinAssemblers)
 
 	// Stage 1 - Listeners(Readers)
-	daemon.Mgrs.In = ingest.NewInstanceManager(daemon.ctx, daemon.Mgrs.Assem.InQueue)
+	daemon.Mgrs.In = ingest.NewManager(daemon.ctx, daemon.Mgrs.Assem.InQueue)
 	if len(daemon.cfg.FileSourcePaths) > 0 {
 		for _, filePath := range daemon.cfg.FileSourcePaths {
 			err = daemon.Mgrs.In.AddFileInstance(filePath, daemon.cfg.StateFilePath)

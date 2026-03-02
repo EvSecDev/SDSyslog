@@ -9,12 +9,13 @@ import (
 	"time"
 )
 
-func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, assemMgr *packaging.InstanceManager) {
+func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, assemMgr *packaging.Manager) {
 	// No scaling if we are at the min/max
 	assemMgr.Mu.RLock()
 	instanceCount := len(assemMgr.Instances)
 	assemMgr.Mu.RUnlock()
-	if instanceCount == assemMgr.MaxInstCount || instanceCount == assemMgr.MinInstCount {
+	if instanceCount == int(assemMgr.Config.MaxInstanceCount.Load()) ||
+		instanceCount == int(assemMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 

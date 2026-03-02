@@ -8,7 +8,7 @@ import (
 )
 
 // Create journal ingest instance
-func (manager *InstanceManager) AddJrnlInstance(stateFile string) (err error) {
+func (manager *Manager) AddJrnlInstance(stateFile string) (err error) {
 	if manager.JournalSource != nil {
 		err = fmt.Errorf("cannot start a new journal instance with one running")
 		return
@@ -53,7 +53,7 @@ func (manager *InstanceManager) AddJrnlInstance(stateFile string) (err error) {
 }
 
 // Remove existing journal ingest instance
-func (manager *InstanceManager) RemoveJrnlInstance() (err error) {
+func (manager *Manager) RemoveJrnlInstance() (err error) {
 	manager.Mu.Lock()
 	defer manager.Mu.Unlock()
 

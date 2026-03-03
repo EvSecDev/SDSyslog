@@ -137,26 +137,36 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 func allFieldsEqual(payloads []Payload) (valid bool) {
 	ref := payloads[0]
 	for _, payload := range payloads[1:] {
-		// Check custom fields equality
-		if len(ref.CustomFields) != len(payload.CustomFields) {
-			valid = false
-			return
-		}
-		for refIndex, customField := range ref.CustomFields {
-			if payload.CustomFields[refIndex] != customField {
-				valid = false
-				return
-			}
-		}
-
-		if payload.RemoteIP != ref.RemoteIP || payload.HostID != ref.HostID ||
-			payload.MsgID != ref.MsgID || !payload.Timestamp.Equal(ref.Timestamp) ||
-			payload.Hostname != ref.Hostname {
-
+		if !ref.EqualTo(payload) {
 			valid = false
 			return
 		}
 	}
 	valid = true
+	return
+}
+
+// Checks if reference payload is equal to payload.
+func (reference Payload) EqualTo(payload Payload) (equal bool) {
+	// Check custom fields equality
+	if len(reference.CustomFields) != len(payload.CustomFields) {
+		equal = false
+		return
+	}
+	for refIndex, customField := range reference.CustomFields {
+		if payload.CustomFields[refIndex] != customField {
+			equal = false
+			return
+		}
+	}
+
+	if payload.RemoteIP != reference.RemoteIP || payload.HostID != reference.HostID ||
+		payload.MsgID != reference.MsgID || !payload.Timestamp.Equal(reference.Timestamp) ||
+		payload.Hostname != reference.Hostname {
+
+		equal = false
+		return
+	}
+	equal = true
 	return
 }

@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sdsyslog/internal/crypto/hash"
-	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/shard/fiprsend"
 	"sdsyslog/pkg/protocol"
@@ -21,7 +20,7 @@ func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fr
 	if rv.IsFIPRRunning() && fragment.MessageSeqMax > 0 {
 		// FIPR should only ever be used with fragmented messages and when FIPR receiver is running
 		var err error
-		remoteShards, err = fiprsend.GetSocketFileList(global.DefaultSocketDir, os.Getpid())
+		remoteShards, err = fiprsend.GetSocketFileList(rv.SocketDir(), os.Getpid())
 		if err != nil {
 			logctx.LogStdErr(ctx, "%s\n", err.Error())
 			return
@@ -65,7 +64,7 @@ retryRoute:
 
 		// Route Destination
 		socketFile := hrwSelect(bucketKey, remoteShards)
-		socketPath := filepath.Join(global.DefaultSocketDir, socketFile)
+		socketPath := filepath.Join(rv.SocketDir(), socketFile)
 
 		// Fragments only get one chance to route remotely, otherwise they are forced local
 		remoteShards = nil // Prevents endless loop

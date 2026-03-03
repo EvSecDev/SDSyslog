@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/wrappers"
@@ -23,7 +22,6 @@ import (
 	"sdsyslog/internal/receiver/shard/fiprrecv"
 	"sdsyslog/internal/syslog"
 	"slices"
-	"strings"
 	"time"
 )
 
@@ -73,13 +71,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 	daemon.cfg.setDefaults()
 
-	data, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
-	if err != nil {
-		err = fmt.Errorf("failed to determine local boot id: %w", err)
-		return
-	}
-	global.SetBootID(strings.TrimSpace(string(data)))
-
 	// Listener socket helper - kernel-side of socket drain feature
 	err = ebpf.LoadProgram()
 	if err != nil {
@@ -108,7 +99,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		"output instance started successfully\n")
 
 	// Stage 3 - Shard+Assembler Manager
-	dfrgMgrConf := &assembler.ManagerConfig{}
+	dfrgMgrConf := &assembler.ManagerConfig{
+		FIPRSocketDirectory: daemon.cfg.SocketDirectoryPath,
+	}
 	dfrgMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinDefrags))
 	dfrgMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxDefrags))
 	daemon.Mgrs.Assembler, err = dfrgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Output.Inbox)
@@ -256,7 +249,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 // Dedicated entry point for starting inter-process fragment routing
 // Accept fragments that ended up in other processes that are partial fragments for this process
 func (daemon *Daemon) StartFIPR() (err error) {
-	daemon.fipr = fiprrecv.New(daemon.ctx, global.DefaultSocketDir, daemon.Mgrs.Assembler.RoutingView)
+	daemon.fipr = fiprrecv.New(daemon.ctx, daemon.cfg.SocketDirectoryPath, daemon.Mgrs.Assembler.RoutingView)
 	daemon.Mgrs.FIPR = daemon.fipr
 	daemon.Mgrs.Assembler.FIPRRunning.Store(true)
 	err = daemon.fipr.Start()

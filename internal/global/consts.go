@@ -16,7 +16,6 @@ const (
 	DefaultConfigRecv        string        = DefaultConfigDir + "/" + ProgBaseName + ".json"
 	DefaultStateDir          string        = "/var/cache/" + ProgBaseName
 	DefaultStateFile         string        = DefaultStateDir + "/last.state"
-	DefaultSocketDir         string        = DefaultStateDir + "/ipc"
 	DefaultReceiverPort      int           = 8514
 	DefaultMinQueueSize      int           = 512
 	DefaultMaxQueueSize      int           = 4096

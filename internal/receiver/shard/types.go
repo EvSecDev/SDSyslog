@@ -25,7 +25,7 @@ type Instance struct {
 }
 
 // Interface for making fragment routing decisions
-// Source functions are located in the Defrag manager package at 'internal/receiver/managers/defrag/routing.go'
+// Source functions are located in the Defrag manager package at 'internal/receiver/assembler/routing.go'
 type RoutingView interface {
 	GetAllIDs() (shardIDs []string)
 	GetNonDrainingIDs() (availShardIDs []string)
@@ -34,4 +34,5 @@ type RoutingView interface {
 	IsShardShutdown(shardID string) (shutdown bool)
 	BucketExistsAnywhere(bucketKey string) (present bool)
 	IsFIPRRunning() (running bool)
+	SocketDir() (path string)
 }

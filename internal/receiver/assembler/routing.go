@@ -97,3 +97,9 @@ func (rs *RoutingState) IsFIPRRunning() (running bool) {
 	running = rs.manager.FIPRRunning.Load()
 	return
 }
+
+// Retrieves configured socket directory for FIPR process discovery
+func (rs *RoutingState) SocketDir() (path string) {
+	path = rs.manager.Config.FIPRSocketDirectory
+	return
+}

@@ -60,5 +60,8 @@ func (config *ManagerConfig) validate() (err error) {
 	if config.PacketDeadline.Load() == 0 {
 		err = fmt.Errorf("empty packet deadline")
 	}
+	if config.FIPRSocketDirectory == "" {
+		err = fmt.Errorf("empty socket directory")
+	}
 	return
 }

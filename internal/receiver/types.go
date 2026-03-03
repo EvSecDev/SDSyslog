@@ -47,6 +47,9 @@ type Config struct {
 	ListenIP   string
 	ListenPort int
 
+	// Paths
+	SocketDirectoryPath string
+
 	// Scaling settings
 	AutoscaleEnabled       bool
 	AutoscaleCheckInterval time.Duration

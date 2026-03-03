@@ -21,6 +21,7 @@ type MockRoutingView struct {
 	IsShardShutdownFunc      func(string) bool
 	BucketExistsAnywhereFunc func(string) bool
 	IsFIPRRunningFunc        func() bool
+	SocketDirFunc            func() string
 }
 
 func (m *MockRoutingView) GetAllIDs() []string {
@@ -49,6 +50,10 @@ func (m *MockRoutingView) BucketExistsAnywhere(bucketKey string) bool {
 
 func (m *MockRoutingView) IsFIPRRunning() bool {
 	return m.IsFIPRRunningFunc()
+}
+
+func (m *MockRoutingView) SocketDir() string {
+	return m.SocketDirFunc()
 }
 
 func TestRouteFragment(t *testing.T) {

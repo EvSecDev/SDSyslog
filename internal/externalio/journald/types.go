@@ -9,8 +9,9 @@ import (
 )
 
 type OutModule struct {
-	sink *http.Client
-	url  string
+	sink   *http.Client
+	url    string
+	bootID string
 }
 
 type InModule struct {

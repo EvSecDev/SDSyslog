@@ -10,9 +10,10 @@ import (
 )
 
 type ManagerConfig struct {
-	MinInstanceCount atomic.Uint32 // Minimum number of instances at any one time
-	MaxInstanceCount atomic.Uint32 // Maximum number of instances at any one time
-	PacketDeadline   atomic.Int64  // Manager owns this value
+	MinInstanceCount    atomic.Uint32 // Minimum number of instances at any one time
+	MaxInstanceCount    atomic.Uint32 // Maximum number of instances at any one time
+	FIPRSocketDirectory string        // Path to IPC socket files (FIPR)
+	PacketDeadline      atomic.Int64  // Manager owns this value
 }
 
 type Manager struct {
@@ -28,7 +29,7 @@ type Manager struct {
 
 type routingSnapshot struct {
 	instances map[string]*Instance
-	ids   []string // FIFO pool of IDs for routing (also used as sliding window for wraparound mitigation)
+	ids       []string // FIFO pool of IDs for routing (also used as sliding window for wraparound mitigation)
 }
 
 type Instance struct {

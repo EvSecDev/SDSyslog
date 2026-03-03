@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
+	"strings"
 	"time"
 )
 
@@ -77,6 +79,13 @@ func NewOutput(endpoint string) (module *OutModule, err error) {
 	}
 
 	new := &OutModule{}
+
+	data, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
+	if err != nil {
+		err = fmt.Errorf("failed to determine local boot id: %w", err)
+		return
+	}
+	new.bootID = strings.TrimSpace(string(data))
 
 	transport := &http.Transport{
 		MaxIdleConns:          10,

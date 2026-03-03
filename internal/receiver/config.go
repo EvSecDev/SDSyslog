@@ -120,6 +120,11 @@ func (cfg *Config) setDefaults() {
 		cfg.FutureValidityWindow = DefaultFutureValidityWindow
 	}
 
+	// Paths
+	if cfg.SocketDirectoryPath == "" {
+		cfg.SocketDirectoryPath = DefaultSocketDir
+	}
+
 	// Network
 	if cfg.ListenIP == "" {
 		cfg.ListenIP = "::"

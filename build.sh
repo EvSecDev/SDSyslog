@@ -61,13 +61,9 @@ done < <(find .build_helpers/ -maxdepth 1 -type f -iname "*.sh" -print0)
 ##################################
 
 function compile_program_prechecks() {
-	# Always ensure we start in the root of the repository
-	cd "$repoRoot"/
-
 	# Check for things not supposed to be in a release
 	if type -t check_for_dev_artifacts &>/dev/null; then
-		check_for_dev_artifacts "$SRCdir" "$repoRoot"
-		check_for_dev_artifacts "$repoRoot/pkg" "$repoRoot"
+		check_for_dev_artifacts "$repoRoot"
 	fi
 }
 

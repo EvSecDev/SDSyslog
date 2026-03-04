@@ -2,11 +2,13 @@
 command -v git >/dev/null
 
 function check_for_dev_artifacts() {
-	local src repoDir headCommitHash lastReleaseCommitHash lastReleaseVersionNumber currentVersionNumber
-	src=$1
-	repoDir=$2
+	local repoDir headCommitHash lastReleaseCommitHash lastReleaseVersionNumber currentVersionNumber
+	repoDir=$1
 
-	echo "[*] Checking for development artifacts in source code directory $src..."
+	# Always ensure we start in the root of the repository
+	cd "$repoDir"/
+
+	echo "[*] Checking for development artifacts in source code..."
 
 	# Get head commit hash
 	headCommitHash=$(git rev-parse HEAD)
@@ -22,12 +24,12 @@ function check_for_dev_artifacts() {
 
 	# Exit if version number hasn't been upped since last commit
 	if [[ $lastReleaseVersionNumber == $currentVersionNumber ]] && ! [[ $headCommitHash == $lastReleaseCommitHash ]] && [[ -n $lastReleaseVersionNumber ]]; then
-		echo -e "${RED}[-] ERROR${RESET}: Version number in $src/main.go has not been bumped since last commit, exiting build"
+		echo -e "${RED}[-] ERROR${RESET}: Version number in cmd/sdsyslog/main.go has not been bumped since last commit, exiting build"
 		exit 1
 	fi
 
 	# Quick check for any left over debug prints
-	if grep -ER "DEBUG" "$src"/; then
+	if grep -ER "DEBUG" "$repoDir"/ | grep -Ev "ebpf/include/"; then
 		echo -e "   ${YELLOW}[?] WARNING${RESET}: Debug print found in source code. You might want to remove that before release."
 	fi
 
@@ -36,16 +38,18 @@ function check_for_dev_artifacts() {
 		echo -e "   ${YELLOW}[?] WARNING${RESET}: Found function variables that do not have an actualy function set."
 	fi
 
-	# Quick staticcheck check - ignoring punctuation in error strings
-	cd "$src"
+	echo -e "${GREEN}[+] DONE${RESET}"
+	echo "[*] Running static analysis..."
+
+	# Source Linting
 	set +e
-	staticcheck -checks all ./... | grep -Ev "error strings should not|comment on exported method|package comment should be of the form|comment on exported type|comment on exported function"
+	# Disagree on including name in description comments
+	staticcheck -checks all ./... | grep -Ev "comment on exported method|package comment should be of the form|comment on exported type|comment on exported function"
 	go vet ./...
 	if [[ -x $(which golangci-lint) ]]; then
 		golangci-lint run ./...
 	fi
 	set -e
-	cd "$repoDir"/
 
 	echo -e "${GREEN}[+] DONE${RESET}"
 }

@@ -25,7 +25,11 @@ func main() {
 		cli.PrintHelpMenu(commandFlags, cli.RootCLICommand, cliOpts)
 		os.Exit(1)
 	}
-	commandFlags.Parse(args[1:])
+	err := commandFlags.Parse(args[1:])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Retrieve command and args
 	command := args[1]

@@ -289,7 +289,7 @@ func (daemon *Daemon) Shutdown() {
 	logctx.LogStdInfo(daemon.ctx, "Daemon shutdown started (%s)...\n", global.ProgVersion)
 
 	// Stop metric server
-	if daemon.cfg.MetricQueryServerEnabled {
+	if daemon.cfg.MetricQueryServerEnabled && daemon.MetricServer != nil {
 		err := daemon.MetricServer.Shutdown(daemon.ctx)
 		if err != nil && err != http.ErrServerClosed {
 			logctx.LogStdWarn(daemon.ctx, "metric HTTP server did not shutdown gracefully: %w\n", err)

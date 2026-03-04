@@ -18,7 +18,6 @@ type ManagerConfig struct {
 
 type Manager struct {
 	Config         *ManagerConfig                  // Configuration values
-	scalingMutex   sync.RWMutex                    // Serializes add/remove - scaling operations are single-threaded
 	nextInstanceID uint16                          // Next instance pair ID
 	routing        atomic.Pointer[routingSnapshot] // Atomic pointer to immutable routing snapshot used by hot-path readers
 	RoutingView    *RoutingState                   // External read-only by method for viewing routing - prevents direct manager access and import cycles

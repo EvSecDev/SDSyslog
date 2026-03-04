@@ -36,8 +36,7 @@ func (manager *Manager) AddFileInstance(filePath string, stateFile string) (err 
 	}
 
 	// Create new context
-	ingestCtx, cancelInstances := context.WithCancel(context.Background())
-	ingestCtx = context.WithValue(ingestCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
+	ingestCtx, cancelInstances := context.WithCancel(manager.ctx)
 	manager.FileSources[filePath] = ingestInstance
 	ingestInstance.cancel = cancelInstances
 

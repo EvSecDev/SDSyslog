@@ -38,7 +38,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	// New context for the daemon
 	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
 	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
-	daemon.ctx = context.WithValue(daemon.ctx, logctx.LoggerKey, logctx.GetLogger(globalCtx))
 
 	// Top level tag for daemon logs (avoid duplicates)
 	currentTags := logctx.GetTagList(daemon.ctx)
@@ -96,7 +95,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		return
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
-		"output instance started successfully\n")
+		"1 output instance started successfully\n")
 
 	// Stage 3 - Shard+Assembler Manager
 	dfrgMgrConf := &assembler.ManagerConfig{
@@ -184,6 +183,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	daemon.MetricDiscoverer = daemon.metricsCollector.Registry.Discover
 	daemon.MetricAggregator = daemon.metricsCollector.Registry.Aggregate
 
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+		"Metric collection instance started successfully\n")
+
 	// Autoscaler
 	if daemon.cfg.AutoscaleEnabled {
 		if daemon.cfg.AutoscaleCheckInterval == 0 {
@@ -199,6 +201,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 			defer daemon.wg.Done()
 			scaler.Run(workerCtx)
 		}()
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Autoscaler instance started successfully\n")
 	}
 
 	// Metric Server
@@ -257,6 +261,8 @@ func (daemon *Daemon) StartFIPR() (err error) {
 		err = fmt.Errorf("failed to start FIPR receiver: %w", err)
 		return
 	}
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+		"Fragment Inter-Process Router receiver instance started successfully\n")
 	return
 }
 
@@ -276,6 +282,8 @@ func (daemon *Daemon) StopFIPR() {
 	daemon.Mgrs.Assembler.FIPRRunning.Store(false)
 	daemon.Mgrs.FIPR = nil
 	daemon.fipr = nil
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+		"Successfully stopped Fragment Inter-Process Router receiver instance\n")
 }
 
 // Blocking daemon waiter
@@ -293,6 +301,9 @@ func (daemon *Daemon) Shutdown() {
 		err := daemon.MetricServer.Shutdown(daemon.ctx)
 		if err != nil && err != http.ErrServerClosed {
 			logctx.LogStdWarn(daemon.ctx, "metric HTTP server did not shutdown gracefully: %w\n", err)
+		} else {
+			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+				"Metric server stopped successfully\n")
 		}
 	}
 
@@ -303,12 +314,17 @@ func (daemon *Daemon) Shutdown() {
 			if len(*instanceList) == 0 {
 				break
 			}
-			daemon.Mgrs.Input.RemoveLastInstance()
+			removedID := daemon.Mgrs.Input.RemoveLastInstance()
+			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+				"Successfully stopped listener instance %d\n", removedID)
 		}
 	}
 
 	// Stop processor instances
 	if daemon.Mgrs.Proc != nil {
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Draining processor worker queue...\n")
+
 		queue := daemon.Mgrs.Proc.Inbox.ActiveWrite.Load()
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
@@ -320,7 +336,9 @@ func (daemon *Daemon) Shutdown() {
 			if len(*instanceList) == 0 {
 				break
 			}
-			daemon.Mgrs.Proc.RemoveLastInstance()
+			removedID := daemon.Mgrs.Proc.RemoveLastInstance()
+			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+				"Successfully stopped processor instance %d\n", removedID)
 		}
 	}
 
@@ -331,6 +349,8 @@ func (daemon *Daemon) Shutdown() {
 			if removedID == "" {
 				break
 			}
+			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+				"Successfully stopped assembler instance %s\n", removedID)
 		}
 	}
 
@@ -339,6 +359,9 @@ func (daemon *Daemon) Shutdown() {
 
 	// Stop output worker
 	if daemon.Mgrs.Output != nil {
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Draining output worker queue\n")
+
 		queue := daemon.Mgrs.Output.Inbox.ActiveWrite.Load()
 
 		// Wait here before shutting down (active write always has newest data)
@@ -347,10 +370,14 @@ func (daemon *Daemon) Shutdown() {
 			logctx.LogStdWarn(daemon.ctx, "output inbox queue did not empty in time: dropped %d messages\n", last)
 		}
 		daemon.Mgrs.Output.RemoveInstance()
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Successfully stopped output instance\n")
 	}
 
-	// Stop the run loop after instances are drained and stopped
+	// Stop any other workers after instances are drained and stopped
 	daemon.cancel()
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+		"Issued cancel to miscellaneous worker instances, waiting for workers to exit...\n")
 
 	// Wait for all workers to finish (with timeout)
 	done := make(chan struct{})

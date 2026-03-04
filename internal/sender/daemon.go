@@ -35,7 +35,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	// New context for the daemon
 	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
 	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
-	daemon.ctx = context.WithValue(daemon.ctx, logctx.LoggerKey, logctx.GetLogger(globalCtx))
 
 	// Top level tag for daemon logs (avoid duplicates)
 	currentTags := logctx.GetTagList(daemon.ctx)
@@ -119,7 +118,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		}
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
-		"ingest instance started successfully\n")
+		"1 ingest instance started successfully\n")
 
 	// Metrics Collector
 	daemon.metricsCollector = metrics.New(daemon.Mgrs.In,
@@ -137,6 +136,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	daemon.MetricDiscoverer = daemon.metricsCollector.Registry.Discover
 	daemon.MetricAggregator = daemon.metricsCollector.Registry.Aggregate
 
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+		"Metric collection instance started successfully\n")
+
 	// Autoscaler
 	if daemon.cfg.AutoscaleEnabled {
 		if daemon.cfg.AutoscaleCheckInterval == 0 {
@@ -153,7 +155,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			defer daemon.wg.Done()
 			scaler.Run(workerCtx)
 		}()
-
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Autoscaler instance started successfully\n")
 	}
 
 	// Metric Server
@@ -226,6 +229,9 @@ func (daemon *Daemon) Shutdown() {
 			err := daemon.MetricServer.Shutdown(daemon.ctx)
 			if err != nil && err != http.ErrServerClosed {
 				logctx.LogStdWarn(daemon.ctx, "metric HTTP server did not shutdown gracefully: %w\n", err)
+			} else {
+				logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+					"Metric server stopped successfully\n")
 			}
 		}
 	}
@@ -236,18 +242,27 @@ func (daemon *Daemon) Shutdown() {
 			err := daemon.Mgrs.In.RemoveFileInstance(filename)
 			if err != nil {
 				logctx.LogStdWarn(daemon.ctx, "ingest file worker shutdown failed: %w\n", err)
+			} else {
+				logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+					"Successfully stopped ingest file instance\n")
 			}
 		}
 		if daemon.Mgrs.In.JournalSource != nil {
 			err := daemon.Mgrs.In.RemoveJrnlInstance()
 			if err != nil {
 				logctx.LogStdWarn(daemon.ctx, "ingest journal worker shutdown failed: %w\n", err)
+			} else {
+				logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+					"Successfully stopped ingest journald instance\n")
 			}
 		}
 	}
 
 	// Stop assemblers
 	if daemon.Mgrs.Assem != nil {
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Draining assembler worker queue...\n")
+
 		queue := daemon.Mgrs.Assem.InQueue.ActiveWrite.Load()
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
@@ -259,12 +274,17 @@ func (daemon *Daemon) Shutdown() {
 			if len(*instanceList) == 0 {
 				break
 			}
-			daemon.Mgrs.Assem.RemoveLastInstance()
+			removedID := daemon.Mgrs.Assem.RemoveLastInstance()
+			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+				"Successfully stopped assembler instance %d\n", removedID)
 		}
 	}
 
 	// Stop output workers
 	if daemon.Mgrs.Out != nil {
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Draining output worker queue...\n")
+
 		queue := daemon.Mgrs.Out.InQueue.ActiveWrite.Load()
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
@@ -276,12 +296,16 @@ func (daemon *Daemon) Shutdown() {
 			if len(*instanceList) == 0 {
 				break
 			}
-			daemon.Mgrs.Out.RemoveLastInstance()
+			removedID := daemon.Mgrs.Out.RemoveLastInstance()
+			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+				"Successfully stopped assembler instance %d\n", removedID)
 		}
 	}
 
 	// Stop the run loop after instances are drained and stopped
 	daemon.cancel()
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+		"Issued cancel to miscellaneous worker instances, waiting for workers to exit...\n")
 
 	// Wait for all workers to finish (with timeout)
 	done := make(chan struct{})

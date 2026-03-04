@@ -23,8 +23,7 @@ func (manager *Manager) AddJrnlInstance(stateFile string) (err error) {
 	}
 
 	// Create new context
-	ingestCtx, cancelInstances := context.WithCancel(context.Background())
-	ingestCtx = context.WithValue(ingestCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
+	ingestCtx, cancelInstances := context.WithCancel(manager.ctx)
 
 	// Worker for local journal
 	ingestInstance := &JrnlWorker{

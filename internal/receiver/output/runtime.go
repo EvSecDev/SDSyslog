@@ -17,8 +17,7 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	}
 
 	// Create new context for output instance
-	workerCtx, cancelInstance := context.WithCancel(context.Background())
-	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
+	workerCtx, cancelInstance := context.WithCancel(manager.ctx)
 
 	manager.cancel = cancelInstance
 	manager.Instance = *manager.newWorker()

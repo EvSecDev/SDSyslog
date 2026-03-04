@@ -11,10 +11,6 @@ import (
 
 // Create new shard+assembler
 func (manager *Manager) AddInstance() (instanceID string) {
-	// Only need to add/remove exactly one at a time
-	manager.scalingMutex.Lock()
-	defer manager.scalingMutex.Unlock()
-
 	// Grab the next sequence for ID
 	instanceID = fmt.Sprintf("%d", manager.nextInstanceID)
 	_, ok := manager.routing.Load().instances[instanceID]
@@ -33,8 +29,7 @@ func (manager *Manager) AddInstance() (instanceID string) {
 	instance := manager.newWorker(shard)
 
 	// Create new context for both watcher/assembler
-	workerCtx, cancelInstances := context.WithCancel(context.Background())
-	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
+	workerCtx, cancelInstances := context.WithCancel(manager.ctx)
 
 	// Cancel for both instances
 	instance.cancel = cancelInstances
@@ -96,10 +91,6 @@ func (manager *Manager) RemoveOldestInstance() (removedID string) {
 
 // Gracefully shuts down and removes an instance from routing snapshot.
 func (manager *Manager) removeInstance(instanceID string) {
-	// Only need to add/remove exactly one at a time
-	manager.scalingMutex.Lock()
-	defer manager.scalingMutex.Unlock()
-
 	oldSnap := manager.routing.Load()
 	if oldSnap == nil {
 		return

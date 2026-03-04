@@ -76,7 +76,8 @@ func (instance *Instance) run() {
 			if len(payload) < instance.minLen || !validSuiteID {
 				instance.Metrics.InvalidPackets.Add(1)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
-				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog, "Received invalid outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
+				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog,
+					"Received invalid outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
 				return
 			}
 
@@ -85,7 +86,8 @@ func (instance *Instance) run() {
 			if instance.isReplayed(pubKey) {
 				instance.Metrics.InvalidPackets.Add(1)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
-				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog, "Received replayed outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
+				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog,
+					"Received replayed outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
 				return
 			}
 

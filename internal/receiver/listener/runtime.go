@@ -39,7 +39,7 @@ func (manager *Manager) AddInstance() (id int, err error) {
 	}
 
 	// Create new context for worker
-	ingestInstance.ctx, ingestInstance.cancel = logctx.NewCancelWithValues(manager.ctx, strconv.Itoa(id), logctx.NSListen)
+	ingestInstance.ctx, ingestInstance.cancel = logctx.NewCancelWithValues(manager.ctx, logctx.NSListen, strconv.Itoa(id))
 
 	ingestInstance.wg.Add(1)
 	go func() {
@@ -124,7 +124,7 @@ func (manager *Manager) RemoveLastInstance() (removedID int) {
 		case <-done:
 		case <-time.After(closeWaitTime):
 			// Leaving as info print as it's neither warning nor error
-			logctx.LogStdInfo(manager.ctx, "Timeout: listener socket did not close within %v seconds (no error)",
+			logctx.LogStdInfo(manager.ctx, "Timeout: listener socket did not close within %v seconds after cancellation (no error)",
 				closeWaitTime.Seconds())
 			return
 		}

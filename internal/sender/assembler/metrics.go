@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sync/atomic"
 	"time"
@@ -26,6 +27,12 @@ const (
 )
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+	if instance == nil {
+		return
+	}
+
+	namespace := logctx.GetTagList(instance.ctx)
+
 	// Read and clear
 	totalMsgs := instance.Metrics.TotalMessages.Swap(0)
 	sumMsgSizeB := instance.Metrics.TotalMsgSizeBytes.Swap(0)
@@ -40,7 +47,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTTotalMsgs,
 			Description: "Total received messages in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      totalMsgs,
 				Unit:     "count",
@@ -52,7 +59,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSumMsgSize,
 			Description: "Total of all message sizes in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumMsgSizeB,
 				Unit:     "bytes",
@@ -64,7 +71,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxMsgSize,
 			Description: "Maximum (seen) of all message sizes in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxMsgSizeB,
 				Unit:     "bytes",
@@ -76,7 +83,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTTotalFrags,
 			Description: "Total fragments of all messages in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumFragCtn,
 				Unit:     "count",
@@ -88,7 +95,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxFragsMsg,
 			Description: "Maximum (seen) fragment count of all messages in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxFragCtn,
 				Unit:     "count",

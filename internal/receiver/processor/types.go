@@ -20,23 +20,21 @@ type ManagerConfig struct {
 }
 
 type Manager struct {
-	Config      *ManagerConfig    // Configuration values
-	Mu          sync.RWMutex      // For scaling operations
-	NextID      int               // Next free ID for new pair
-	Instances   map[int]*Instance // Existing running
+	Config      *ManagerConfig // Configuration values
+	Instances   atomic.Pointer[[]*Instance]
 	Inbox       *mpmc.Queue[listener.Container]
 	routingView shard.RoutingView // Allows processor to route to shards
 	ctx         context.Context
 }
 
 type Instance struct {
-	namespace            []string
 	pastTimestampLimit   time.Duration
 	futureTimestampLimit time.Duration
 	inbox                *mpmc.Queue[listener.Container]
 	routingView          shard.RoutingView
 	Metrics              MetricStorage
 
+	ctx    context.Context
 	wg     sync.WaitGroup     // Waiter for instance
 	cancel context.CancelFunc // Stop instance
 }

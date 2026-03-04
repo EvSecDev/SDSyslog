@@ -298,8 +298,12 @@ func (daemon *Daemon) Shutdown() {
 
 	// Stop listener instances
 	if daemon.Mgrs.Input != nil {
-		for instanceID := range daemon.Mgrs.Input.Instances {
-			daemon.Mgrs.Input.RemoveInstance(instanceID)
+		for {
+			instanceList := daemon.Mgrs.Input.Instances.Load()
+			if len(*instanceList) == 0 {
+				break
+			}
+			daemon.Mgrs.Input.RemoveLastInstance()
 		}
 	}
 
@@ -310,8 +314,13 @@ func (daemon *Daemon) Shutdown() {
 		if !success {
 			logctx.LogStdWarn(daemon.ctx, "assembler inbox queue did not empty in time: dropped %d messages\n", last)
 		}
-		for instanceID := range daemon.Mgrs.Proc.Instances {
-			daemon.Mgrs.Proc.RemoveInstance(instanceID)
+
+		for {
+			instanceList := daemon.Mgrs.Proc.Instances.Load()
+			if len(*instanceList) == 0 {
+				break
+			}
+			daemon.Mgrs.Proc.RemoveLastInstance()
 		}
 	}
 

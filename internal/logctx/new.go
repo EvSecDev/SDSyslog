@@ -53,3 +53,12 @@ func GetLogger(ctx context.Context) (logger *Logger) {
 	logger = nil
 	return
 }
+
+// Creates new context with isolated tags from the baseCtx while adding the addTags list.
+func NewCancelWithValues(baseCtx context.Context, addTags ...string) (ctx context.Context, cancel context.CancelFunc) {
+	for _, newTag := range addTags {
+		baseCtx = AppendCtxTag(baseCtx, newTag)
+	}
+	ctx, cancel = context.WithCancel(baseCtx)
+	return
+}

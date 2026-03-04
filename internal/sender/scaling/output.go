@@ -10,12 +10,12 @@ import (
 )
 
 func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, outMgr *output.Manager) {
+	instanceList := outMgr.Instances.Load()
+	instances := *instanceList
+
 	// No scaling if we are at the min/max
-	outMgr.Mu.RLock()
-	instanceCount := len(outMgr.Instances)
-	outMgr.Mu.RUnlock()
-	if instanceCount == int(outMgr.Config.MaxInstanceCount.Load()) ||
-		instanceCount == int(outMgr.Config.MinInstanceCount.Load()) {
+	if len(instances) == int(outMgr.Config.MaxInstanceCount.Load()) ||
+		len(instances) == int(outMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 
@@ -39,14 +39,11 @@ func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval ti
 	scaleUp, scaleDown := mpmc.Trend(values, queue.Size)
 
 	if scaleUp {
-		outMgr.AddInstance()
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up output\n")
+		addedID := outMgr.AddInstance()
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up output (added id %d)\n", addedID)
 	} else if scaleDown {
-		for instanceId := range outMgr.Instances {
-			outMgr.RemoveInstance(instanceId)
-			break
-		}
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down output\n")
+		removedID := outMgr.RemoveLastInstance()
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down output (removed id %d)\n", removedID)
 	}
 
 	// Scale inbox queue as well

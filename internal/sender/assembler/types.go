@@ -21,22 +21,20 @@ type ManagerConfig struct {
 
 type Manager struct {
 	Config    *ManagerConfig                // Configuration Values
-	Mu        sync.RWMutex                  // For adding/removing worker operations
-	nextID    int                           // Next unused output worker id
-	Instances map[int]*Instance             // Individual output workers
+	Instances atomic.Pointer[[]*Instance]   // Individual output workers
 	InQueue   *mpmc.Queue[protocol.Message] // Messages from source processors
 	outQueue  *mpmc.Queue[[]byte]           // Queued packets to be sent
 	ctx       context.Context
 }
 
 type Instance struct {
-	namespace      []string
 	inbox          *mpmc.Queue[protocol.Message] // messages from processors
 	outbox         *mpmc.Queue[[]byte]           // fragments for sender
 	hostID         int                           // ID for all sent messages
 	maxPayloadSize int                           // maximum payload size for configured destination
 	Metrics        MetricStorage
 
+	ctx    context.Context
 	wg     sync.WaitGroup     // Waiter for instance
 	cancel context.CancelFunc // Stop instance
 }

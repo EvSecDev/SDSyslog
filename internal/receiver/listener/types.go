@@ -18,13 +18,23 @@ type ManagerConfig struct {
 }
 
 type Manager struct {
-	Config      *ManagerConfig    // Configuration values
-	Mu          sync.RWMutex      // For scaling operations
-	nextID      int               // Next free ID for new pair
-	Instances   map[int]*Instance // Existing running instances
+	Config      *ManagerConfig              // Configuration values
+	Instances   atomic.Pointer[[]*Instance] // Existing running instances
 	replayCache *replayCache
 	outbox      *mpmc.Queue[Container]
 	ctx         context.Context
+}
+
+type Instance struct {
+	conn       *net.UDPConn
+	outbox     *mpmc.Queue[Container]
+	minLen     int
+	Metrics    MetricStorage
+	isReplayed func(pubKey []byte) (replayed bool)
+
+	ctx    context.Context
+	wg     sync.WaitGroup     // Waiter for instance
+	cancel context.CancelFunc // Stop instance
 }
 
 // Replay attack protection for all listener instances
@@ -36,18 +46,6 @@ type replayCacheShard struct {
 type replayCache struct {
 	shards []*replayCacheShard
 	ttl    int64 // seconds
-}
-
-type Instance struct {
-	namespace  []string
-	conn       *net.UDPConn
-	outbox     *mpmc.Queue[Container]
-	minLen     int
-	Metrics    MetricStorage
-	isReplayed func(pubKey []byte) (replayed bool)
-
-	wg     sync.WaitGroup     // Waiter for instance
-	cancel context.CancelFunc // Stop instance
 }
 
 // For SPSC queue

@@ -30,13 +30,16 @@ func (config *ManagerConfig) NewManager(ctx context.Context, shardRouting shard.
 		return
 	}
 
+	startInstances := make([]*Instance, 0, config.MinInstanceCount.Load())
+
 	new = &Manager{
 		Config:      config,
-		Instances:   make(map[int]*Instance),
 		Inbox:       inQueue,
 		routingView: shardRouting,
 		ctx:         ctx,
 	}
+	new.Instances.Store(&startInstances)
+
 	return
 }
 

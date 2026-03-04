@@ -1,7 +1,6 @@
 package assembler
 
 import (
-	"context"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
@@ -9,8 +8,11 @@ import (
 )
 
 func (manager *Manager) newWorker() (new *Instance) {
+	if manager == nil {
+		return
+	}
+
 	new = &Instance{
-		namespace:      append(logctx.GetTagList(manager.ctx), logctx.NSAssm),
 		inbox:          manager.InQueue,
 		outbox:         manager.outQueue,
 		hostID:         manager.Config.HostID,
@@ -20,7 +22,13 @@ func (manager *Manager) newWorker() (new *Instance) {
 	return
 }
 
-func (instance *Instance) run(ctx context.Context) {
+func (instance *Instance) run() {
+	if instance == nil {
+		return
+	}
+
+	ctx := instance.ctx
+
 	for {
 		select {
 		case <-ctx.Done():

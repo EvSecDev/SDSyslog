@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sync/atomic"
 	"time"
@@ -20,6 +21,12 @@ const (
 )
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+	if instance == nil {
+		return
+	}
+
+	namespace := logctx.GetTagList(instance.ctx)
+
 	// Read and clear
 	valid := instance.Metrics.ValidPayloads.Swap(0)
 	sumNs := instance.Metrics.SumNs.Swap(0)
@@ -32,7 +39,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTValidPayloads,
 			Description: "Total validated (parsed) packets in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      valid,
 				Unit:     "count",
@@ -44,7 +51,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSumWorkTime,
 			Description: "Total time spent processing packets in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumNs,
 				Unit:     "ns",
@@ -56,7 +63,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxWorkTime,
 			Description: "Maximum (seen) time spent processing packets in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxNs,
 				Unit:     "ns",

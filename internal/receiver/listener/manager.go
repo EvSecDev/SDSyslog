@@ -21,13 +21,15 @@ func (config *ManagerConfig) NewManager(ctx context.Context, dataOut *mpmc.Queue
 		return
 	}
 
+	startInstances := make([]*Instance, 0, config.MinInstanceCount.Load())
+
 	new = &Manager{
 		Config:      config,
-		Instances:   make(map[int]*Instance),
 		outbox:      dataOut,
 		replayCache: newReplayCacheWithShards(int(config.MaxInstanceCount.Load()), int64(config.ReplayProtectionWindow.Seconds())),
 		ctx:         ctx,
 	}
+	new.Instances.Store(&startInstances)
 
 	// Background cleanup loop for replay protection cache
 	go new.replayCache.cleanupLoop(ctx, new.Config.replayCleanInterval)

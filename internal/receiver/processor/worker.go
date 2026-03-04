@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"context"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
@@ -12,8 +11,11 @@ import (
 
 // Creates new processor with requested queue as inbox
 func (manager *Manager) newWorker() (new *Instance) {
+	if manager == nil {
+		return
+	}
+
 	new = &Instance{
-		namespace:            append(logctx.GetTagList(manager.ctx), logctx.NSWorker),
 		pastTimestampLimit:   manager.Config.PastMsgCutoff,
 		futureTimestampLimit: manager.Config.FutureMsgCutoff,
 		inbox:                manager.Inbox,
@@ -23,7 +25,13 @@ func (manager *Manager) newWorker() (new *Instance) {
 	return
 }
 
-func (instance *Instance) run(ctx context.Context) {
+func (instance *Instance) run() {
+	if instance == nil {
+		return
+	}
+
+	ctx := instance.ctx
+
 	for {
 		// Stop this worker when cancel requested
 		select {

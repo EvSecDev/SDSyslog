@@ -1,58 +1,79 @@
 package assembler
 
 import (
-	"context"
 	"sdsyslog/internal/logctx"
 	"strconv"
 )
 
 // Create new packaging instance
-func (manager *Manager) AddInstance() (instanceID int) {
-	// Lock manager for new spawn
-	manager.Mu.Lock()
-	defer manager.Mu.Unlock()
-
-	// Grab the next sequence for ID
-	instanceID = manager.nextID
-	manager.nextID++
-
-	// Add log context
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, logctx.NSmPack)
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, strconv.Itoa(instanceID))
-	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
-	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
+func (manager *Manager) AddInstance() (id int) {
+	if manager == nil {
+		return
+	}
 
 	// Create new worker instance
 	newWorker := manager.newWorker()
 
-	manager.Instances[instanceID] = newWorker
+	for {
+		oldListPtr := manager.Instances.Load()
+		oldList := *oldListPtr
 
-	// Create new context
-	workerCtx, cancelInstances := context.WithCancel(context.Background())
-	newWorker.cancel = cancelInstances
-	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
+		// Copy slice
+		newList := make([]*Instance, len(oldList)+1)
+		copy(newList, oldList)
+		newList[len(oldList)] = newWorker
+
+		if manager.Instances.CompareAndSwap(oldListPtr, &newList) {
+			id = len(oldList)
+			break
+		}
+	}
+
+	// Create new context for worker
+	newWorker.ctx, newWorker.cancel = logctx.NewCancelWithValues(manager.ctx, strconv.Itoa(id), logctx.NSAssm)
 
 	newWorker.wg.Add(1)
 	go func() {
 		// Run the assembler
 		defer newWorker.wg.Done()
-		workerCtx := logctx.OverwriteCtxTag(workerCtx, newWorker.namespace)
-		newWorker.run(workerCtx)
+		newWorker.run()
 	}()
 	return
 }
 
 // Remove existing packaging instance
-func (manager *Manager) RemoveInstance(instanceID int) {
-	manager.Mu.Lock()
-	defer manager.Mu.Unlock()
-
-	instancePair, ok := manager.Instances[instanceID]
-	if ok {
-		if instancePair.cancel != nil {
-			instancePair.cancel()
-		}
-		instancePair.wg.Wait()
-		delete(manager.Instances, instanceID)
+func (manager *Manager) RemoveLastInstance() (removedID int) {
+	if manager == nil {
+		return
 	}
+
+	var worker *Instance
+	for {
+		oldListPtr := manager.Instances.Load()
+		oldList := *oldListPtr
+
+		if len(oldList) == 0 {
+			return
+		}
+
+		lastIndex := len(oldList) - 1
+		worker = oldList[lastIndex]
+
+		newList := make([]*Instance, lastIndex)
+		copy(newList, oldList[:lastIndex])
+
+		if manager.Instances.CompareAndSwap(oldListPtr, &newList) {
+			removedID = lastIndex
+			break
+		}
+	}
+	if worker == nil {
+		return
+	}
+
+	if worker.cancel != nil {
+		worker.cancel()
+	}
+	worker.wg.Wait()
+	return
 }

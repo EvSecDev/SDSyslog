@@ -1,23 +1,31 @@
 package output
 
 import (
-	"context"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
 )
 
 func (manager *Manager) newWorker() (new *Instance) {
+	if manager == nil {
+		return
+	}
+
 	new = &Instance{
-		namespace: append(logctx.GetTagList(manager.ctx), logctx.NSWorker),
-		inbox:     manager.InQueue,
-		conn:      manager.outDest,
-		Metrics:   MetricStorage{},
+		inbox:   manager.InQueue,
+		conn:    manager.outDest,
+		Metrics: MetricStorage{},
 	}
 	return
 }
 
-func (instance *Instance) run(ctx context.Context) {
+func (instance *Instance) run() {
+	if instance == nil {
+		return
+	}
+
+	ctx := instance.ctx
+
 	for {
 		select {
 		case <-ctx.Done():

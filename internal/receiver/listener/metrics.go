@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sync/atomic"
 	"time"
@@ -24,6 +25,12 @@ const (
 )
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+	if instance == nil {
+		return
+	}
+
+	namespace := logctx.GetTagList(instance.ctx)
+
 	// Read and clear
 	busyNs := instance.Metrics.BusyNs.Swap(0)
 	valid := instance.Metrics.ValidPackets.Swap(0)
@@ -41,7 +48,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTBusyPct,
 			Description: "Total time spent doing anything in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      busyPct,
 				Unit:     "%",
@@ -53,7 +60,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTValidPkts,
 			Description: "Total packets that passed basic validation in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      valid,
 				Unit:     "count",
@@ -65,7 +72,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTInvalidPkts,
 			Description: "Total packets that failed basic validation in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      invalid,
 				Unit:     "count",
@@ -77,7 +84,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSumWorkTime,
 			Description: "Total time spent validating packets in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumNs,
 				Unit:     "ns",
@@ -89,7 +96,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxWorkTime,
 			Description: "Maximum (seen) time spent validating packets in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxNs,
 				Unit:     "ns",

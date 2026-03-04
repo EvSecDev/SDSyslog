@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"context"
 	"errors"
 	"net"
 	"runtime/debug"
@@ -12,8 +11,11 @@ import (
 )
 
 func (manager *Manager) newWorker(conn *net.UDPConn) (new *Instance) {
+	if manager == nil {
+		return
+	}
+
 	new = &Instance{
-		namespace:  append(logctx.GetTagList(manager.ctx), logctx.NSListen),
 		conn:       conn,
 		outbox:     manager.outbox,
 		minLen:     protocol.MinOuterPayloadLen,
@@ -23,7 +25,12 @@ func (manager *Manager) newWorker(conn *net.UDPConn) (new *Instance) {
 	return
 }
 
-func (instance *Instance) run(ctx context.Context) {
+func (instance *Instance) run() {
+	if instance == nil {
+		return
+	}
+
+	ctx := instance.ctx
 	buffer := make([]byte, 65535)
 
 	for {

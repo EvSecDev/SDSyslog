@@ -98,21 +98,19 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	m1 := gatherer.Assembler.InQueue.CollectMetrics(interval)
 	gatherer.Registry.Add(timeSlice, m1)
 
-	gatherer.Assembler.Mu.RLock()
-	for _, instance := range gatherer.Assembler.Instances {
+	assemInstances := gatherer.Assembler.Instances.Load()
+	for _, instance := range *assemInstances {
 		m2 := instance.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m2)
 	}
-	gatherer.Assembler.Mu.RUnlock()
 
 	// Output
 	collection := gatherer.Output.InQueue.CollectMetrics(interval)
 	gatherer.Registry.Add(timeSlice, collection)
 
-	gatherer.Output.Mu.RLock()
-	for _, instance := range gatherer.Output.Instances {
+	outputInstances := gatherer.Output.Instances.Load()
+	for _, instance := range *outputInstances {
 		m2 := instance.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m2)
 	}
-	gatherer.Output.Mu.RUnlock()
 }

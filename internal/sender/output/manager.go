@@ -44,13 +44,15 @@ func (config *ManagerConfig) NewManager(ctx context.Context) (new *Manager, err 
 		return
 	}
 
+	startInstances := make([]*Instance, 0, config.MinInstanceCount.Load())
+
 	new = &Manager{
-		Config:    config,
-		Instances: make(map[int]*Instance),
-		InQueue:   inQueue,
-		outDest:   destinationConnection,
-		ctx:       ctx,
+		Config:  config,
+		InQueue: inQueue,
+		outDest: destinationConnection,
+		ctx:     ctx,
 	}
+	new.Instances.Store(&startInstances)
 	return
 }
 

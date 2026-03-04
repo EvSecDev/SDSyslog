@@ -10,14 +10,12 @@ import (
 )
 
 func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, procMgr *processor.Manager) {
-	// No scaling if we are at the min/max
-	procMgr.Mu.RLock()
-	instanceCount := len(procMgr.Instances)
-	instanceID := procMgr.NextID - 1
-	procMgr.Mu.RUnlock()
+	instanceList := procMgr.Instances.Load()
+	instances := *instanceList
 
-	if instanceCount == int(procMgr.Config.MaxInstanceCount.Load()) ||
-		instanceCount == int(procMgr.Config.MinInstanceCount.Load()) {
+	// No scaling if we are at the min/max
+	if len(instances) == int(procMgr.Config.MaxInstanceCount.Load()) ||
+		len(instances) == int(procMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 
@@ -41,11 +39,11 @@ func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval
 	scaleUp, scaleDown := mpmc.Trend(values, queue.Size)
 
 	if scaleUp {
-		procMgr.AddInstance()
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up processor\n")
+		addedID := procMgr.AddInstance()
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up processor (added id %d)\n", addedID)
 	} else if scaleDown {
-		procMgr.RemoveInstance(instanceID)
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down processor\n")
+		removedID := procMgr.RemoveLastInstance()
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down processor (removed id %d)\n", removedID)
 	}
 
 	// Check queue for scaling

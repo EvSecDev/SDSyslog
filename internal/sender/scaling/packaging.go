@@ -10,12 +10,12 @@ import (
 )
 
 func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, assemMgr *assembler.Manager) {
+	instanceList := assemMgr.Instances.Load()
+	instances := *instanceList
+
 	// No scaling if we are at the min/max
-	assemMgr.Mu.RLock()
-	instanceCount := len(assemMgr.Instances)
-	assemMgr.Mu.RUnlock()
-	if instanceCount == int(assemMgr.Config.MaxInstanceCount.Load()) ||
-		instanceCount == int(assemMgr.Config.MinInstanceCount.Load()) {
+	if len(instances) == int(assemMgr.Config.MaxInstanceCount.Load()) ||
+		len(instances) == int(assemMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 
@@ -39,15 +39,11 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	scaleUp, scaleDown := mpmc.Trend(values, queue.Size)
 
 	if scaleUp {
-		assemMgr.AddInstance()
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up assembler\n")
+		addedID := assemMgr.AddInstance()
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up assembler (added id %d)\n", addedID)
 	} else if scaleDown {
-		// Picking effectively a random instance (map keys)
-		for instanceId := range assemMgr.Instances {
-			assemMgr.RemoveInstance(instanceId)
-			break
-		}
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down assembler\n")
+		removedID := assemMgr.RemoveLastInstance()
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down assembler (removed id %d)\n", removedID)
 	}
 
 	// Scale inbox queue as well

@@ -253,8 +253,13 @@ func (daemon *Daemon) Shutdown() {
 		if !success {
 			logctx.LogStdWarn(daemon.ctx, "assembler inbox queue did not empty in time: dropped %d messages\n", last)
 		}
-		for instanceID := range daemon.Mgrs.Assem.Instances {
-			daemon.Mgrs.Assem.RemoveInstance(instanceID)
+
+		for {
+			instanceList := daemon.Mgrs.Assem.Instances.Load()
+			if len(*instanceList) == 0 {
+				break
+			}
+			daemon.Mgrs.Assem.RemoveLastInstance()
 		}
 	}
 
@@ -265,8 +270,13 @@ func (daemon *Daemon) Shutdown() {
 		if !success {
 			logctx.LogStdWarn(daemon.ctx, "output inbox queue did not empty in time: dropped %d messages\n", last)
 		}
-		for instanceID := range daemon.Mgrs.Out.Instances {
-			daemon.Mgrs.Out.RemoveInstance(instanceID)
+
+		for {
+			instanceList := daemon.Mgrs.Out.Instances.Load()
+			if len(*instanceList) == 0 {
+				break
+			}
+			daemon.Mgrs.Out.RemoveLastInstance()
 		}
 	}
 

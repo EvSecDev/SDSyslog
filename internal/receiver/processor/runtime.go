@@ -1,54 +1,78 @@
 package processor
 
 import (
-	"context"
 	"sdsyslog/internal/logctx"
 	"strconv"
 )
 
 // Create additional ingest instance
 func (manager *Manager) AddInstance() (id int) {
-	manager.Mu.Lock()
-	defer manager.Mu.Unlock()
-
-	id = int(manager.NextID)
-	manager.NextID++
-
-	// Add log context
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, strconv.Itoa(id))
-	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
+	if manager == nil {
+		return
+	}
 
 	processor := manager.newWorker()
 
-	manager.Instances[id] = processor
+	for {
+		oldListPtr := manager.Instances.Load()
+		oldList := *oldListPtr
 
-	// Create new context for both watcher/assembler
-	ingestCtx, cancelInstances := context.WithCancel(context.Background())
-	processor.cancel = cancelInstances
-	ingestCtx = context.WithValue(ingestCtx, logctx.LoggerKey, logctx.GetLogger(manager.ctx))
+		// Copy slice
+		newList := make([]*Instance, len(oldList)+1)
+		copy(newList, oldList)
+		newList[len(oldList)] = processor
+
+		if manager.Instances.CompareAndSwap(oldListPtr, &newList) {
+			id = len(oldList)
+			break
+		}
+	}
+
+	// Create new context for worker
+	processor.ctx, processor.cancel = logctx.NewCancelWithValues(manager.ctx, strconv.Itoa(id), logctx.NSProc)
 
 	processor.wg.Add(1)
 	go func() {
 		defer processor.wg.Done()
-		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, processor.namespace)
-		processor.run(ingestCtx)
+		processor.run()
 	}()
 	return
 }
 
 // Remove existing instance
-func (manager *Manager) RemoveInstance(id int) {
-	manager.Mu.Lock()
-	defer manager.Mu.Unlock()
+func (manager *Manager) RemoveLastInstance() (removedID int) {
+	if manager == nil {
+		return
+	}
 
-	processor, ok := manager.Instances[id]
-	if ok {
-		if processor.cancel != nil {
-			processor.cancel()
+	var processor *Instance
+	for {
+		oldListPtr := manager.Instances.Load()
+		oldList := *oldListPtr
+
+		if len(oldList) == 0 {
+			return
 		}
 
-		processor.wg.Wait()
+		lastIndex := len(oldList) - 1
+		processor = oldList[lastIndex]
 
-		delete(manager.Instances, id)
+		newList := make([]*Instance, lastIndex)
+		copy(newList, oldList[:lastIndex])
+
+		if manager.Instances.CompareAndSwap(oldListPtr, &newList) {
+			removedID = lastIndex
+			break
+		}
 	}
+	if processor == nil {
+		return
+	}
+
+	if processor.cancel != nil {
+		processor.cancel()
+	}
+
+	processor.wg.Wait()
+	return
 }

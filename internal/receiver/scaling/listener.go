@@ -3,7 +3,6 @@ package scaling
 import (
 	"context"
 	"sdsyslog/internal/calc"
-	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/listener"
@@ -12,14 +11,12 @@ import (
 )
 
 func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval time.Duration, inMgr *listener.Manager) {
-	inMgr.Mu.RLock()
-	instances := inMgr.Instances
-	instanceCount := len(instances)
-	inMgr.Mu.RUnlock()
+	instanceList := inMgr.Instances.Load()
+	instances := *instanceList
 
 	// No scaling if we are at the min/max
-	if instanceCount == int(inMgr.Config.MaxInstanceCount.Load()) ||
-		instanceCount == int(inMgr.Config.MinInstanceCount.Load()) {
+	if len(instances) == int(inMgr.Config.MaxInstanceCount.Load()) ||
+		len(instances) == int(inMgr.Config.MinInstanceCount.Load()) {
 		return
 	}
 
@@ -28,7 +25,7 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 	// Get the last x scaling polling intervals worth of load data and average
 	instValues := make([][]float64, 0, len(instances))
 
-	for id := 0; id <= instanceCount-1; id++ {
+	for id := 0; id <= len(instances)-1; id++ {
 		metrics := metricStore.Search(
 			listener.MTBusyPct,
 			[]string{logctx.NSRecv, logctx.NSmIngest, strconv.Itoa(id)},
@@ -68,20 +65,14 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 	scaleUp, scaleDown := listener.Trend(values)
 
 	if scaleUp {
-		_, err := inMgr.AddInstance()
+		addedID, err := inMgr.AddInstance()
 		if err != nil {
 			logctx.LogStdErr(ctx, "Failed to scale up listener instances: %w\n", err)
 			return
 		}
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up listener\n")
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up listener (added id %d)\n", addedID)
 	} else if scaleDown {
-		instanceId, err := random.NumberInRange(0, instanceCount-1)
-		if err != nil {
-			logctx.LogStdErr(ctx, "Failed to generate random instance ID in instance map: %w\n", err)
-			return
-		}
-		inMgr.RemoveInstance(instanceId)
-
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down listener\n")
+		removedID := inMgr.RemoveLastInstance()
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down listener (removed id %d)\n", removedID)
 	}
 }

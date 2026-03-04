@@ -51,13 +51,15 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 		return
 	}
 
+	startInstances := make([]*Instance, 0, config.MinInstanceCount.Load())
+
 	new = &Manager{
-		Config:    config,
-		Instances: make(map[int]*Instance),
-		InQueue:   inbox,
-		outQueue:  outbox,
-		ctx:       ctx,
+		Config:   config,
+		InQueue:  inbox,
+		outQueue: outbox,
+		ctx:      ctx,
 	}
+	new.Instances.Store(&startInstances)
 	return
 }
 

@@ -202,6 +202,7 @@ Type byte table:
 | 0x06 | float64 | 8 bytes                  | IEEE 754 double-precision |
 | 0x07 | bool    | 1 byte                   | 0x00=false, 0x01=true     |
 | 0x08 | string  | 1-255 bytes              | UTF-8 string              |
+| 0x09 | []byte  | 1-255 bytes              | Raw byte slice            |
 
 For fixed-width types, `NXTLEN` MUST exactly match the required length. If the length does not match, the entire fragment MUST be discarded.
 

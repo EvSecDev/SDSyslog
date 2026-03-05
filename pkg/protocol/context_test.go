@@ -19,6 +19,15 @@ func TestSerializeAnyValue(t *testing.T) {
 		expectedErr   bool
 	}{
 		{
+			name:         "byte slice",
+			input:        []byte("hello"),
+			expectedType: ContextSliceBytes,
+			expectedValue: []byte{
+				0x00, 0x00, 0x00, 0x05, // length prefix
+				0x68, 0x65, 0x6c, 0x6c, 0x6f, // "hello"
+			},
+		},
+		{
 			name:          "int8 positive",
 			input:         int8(42),
 			expectedType:  ContextInt8,
@@ -150,6 +159,15 @@ func TestDeserializeAnyValue(t *testing.T) {
 		expectedOut any
 		expectedErr bool
 	}{
+		{
+			name:      "[]byte",
+			inputType: ContextSliceBytes,
+			inputValue: []byte{
+				0x00, 0x00, 0x00, 0x05, // length prefix
+				0x68, 0x65, 0x6c, 0x6c, 0x6f, // "hello"
+			},
+			expectedOut: []byte("hello"),
+		},
 		{
 			name:        "int8",
 			inputType:   ContextInt8,

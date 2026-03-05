@@ -8,14 +8,15 @@ const (
 	missingLogPlaceholder   string = "[missing fragment]"
 	customFieldsEmptyMarker uint16 = 0x0001
 
-	ContextInt8    uint8 = 0x01
-	ContextInt16   uint8 = 0x02
-	ContextInt32   uint8 = 0x03
-	ContextInt64   uint8 = 0x04
-	ContextFloat32 uint8 = 0x05
-	ContextFloat64 uint8 = 0x06
-	ContextBool    uint8 = 0x07
-	ContextString  uint8 = 0x08
+	ContextInt8       uint8 = 0x01
+	ContextInt16      uint8 = 0x02
+	ContextInt32      uint8 = 0x03
+	ContextInt64      uint8 = 0x04
+	ContextFloat32    uint8 = 0x05
+	ContextFloat64    uint8 = 0x06
+	ContextBool       uint8 = 0x07
+	ContextString     uint8 = 0x08
+	ContextSliceBytes uint8 = 0x09
 
 	// Protocol wire field lengths (variable)
 	minHostnameLen   int = 1

@@ -257,7 +257,7 @@ func CalculateProtocolOverhead(suiteID uint8, primaryPayload Payload) (fixedOver
 			var data []byte
 			_, data, err = serializeAnyValue(value)
 			if err != nil {
-				err = fmt.Errorf("failed to get serialized length for field '%s'", key)
+				err = fmt.Errorf("failed to get serialized length for field '%s': %w", key, err)
 				return
 			}
 			innerVariableLength += len(data)

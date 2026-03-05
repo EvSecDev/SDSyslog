@@ -16,6 +16,24 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 
 	var buf bytes.Buffer
 	switch rt.Kind() {
+	case reflect.Slice:
+		if rt.Elem().Kind() == reflect.Uint8 {
+			valType = ContextSliceBytes
+
+			b := rv.Bytes()
+			err = binary.Write(&buf, binary.BigEndian, uint32(len(b)))
+			if err != nil {
+				return
+			}
+
+			_, err = buf.Write(b)
+			if err != nil {
+				return
+			}
+		} else {
+			err = fmt.Errorf("unsupported slice type %T", value)
+			return
+		}
 	case reflect.Int8:
 		valType = ContextInt8
 		buf.WriteByte(byte(value.(int8)))
@@ -85,6 +103,22 @@ func deserializeAnyValue(valType uint8, data []byte) (value any, err error) {
 	buf := bytes.NewReader(data)
 
 	switch valType {
+	case ContextSliceBytes:
+		var length uint32
+
+		err = binary.Read(buf, binary.BigEndian, &length)
+		if err != nil {
+			return
+		}
+
+		b := make([]byte, length)
+
+		_, err = buf.Read(b)
+		if err != nil {
+			return
+		}
+
+		value = b
 	case ContextInt8:
 		var b byte
 		b, err = buf.ReadByte()

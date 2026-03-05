@@ -8,16 +8,18 @@ import (
 )
 
 type MetricStorage struct {
-	ValidPayloads atomic.Uint64 // number of received payloads that passed validation
-	SumNs         atomic.Uint64 // sum of elapsed ns for all ops
-	MaxNs         atomic.Uint64 // max observed op duration
+	ValidPayloads   atomic.Uint64 // number of received payloads that passed validation
+	InvalidPayloads atomic.Uint64 // number of received payloads that failed validation
+	SumNs           atomic.Uint64 // sum of elapsed ns for all ops
+	MaxNs           atomic.Uint64 // max observed op duration
 }
 
 // Metric Names
 const (
-	MTValidPayloads string = "valid_payloads_total"
-	MTSumWorkTime   string = "elapsed_time_sum_ns"
-	MTMaxWorkTime   string = "elapsed_time_max_ns"
+	MTValidPayloads   string = "valid_payloads_total"
+	MTInvalidPayloads string = "invalid_payloads_total"
+	MTSumWorkTime     string = "elapsed_time_sum_ns"
+	MTMaxWorkTime     string = "elapsed_time_max_ns"
 )
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
@@ -29,6 +31,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 
 	// Read and clear
 	valid := instance.Metrics.ValidPayloads.Swap(0)
+	invalid := instance.Metrics.InvalidPayloads.Swap(0)
 	sumNs := instance.Metrics.SumNs.Swap(0)
 	maxNs := instance.Metrics.MaxNs.Swap(0)
 
@@ -42,6 +45,18 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      valid,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        MTInvalidPayloads,
+			Description: "Total invalid packets in the interval",
+			Namespace:   namespace,
+			Value: metrics.MetricValue{
+				Raw:      invalid,
 				Unit:     "count",
 				Interval: interval,
 			},

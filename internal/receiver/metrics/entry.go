@@ -74,6 +74,8 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 		m1 := instance.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m1)
 	}
+	m2 := gatherer.Mgrs.Input.CollectMetrics(interval)
+	gatherer.Registry.Add(timeSlice, m2)
 
 	// Processor
 	// Queue
@@ -85,6 +87,8 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 		m2 := instance.CollectMetrics(interval)
 		gatherer.Registry.Add(timeSlice, m2)
 	}
+	m3 := gatherer.Mgrs.Proc.CollectMetrics(interval)
+	gatherer.Registry.Add(timeSlice, m3)
 
 	// Defrag
 	var collection []metrics.Metric // collection for all pairs
@@ -101,6 +105,8 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 		m2 := instancePair.CollectMetrics(interval)
 		collection = append(collection, m2...)
 	}
+	m3 = gatherer.Mgrs.Assembler.CollectMetrics(interval)
+	collection = append(collection, m3...)
 
 	// Save collected metrics to the registry
 	gatherer.Registry.Add(timeSlice, collection)

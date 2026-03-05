@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sync/atomic"
 	"time"
@@ -17,7 +18,44 @@ const (
 	MTProcessBuckets string = "processed_buckets"
 	MTSumWorkTime    string = "elapsed_time_sum_ns"
 	MTMaxWorkTime    string = "elapsed_time_max_ns"
+	MTInstanceCount  string = "instance_count"
+	MTPacketDeadline string = "packet_deadline"
 )
+
+func (manager *Manager) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+	// Record read time
+	recordTime := time.Now()
+
+	namespace := logctx.GetTagList(manager.ctx)
+
+	collection = []metrics.Metric{
+		{
+			Name:        MTInstanceCount,
+			Description: "Number of running instances at the time of metric collection",
+			Namespace:   namespace,
+			Value: metrics.MetricValue{
+				Raw:      len(manager.RoutingView.GetAllIDs()),
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Gauge,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        MTPacketDeadline,
+			Description: "Packet deadline (maximum time between fragments) at the time of metric collection",
+			Namespace:   namespace,
+			Value: metrics.MetricValue{
+				Raw:      time.Duration(manager.Config.PacketDeadline.Load()).Nanoseconds(),
+				Unit:     "ns",
+				Interval: interval,
+			},
+			Type:      metrics.Summary,
+			Timestamp: recordTime,
+		},
+	}
+	return
+}
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear

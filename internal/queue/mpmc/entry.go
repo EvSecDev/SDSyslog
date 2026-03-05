@@ -82,6 +82,7 @@ func newQueueInst[T any](namespace []string, capacity uint64) (new *QueueInst[T]
 		Metrics:   &MetricStorage{},
 	}
 	new.mask.Store(capacity - 1)
+	new.Metrics.Size.Store(capacity)
 	return
 }
 

@@ -13,6 +13,7 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/metrics"
@@ -35,6 +36,8 @@ func NewDaemon(cfg Config) (new *Daemon) {
 
 // Starts pipeline worker threads in background - gracefully shuts down if startup error is encountered
 func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err error) {
+	startupTime := time.Now()
+
 	// New context for the daemon
 	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
 	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
@@ -245,8 +248,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		return
 	}
 
-	logctx.LogStdInfo(daemon.ctx, "Startup complete (%s). Listening for messages on %s:%d\n",
-		global.ProgVersion, daemon.cfg.ListenIP, daemon.cfg.ListenPort)
+	startupElapsed := parsing.TrimDurationPrecision(time.Since(startupTime), 2)
+	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s). Listening for messages on %s:%d\n",
+		startupElapsed, global.ProgVersion, daemon.cfg.ListenIP, daemon.cfg.ListenPort)
 	return
 }
 
@@ -294,6 +298,7 @@ func (daemon *Daemon) Run() {
 
 // Gracefully shutdown pipeline worker threads (errors are printed to program log buffer)
 func (daemon *Daemon) Shutdown() {
+	shutdownTime := time.Now()
 	logctx.LogStdInfo(daemon.ctx, "Daemon shutdown started (%s)...\n", global.ProgVersion)
 
 	// Stop metric server
@@ -388,10 +393,11 @@ func (daemon *Daemon) Shutdown() {
 
 	select {
 	case <-done:
-		logctx.LogStdInfo(daemon.ctx, "Daemon shutdown completed successfully\n")
+		logctx.LogStdInfo(daemon.ctx, "Daemon shutdown completed successfully in %s\n",
+			parsing.TrimDurationPrecision(time.Since(shutdownTime), 2))
 	case <-time.After(ShutdownTimeout):
-		logctx.LogStdWarn(daemon.ctx, "Timeout: receive daemon did not shutdown within %v seconds",
-			ShutdownTimeout.Seconds())
+		logctx.LogStdWarn(daemon.ctx, "Timeout: receive daemon component did not shutdown within %v seconds (total elapsed: %s)",
+			ShutdownTimeout.Seconds(), parsing.TrimDurationPrecision(time.Since(shutdownTime), 2))
 		return
 	}
 }

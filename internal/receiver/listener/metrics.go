@@ -17,12 +17,42 @@ type MetricStorage struct {
 
 // Metric Names
 const (
-	MTBusyPct     string = "busy_time_percent"
-	MTValidPkts   string = "valid_packets_total"
-	MTInvalidPkts string = "invalid_packets_total"
-	MTSumWorkTime string = "elapsed_time_sum_ns"
-	MTMaxWorkTime string = "elapsed_time_max_ns"
+	MTBusyPct       string = "busy_time_percent"
+	MTValidPkts     string = "valid_packets_total"
+	MTInvalidPkts   string = "invalid_packets_total"
+	MTSumWorkTime   string = "elapsed_time_sum_ns"
+	MTMaxWorkTime   string = "elapsed_time_max_ns"
+	MTInstanceCount string = "instance_count"
 )
+
+func (manager *Manager) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+	// Record read time
+	recordTime := time.Now()
+
+	listPtr := manager.Instances.Load()
+	var instCount int
+	if listPtr != nil {
+		instCount = len(*listPtr)
+	}
+
+	namespace := logctx.GetTagList(manager.ctx)
+
+	collection = []metrics.Metric{
+		{
+			Name:        MTInstanceCount,
+			Description: "Number of running instances at the time of metric collection",
+			Namespace:   namespace,
+			Value: metrics.MetricValue{
+				Raw:      instCount,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Gauge,
+			Timestamp: recordTime,
+		},
+	}
+	return
+}
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	if instance == nil {

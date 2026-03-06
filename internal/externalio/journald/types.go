@@ -20,6 +20,7 @@ type InModule struct {
 	sink      io.ReadCloser
 	err       io.ReadCloser
 	stateFile string
+	filters   []protocol.MessageFilter
 	outbox    *mpmc.Queue[protocol.Message]
 	metrics   MetricStorage
 }

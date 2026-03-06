@@ -10,7 +10,7 @@ import (
 )
 
 // Creates new file input module. Returns nil nil if no path.
-func NewInput(namespace []string, filePath string, baseStateFile string, queue *mpmc.Queue[protocol.Message]) (module *InModule, err error) {
+func NewInput(namespace []string, filePath string, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[protocol.Message]) (module *InModule, err error) {
 	if filePath == "" {
 		return
 	}
@@ -28,11 +28,20 @@ func NewInput(namespace []string, filePath string, baseStateFile string, queue *
 		return
 	}
 
+	for index, filter := range filters {
+		err = filter.Validate()
+		if err != nil {
+			err = fmt.Errorf("invalid message filter at index %d: %w", index, err)
+			return
+		}
+	}
+
 	module = &InModule{
 		Namespace: namespace,
 		sink:      file,
 		filePath:  filePath,
 		stateFile: newStateFile,
+		filters:   filters,
 		outbox:    queue,
 		metrics:   MetricStorage{},
 	}

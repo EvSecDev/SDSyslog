@@ -101,7 +101,10 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		"%d assembler instance(s) started successfully\n", daemon.cfg.MinAssemblers)
 
 	// Stage 1 - Listeners(Readers)
-	daemon.Mgrs.In = ingest.NewManager(daemon.ctx, daemon.Mgrs.Assem.InQueue)
+	inMgrConf := ingest.ManagerConfig{
+		SourceDropFilters: daemon.cfg.Filters,
+	}
+	daemon.Mgrs.In = inMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Assem.InQueue)
 	if len(daemon.cfg.FileSourcePaths) > 0 {
 		for _, filePath := range daemon.cfg.FileSourcePaths {
 			err = daemon.Mgrs.In.AddFileInstance(filePath, daemon.cfg.StateFilePath)

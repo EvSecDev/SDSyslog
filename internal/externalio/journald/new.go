@@ -16,7 +16,7 @@ import (
 )
 
 // Creates new journald listener module
-func NewInput(namespace []string, baseStateFile string, queue *mpmc.Queue[protocol.Message]) (new *InModule, err error) {
+func NewInput(namespace []string, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[protocol.Message]) (new *InModule, err error) {
 	// Create unique state file for journal
 	stateFileDir := filepath.Dir(baseStateFile)
 	stateFileName := filepath.Base(baseStateFile)
@@ -60,12 +60,21 @@ func NewInput(namespace []string, baseStateFile string, queue *mpmc.Queue[protoc
 		return
 	}
 
+	for index, filter := range filters {
+		err = filter.Validate()
+		if err != nil {
+			err = fmt.Errorf("invalid message filter at index %d: %w", index, err)
+			return
+		}
+	}
+
 	new = &InModule{
 		Namespace: namespace,
 		cmd:       jrnlCmd,
 		sink:      stdout,
 		err:       stderr,
 		stateFile: newStateFile,
+		filters:   filters,
 		outbox:    queue,
 		metrics:   MetricStorage{},
 	}

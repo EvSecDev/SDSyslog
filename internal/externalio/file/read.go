@@ -81,6 +81,21 @@ func (mod *InModule) Reader(ctx context.Context) {
 
 				msg.Fields[externalio.CtxKey] = strings.Join(mod.Namespace, "/")
 
+				if len(mod.filters) > 0 {
+					var msgMatches bool
+					for _, filter := range mod.filters {
+						msgMatches = filter.Match(msg)
+						if msgMatches {
+							// First filter match wins
+							break
+						}
+					}
+					if msgMatches {
+						// Do not push message (drop)
+						break
+					}
+				}
+
 				mod.outbox.PushBlocking(ctx, msg, msg.Size())
 				mod.metrics.Success.Add(1)
 
@@ -158,5 +173,4 @@ func (mod *InModule) Reader(ctx context.Context) {
 				"failed to seek to last offset: %w\n", err)
 		}
 	}
-
 }

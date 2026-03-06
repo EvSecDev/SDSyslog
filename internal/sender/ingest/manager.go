@@ -9,7 +9,7 @@ import (
 )
 
 // Creates new instance manager
-func NewManager(ctx context.Context, outbox *mpmc.Queue[protocol.Message]) (new *Manager) {
+func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[protocol.Message]) (new *Manager) {
 	// Double check queues - should never get past build
 	if outbox == nil {
 		panic("FATAL: Sender Ingest manager received empty outbox queue variable")
@@ -20,10 +20,10 @@ func NewManager(ctx context.Context, outbox *mpmc.Queue[protocol.Message]) (new 
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	new = &Manager{
+		Config:      config,
 		FileSources: make(map[string]*FileWorker),
 		outQueue:    outbox,
 		ctx:         ctx,
 	}
 	return
 }
-

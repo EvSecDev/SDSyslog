@@ -7,12 +7,16 @@ import (
 	"fmt"
 	"os"
 	"sdsyslog/internal/crypto/ecdh"
+	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/externalio/beats"
 	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/externalio/server"
+	"sdsyslog/internal/filtering"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
+	"sdsyslog/internal/sender/ingest"
+	"sdsyslog/pkg/protocol"
 	"strings"
 
 	"golang.org/x/term"
@@ -158,6 +162,38 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 
 	newCfg.Inputs.FilePaths = []string{"/var/log/dmesg", "/var/log/nginx/access.log"}
 	newCfg.Inputs.JournalEnabled = true
+	newCfg.Inputs.DropFilters = map[string][]protocol.MessageFilter{
+		ingest.FileSource: {
+			protocol.MessageFilter{
+				FieldsKey: &filtering.Filter{
+					Exact: "mycustomfield",
+				},
+				FieldsValue: &filtering.Filter{
+					Contains: "value1",
+				},
+			},
+		},
+		ingest.JrnlSource: {
+			protocol.MessageFilter{
+				FieldsKey: &filtering.Filter{
+					Exact: externalio.CFfacility,
+				},
+				FieldsValue: &filtering.Filter{
+					Exact: "ftp",
+				},
+				Data: &filtering.Filter{
+					Or: []filtering.Filter{
+						{
+							Contains: "logout",
+						},
+						{
+							Contains: "login",
+						},
+					},
+				},
+			},
+		},
+	}
 
 	newCfg.PublicKey = "xxxxxxxxxxxxxxxx=="
 

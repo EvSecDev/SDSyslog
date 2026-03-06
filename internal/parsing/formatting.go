@@ -1,3 +1,4 @@
+// Basic text parsing functions not tied to a specific internal use case
 package parsing
 
 import (

@@ -85,6 +85,16 @@ func (mod *InModule) Reader(ctx context.Context) {
 
 			msg.Fields[externalio.CtxKey] = strings.Join(mod.Namespace, "/")
 
+			if len(mod.filters) > 0 {
+				for _, filter := range mod.filters {
+					msgMatches := filter.Match(msg)
+					if msgMatches {
+						// First filter match wins - drop message
+						return
+					}
+				}
+			}
+
 			mod.outbox.PushBlocking(ctx, msg, msg.Size())
 			mod.metrics.Success.Add(1)
 

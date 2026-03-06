@@ -14,6 +14,14 @@ Warning: This program is early in its development and *does* contain bugs.
 - Unidirectional network support
 - Multi-packet payloads (for messages exceeding MTU of a single packet)
 - Encrypted payloads
+- Message input filtering via config driven filters
+- Supported inputs:
+  - Multiple files
+  - Journald
+- Supported Outputs:
+  - File
+  - Journald
+  - Beats (lumberjack)
 
 ## Installation
 
@@ -91,6 +99,14 @@ When the daemon is started, a limited HTTP server will also be started on localh
 
 To get started with this API, grab the HTML docs by querying the root path `curl http://localhost:18514/` for the sender or `curl http://localhost:28514/` for the receiver.
 
+## Input Filtering
+
+The sender daemon JSON configuration has a section for filters.
+
+Anything defined in this section will attempt to match messages from external sources and drop the message if it matches.
+
+Use `sdsyslog configure -c example.json --send-config-template` to generate an example configuration file containing some of these filters.
+
 ## Notes
 
 - Journal output requires the installation of `systemd-journal-remote` and uses the HTTP configuration of the socket.
@@ -106,7 +122,7 @@ To get started with this API, grab the HTML docs by querying the root path `curl
       ```
 
 - Maximum individual log message size is 4GB
-- Due to address/port reuse across the program (or during hot swap updates), there is a slight chance of data loss between when packets are received by the system and when the program reads the data.
+- Due to address/port reuse across the program, during in-place upgrades or shutdowns, there is a slight chance of data loss between when packets are received by the system and when the program reads the data.
   - Essentially the program has no way of safely "draining" a go routines associated kernel-level socket buffer before it shuts down (for scaling down and hot swapping).
   - On non-Linux systems (or older non-eBPF Linux kernels), there is no guarantee that this program can make to *not* drop data during these events.
   - For *BSD systems, during shutdown, the program will attempt to time when the socket is empty to close a listener.

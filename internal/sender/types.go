@@ -6,6 +6,7 @@ import (
 	metricGlb "sdsyslog/internal/metrics"
 	"sdsyslog/internal/sender/metrics"
 	"sdsyslog/internal/sender/shared"
+	"sdsyslog/pkg/protocol"
 	"sync"
 	"time"
 )
@@ -19,8 +20,9 @@ type JSONConfig struct {
 	} `json:"network"`
 	StateFile string `json:"stateFile"`
 	Inputs    struct {
-		FilePaths      []string `json:"filePaths,omitempty"`
-		JournalEnabled bool     `json:"journalEnabled,omitempty"`
+		DropFilters    map[string][]protocol.MessageFilter `json:"dropFilters,omitempty"`
+		FilePaths      []string                            `json:"filePaths,omitempty"`
+		JournalEnabled bool                                `json:"journalEnabled,omitempty"`
 	} `json:"inputs"`
 	Metrics struct {
 		Interval          string `json:"collectionInterval"`
@@ -53,6 +55,7 @@ type Config struct {
 	AutoscaleCheckInterval time.Duration
 
 	// Source settings
+	Filters                map[string][]protocol.MessageFilter
 	JournalSourceEnabled   bool
 	StateFilePath          string
 	FileSourcePaths        []string

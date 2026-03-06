@@ -35,6 +35,7 @@ func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
 	config.OverrideMaxPayloadSize = cfg.Network.MaxPayloadSize
 
 	// Source settings
+	config.Filters = cfg.Inputs.DropFilters
 	config.StateFilePath = cfg.StateFile
 	config.FileSourcePaths = cfg.Inputs.FilePaths
 	config.JournalSourceEnabled = cfg.Inputs.JournalEnabled

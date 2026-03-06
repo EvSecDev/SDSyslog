@@ -9,7 +9,12 @@ import (
 	"sync"
 )
 
+type ManagerConfig struct {
+	SourceDropFilters map[string][]protocol.MessageFilter
+}
+
 type Manager struct {
+	Config        *ManagerConfig
 	Mu            sync.RWMutex
 	FileSources   map[string]*FileWorker // File sources keyed by path
 	JournalSource *JrnlWorker

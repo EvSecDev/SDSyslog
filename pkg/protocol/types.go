@@ -1,6 +1,9 @@
 package protocol
 
-import "time"
+import (
+	"sdsyslog/internal/filtering"
+	"time"
+)
 
 // Container for external use - mandatory parts
 type Message struct {
@@ -8,6 +11,19 @@ type Message struct {
 	Hostname  string
 	Fields    map[string]any
 	Data      string
+}
+
+// Boolean filter config for a message
+type MessageFilter struct {
+	// Filters for top-level string fields
+	Data *filtering.Filter `json:"data,omitempty"`
+
+	// Filters for map keys/values (match any key or value)
+	FieldsKey   *filtering.Filter `json:"fieldsKey,omitempty"`
+	FieldsValue *filtering.Filter `json:"fieldsValue,omitempty"`
+
+	// Optional: match only if all fields match (AND) or any field matches (OR)
+	UseAnd bool `json:"use_and,omitempty"` // default true = AND
 }
 
 // Friendly container for internal use - most fields are optional (filled in automatically) - leave exported

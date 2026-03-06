@@ -177,7 +177,7 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 3, MessageSeqMax: 3, Data: []byte("fourth text")},
 			},
 			expectError: false,
-			expectedLog: []byte(missingLogPlaceholder + "second text" + missingLogPlaceholder + "fourth text"),
+			expectedLog: []byte(MissingFragmentPlaceholder + "second text" + MissingFragmentPlaceholder + "fourth text"),
 		},
 		{
 			name: "Missing fragments double middle",
@@ -186,7 +186,7 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 3, MessageSeqMax: 3, Data: []byte("fourth text")},
 			},
 			expectError: false,
-			expectedLog: []byte("first text" + missingLogPlaceholder + missingLogPlaceholder + "fourth text"),
+			expectedLog: []byte("first text" + MissingFragmentPlaceholder + MissingFragmentPlaceholder + "fourth text"),
 		},
 		{
 			name: "Missing fragments end",
@@ -195,7 +195,7 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 1, MessageSeqMax: 2, Data: []byte(" second text")},
 			},
 			expectError: false,
-			expectedLog: []byte("first text" + " second text" + missingLogPlaceholder),
+			expectedLog: []byte("first text" + " second text" + MissingFragmentPlaceholder),
 		},
 	}
 

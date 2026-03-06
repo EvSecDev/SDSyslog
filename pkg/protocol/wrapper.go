@@ -41,7 +41,7 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, 
 
 	for _, fragment := range fragments {
 		var payload innerWireFormat
-		payload, err = ValidatePayload(fragment)
+		payload, err = ConstructPayload(fragment)
 		if err != nil {
 			err = fmt.Errorf("invalid payload: %w", err)
 			return
@@ -89,7 +89,7 @@ func Extract(packets [][]byte) (recvMsg Message, hostID int, err error) {
 		}
 
 		var messageFragment Payload
-		messageFragment, err = ParsePayload(payload)
+		messageFragment, err = DeconstructPayload(payload)
 		if err != nil {
 			err = fmt.Errorf("invalid payload for packet %d: %w", index, err)
 			return

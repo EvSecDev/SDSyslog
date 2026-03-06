@@ -53,7 +53,7 @@ func TestConstructPayload(t *testing.T) {
 					{
 						Key:     []byte("marker"),
 						valType: ContextString,
-						Value:   []byte(emptyFieldChar),
+						Value:   []byte(EmptyFieldChar),
 					},
 					{
 						Key:     []byte("processid"),
@@ -110,7 +110,7 @@ func TestConstructPayload(t *testing.T) {
 			tt.input.Timestamp = ttTime
 			tt.expected.Timestamp = uint64(ttTime.UnixMilli())
 
-			proto, err := ValidatePayload(tt.input)
+			proto, err := ConstructPayload(tt.input)
 			if tt.err != "" {
 				if err == nil {
 					t.Errorf("expected error but got nil")
@@ -241,7 +241,7 @@ func TestDeconstructPayload(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			request, err := ParsePayload(tt.input)
+			request, err := DeconstructPayload(tt.input)
 			if tt.err != "" {
 				if err == nil {
 					t.Errorf("expected error but got nil")

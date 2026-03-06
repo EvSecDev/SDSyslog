@@ -16,7 +16,7 @@ func TestCleanStringToBytes(t *testing.T) {
 			name:      "empty input uses emptyFieldChar",
 			input:     "",
 			maxLength: 10,
-			want:      []byte(emptyFieldChar),
+			want:      []byte(EmptyFieldChar),
 		},
 		{
 			name:      "removes non-printable ASCII",

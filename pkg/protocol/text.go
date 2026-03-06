@@ -4,7 +4,7 @@ package protocol
 // Handles empty values as per specification.
 func cleanStringToBytes(input string, maxLength int) (cleanBytes []byte) {
 	if input == "" {
-		input = emptyFieldChar // mandatory empty placeholder
+		input = EmptyFieldChar // mandatory empty placeholder
 	}
 
 	// Remove non-ASCII characters

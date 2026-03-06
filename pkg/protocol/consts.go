@@ -3,9 +3,10 @@ package protocol
 import "sdsyslog/internal/crypto"
 
 const (
+	EmptyFieldChar             string = "-"
+	MissingFragmentPlaceholder string = "[missing fragment]"
+
 	terminatorByte          byte   = 0x00
-	emptyFieldChar          string = "-"
-	missingLogPlaceholder   string = "[missing fragment]"
 	customFieldsEmptyMarker uint16 = 0x0001
 
 	ContextInt8       uint8 = 0x01

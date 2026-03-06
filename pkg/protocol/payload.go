@@ -9,7 +9,7 @@ import (
 )
 
 // Creates individual packet inner payload
-func ValidatePayload(request Payload) (proto innerWireFormat, err error) {
+func ConstructPayload(request Payload) (proto innerWireFormat, err error) {
 	// MessageHostID
 	if request.HostID == 0 {
 		err = fmt.Errorf("host ID cannot be zero")
@@ -64,7 +64,7 @@ func ValidatePayload(request Payload) (proto innerWireFormat, err error) {
 			if value == nil {
 				// no value, use placeholder
 				cleanType = ContextString
-				cleanValue = []byte(emptyFieldChar)
+				cleanValue = []byte(EmptyFieldChar)
 			} else {
 				cleanType, cleanValue, err = serializeAnyValue(value)
 				if err != nil {
@@ -72,7 +72,7 @@ func ValidatePayload(request Payload) (proto innerWireFormat, err error) {
 					return
 				}
 				if len(cleanValue) < minCtxValLen {
-					cleanValue = []byte(emptyFieldChar)
+					cleanValue = []byte(EmptyFieldChar)
 				}
 				if len(cleanValue) > maxCtxValLen {
 					err = fmt.Errorf("value too long for key '%s' (must be less than %d bytes)", key, maxCtxValLen)
@@ -128,7 +128,7 @@ func ValidatePayload(request Payload) (proto innerWireFormat, err error) {
 }
 
 // Validates and extracts packet inner payload
-func ParsePayload(proto innerWireFormat) (validated Payload, err error) {
+func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 	// Validate HostID
 	if proto.HostID == 0 {
 		err = fmt.Errorf("empty host ID")

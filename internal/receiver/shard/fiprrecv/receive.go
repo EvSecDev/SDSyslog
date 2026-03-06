@@ -146,7 +146,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 		instance.Metrics.RejectedFragments.Add(1)
 		return
 	}
-	fragment, err := protocol.ParsePayload(payload)
+	fragment, err := protocol.DeconstructPayload(payload)
 	if err != nil {
 		err = fmt.Errorf("error validating fragment: %w", err)
 

@@ -88,7 +88,7 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 	// Detect missing start (missing seq 0)
 	if len(payloads) > 0 && payloads[0].MessageSeq > 0 {
 		for missing := 0; missing < payloads[0].MessageSeq; missing++ {
-			reassemblyBuffer.WriteString(missingLogPlaceholder)
+			reassemblyBuffer.WriteString(MissingFragmentPlaceholder)
 		}
 	}
 
@@ -102,7 +102,7 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 			// Detect mid gaps
 			if payload.MessageSeq > expected {
 				for missing := expected; missing < payload.MessageSeq; missing++ {
-					reassemblyBuffer.WriteString(missingLogPlaceholder)
+					reassemblyBuffer.WriteString(MissingFragmentPlaceholder)
 				}
 			}
 		}
@@ -115,7 +115,7 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 	expectedFinal := payloads[0].MessageSeqMax // Pull from any payload, already asserted as all equal
 	if prev < expectedFinal {
 		for missing := prev + 1; missing <= expectedFinal; missing++ {
-			reassemblyBuffer.WriteString(missingLogPlaceholder)
+			reassemblyBuffer.WriteString(MissingFragmentPlaceholder)
 		}
 	}
 

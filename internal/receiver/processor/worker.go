@@ -93,7 +93,7 @@ func (instance *Instance) run() {
 				return
 			}
 
-			msg, err := protocol.ParsePayload(payload)
+			msg, err := protocol.DeconstructPayload(payload)
 			if err != nil {
 				logctx.LogStdErr(ctx, "invalid payload: %s\n", err.Error())
 				instance.Metrics.InvalidPayloads.Add(1)

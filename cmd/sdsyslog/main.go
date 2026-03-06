@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"sdsyslog/internal/cli"
+	_ "sdsyslog/internal/crypto" // For Suite ID array init
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 )

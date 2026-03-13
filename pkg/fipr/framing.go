@@ -64,9 +64,9 @@ func (session *Session) readFrame() (wireFrame []byte, err error) {
 	}
 
 	defer func() {
-		if err == nil { // Only reset deadline if no error occurred
-			err = session.conn.SetReadDeadline(time.Time{})
-			if err != nil && !transportWasClosed(err) {
+		lerr := session.conn.SetReadDeadline(time.Time{})
+		if lerr != nil && !transportWasClosed(lerr) {
+			if err == nil {
 				err = fmt.Errorf("failed resetting read deadline: %w", err)
 			}
 		}

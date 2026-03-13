@@ -92,6 +92,9 @@ func (config *ManagerConfig) validate() (err error) {
 	if config.MaxPayloadSize == 0 {
 		err = fmt.Errorf("empty max payload size")
 	}
+	if config.CryptoSuiteID == 0 {
+		err = fmt.Errorf("uninitialized crypto suite ID")
+	}
 
 	return
 }

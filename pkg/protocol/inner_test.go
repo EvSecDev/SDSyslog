@@ -270,17 +270,21 @@ func TestPaddingLen(t *testing.T) {
 	}
 
 	// Serialize the payload
-	serialized, _ := ConstructInnerPayload(fields)
+	serialized, err := ConstructInnerPayload(fields)
+	if err != nil {
+		t.Fatalf("unexpected inner construction error: %v", err)
+	}
 
 	// Calculate the expected length based on test case
 	expectedLen := 0
-	expectedLen += lenHostID                    // HostID (uint32)
-	expectedLen += lenMsgID                     // MsgID (uint16)
-	expectedLen += lenMsgSeq                    // MessageSeq (uint16)
-	expectedLen += lenSeqMax                    // MessageSeqMax (uint16)
-	expectedLen += lenTimestamp                 // Timestamp (uint64)
-	expectedLen += 1 + len(fields.Hostname) + 1 // Hostname length + Hostname + Null terminator
-	expectedLen += lenContextSectionNxtLen      // Context nxt length
+	expectedLen += lenHostID                                    // HostID (uint32)
+	expectedLen += lenMsgID                                     // MsgID (uint16)
+	expectedLen += lenMsgSeq                                    // MessageSeq (uint16)
+	expectedLen += lenSeqMax                                    // MessageSeqMax (uint16)
+	expectedLen += lenTimestamp                                 // Timestamp (uint64)
+	expectedLen += 1 + len(fields.Hostname) + 1                 // Hostname length + Hostname + Null terminator
+	expectedLen += lenSigIDLen + lenSigNxtLen + minSignatureLen // Signature fields
+	expectedLen += lenContextSectionNxtLen                      // Context nxt length
 	for _, field := range fields.ContextFields {
 		expectedLen += lenCtxKeyNxtLen
 		expectedLen += len(field.Key)

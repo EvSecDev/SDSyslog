@@ -15,9 +15,11 @@ func (manager *Manager) newWorker() (new *Instance) {
 	new = &Instance{
 		inbox:          manager.InQueue,
 		outbox:         manager.outQueue,
+		Metrics:        MetricStorage{},
 		hostID:         manager.Config.HostID,
 		maxPayloadSize: manager.Config.MaxPayloadSize,
-		Metrics:        MetricStorage{},
+		cryptoSuiteID:  manager.Config.CryptoSuiteID,
+		sigSuiteID:     manager.Config.SigSuiteID,
 	}
 	return
 }
@@ -76,9 +78,13 @@ func (instance *Instance) run() {
 				instance.Metrics.MaxMsgSizeBytes.CompareAndSwap(maxSeenMsgSizeBytes, msgLengthB)
 			}
 
-			packets, err := protocol.Create(newMsg, instance.hostID, instance.maxPayloadSize)
+			packets, err := protocol.Create(newMsg,
+				instance.hostID,
+				instance.maxPayloadSize,
+				instance.cryptoSuiteID,
+				instance.sigSuiteID)
 			if err != nil {
-				logctx.LogStdErr(ctx, "failed serialization: %w", err)
+				logctx.LogStdErr(ctx, "failed serialization: %w\n", err)
 				return
 			}
 

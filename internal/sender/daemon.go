@@ -19,6 +19,7 @@ import (
 	"sdsyslog/internal/sender/output"
 	"sdsyslog/internal/sender/scaling"
 	"sdsyslog/internal/syslog"
+	"sdsyslog/pkg/crypto/registry"
 	"slices"
 	"time"
 )
@@ -54,6 +55,22 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		err = fmt.Errorf("failed to setup encryption function: %w", err)
 		return
 	}
+	if len(daemon.cfg.signingPrivateKey) > 0 {
+		info, validID := registry.GetSignatureInfo(daemon.cfg.signatureSuiteID)
+		if !validID {
+			err = fmt.Errorf("invalid signature suite ID: %d", daemon.cfg.signatureSuiteID)
+			return
+		}
+		err = info.ValidateKey(daemon.cfg.signingPrivateKey)
+		if err != nil {
+			return
+		}
+		err = wrappers.SetupCreateSignature(daemon.cfg.signingPrivateKey)
+		if err != nil {
+			err = fmt.Errorf("failed to setup signing function: %w", err)
+			return
+		}
+	}
 	daemon.cfg.setDefaults()
 
 	// Stage 3 - Output Manager
@@ -84,6 +101,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		MaxQueueCapacity:       daemon.cfg.MaxAssemblerQueueSize,
 		OverrideMaxPayloadSize: daemon.cfg.OverrideMaxPayloadSize,
 		DestinationIP:          daemon.cfg.DestinationIP,
+		CryptoSuiteID:          daemon.cfg.transportCryptoSuiteID,
+		SigSuiteID:             daemon.cfg.signatureSuiteID,
 	}
 	pkgMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinAssemblers))
 	pkgMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxAssemblers))

@@ -1,8 +1,10 @@
 package sender
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"sdsyslog/internal/externalio/server"
@@ -29,6 +31,13 @@ func LoadConfig(path string) (cfg JSONConfig, err error) {
 
 // Parses JSON config into daemon config
 func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
+	// Signatures
+	config.signingPrivateKey, err = base64.StdEncoding.DecodeString(cfg.SigningPrivateKey)
+	if err != nil {
+		err = fmt.Errorf("failed to decode signing key: %w", err)
+		return
+	}
+
 	// Network settings
 	config.DestinationIP = cfg.Network.Address
 	config.DestinationPort = cfg.Network.Port
@@ -75,6 +84,14 @@ func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
 
 // Sets defaults for any missing/invalid values
 func (cfg *Config) setDefaults() {
+	// Crypto
+	cfg.transportCryptoSuiteID = 1
+	if len(cfg.signingPrivateKey) > 0 {
+		cfg.signatureSuiteID = 1 // Only supported algorithm
+	} else {
+		cfg.signatureSuiteID = 0 // No key to use
+	}
+
 	// Scaling
 	if cfg.AutoscaleCheckInterval == 0 {
 		cfg.AutoscaleCheckInterval = 5 * time.Second
@@ -128,4 +145,44 @@ func (cfg *Config) setDefaults() {
 	if cfg.MetricCollectionInterval == 0 {
 		cfg.MetricCollectionInterval = time.Duration(15 * time.Second)
 	}
+}
+
+// No-op to satisfy receiver daemon method (for daemonlike type in lifecycle)
+func (daemon *Daemon) ReloadPinnedKeys() (newCount int, err error) {
+	return
+}
+
+// Overwrites JSON config signing key and writes back to config file
+func WriteNewSigningKey(configPath string, jsonCfg JSONConfig) (err error) {
+	if jsonCfg.SigningPrivateKey != "" {
+		// No-op when existing key is present
+		return
+	}
+
+	keyBytes, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return
+	}
+
+	newSigningKey := make([]byte, len(keyBytes))
+	_, err = base64.StdEncoding.Decode(newSigningKey, keyBytes)
+	if err != nil {
+		err = fmt.Errorf("failed to decode signing key base64: %w", err)
+		return
+	}
+
+	jsonCfg.SigningPrivateKey = string(newSigningKey)
+
+	newConfFile, err := json.MarshalIndent(jsonCfg, "", "  ")
+	if err != nil {
+		err = fmt.Errorf("failed to marshal updated config: %w", err)
+		return
+	}
+	err = os.WriteFile(configPath, newConfFile, 0600)
+	if err != nil {
+		err = fmt.Errorf("failed to write updated config: %w", err)
+		return
+	}
+
+	return
 }

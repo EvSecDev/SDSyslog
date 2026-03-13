@@ -364,7 +364,7 @@ func mockPackets(numMessages int, rawMessage string, maxPayloadSize int, publicK
 
 	for range numMessages {
 		var fragments [][]byte
-		fragments, err = protocol.Create(newMsg, mainHostID, maxPayloadSize)
+		fragments, err = protocol.Create(newMsg, mainHostID, maxPayloadSize, 1, 0)
 		if err != nil {
 			err = fmt.Errorf("failed serialize test data for mock packets: %w", err)
 			return

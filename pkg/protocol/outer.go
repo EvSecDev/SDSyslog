@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sdsyslog/internal/crypto"
 	"sdsyslog/internal/crypto/wrappers"
+	"sdsyslog/pkg/crypto/registry"
 )
 
 // Validate and create transport payload given header fields
@@ -16,7 +17,7 @@ func ConstructOuterPayload(innerPayload []byte, suiteID uint8) (outerPayload []b
 	}
 
 	// Validate lengths based on requested suiteID
-	suite, validID := crypto.GetSuiteInfo(suiteID)
+	suite, validID := registry.GetSuiteInfo(suiteID)
 	if !validID {
 		err = fmt.Errorf("unknown suite ID %d", suiteID)
 		return
@@ -41,7 +42,7 @@ func ConstructOuterPayload(innerPayload []byte, suiteID uint8) (outerPayload []b
 	}
 
 	// Allocate blob length of inputs
-	totalLength := crypto.SuiteIDLen + len(ephemeralPub) + len(nonce) + len(ciphertext)
+	totalLength := registry.SuiteIDLen + len(ephemeralPub) + len(nonce) + len(ciphertext)
 	outerPayload = make([]byte, 0, totalLength)
 
 	// Using buffer to build blob
@@ -92,17 +93,17 @@ func DeconstructOuterPayload(blob []byte) (innerPayload []byte, err error) {
 
 	// Immediate extract first byte to check for further parameters
 	suiteID := uint8(blob[currentIndex])
-	currentIndex += crypto.SuiteIDLen
+	currentIndex += registry.SuiteIDLen
 
 	// Validate ID is known
-	suite, validSuite := crypto.GetSuiteInfo(suiteID)
+	suite, validSuite := registry.GetSuiteInfo(suiteID)
 	if !validSuite {
 		err = fmt.Errorf("invalid suite ID (%d) in blob", suiteID)
 		return
 	}
 
 	// Calculate entire header length to further validate blob
-	minLength := crypto.SuiteIDLen + suite.KeySize + suite.NonceSize
+	minLength := registry.SuiteIDLen + suite.KeySize + suite.NonceSize
 
 	// Reject packets below header length
 	if len(blob) < minLength {

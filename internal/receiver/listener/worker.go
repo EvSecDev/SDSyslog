@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net"
 	"runtime/debug"
-	"sdsyslog/internal/crypto"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
 	"time"
 )
@@ -72,7 +72,7 @@ func (instance *Instance) run() {
 			payload := append([]byte(nil), buffer[:endIndex]...)
 
 			// Pre validation
-			suiteInfo, validSuiteID := crypto.GetSuiteInfo(payload[0])
+			suiteInfo, validSuiteID := registry.GetSuiteInfo(payload[0])
 			if len(payload) < instance.minLen || !validSuiteID {
 				instance.Metrics.InvalidPackets.Add(1)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
@@ -82,7 +82,7 @@ func (instance *Instance) run() {
 			}
 
 			// Replay attack protection - level 1
-			pubKey := payload[crypto.SuiteIDLen : crypto.SuiteIDLen+suiteInfo.KeySize]
+			pubKey := payload[registry.SuiteIDLen : registry.SuiteIDLen+suiteInfo.KeySize]
 			if instance.isReplayed(pubKey) {
 				instance.Metrics.InvalidPackets.Add(1)
 				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))

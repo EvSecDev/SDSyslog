@@ -91,12 +91,14 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 // Replaces current process with new version from disk.
 // Will only return if update failed.
 // Should only be called near normal program exit, successful run will cause program to end execution before return.
-func updateAndExit(ctx context.Context, daemonManager DaemonLike, childPID int) (err error) {
+func updateAndExit(childPID int) (err error) {
 	argv := os.Args
 	env := os.Environ()
 
-	// Add update environment variable with child process PID
-	env = append(env, EnvNameSelfUpdate+"="+strconv.Itoa(childPID))
+	if childPID != 0 {
+		// Add update environment variable with child process PID
+		env = append(env, EnvNameSelfUpdate+"="+strconv.Itoa(childPID))
+	}
 
 	// Will not return. Call below terminates this execution immediately if no error.
 	err = syscallExec(argv[0], argv, env)

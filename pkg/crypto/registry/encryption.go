@@ -1,18 +1,8 @@
-package crypto
+package registry
 
 import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
-
-type SuiteInfo struct {
-	Name           string
-	KeySize        int
-	NonceSize      int
-	CipherOverhead int
-}
-
-// Byte length for ID in blobs
-const SuiteIDLen int = 1
 
 // Fixed array of 256 slots, indexed by suite ID
 var cryptoSuites [256]*SuiteInfo

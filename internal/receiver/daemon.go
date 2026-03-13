@@ -71,6 +71,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		err = fmt.Errorf("failed to setup shared secret function: %w", err)
 		return
 	}
+	err = wrappers.SetupVerifySignature(daemon.cfg.PinnedSigningKeys)
+	if err != nil {
+		err = fmt.Errorf("failed to setup signature verification function: %w", err)
+		return
+	}
 	daemon.cfg.setDefaults()
 
 	// Listener socket helper - kernel-side of socket drain feature

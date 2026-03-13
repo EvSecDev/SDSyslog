@@ -13,9 +13,11 @@ import (
 
 func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args []string) {
 	var configPath string
+	var writeSigningKey bool
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	requestedLogLevel := SetGlobalArguments(commandFlags)
 	SetCommon(commandFlags, &configPath, commandname)
+	commandFlags.BoolVar(&writeSigningKey, "write-signing-key", false, "Write new private signing key supplied via stdin to config")
 
 	commandFlags.Usage = func() {
 		PrintHelpMenu(commandFlags, commandname, cliOpts)
@@ -40,6 +42,15 @@ func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
+	}
+
+	if writeSigningKey {
+		err := sender.WriteNewSigningKey(configPath, jsonCfg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to decode signing key base64: %v\n", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	publicKey, err := base64.StdEncoding.DecodeString(jsonCfg.PublicKey)

@@ -65,8 +65,8 @@ func RouteFragment(socketPath string, messageID string, remoteAddress string, fr
 	}
 	// Shard is accepting new or existing messages
 
-	// Using existing serialization from main protocol
-	rawPayload, err := protocol.ConstructPayload(fragment)
+	// Using existing serialization from main protocol (using signature id from original packet)
+	rawPayload, err := protocol.ConstructPayload(fragment, fragment.SignatureID)
 	if err != nil {
 		err = fmt.Errorf("failed to validate fragment: %w", err)
 		return

@@ -12,8 +12,9 @@ import (
 )
 
 type JSONConfig struct {
-	PrivateKeyFile string `json:"privateKeyFile"`
-	Network        struct {
+	PrivateKeyFile        string `json:"privateKeyFile"`
+	PinnedSigningKeysPath string `json:"senderSigningKeysFile,omitempty"`
+	Network               struct {
 		Address string `json:"address"`
 		Port    int    `json:"port"`
 	} `json:"network"`
@@ -43,9 +44,15 @@ type JSONConfig struct {
 }
 
 type Config struct {
+	path string // JSON config path
+
 	// Basic settings
 	ListenIP   string
 	ListenPort int
+
+	// Signature Verification
+	PinnedSigningKeysFile string
+	PinnedSigningKeys     map[string][]byte
 
 	// Paths
 	SocketDirectoryPath string

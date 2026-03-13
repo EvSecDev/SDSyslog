@@ -2,8 +2,11 @@ package protocol
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"encoding/binary"
 	"fmt"
+	"sdsyslog/internal/crypto/random"
+	"sdsyslog/internal/crypto/wrappers"
 	"testing"
 	"time"
 )
@@ -19,11 +22,12 @@ func TestConstructPayload(t *testing.T) {
 	testCases := []struct {
 		name     string
 		input    Payload
+		sigID    uint8
 		expected innerWireFormat
 		err      string
 	}{
 		{
-			name: "valid payload",
+			name: "valid payload no sig",
 			input: Payload{
 				HostID:        1,
 				MsgID:         2,
@@ -38,6 +42,7 @@ func TestConstructPayload(t *testing.T) {
 				Data:       []byte("log message"),
 				PaddingLen: 16,
 			},
+			sigID: 0,
 			expected: innerWireFormat{
 				HostID:        1,
 				MsgID:         2,
@@ -65,6 +70,71 @@ func TestConstructPayload(t *testing.T) {
 				PaddingLen: 16,
 			},
 			err: "",
+		},
+		{
+			name: "valid payload create signature",
+			input: Payload{
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Hostname:      "test-host",
+				CustomFields: map[string]any{
+					"applicationname": "app1",
+					"processid":       int64(1234),
+					"marker":          nil,
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
+			},
+			sigID: 1,
+			expected: innerWireFormat{
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Hostname:      []byte("test-host"),
+				SignatureID:   1,
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("app1"),
+					},
+					{
+						Key:     []byte("marker"),
+						valType: ContextString,
+						Value:   []byte(EmptyFieldChar),
+					},
+					{
+						Key:     []byte("processid"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
+			},
+			err: "",
+		},
+		{
+			name: "invalid precomputed signature",
+			input: Payload{
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Hostname:      "test-host",
+				SignatureID:   1,
+				Signature:     bytes.Repeat([]byte("x"), ed25519.SignatureSize-1),
+				CustomFields: map[string]any{
+					"applicationname": "app1",
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 18,
+			},
+			sigID: 1,
+			err:   "signature length 63 for id 1 must be between 64 and 64 bytes",
 		},
 		{
 			name: "messageSeq larger than messageSeqMax",
@@ -106,23 +176,56 @@ func TestConstructPayload(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
+			// Initialize signing functions for this test (also relies on setup funcs being callable multiple times)
+			var randSource []byte
+			err = random.PopulateEmptySlice(&randSource, ed25519.SeedSize)
+			if err != nil {
+				t.Fatalf("expected no error creating ed25519 signing key, but got: %v", err)
+			}
+			priv := ed25519.NewKeyFromSeed(randSource)
+			err = wrappers.SetupCreateSignature(priv)
+			if err != nil {
+				t.Fatalf("expected no error creating signing function, but got: %v", err)
+			}
+			publicKey := priv.Public().(ed25519.PublicKey)
+			pinnedKeys := map[string][]byte{
+				tt.input.Hostname: publicKey,
+			}
+			err = wrappers.SetupVerifySignature(pinnedKeys)
+			if err != nil {
+				t.Fatalf("expected no error creating verification function, but got: %v", err)
+			}
+
 			ttTime := time.Now()
 			tt.input.Timestamp = ttTime
 			tt.expected.Timestamp = uint64(ttTime.UnixMilli())
 
-			proto, err := ConstructPayload(tt.input)
+			proto, err := ConstructPayload(tt.input, tt.sigID)
 			if tt.err != "" {
 				if err == nil {
-					t.Errorf("expected error but got nil")
+					t.Fatalf("expected error but got nil")
 				} else if err.Error() != tt.err {
-					t.Errorf("expected error '%v' but got '%v'", tt.err, err)
+					t.Fatalf("expected error '%v' but got '%v'", tt.err, err)
 				}
+				return
 			} else {
 				if err != nil {
-					t.Errorf("unexpected error: '%v'", err)
+					t.Fatalf("unexpected error: '%v'", err)
 				}
 				if !compareProtocols(proto, tt.expected) {
-					t.Errorf("Protocols not equal:\n Expected '%v'\n Got      '%v'", tt.expected, proto)
+					t.Fatalf("Protocols not equal:\n Expected '%v'\n Got      '%v'", tt.expected, proto)
+				}
+			}
+
+			if tt.sigID > 0 {
+				// Validate signature
+				signedBytes := proto.SerializeForSignature()
+				valid, err := wrappers.VerifySignature(publicKey, signedBytes, proto.Signature, tt.sigID)
+				if err != nil {
+					t.Errorf("unexpected error verifying signature: '%v'", err)
+				}
+				if !valid {
+					t.Fatalf("expected verification post signing to return valid signature, but got false")
 				}
 			}
 		})
@@ -144,7 +247,7 @@ func TestDeconstructPayload(t *testing.T) {
 		err      string
 	}{
 		{
-			name: "valid protocol",
+			name: "valid protocol no signature",
 			input: innerWireFormat{
 				HostID:        1,
 				MsgID:         2,
@@ -152,6 +255,48 @@ func TestDeconstructPayload(t *testing.T) {
 				MessageSeqMax: 4,
 				Timestamp:     uint64(time.Now().UnixMilli()),
 				Hostname:      []byte("test-host"),
+				SignatureID:   0,
+				ContextFields: []contextWireFormat{
+					{
+						Key:     []byte("applicationname"),
+						valType: ContextString,
+						Value:   []byte("app1"),
+					},
+					{
+						Key:     []byte("processid"),
+						valType: ContextInt64,
+						Value:   mockInt,
+					},
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
+			},
+			expected: Payload{
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Timestamp:     time.UnixMilli(int64(time.Now().UnixMilli())),
+				Hostname:      HostPrefixUnverified + "test-host",
+				CustomFields: map[string]any{
+					"applicationname": "app1",
+					"processid":       int64(1234),
+				},
+				Data:       []byte("log message"),
+				PaddingLen: 16,
+			},
+			err: "",
+		},
+		{
+			name: "valid protocol with signature",
+			input: innerWireFormat{
+				HostID:        1,
+				MsgID:         2,
+				MessageSeq:    3,
+				MessageSeqMax: 4,
+				Timestamp:     uint64(time.Now().UnixMilli()),
+				Hostname:      []byte("test-host"),
+				SignatureID:   1,
 				ContextFields: []contextWireFormat{
 					{
 						Key:     []byte("applicationname"),
@@ -174,6 +319,7 @@ func TestDeconstructPayload(t *testing.T) {
 				MessageSeqMax: 4,
 				Timestamp:     time.UnixMilli(int64(time.Now().UnixMilli())),
 				Hostname:      "test-host",
+				SignatureID:   1,
 				CustomFields: map[string]any{
 					"applicationname": "app1",
 					"processid":       int64(1234),
@@ -241,6 +387,39 @@ func TestDeconstructPayload(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
+			// Initialize signing functions for this test (also relies on setup funcs being callable multiple times)
+			var randSource []byte
+			err = random.PopulateEmptySlice(&randSource, ed25519.SeedSize)
+			if err != nil {
+				t.Fatalf("expected no error creating ed25519 signing key, but got: %v", err)
+			}
+			priv := ed25519.NewKeyFromSeed(randSource)
+			err = wrappers.SetupCreateSignature(priv)
+			if err != nil {
+				t.Fatalf("expected no error creating signing function, but got: %v", err)
+			}
+			publicKey := priv.Public().(ed25519.PublicKey)
+
+			var pinnedKeys map[string][]byte
+			if tt.input.SignatureID > 0 {
+				pinnedKeys = map[string][]byte{
+					string(tt.input.Hostname): publicKey,
+				}
+			} else {
+				pinnedKeys = make(map[string][]byte)
+			}
+
+			err = wrappers.SetupVerifySignature(pinnedKeys)
+			if err != nil {
+				t.Fatalf("expected no error creating verification function, but got: %v", err)
+			}
+
+			bytesToSign := tt.input.SerializeForSignature()
+			tt.input.Signature, err = wrappers.CreateSignature(bytesToSign, tt.input.SignatureID)
+			if err != nil {
+				t.Fatalf("expected no error creating mock signature, but got: %v", err)
+			}
+
 			request, err := DeconstructPayload(tt.input)
 			if tt.err != "" {
 				if err == nil {
@@ -256,6 +435,15 @@ func TestDeconstructPayload(t *testing.T) {
 					t.Errorf("Payloads not equal:\n Expected '%v'\n Got      '%v'", tt.expected, request)
 				}
 			}
+
+			if tt.input.SignatureID > 0 {
+				// Validate signature pass-through
+				if !bytes.Equal(tt.input.Signature, request.Signature) {
+					t.Errorf("expected signature field to be present pre and post deconstruction, but fields differ")
+					t.Errorf("  expected signature: %x", tt.input.Signature)
+					t.Errorf("  got signature     : %x", request.Signature)
+				}
+			}
 		})
 	}
 }
@@ -268,6 +456,7 @@ func compareProtocols(p1, p2 innerWireFormat) bool {
 		p1.MessageSeqMax == p2.MessageSeqMax &&
 		p1.Timestamp == p2.Timestamp &&
 		string(p1.Hostname) == string(p2.Hostname) &&
+		p1.SignatureID == p2.SignatureID &&
 		string(p1.Data) == string(p2.Data) &&
 		p1.PaddingLen == p2.PaddingLen
 	if !basicMatch {

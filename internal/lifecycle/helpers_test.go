@@ -41,6 +41,10 @@ func (d daemonFuncAdapter) StopFIPR() {
 	}
 }
 
+func (d daemonFuncAdapter) ReloadPinnedKeys() (n int, err error) {
+	return
+}
+
 func setupNotifySocket(t *testing.T) (socketPath string, msgChannel <-chan string, cleanup func()) {
 	t.Helper()
 

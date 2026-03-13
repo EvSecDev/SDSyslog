@@ -50,6 +50,14 @@ func osExecReal() (exePath string, err error) {
 	return
 }
 
+// Runs a run-once command and returns the output (Stdout in out, stderr in err)
+var cmdCombinedOutput func(cmd *exec.Cmd) (out []byte, err error) = cmdCombinedOutputReal
+
+func cmdCombinedOutputReal(cmd *exec.Cmd) (out []byte, err error) {
+	out, err = cmd.CombinedOutput()
+	return
+}
+
 // Start starts the specified command but does not wait for it to complete
 var cmdStart func(cmd *exec.Cmd) (err error) = cmdStartReal
 

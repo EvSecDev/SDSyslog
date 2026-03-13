@@ -1,6 +1,10 @@
 package ecdh
 
-import "testing"
+import (
+	"testing"
+
+	"golang.org/x/crypto/curve25519"
+)
 
 func TestCreateSharedSecret(t *testing.T) {
 	// Generate persistent key pair for sender (one side)
@@ -16,12 +20,12 @@ func TestCreateSharedSecret(t *testing.T) {
 	}
 
 	// Check that shared secret is the correct length
-	if len(sharedSecret) != KeyLen {
+	if len(sharedSecret) != curve25519.ScalarSize {
 		t.Errorf("Expected shared secret length of 32 bytes, but got %d bytes", len(sharedSecret))
 	}
 
 	// Check that the ephemeral public key is valid (32 bytes)
-	if len(ephemeralPublic) != KeyLen {
+	if len(ephemeralPublic) != curve25519.ScalarSize {
 		t.Errorf("Expected ephemeral public key length of 32 bytes, but got %d bytes", len(ephemeralPublic))
 	}
 

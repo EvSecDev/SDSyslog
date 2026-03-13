@@ -8,6 +8,7 @@ Specifically, this protocol requires no server-to-client data flow and allows fo
 
 Examples of protections offered:
 
+- Prevent rogue senders from impersonating known trusted senders via metadata hostname forgery.
 - Prevent adversaries-in-the-middle from reading messages that contain sensitive data.
 - Prevent adversaries-in-the-middle from conducting targeted denial of service attacks against messages matching certain text.
 - Prevent compromise of a single client from compromising the confidentiality of all other clients.
@@ -90,11 +91,11 @@ Both the cipher suite ID and ephemeral public key included in the header MUST be
 | 4 Bytes  | 4 Bytes | 2 Bytes | 2 Bytes |
 | HOSTID   | MSGID   | MSGSEQ  | SEQMAX  |
 ------------------------------------------
--------------------------------------------------
-|            METADATA (11B - 265B)              |
-| 8 Bytes   | 1 Byte | 1-255 Bytes | 1 Byte     |
-| Timestamp | NXTLEN | Hostname    | NUL (0x00) |
--------------------------------------------------
+-----------------------------------------------------------------------------------------
+|                             METADATA (12B - 265B)                                     |
+| 8 Bytes   | 1 Byte | 1-255 Bytes | 1 Byte     |      1 Byte      | 1 Byte |  x Bytes  |
+| Timestamp | NXTLEN | Hostname    | NUL (0x00) | Sig Algorithm ID | NXTLEN | Signature |
+-----------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------
 |                                                     CONTEXT (3B - XB)                                                   |
 |         |                                 Key-Value Pair                                  |                |            |
@@ -159,6 +160,27 @@ Only ASCII characters are allowed.
 Unsupported characters (non-ASCII) returned from the lookup SHALL be removed and remaining characters used as-is.
 
 Longer names MUST be truncated by removing the suffix so the remaining prefix is the field's maximum length.
+
+#### Signature Algorithm ID
+
+A 1-byte unsigned integer representing the signature algorithm used.
+
+| ID | Algorithm | Notes                     |
+|----|-----------|---------------------------|
+| 0  | None      | Signature is not provided |
+| 1  | ed25519   |                           |
+
+If the ID is 0, the immediate next field, `NXTLEN`, must also be 0. Non-conforming packets must be immediately discarded.
+
+Any signature IDs not specified in the table must be immediately discarded.
+
+#### Signature
+
+A variable length field containing the signature for the metadata section.
+
+Field is permitted to be empty when preceding `NXTLEN` field is 0.
+
+Any packets that contain a signature algorithm ID of 0 and a `NXTLEN` greater than 0 shall be discarded immediately.
 
 ### Context (Custom fields)
 
@@ -260,6 +282,31 @@ All integer and floating-point values MUST be encoded in big-endian byte order.
 Signed-ness is determined solely by the associated Type field, if applicable.
 
 UDP Payloads less than the sum of the minimum protocol field lengths MUST be considered invalid and immediately discarded.
+
+## Host Identity Verification
+
+The metadata signature field is used to verify the identity of the sender.
+
+Signature is both signed and verified using the concatenation of the identifier context string `D3P-ID-SIG`, the timestamp field, and the hostname field.
+
+The receiver can maintain a mapping of hostnames to known public keys.
+
+When a packet is received that contains a hostname in the mapping, the known (pinned) public key will be used to verify the signature.
+
+Failing verification implies the sending host is not authorized to use the hostname in the packet and indicates forgery. The packet shall be discarded immediately.
+
+When a packet is received that explicitly has no signature, but the hostname is present in the mapping, the packet shall be discarded immediately.
+
+When a packet is received that explicitly has no signature, and the hostname is not present in the mapping, the prefix tag `[UNVERIFIED]` shall be added to the hostname string.
+
+When a packet is received that has a signature, but there is no mapping for the hostname, the prefix tag `[UNKNOWN]` shall be added to the hostname string.
+Verification of signatures with no mappings must not be performed.
+
+Prefix tag additions shall only be done after the signature is computed if present and verified.
+
+Prefix tags shall only be implemented by the receiver. The sender shall never include them in hostnames.
+
+Any hostname that contains either of the tags prior to signature signing/validation shall remove them.
 
 ## Fragmentation
 

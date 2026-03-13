@@ -1,15 +1,19 @@
 package protocol
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
-	"sdsyslog/internal/crypto"
+	"sdsyslog/internal/crypto/wrappers"
+	"sdsyslog/pkg/crypto/registry"
 	"sort"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
 
 // Creates individual packet inner payload
-func ConstructPayload(request Payload) (proto innerWireFormat, err error) {
+func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err error) {
 	// MessageHostID
 	if request.HostID == 0 {
 		err = fmt.Errorf("host ID cannot be zero")
@@ -36,7 +40,49 @@ func ConstructPayload(request Payload) (proto innerWireFormat, err error) {
 	proto.Timestamp = uint64(request.Timestamp.UnixMilli())
 
 	// Hostname: Clean and validate
+	// Strip trust markers if in the hostname
+	request.Hostname = strings.ReplaceAll(request.Hostname, HostPrefixUnkSig, "")
+	request.Hostname = strings.ReplaceAll(request.Hostname, HostPrefixUnverified, "")
 	proto.Hostname = cleanStringToBytes(request.Hostname, maxHostnameLen)
+
+	if sigID > 0 {
+		if len(request.Signature) > 0 {
+			// Validate pre-computed signature
+			suite, validID := registry.GetSignatureInfo(sigID)
+			if !validID {
+				err = fmt.Errorf("unknown signature ID %d", sigID)
+				return
+			}
+			if sigID != request.SignatureID {
+				err = fmt.Errorf("pre-computed payload signature ID %d does not match requested signature ID %d",
+					request.SignatureID, sigID)
+				return
+			}
+			if len(request.Signature) > suite.MaxSignatureLength || len(request.Signature) < suite.MinSignatureLength {
+				err = fmt.Errorf("signature length %d for id %d must be between %d and %d bytes",
+					len(request.Signature), sigID, suite.MinSignatureLength, suite.MaxSignatureLength)
+				return
+			}
+
+			// Permit pre-computed signature pass-through
+			proto.Signature = request.Signature
+		} else {
+			// Concatenate values for signing
+			bytesToSign := proto.SerializeForSignature()
+
+			// Signature: sign timestamp and hostname
+			proto.Signature, err = wrappers.CreateSignature(bytesToSign, sigID)
+			if err != nil {
+				return
+			}
+		}
+		if len(proto.Signature) < minSignatureLen || len(proto.Signature) > maxSignatureLen {
+			err = fmt.Errorf("invalid signature length: must be between %d and %d bytes",
+				minSignatureLen, maxSignatureLen)
+			return
+		}
+	}
+	proto.SignatureID = sigID
 
 	// Context: Serialize
 	if len(request.CustomFields) > 0 {
@@ -167,7 +213,37 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 		err = fmt.Errorf("non-ASCII hostname '%s' is not supported", proto.Hostname)
 		return
 	}
+	// Strip trust markers if in the hostname
+	proto.Hostname = bytes.ReplaceAll(proto.Hostname, []byte(HostPrefixUnkSig), nil)
+	proto.Hostname = bytes.ReplaceAll(proto.Hostname, []byte(HostPrefixUnverified), nil)
 	validated.Hostname = string(proto.Hostname)
+
+	pubKey, knownHost := wrappers.LookupPinnedSender(validated.Hostname)
+	if knownHost && proto.SignatureID == 0 {
+		// Pinned key without signature - Drop
+		err = fmt.Errorf("sender has a pinned key but received packet has no signature")
+		return
+	} else if !knownHost && proto.SignatureID == 0 {
+		// No pinned key and no signature - allow and mark untrusted
+		validated.Hostname = HostPrefixUnverified + validated.Hostname
+	} else if !knownHost && proto.SignatureID != 0 {
+		// No pinned key and gratuitous signature - no verification attempt, mark as unknown
+		validated.Hostname = HostPrefixUnkSig + validated.Hostname
+	} else if knownHost && proto.SignatureID != 0 {
+		// Pinned key with signature: verify timestamp and hostname
+		bytesToVerify := proto.SerializeForSignature()
+		var valid bool
+		valid, err = wrappers.VerifySignature(pubKey, bytesToVerify, proto.Signature, proto.SignatureID)
+		if err != nil {
+			return
+		}
+		if !valid {
+			err = fmt.Errorf("payload with alleged hostname %q has invalid signature", validated.Hostname)
+			return
+		}
+	}
+	validated.SignatureID = proto.SignatureID
+	validated.Signature = proto.Signature
 
 	// Context: Deserialize
 	if len(proto.ContextFields) > 0 {
@@ -231,16 +307,34 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 	return
 }
 
+// Creates a concatenated byte slice of protocol fields that are signed/verified
+func (proto innerWireFormat) SerializeForSignature() (signable []byte) {
+	// Total length = ctx + timestamp(64b) + hostid(32b) + hostname
+	signable = make([]byte, len(IdentitySignatureContext)+8+4+len(proto.Hostname))
+
+	copy(signable, IdentitySignatureContext)
+
+	tsStartIndex := len(IdentitySignatureContext)
+	tsEndIndex := tsStartIndex + lenTimestamp
+	binary.BigEndian.PutUint64(signable[tsStartIndex:tsEndIndex], proto.Timestamp)
+
+	idEndIndex := tsEndIndex + lenHostID
+	binary.BigEndian.PutUint32(signable[tsEndIndex:idEndIndex], proto.HostID)
+
+	copy(signable[idEndIndex:], proto.Hostname)
+	return
+}
+
 // Calculates the total byte size of the protocol, both inner and outer
 func CalculateProtocolOverhead(suiteID uint8, primaryPayload Payload) (fixedOverhead int, err error) {
-	cryptoInfo, validSuiteID := crypto.GetSuiteInfo(suiteID)
+	cryptoInfo, validSuiteID := registry.GetSuiteInfo(suiteID)
 	if !validSuiteID {
 		err = fmt.Errorf("unknown crypto suite ID %d", suiteID)
 		return
 	}
 
 	// Outer length is fixed based on chosen crypto suite
-	outerTotal := crypto.SuiteIDLen +
+	outerTotal := registry.SuiteIDLen +
 		cryptoInfo.KeySize +
 		cryptoInfo.NonceSize +
 		cryptoInfo.CipherOverhead

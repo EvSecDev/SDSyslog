@@ -11,7 +11,7 @@
 ## Profile Begin
 profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   # Receive signals
-  signal receive set=(stop term kill hup quit int urg exists cont),
+  signal receive set=(stop term kill hup quit int urg exists cont usr1),
   # Send signals to self
   signal send set=(exists urg term kill) peer=SDSyslog,
 
@@ -26,6 +26,9 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   network unix stream,
   network unix dgram,
   network netlink raw,
+
+  # CLI usage
+  /dev/pts/* rw,
 
   # Log files
   capability dac_override,
@@ -43,7 +46,7 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   @{drainFuncPath} rw,
 
   # Configurations needed
-  @{configdir}{/,/**} r,
+  @{configdir}{/,/**} rw,
   @{privKey} r,
 
   # State Keeping

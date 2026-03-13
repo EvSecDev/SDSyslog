@@ -1,3 +1,4 @@
+// Central crypto functions for Hashed Key Derivation (HKDF)
 package hkdf
 
 import (

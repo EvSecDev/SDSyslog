@@ -77,7 +77,7 @@ func StartWatcher(logger *Logger, output io.Writer) {
 						"[%s] [%s] [%s] Suppressed %d repeated messages: %s\n",
 						padTimestamp(event.Timestamp),
 						strings.Join(event.Tags, "/"),
-						InfoLog,
+						event.Severity,
 						dedup.repeatCount,
 						dedup.lastMsg)
 					if err != nil {

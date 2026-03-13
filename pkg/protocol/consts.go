@@ -1,10 +1,13 @@
 package protocol
 
-import "sdsyslog/internal/crypto"
+import "sdsyslog/pkg/crypto/registry"
 
 const (
 	EmptyFieldChar             string = "-"
 	MissingFragmentPlaceholder string = "[missing fragment]"
+	HostPrefixUnkSig           string = "[UNKNOWN]"
+	HostPrefixUnverified       string = "[UNVERIFIED]"
+	IdentitySignatureContext   string = "D3P-ID-SIG"
 
 	terminatorByte          byte   = 0x00
 	customFieldsEmptyMarker uint16 = 0x0001
@@ -22,6 +25,8 @@ const (
 	// Protocol wire field lengths (variable)
 	minHostnameLen   int = 1
 	maxHostnameLen   int = 255
+	minSignatureLen  int = 0
+	maxSignatureLen  int = 255
 	maxCtxSectionLen int = (1 << (8 * lenContextSectionNxtLen)) - 1
 	minCtxKeyLen     int = 1
 	maxCtxKeyLen     int = 32
@@ -44,6 +49,8 @@ const (
 	lenCtxValTerminator         int = 1
 	lenDataTerminator           int = 1
 	lenHostnameNxtLen           int = 1
+	lenSigIDLen                 int = 1
+	lenSigNxtLen                int = 1
 	lenContextSectionNxtLen     int = 2
 	lenCtxKeyNxtLen             int = 1
 	lenCtxTypeVal               int = 1
@@ -60,6 +67,8 @@ const (
 		lenContextSectionTerminator +
 		lenHostnameNxtLen +
 		lenHostnameTerminator +
+		lenSigIDLen +
+		lenSigNxtLen +
 		lenDataNxtLen +
 		lenDataTerminator
 	minInnerPayloadLen int = lenHostID +
@@ -72,11 +81,13 @@ const (
 		lenHostnameNxtLen +
 		minHostnameLen +
 		lenHostnameTerminator +
+		lenSigIDLen +
+		lenSigNxtLen +
 		lenDataNxtLen +
 		minDataLen +
 		lenDataTerminator +
 		minPaddingLen
-	MinOuterPayloadLen int = crypto.SuiteIDLen + minInnerPayloadLen
+	MinOuterPayloadLen int = registry.SuiteIDLen + minInnerPayloadLen
 	ctxFieldOverhead   int = lenCtxKeyNxtLen +
 		lenCtxKeyTerminator +
 		lenCtxTypeVal +

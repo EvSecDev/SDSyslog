@@ -99,6 +99,50 @@ When the daemon is started, a limited HTTP server will also be started on localh
 
 To get started with this API, grab the HTML docs by querying the root path `curl http://localhost:18514/` for the sender or `curl http://localhost:28514/` for the receiver.
 
+## Host Identity Enforcement
+
+An optional additional security feature is the per-host signatures.
+
+This provides authentication for a given hostname and protects against forgery of other senders that possess the primary public key.
+
+To use this feature, you can generate a key pair on the sender:
+
+```bash
+sdsyslog configure --create-signing-keys
+```
+
+Take the public key and add it to the receiver daemon:
+
+```bash
+sdsyslog receive --config /etc/sdsyslog/sdsyslog.json --trust-sender 'sender-hostname|base64-private-key=='
+```
+
+Note: if the receiver is not running or it fails, simply reload or restart the receiving daemon
+
+Take the private key and add it to the sender daemon:
+
+```bash
+sdsyslog send --config /etc/sdsyslog/sdsyslog-sender.json --write-signing-key <<<"base64-private-key=="
+```
+
+Reload the sender daemon:
+
+```bash
+systemctl reload sdsyslog-sender.service
+```
+
+### Signing Notes
+
+By default, without signatures, all hostnames show up in logs with a prefix of `[UNVERIFIED]`.
+
+If the sender is configured with a signing key but not yet trusted by the receiver, the hostname will have prefix `[UNKNOWN]`.
+
+No prefix will be present when the signature is present, trusted, and verified.
+
+Any attempt by a sender to impersonate a hostname that is already trusted by the receiver will be dropped.
+
+The timestamp of the log message is also included in the signing process.
+
 ## Input Filtering
 
 The sender daemon JSON configuration has a section for filters.

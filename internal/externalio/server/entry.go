@@ -105,7 +105,6 @@ func Start(ctx context.Context, server *http.Server) {
 
 	logctx.LogStdInfo(ctx, "Starting metric query server at http://%s/\n",
 		server.Addr,
-		server.Addr,
 	)
 
 	err = server.Serve(conn)

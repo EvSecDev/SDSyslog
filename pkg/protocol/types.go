@@ -35,6 +35,8 @@ type Payload struct {
 	MessageSeqMax int
 	Timestamp     time.Time
 	Hostname      string
+	SignatureID   uint8
+	Signature     []byte
 	CustomFields  map[string]any
 	Data          []byte
 	PaddingLen    int
@@ -48,6 +50,8 @@ type innerWireFormat struct {
 	MessageSeqMax uint16
 	Timestamp     uint64
 	Hostname      []byte
+	SignatureID   uint8
+	Signature     []byte
 	ContextFields []contextWireFormat
 	Data          []byte
 	PaddingLen    int

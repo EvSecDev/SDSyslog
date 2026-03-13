@@ -13,6 +13,7 @@ type DaemonLike interface {
 	Shutdown()
 	StartFIPR() (err error)
 	StopFIPR()
+	ReloadPinnedKeys() (count int, err error)
 }
 
 // Process OS signals and handle orchestrating updates via SIGHUP.
@@ -23,7 +24,8 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 		syscall.SIGINT,
 		syscall.SIGQUIT,
 		syscall.SIGTERM,
-		syscall.SIGHUP,
+		FullUpdateSignal,
+		PinKeyReloadSignal,
 	)
 
 	for {
@@ -44,9 +46,21 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 			continue
 		}
 
+		// Reload pinned keys
+		if recvSignal == PinKeyReloadSignal {
+			logctx.LogStdInfo(ctx, "Beginning pinned keys reload...\n")
+			count, err := daemonManager.ReloadPinnedKeys()
+			if err != nil {
+				logctx.LogStdErr(ctx, "Pinned keys reload failed: %w\n", err)
+			} else {
+				logctx.LogStdInfo(ctx, "Pinned keys reload succeeded (%d modifications made)\n", count)
+			}
+			continue
+		}
+
 		// Reload (Update) signal
 		var childProc *exec.Cmd
-		if recvSignal == syscall.SIGHUP {
+		if recvSignal == FullUpdateSignal {
 			logctx.LogStdInfo(ctx,
 				"Beginning reload...\n")
 
@@ -77,8 +91,12 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 		logger.Wake() // Logs after here are not guaranteed to print (only if update succeeds)
 
 		// Process update (Replacement)
-		if recvSignal == syscall.SIGHUP {
-			err := updateAndExit(ctx, daemonManager, childProc.Process.Pid)
+		if recvSignal == FullUpdateSignal {
+			var childProcPid int
+			if childProc != nil {
+				childProcPid = childProc.Process.Pid
+			}
+			err := updateAndExit(childProcPid)
 			if err != nil {
 				// Cleanup update variable
 				lerr := os.Unsetenv(EnvNameSelfUpdate)

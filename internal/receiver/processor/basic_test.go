@@ -182,7 +182,7 @@ func TestProcessor_Basic(t *testing.T) {
 			}
 
 			// Mock real packet
-			packets, err := protocol.Create(tt.input, 1234, mockMaxPayloadSize)
+			packets, err := protocol.Create(tt.input, 1234, mockMaxPayloadSize, 1, 0)
 			if err != nil {
 				t.Fatalf("unexpected error from mock packet creation: %v", err)
 			}

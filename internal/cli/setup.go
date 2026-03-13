@@ -10,22 +10,24 @@ import (
 // Setup/installation options
 func SetupMode(cliOpts *CommandSet, commandname string, args []string) {
 	var newKeyPair bool
+	var newSigningKeys bool
 	var newSendConf bool
 	var newRecvConf bool
 	var installSender bool
 	var installReceiver bool
 	var uninstallSender bool
 	var uninstallReceiver bool
-	var templateConfPath string
+	var confPath string
 
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	commandFlags.BoolVar(&uninstallSender, "uninstall-sender", false, "Remove the sender daemon")
 	commandFlags.BoolVar(&uninstallReceiver, "uninstall-receiver", false, "Remove the receiver daemon")
 	commandFlags.BoolVar(&installSender, "install-sender", false, "Install/Upgrade the sender daemon")
 	commandFlags.BoolVar(&installReceiver, "install-receiver", false, "Install/Upgrade the receiver daemon")
-	commandFlags.StringVar(&templateConfPath, "c", "", "Path to template config file")
-	commandFlags.StringVar(&templateConfPath, "config", "", "Path to template config file")
+	commandFlags.StringVar(&confPath, "c", "", "Path to config file")
+	commandFlags.StringVar(&confPath, "config", "", "Path to config file")
 	commandFlags.BoolVar(&newKeyPair, "create-keys", false, "Create new persistent key pair (prints to stdout)")
+	commandFlags.BoolVar(&newSigningKeys, "create-signing-keys", false, "Create new persistent signing key pair (prints to stdout)")
 	commandFlags.BoolVar(&newSendConf, "send-config-template", false, "Create new template config for the sender daemon (using config-path argument)")
 	commandFlags.BoolVar(&newRecvConf, "recv-config-template", false, "Create new template config for the receiver daemon (using config-path argument)")
 
@@ -44,10 +46,12 @@ func SetupMode(cliOpts *CommandSet, commandname string, args []string) {
 
 	if newKeyPair {
 		err = install.GeneratePrivateKeys()
+	} else if newSigningKeys {
+		err = install.GenerateSigningKeys(1) // Default suite ID
 	} else if newSendConf {
-		err = install.CreateSendTemplateConfig(templateConfPath)
+		err = install.CreateSendTemplateConfig(confPath)
 	} else if newRecvConf {
-		err = install.CreateRecvTemplateConfig(templateConfPath)
+		err = install.CreateRecvTemplateConfig(confPath)
 	} else if installSender {
 		install.Run("send")
 	} else if installReceiver {

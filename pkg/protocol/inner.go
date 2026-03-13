@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"sdsyslog/pkg/crypto/registry"
 )
 
 // Serializes inner packet payload into transport payload
@@ -32,6 +33,7 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 	}
 
 	// METADATA
+	// Timestamp
 	if err = binary.Write(&buf, binary.BigEndian, fields.Timestamp); err != nil {
 		err = fmt.Errorf("failed to serialize Timestamp: %w", err)
 		return
@@ -42,11 +44,30 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 		return
 	}
 	buf.WriteByte(uint8(len(fields.Hostname)))
-	if err = writeFixedLength(&buf, fields.Hostname, len(fields.Hostname)); err != nil {
+	err = writeFixedLength(&buf, fields.Hostname, len(fields.Hostname))
+	if err != nil {
 		err = fmt.Errorf("failed to serialize Hostname: %w", err)
 		return
 	}
 	buf.WriteByte(terminatorByte)
+	// Signature
+	err = buf.WriteByte(fields.SignatureID)
+	if err != nil {
+		err = fmt.Errorf("failed to serialize signature ID")
+		return
+	}
+	err = buf.WriteByte(uint8(len(fields.Signature)))
+	if err != nil {
+		err = fmt.Errorf("failed to serialize signature length")
+		return
+	}
+	if len(fields.Signature) > minSignatureLen {
+		err = writeFixedLength(&buf, fields.Signature, len(fields.Signature))
+		if err != nil {
+			err = fmt.Errorf("failed to serialize Signature: %w", err)
+			return
+		}
+	}
 
 	// CONTEXT - fields
 	var contextBuffer bytes.Buffer // temporary buffer to gather all the fields
@@ -210,6 +231,44 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 	if err != nil {
 		return
 	}
+	// Signature
+	var sigID uint8
+	if err = binary.Read(buf, binary.BigEndian, &sigID); err != nil {
+		err = fmt.Errorf("failed to deserialize signature ID: %w", err)
+		return
+	}
+	suite, validID := registry.GetSignatureInfo(sigID)
+	if !validID {
+		err = fmt.Errorf("unknown signature ID %d", sigID)
+		return
+	}
+	var sigLen uint8
+	if err = binary.Read(buf, binary.BigEndian, &sigLen); err != nil {
+		err = fmt.Errorf("failed to deserialize signature length: %w", err)
+		return
+	}
+	if sigID == 0 && sigLen > 0 {
+		err = fmt.Errorf("signature ID of 0 and signature length greater than zero is invalid")
+		return
+	}
+	if sigID > 0 && sigLen == 0 {
+		err = fmt.Errorf("signature length field cannot be zero when non-zero signature ID is present")
+		return
+	}
+	// Empty sig lengths skip signature field
+	if sigLen > 0 {
+		if sigLen > uint8(suite.MaxSignatureLength) || sigLen < uint8(suite.MinSignatureLength) {
+			err = fmt.Errorf("signature length %d for id %d must be between %d and %d bytes",
+				sigLen, sigID, suite.MinSignatureLength, suite.MaxSignatureLength)
+			return
+		}
+		fields.Signature = make([]byte, sigLen)
+		if _, err = io.ReadFull(buf, fields.Signature); err != nil {
+			err = fmt.Errorf("failed to deserialize Signature field: %w", err)
+			return
+		}
+	}
+	fields.SignatureID = sigID
 
 	// CONTEXT
 	var ctxSecLen uint16

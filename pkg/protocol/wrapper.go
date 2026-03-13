@@ -7,7 +7,7 @@ import (
 )
 
 // Main Entry Point: Takes in a new message to be sent and creates packets (transport layer payload)
-func Create(sendMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, err error) {
+func Create(sendMsg Message, hostID int, maxPayloadSize int, cryptoSuite, signatureSuite uint8) (packets [][]byte, err error) {
 	newMessageID, err := random.FourByte()
 	if err != nil {
 		err = fmt.Errorf("failed to generate random message identifier: %w", err)
@@ -24,10 +24,7 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, 
 		Data:         []byte(sendMsg.Data),
 	}
 
-	// Default to only supported
-	cryptoSuiteInUse := uint8(1)
-
-	protocolOverhead, err := CalculateProtocolOverhead(cryptoSuiteInUse, newMsg)
+	protocolOverhead, err := CalculateProtocolOverhead(cryptoSuite, newMsg)
 	if err != nil {
 		err = fmt.Errorf("failed to calculate protocol overhead: %w", err)
 		return
@@ -41,7 +38,7 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, 
 
 	for _, fragment := range fragments {
 		var payload innerWireFormat
-		payload, err = ConstructPayload(fragment)
+		payload, err = ConstructPayload(fragment, signatureSuite)
 		if err != nil {
 			err = fmt.Errorf("invalid payload: %w", err)
 			return
@@ -55,7 +52,7 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int) (packets [][]byte, 
 		}
 
 		var outterPayload []byte
-		outterPayload, err = ConstructOuterPayload(innerPayload, cryptoSuiteInUse)
+		outterPayload, err = ConstructOuterPayload(innerPayload, cryptoSuite)
 		if err != nil {
 			err = fmt.Errorf("failed to serialize outer payload: %w", err)
 			return

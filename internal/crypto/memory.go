@@ -1,3 +1,4 @@
+// Central package for all crypto related functions
 package crypto
 
 // Overwrite slices' array with zeros

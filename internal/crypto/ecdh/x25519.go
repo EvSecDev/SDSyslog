@@ -1,3 +1,4 @@
+// Central crypto functions for Elliptic Curve Diffie-Hellman (ECDH)
 package ecdh
 
 import (
@@ -8,13 +9,10 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
-// Fixed key length for x25519
-const KeyLen int = 32
-
 // Creates asymmetric key pair using x25519
 func CreatePersistentKey() (private, public []byte, err error) {
 	// Create a secure random 32-byte private key
-	private = make([]byte, KeyLen)
+	private = make([]byte, curve25519.ScalarSize)
 	_, err = rand.Read(private)
 	if err != nil {
 		err = fmt.Errorf("failed to generate random private key: %w", err)
@@ -43,7 +41,7 @@ func DerivePersistentPublicKey(private []byte) (public []byte, err error) {
 // Meant for use on sender side
 func CreateSharedSecret(publicKey []byte) (sharedSecret, ephemeralPublic []byte, err error) {
 	// Ephemeral key pair for this message
-	ephemeralPriv := make([]byte, KeyLen)
+	ephemeralPriv := make([]byte, curve25519.ScalarSize)
 	_, err = rand.Read(ephemeralPriv)
 	if err != nil {
 		err = fmt.Errorf("failed to generate ephemeral private key: %w", err)

@@ -3,7 +3,6 @@ package aead
 import (
 	"bytes"
 	"crypto/rand"
-	"sdsyslog/internal/crypto/ecdh"
 	"testing"
 
 	"golang.org/x/crypto/curve25519"
@@ -48,7 +47,7 @@ func TestDecryptWithAssociatedData(t *testing.T) {
 	}
 
 	// Exact use case
-	ephemeralPriv := make([]byte, ecdh.KeyLen)
+	ephemeralPriv := make([]byte, curve25519.ScalarSize)
 	_, err = rand.Read(ephemeralPriv)
 	if err != nil {
 		t.Fatalf("unexpected error reading random bytes: %v", err)

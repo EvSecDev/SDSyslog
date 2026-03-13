@@ -1,10 +1,12 @@
 package receiver
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
 	"runtime"
+	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
 	"time"
@@ -28,10 +30,44 @@ func LoadConfig(path string) (cfg JSONConfig, err error) {
 }
 
 // Parses JSON config into daemon config
-func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
+func (cfg JSONConfig) NewDaemonConf(originalConfigPath string) (config Config, err error) {
+	config.path = originalConfigPath
+
 	// Network settings
 	config.ListenIP = cfg.Network.Address
 	config.ListenPort = cfg.Network.Port
+
+	// Load pinned keys
+	if cfg.PinnedSigningKeysPath != "" {
+		var data []byte
+		data, err = os.ReadFile(cfg.PinnedSigningKeysPath)
+		if err != nil {
+			err = fmt.Errorf("failed to read pinned signing keys file: %w", err)
+			return
+		}
+
+		var raw map[string]string
+		err = json.Unmarshal(data, &raw)
+		if err != nil {
+			err = fmt.Errorf("invalid pinned signing keys file format: %w", err)
+			return
+		}
+
+		config.PinnedSigningKeysFile = cfg.PinnedSigningKeysPath
+
+		config.PinnedSigningKeys = make(map[string][]byte, len(raw))
+		for host, b64 := range raw {
+			var key []byte
+			key, err = base64.StdEncoding.DecodeString(b64)
+			if err != nil {
+				err = fmt.Errorf("invalid key for sender hostname %s (must be base64): %w", host, err)
+				return
+			}
+			config.PinnedSigningKeys[host] = key
+		}
+	} else {
+		config.PinnedSigningKeys = make(map[string][]byte)
+	}
 
 	// Output settings
 	config.JournaldURL = cfg.Outputs.JournaldURL
@@ -153,4 +189,44 @@ func (cfg *Config) setDefaults() {
 		// Longer times are not useful
 		cfg.AutoscaleCheckInterval = 1 * time.Minute
 	}
+}
+
+// Loads newest config from disk and pulls newest pinned keys map.
+func (daemon *Daemon) ReloadPinnedKeys() (newCount int, err error) {
+	cfg, err := LoadConfig(daemon.cfg.path)
+	if err != nil {
+		err = fmt.Errorf("failed to re-read daemon configuration file: %w", err)
+		return
+	}
+	if cfg.PinnedSigningKeysPath == "" {
+		// No-op
+		return
+	}
+	pinnedKeysFile, err := os.ReadFile(cfg.PinnedSigningKeysPath)
+	if err != nil && !os.IsNotExist(err) {
+		err = fmt.Errorf("failed reading pinned keys file: %w", err)
+		return
+	} else if err != nil && os.IsNotExist(err) {
+		// No-op
+		return
+	}
+	oldPinnedKeysCount := len(daemon.cfg.PinnedSigningKeys)
+	var pinnedKeys map[string][]byte
+	err = json.Unmarshal(pinnedKeysFile, &pinnedKeys)
+	if err != nil {
+		err = fmt.Errorf("failed to parse pinned keys JSON: %w", err)
+		return
+	}
+	if len(pinnedKeys) == 0 {
+		// No-op
+		return
+	}
+	// Update map
+	wrappers.NewPinnedSenders(pinnedKeys)
+
+	newCount = oldPinnedKeysCount - len(pinnedKeys)
+	if newCount < 0 {
+		newCount = -newCount
+	}
+	return
 }

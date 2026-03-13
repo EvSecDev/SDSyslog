@@ -11,4 +11,6 @@ const (
 	DefaultFutureValidityWindow time.Duration = 4 * time.Hour
 	DefaultSocketDir            string        = global.DefaultStateDir + "/ipc"
 	ShutdownTimeout             time.Duration = 20 * time.Second
+
+	PinedKeysReqSeparator string = "|"
 )

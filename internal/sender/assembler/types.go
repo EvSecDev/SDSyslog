@@ -17,6 +17,8 @@ type ManagerConfig struct {
 	DestinationIP          string        // Destination address for output
 	OverrideMaxPayloadSize int           // Use supplied maximum payload size
 	MaxPayloadSize         int           // Maximum payload size for configured destination
+	CryptoSuiteID          uint8
+	SigSuiteID             uint8
 }
 
 type Manager struct {
@@ -28,11 +30,14 @@ type Manager struct {
 }
 
 type Instance struct {
-	inbox          *mpmc.Queue[protocol.Message] // messages from processors
-	outbox         *mpmc.Queue[[]byte]           // fragments for sender
-	hostID         int                           // ID for all sent messages
-	maxPayloadSize int                           // maximum payload size for configured destination
-	Metrics        MetricStorage
+	inbox   *mpmc.Queue[protocol.Message] // messages from processors
+	outbox  *mpmc.Queue[[]byte]           // fragments for sender
+	Metrics MetricStorage
+
+	cryptoSuiteID  uint8
+	sigSuiteID     uint8
+	hostID         int // ID for all sent messages
+	maxPayloadSize int // maximum payload size for configured destination
 
 	ctx    context.Context
 	wg     sync.WaitGroup     // Waiter for instance

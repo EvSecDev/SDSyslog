@@ -13,9 +13,14 @@ import (
 
 func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, args []string) {
 	var configPath string
+	var addPinnedKey string
+	var delPinnedKey string
+
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	requestedLogLevel := SetGlobalArguments(commandFlags)
 	SetCommon(commandFlags, &configPath, commandname)
+	commandFlags.StringVar(&addPinnedKey, "trust-sender", "", "Add a pinned public key for a sender (format: <hostname>"+receiver.PinedKeysReqSeparator+"<base64 key|pem file>)")
+	commandFlags.StringVar(&delPinnedKey, "distrust-sender", "", "Remove a pinned public key for the given sender hostname")
 
 	commandFlags.Usage = func() {
 		PrintHelpMenu(commandFlags, commandname, cliOpts)
@@ -36,6 +41,24 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 	// Embed mode name in context
 	ctx = context.WithValue(ctx, global.CtxModeKey, commandname)
 
+	// Configuration options (non-daemon)
+	if addPinnedKey != "" {
+		err = receiver.AddPinnedKey(configPath, addPinnedKey)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if delPinnedKey != "" {
+		err = receiver.RemovePinnedKey(configPath, delPinnedKey)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	jsonCfg, err := receiver.LoadConfig(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -54,7 +77,7 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 		os.Exit(1)
 	}
 
-	daemonConfig, err := jsonCfg.NewDaemonConf()
+	daemonConfig, err := jsonCfg.NewDaemonConf(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

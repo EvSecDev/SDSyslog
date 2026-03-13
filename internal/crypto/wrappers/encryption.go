@@ -8,6 +8,7 @@ import (
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/hash"
 	"sdsyslog/internal/crypto/hkdf"
+	"sdsyslog/pkg/crypto/registry"
 )
 
 // Wrapper to encrypt an inner payload into cipher text
@@ -61,7 +62,7 @@ func SetupEncryptInnerPayload(serverPub []byte) (err error) {
 			return
 		}
 
-		suite, _ := crypto.GetSuiteInfo(1)
+		suite, _ := registry.GetSuiteInfo(1)
 		nonce = make([]byte, suite.NonceSize)
 		_, err = rand.Read(nonce)
 		if err != nil {
@@ -98,7 +99,7 @@ func SetupEncryptInnerPayload(serverPub []byte) (err error) {
 func SetupDecryptInnerPayload(privateKey []byte) (err error) {
 	if len(privateKey) <= 0 {
 		if DecryptInnerPayload == nil {
-			err = fmt.Errorf("provided no public key and encryption function is not already initialized")
+			err = fmt.Errorf("provided no private key and encryption function is not already initialized")
 		}
 		return
 	}
@@ -126,7 +127,7 @@ func SetupDecryptInnerPayload(privateKey []byte) (err error) {
 			return
 		}
 
-		suite, _ := crypto.GetSuiteInfo(suiteID)
+		suite, _ := registry.GetSuiteInfo(suiteID)
 		actualKey, err := hkdf.DeriveKey(sharedSecret, salt, suite.Name, suite.KeySize)
 		if err != nil {
 			err = fmt.Errorf("failed deriving key: %w", err)

@@ -306,7 +306,7 @@ func (daemon *Daemon) Shutdown() {
 			}
 			removedID := daemon.Mgrs.Out.RemoveLastInstance()
 			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
-				"Successfully stopped assembler instance %d\n", removedID)
+				"Successfully stopped output instance %d\n", removedID)
 		}
 	}
 

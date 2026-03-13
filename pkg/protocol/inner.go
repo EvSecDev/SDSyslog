@@ -120,7 +120,7 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 		return
 	}
 	if len(fields.Data) > maxDataLen {
-		err = fmt.Errorf("log text length (%d) exceeds maximum field length: %d", len(fields.Data), maxDataLen)
+		err = fmt.Errorf("data field length (%d) exceeds maximum field length: %d", len(fields.Data), maxDataLen)
 		return
 	}
 	if err = writeUint16(&buf, uint16(len(fields.Data))); err != nil {
@@ -350,22 +350,30 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 		return
 	}
 
-	// LogText
-	var logTextLen uint16
-	if err = binary.Read(buf, binary.BigEndian, &logTextLen); err != nil {
-		err = fmt.Errorf("failed to deserialize LogText length: %w", err)
+	// Data
+	var dataLen uint16
+	if err = binary.Read(buf, binary.BigEndian, &dataLen); err != nil {
+		err = fmt.Errorf("failed to deserialize data field length: %w", err)
 		return
 	}
-	if logTextLen == 0 {
-		err = fmt.Errorf("log text cannot be empty")
+	if dataLen == 0 {
+		err = fmt.Errorf("data field cannot be empty")
 		return
 	}
-	fields.Data = make([]byte, logTextLen)
+	if len(fields.Data) > maxDataLen {
+		err = fmt.Errorf("data field length (%d) exceeds maximum field length: %d", len(fields.Data), maxDataLen)
+		return
+	}
+	if int(dataLen) > buf.Len() {
+		err = fmt.Errorf("declared data field length exceeds remaining available payload buffer bytes")
+		return
+	}
+	fields.Data = make([]byte, dataLen)
 	if _, err = io.ReadFull(buf, fields.Data); err != nil {
-		err = fmt.Errorf("failed to deserialize LogText: %w", err)
+		err = fmt.Errorf("failed to deserialize data field: %w", err)
 		return
 	}
-	err = readTerminator(buf, "LogText")
+	err = readTerminator(buf, "data field")
 	if err != nil {
 		return
 	}

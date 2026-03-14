@@ -33,7 +33,8 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 				colon := strings.Index(rest, ":")
 				if colon > 0 {
 					header := rest[:colon]
-					message.Data = strings.TrimSpace(rest[colon+1:])
+					data := strings.TrimSpace(rest[colon+1:])
+					message.Data = []byte(data)
 
 					// app[pid] or app
 					if lb := strings.IndexByte(header, '['); lb > 0 {
@@ -97,7 +98,7 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 				rest = strings.TrimSpace(rest)
 
 				// Remaining part is the message text
-				message.Data = rest
+				message.Data = []byte(rest)
 			}
 			message = setDefaults(message, line, localHostname)
 			return
@@ -120,7 +121,8 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 							if pid, err := strconv.Atoi(rest[:hash]); err == nil {
 								message.Fields[externalio.CFprocessid] = pid
 							}
-							message.Data = strings.TrimSpace(rest[colon+1:])
+							data := strings.TrimSpace(rest[colon+1:])
+							message.Data = []byte(data)
 							message.Timestamp = ts
 							message = setDefaults(message, line, localHostname)
 							return
@@ -135,7 +137,8 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 	if len(line) >= 19 {
 		if ts, err := time.Parse("2006-01-02 15:04:05", line[:19]); err == nil {
 			message.Timestamp = ts
-			message.Data = strings.TrimSpace(line[19:])
+			data := strings.TrimSpace(line[19:])
+			message.Data = []byte(data)
 			message = setDefaults(message, line, localHostname)
 			return
 		}
@@ -158,7 +161,8 @@ func parseLine(rawLine string, localHostname string) (message protocol.Message) 
 			if ts, err := time.Parse("02-Jan-2006 15:04:05", tsStr); err == nil {
 				rest := strings.TrimSpace(line[rb+1:])
 				if colon := strings.Index(rest, ":"); colon > 0 {
-					message.Data = strings.TrimSpace(rest[colon+1:])
+					data := strings.TrimSpace(rest[colon+1:])
+					message.Data = []byte(data)
 				}
 				message.Timestamp = ts
 				message = setDefaults(message, line, localHostname)
@@ -196,11 +200,11 @@ func setDefaults(old protocol.Message, raw string, localHostname string) (new pr
 	if new.Hostname == "" {
 		new.Hostname = localHostname
 	}
-	if new.Data == "" {
+	if len(new.Data) == 0 {
 		if raw == "" {
 			raw = "-"
 		}
-		new.Data = raw
+		new.Data = []byte(raw)
 	}
 
 	_, ok := new.Fields[externalio.CFappname]

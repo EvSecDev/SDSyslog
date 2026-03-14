@@ -276,15 +276,9 @@ func TestPaddingLen(t *testing.T) {
 	}
 
 	// Calculate the expected length based on test case
-	expectedLen := 0
-	expectedLen += lenHostID                                    // HostID (uint32)
-	expectedLen += lenMsgID                                     // MsgID (uint16)
-	expectedLen += lenMsgSeq                                    // MessageSeq (uint16)
-	expectedLen += lenSeqMax                                    // MessageSeqMax (uint16)
-	expectedLen += lenTimestamp                                 // Timestamp (uint64)
-	expectedLen += 1 + len(fields.Hostname) + 1                 // Hostname length + Hostname + Null terminator
-	expectedLen += lenSigIDLen + lenSigNxtLen + minSignatureLen // Signature fields
-	expectedLen += lenContextSectionNxtLen                      // Context nxt length
+	expectedLen := minInnerPayloadLenFixedOnly
+	expectedLen += len(fields.Hostname)
+	expectedLen += minSignatureLen
 	for _, field := range fields.ContextFields {
 		expectedLen += lenCtxKeyNxtLen
 		expectedLen += len(field.Key)
@@ -294,9 +288,8 @@ func TestPaddingLen(t *testing.T) {
 		expectedLen += len(field.Value)
 		expectedLen += lenCtxValTerminator
 	}
-	expectedLen += lenContextSectionTerminator // Context Null terminator
-	expectedLen += 1 + len(fields.Data) + 2    // LogText length + LogText + Null terminator
-	expectedLen += fields.PaddingLen           // Padding
+	expectedLen += len(fields.Data)
+	expectedLen += fields.PaddingLen // Padding
 
 	// Check that padding is added
 	if len(serialized) != expectedLen {

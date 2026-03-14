@@ -1,6 +1,7 @@
 package journald
 
 import (
+	"bytes"
 	"os"
 	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/syslog"
@@ -46,7 +47,7 @@ func TestParseFields(t *testing.T) {
 				"_GID":                 "1001",
 			},
 			expected: protocol.Message{
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 				Hostname:  "test-host",
 				Timestamp: expectedTime,
 				Fields: map[string]any{
@@ -100,7 +101,7 @@ func TestParseFields(t *testing.T) {
 				"PRIORITY":             "5",
 			},
 			expected: protocol.Message{
-				Data:      "hello",
+				Data:      []byte("hello"),
 				Hostname:  localHostname,
 				Timestamp: expectedTime,
 				Fields: map[string]any{
@@ -129,7 +130,7 @@ func TestParseFields(t *testing.T) {
 				"PRIORITY":             "6",
 			},
 			expected: protocol.Message{
-				Data:      "hello",
+				Data:      []byte("hello"),
 				Hostname:  localHostname,
 				Timestamp: expectedTime,
 				Fields: map[string]any{
@@ -149,7 +150,7 @@ func TestParseFields(t *testing.T) {
 				"PRIORITY":             "6",
 			},
 			expected: protocol.Message{
-				Data:      "hello",
+				Data:      []byte("hello"),
 				Hostname:  localHostname,
 				Timestamp: expectedTime,
 				Fields: map[string]any{
@@ -207,7 +208,7 @@ func TestParseFields(t *testing.T) {
 				return
 			}
 
-			if tt.expected.Data != msg.Data {
+			if !bytes.Equal(tt.expected.Data, msg.Data) {
 				t.Fatalf("expected Data '%s', but got '%s'", tt.expected.Data, msg.Data)
 			}
 			if tt.expected.Hostname != msg.Hostname {

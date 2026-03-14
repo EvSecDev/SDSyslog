@@ -12,16 +12,15 @@ import (
 
 // Extracts relevant fields from a journal entry
 func parseFields(fields map[string]string, localHostname string) (message protocol.Message, err error) {
-	var ok bool
-
 	message.Fields = make(map[string]any)
 
 	// RAW LOG
-	message.Data, ok = fields["MESSAGE"]
+	rawData, ok := fields["MESSAGE"]
 	if !ok {
 		err = fmt.Errorf("journal entry has no message")
 		return
 	}
+	message.Data = []byte(rawData)
 
 	// TIMESTAMP
 	rawTimestamp, ok := fields["__REALTIME_TIMESTAMP"]

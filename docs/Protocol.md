@@ -102,11 +102,11 @@ Both the cipher suite ID and ephemeral public key included in the header MUST be
 | 2 Bytes | 1 Byte | 1-32 Bytes | 1 Byte      | 1 Byte | 1 Byte | 1-255 Bytes | 1 Byte      | n KeyVal Pairs | 1 Byte     |
 | SECLEN  | NXTLEN |    Key     | NUL (0x00)  |  Type  | NXTLEN |   Value     | NUL (0x00)  | ....           | NUL (0x00) | 
 ---------------------------------------------------------------------------------------------------------------------------
-------------------------------------------
-|            DATA (4B - XB)              |
-| 2 Bytes | Remaining Bytes |  1 Byte    |
-| NXTLEN  |  Fragment Text  | NUL (0x00) |
-------------------------------------------
+-----------------------------
+|       DATA (3B - XB)      |
+| 2 Bytes | Remaining Bytes |
+| NXTLEN  |  Fragment Data  |
+-----------------------------
 ---------------
 |   TRAILER   |
 | 10-60 Bytes |
@@ -244,8 +244,6 @@ Field is present even when no context fields are present.
 It is presented by a 16-bit unsigned integer.
 
 Empty fragments processed from client programs should be discarded and no packets sent.
-
-Fragment text MUST be valid UTF-8. NUL (0x00) bytes encountered in fragment text MUST be removed prior to transmission.
 
 ### Padding
 

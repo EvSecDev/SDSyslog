@@ -156,12 +156,8 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 		}
 	}
 
-	// LogText: Clean and validate
-	proto.Data = cleanBytes(request.Data)
-	if !utf8.Valid(proto.Data) {
-		err = fmt.Errorf("non-UTF8 data is unsupported")
-		return
-	}
+	// Data Field - direct passthrough
+	proto.Data = request.Data
 
 	// Padding Length (random padding is generated as part of the trailer)
 	if request.PaddingLen < minPaddingLen || request.PaddingLen > maxPaddingLen {
@@ -286,13 +282,9 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 		}
 	}
 
-	// Validate data length and convert back to string
+	// Validate data length
 	if len(proto.Data) == 0 {
 		err = fmt.Errorf("empty data text")
-		return
-	}
-	if !utf8.Valid(proto.Data) {
-		err = fmt.Errorf("non-UTF8 data is unsupported")
 		return
 	}
 	validated.Data = proto.Data

@@ -126,7 +126,7 @@ func TestRecvConstantFlow(t *testing.T) {
 			}
 
 			// Get mock packets - new set (for random log id)
-			packets, err := mockPackets(1, testMessage, maxPayloadSize, pub)
+			packets, err := mockPackets(1, []byte(testMessage), maxPayloadSize, pub)
 			if err != nil {
 				writerErr = err
 				return

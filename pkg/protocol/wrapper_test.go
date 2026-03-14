@@ -50,7 +50,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  "host-a",
 				Fields:    map[string]any{"env": "dev"},
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 			},
 			hostID:         1,
 			maxPayloadSize: 1024,
@@ -59,7 +59,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "host-a",
 				Fields:    map[string]any{"env": "dev"},
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 			},
 		},
 		{
@@ -68,7 +68,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  "host-a-w-sig",
 				Fields:    map[string]any{"env": "dev"},
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 			},
 			hostID:         1,
 			maxPayloadSize: 1024,
@@ -82,7 +82,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  "host-a-w-sig",
 				Fields:    map[string]any{"env": "dev"},
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 			},
 		},
 		{
@@ -91,7 +91,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  "host-a-fake",
 				Fields:    map[string]any{"env": "dev"},
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 			},
 			hostID:         1,
 			maxPayloadSize: 1024,
@@ -109,7 +109,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  "host-a-fake-2",
 				Fields:    map[string]any{"env": "dev"},
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 			},
 			hostID:         1,
 			maxPayloadSize: 1024,
@@ -127,7 +127,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  "host-unk-w-sig",
 				Fields:    map[string]any{"env": "dev"},
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 			},
 			hostID:         1,
 			maxPayloadSize: 1024,
@@ -138,7 +138,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  HostPrefixUnkSig + "host-unk-w-sig",
 				Fields:    map[string]any{"env": "dev"},
-				Data:      "hello world",
+				Data:      []byte("hello world"),
 			},
 		},
 		{
@@ -147,7 +147,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  "host-b",
 				Fields:    map[string]any{"env": "prod"},
-				Data:      string(bytes.Repeat([]byte("A"), 10_000)),
+				Data:      bytes.Repeat([]byte("A"), 10_000),
 			},
 			hostID:         42,
 			maxPayloadSize: 256,
@@ -156,7 +156,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "host-b",
 				Fields:    map[string]any{"env": "prod"},
-				Data:      string(bytes.Repeat([]byte("A"), 10_000)),
+				Data:      bytes.Repeat([]byte("A"), 10_000),
 			},
 		},
 		{
@@ -164,7 +164,7 @@ func TestProtocol(t *testing.T) {
 			msg: Message{
 				Timestamp: now,
 				Hostname:  "boundary-host",
-				Data:      string(bytes.Repeat([]byte("B"), 512)),
+				Data:      bytes.Repeat([]byte("B"), 512),
 			},
 			hostID:         7,
 			maxPayloadSize: 512,
@@ -172,7 +172,7 @@ func TestProtocol(t *testing.T) {
 			expectedMsg: Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "boundary-host",
-				Data:      string(bytes.Repeat([]byte("B"), 512)),
+				Data:      bytes.Repeat([]byte("B"), 512),
 			},
 		},
 		{
@@ -181,7 +181,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  "unicode-host",
 				Fields:    map[string]any{"lang": ":)"},
-				Data:      "hello there🌏",
+				Data:      []byte("hello there🌏"),
 			},
 			hostID:         9,
 			maxPayloadSize: 256,
@@ -190,7 +190,7 @@ func TestProtocol(t *testing.T) {
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "unicode-host",
 				Fields:    map[string]any{"lang": ":)"},
-				Data:      "hello there🌏",
+				Data:      []byte("hello there🌏"),
 			},
 		},
 		{
@@ -198,7 +198,7 @@ func TestProtocol(t *testing.T) {
 			msg: Message{
 				Timestamp: now,
 				Hostname:  "bad-payload",
-				Data:      "test",
+				Data:      []byte("test"),
 			},
 			hostID:          1,
 			maxPayloadSize:  0,
@@ -207,7 +207,7 @@ func TestProtocol(t *testing.T) {
 			expectedMsg: Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "bad-payload",
-				Data:      "test",
+				Data:      []byte("test"),
 			},
 		},
 		{
@@ -218,7 +218,7 @@ func TestProtocol(t *testing.T) {
 				Fields: map[string]any{
 					"field1": strings.Repeat("a", 255),
 				},
-				Data: "test",
+				Data: []byte("test"),
 			},
 			hostID:          1,
 			maxPayloadSize:  260,
@@ -230,7 +230,7 @@ func TestProtocol(t *testing.T) {
 				Fields: map[string]any{
 					"field1": strings.Repeat("a", 255),
 				},
-				Data: "test",
+				Data: []byte("test"),
 			},
 		},
 		{
@@ -238,7 +238,7 @@ func TestProtocol(t *testing.T) {
 			msg: Message{
 				Timestamp: now,
 				Hostname:  "corrupt-host",
-				Data:      "valid data",
+				Data:      []byte("valid data"),
 			},
 			hostID:         5,
 			maxPayloadSize: 256,
@@ -251,7 +251,7 @@ func TestProtocol(t *testing.T) {
 			expectedMsg: Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "corrupt-host",
-				Data:      "valid data",
+				Data:      []byte("valid data"),
 			},
 		},
 		{
@@ -259,7 +259,7 @@ func TestProtocol(t *testing.T) {
 			msg: Message{
 				Timestamp: now,
 				Hostname:  "reorder-host",
-				Data:      string(bytes.Repeat([]byte("Z"), 2048)),
+				Data:      bytes.Repeat([]byte("Z"), 2048),
 			},
 			hostID:         12,
 			maxPayloadSize: 256,
@@ -273,7 +273,7 @@ func TestProtocol(t *testing.T) {
 			expectedMsg: Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "reorder-host",
-				Data:      string(bytes.Repeat([]byte("Z"), 2048)),
+				Data:      bytes.Repeat([]byte("Z"), 2048),
 			},
 		},
 	}
@@ -315,7 +315,7 @@ func TestProtocol(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected extract error: %v", err)
 				}
-				if recvMsg.Data != "" {
+				if len(recvMsg.Data) == 0 {
 					t.Fatalf("expected empty message, got %+v", recvMsg)
 				}
 				if recvHostID != 0 {
@@ -366,7 +366,7 @@ func TestProtocol(t *testing.T) {
 					t.Fatalf("field %q mismatch: got %q want %q", k, recvMsg.Fields[k], v)
 				}
 			}
-			if recvMsg.Data != tt.expectedMsg.Data {
+			if !bytes.Equal(recvMsg.Data, tt.expectedMsg.Data) {
 				t.Fatalf("data mismatch: got %q want %q", recvMsg.Data, tt.expectedMsg.Data)
 			}
 			if recvHostID != tt.hostID {

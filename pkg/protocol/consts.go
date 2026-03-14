@@ -47,7 +47,6 @@ const (
 	lenContextSectionTerminator int = 1
 	lenCtxKeyTerminator         int = 1
 	lenCtxValTerminator         int = 1
-	lenDataTerminator           int = 1
 	lenHostnameNxtLen           int = 1
 	lenSigIDLen                 int = 1
 	lenSigNxtLen                int = 1
@@ -69,8 +68,7 @@ const (
 		lenHostnameTerminator +
 		lenSigIDLen +
 		lenSigNxtLen +
-		lenDataNxtLen +
-		lenDataTerminator
+		lenDataNxtLen
 	minInnerPayloadLen int = lenHostID +
 		lenMsgID +
 		lenMsgSeq +
@@ -85,7 +83,6 @@ const (
 		lenSigNxtLen +
 		lenDataNxtLen +
 		minDataLen +
-		lenDataTerminator +
 		minPaddingLen
 	MinOuterPayloadLen int = registry.SuiteIDLen + minInnerPayloadLen
 	ctxFieldOverhead   int = lenCtxKeyNxtLen +

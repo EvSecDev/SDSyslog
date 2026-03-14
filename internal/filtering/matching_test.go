@@ -220,7 +220,7 @@ func TestTrimDurationPrecision(t *testing.T) {
 				t.Fatalf("expected validation error %q, but got '%v'", tt.expectedValidationError, err)
 			}
 
-			matches := tt.filter.Match(tt.input)
+			matches := tt.filter.Match([]byte(tt.input))
 			if matches != tt.expectedMatch {
 				t.Fatalf("input %q: expect match=%v - got match=%v", tt.input, tt.expectedMatch, matches)
 			}

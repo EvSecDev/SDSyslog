@@ -10,7 +10,7 @@ type Message struct {
 	Timestamp time.Time
 	Hostname  string
 	Fields    map[string]any
-	Data      string
+	Data      []byte
 }
 
 // Boolean filter config for a message

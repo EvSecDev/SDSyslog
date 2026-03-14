@@ -328,7 +328,7 @@ func mockMessage(seedText string, targetPktSizeBytes int) (messageText string, e
 }
 
 // Creates set number of packets with desired content (attempts to hit target size, but not exact)
-func mockPackets(numMessages int, rawMessage string, maxPayloadSize int, publicKey []byte) (packets [][]byte, err error) {
+func mockPackets(numMessages int, rawMessage []byte, maxPayloadSize int, publicKey []byte) (packets [][]byte, err error) {
 	if numMessages == 0 {
 		err = fmt.Errorf("cannot create mock packets if requested number of packets is 0")
 		return

@@ -131,7 +131,6 @@ func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
 		err = fmt.Errorf("failed to serialize Data: %w", err)
 		return
 	}
-	buf.WriteByte(terminatorByte)
 
 	// TRAILER
 	padding := make([]byte, fields.PaddingLen)
@@ -371,10 +370,6 @@ func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error)
 	fields.Data = make([]byte, dataLen)
 	if _, err = io.ReadFull(buf, fields.Data); err != nil {
 		err = fmt.Errorf("failed to deserialize data field: %w", err)
-		return
-	}
-	err = readTerminator(buf, "data field")
-	if err != nil {
 		return
 	}
 

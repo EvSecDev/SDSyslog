@@ -21,7 +21,7 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int, cryptoSuite, signat
 		Timestamp:    sendMsg.Timestamp,
 		Hostname:     sendMsg.Hostname,
 		CustomFields: sendMsg.Fields,
-		Data:         []byte(sendMsg.Data),
+		Data:         sendMsg.Data,
 	}
 
 	protocolOverhead, err := CalculateProtocolOverhead(cryptoSuite, newMsg)
@@ -105,7 +105,7 @@ func Extract(packets [][]byte) (recvMsg Message, hostID int, err error) {
 		Timestamp: primaryPayload.Timestamp,
 		Hostname:  primaryPayload.Hostname,
 		Fields:    primaryPayload.CustomFields,
-		Data:      string(primaryPayload.Data),
+		Data:      primaryPayload.Data,
 	}
 	hostID = primaryPayload.HostID
 	return

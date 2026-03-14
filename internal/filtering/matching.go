@@ -1,10 +1,12 @@
 // Boolean string matching via configuration driven filter
 package filtering
 
-import "strings"
+import (
+	"bytes"
+)
 
 // Checks if supplied string matches the filter
-func (filter Filter) Match(input string) (matches bool) {
+func (filter Filter) Match(input []byte) (matches bool) {
 	if len(filter.And) > 0 {
 		for _, sub := range filter.And {
 			if !sub.Match(input) {
@@ -32,19 +34,19 @@ func (filter Filter) Match(input string) (matches bool) {
 	}
 
 	if filter.Prefix != "" {
-		return strings.HasPrefix(input, filter.Prefix)
+		return bytes.HasPrefix(input, []byte(filter.Prefix))
 	}
 
 	if filter.Suffix != "" {
-		return strings.HasSuffix(input, filter.Suffix)
+		return bytes.HasSuffix(input, []byte(filter.Suffix))
 	}
 
 	if filter.Contains != "" {
-		return strings.Contains(input, filter.Contains)
+		return bytes.Contains(input, []byte(filter.Contains))
 	}
 
 	if filter.Exact != "" {
-		return input == filter.Exact
+		return bytes.Equal(input, []byte(filter.Exact))
 	}
 
 	matches = false

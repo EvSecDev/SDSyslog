@@ -1,6 +1,7 @@
 package file
 
 import (
+	"bytes"
 	"os"
 	"sdsyslog/internal/externalio"
 	"sdsyslog/pkg/protocol"
@@ -26,7 +27,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Default",
 			input: "short message",
 			expectedOutput: protocol.Message{
-				Data:      "short message",
+				Data:      []byte("short message"),
 				Hostname:  localHostname,
 				Timestamp: time.Now(),
 				Fields: map[string]any{
@@ -41,7 +42,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Default Empty",
 			input: "",
 			expectedOutput: protocol.Message{
-				Data:      "-",
+				Data:      []byte("-"),
 				Hostname:  localHostname,
 				Timestamp: time.Now(),
 				Fields: map[string]any{
@@ -56,7 +57,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 1",
 			input: `Jul  9 18:05:33 Host1 rsyslogd: [origin software="rsyslogd" swVersion="8.2302.0" x-pid="4765" x-info="https://www.rsyslog.com"] start`,
 			expectedOutput: protocol.Message{
-				Data:      `[origin software="rsyslogd" swVersion="8.2302.0" x-pid="4765" x-info="https://www.rsyslog.com"] start`,
+				Data:      []byte(`[origin software="rsyslogd" swVersion="8.2302.0" x-pid="4765" x-info="https://www.rsyslog.com"] start`),
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Jul  9 18:05:33"),
 				Fields: map[string]any{
@@ -71,7 +72,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 2",
 			input: `Nov 17 09:52:41 Host1 kernel: Linux version 6.1.0-27-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0, GNU ld (2024-11-01)`,
 			expectedOutput: protocol.Message{
-				Data:      `Linux version 6.1.0-27-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0, GNU ld (2024-11-01)`,
+				Data:      []byte(`Linux version 6.1.0-27-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0, GNU ld (2024-11-01)`),
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Nov 17 09:52:41"),
 				Fields: map[string]any{
@@ -86,7 +87,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 3",
 			input: `Nov 17 12:18:00 Host1 audisp-syslog[1135]: type=BPF msg=audit(1731874680.879:116): prog-id=17 op=UNLOAD`,
 			expectedOutput: protocol.Message{
-				Data:      `type=BPF msg=audit(1731874680.879:116): prog-id=17 op=UNLOAD`,
+				Data:      []byte(`type=BPF msg=audit(1731874680.879:116): prog-id=17 op=UNLOAD`),
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Nov 17 12:18:00"),
 				Fields: map[string]any{
@@ -101,7 +102,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 4",
 			input: `2025/03/15 10:47:59 [notice] 33709#33709: using inherited sockets from "5;6;"`,
 			expectedOutput: protocol.Message{
-				Data:      `using inherited sockets from "5;6;"`,
+				Data:      []byte(`using inherited sockets from "5;6;"`),
 				Hostname:  localHostname,
 				Timestamp: timeParse2Panic("2025/03/15 10:47:59"),
 				Fields: map[string]any{
@@ -116,7 +117,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 5",
 			input: `2025-12-03 17:46:26 status triggers-pending libc-bin:amd64 2.41-12`,
 			expectedOutput: protocol.Message{
-				Data:      `status triggers-pending libc-bin:amd64 2.41-12`,
+				Data:      []byte(`status triggers-pending libc-bin:amd64 2.41-12`),
 				Hostname:  localHostname,
 				Timestamp: timeParse3Panic("2025-12-03 17:46:26"),
 				Fields: map[string]any{
@@ -131,7 +132,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 6",
 			input: `10.10.10.10 - - [28/Jul/2024:03:58:35 -0700] "GET / HTTP/1.1" 444 0 "-" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"`,
 			expectedOutput: protocol.Message{
-				Data:      `10.10.10.10 - - [28/Jul/2024:03:58:35 -0700] "GET / HTTP/1.1" 444 0 "-" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"`,
+				Data:      []byte(`10.10.10.10 - - [28/Jul/2024:03:58:35 -0700] "GET / HTTP/1.1" 444 0 "-" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"`),
 				Hostname:  localHostname,
 				Timestamp: timeParse5Panic("28/Jul/2024:03:58:35 -0700"),
 				Fields: map[string]any{
@@ -146,7 +147,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 7",
 			input: `[19-Sep-2023 16:52:51] NOTICE: Terminating ...`,
 			expectedOutput: protocol.Message{
-				Data:      `Terminating ...`,
+				Data:      []byte(`Terminating ...`),
 				Hostname:  localHostname,
 				Timestamp: timeParse4Panic("19-Sep-2023 16:52:51"),
 				Fields: map[string]any{
@@ -161,7 +162,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 8",
 			input: `2025-12-21T18:39:01.211585-08:00 Host1 systemd[1]: Starting phpsessionclean.service - Clean php session files...`,
 			expectedOutput: protocol.Message{
-				Data:      `Starting phpsessionclean.service - Clean php session files...`,
+				Data:      []byte(`Starting phpsessionclean.service - Clean php session files...`),
 				Hostname:  "Host1",
 				Timestamp: timeParse6Panic("2025-12-21T18:39:01.211585-08:00"),
 				Fields: map[string]any{
@@ -176,7 +177,7 @@ func TestParseLine(t *testing.T) {
 			name:  "Format Type 8 No pid",
 			input: `2025-12-21T19:08:28.506905-08:00 Host1 php8.4-cgi: php_invoke mbstring: already enabled for PHP 8.4 cgi sapi`,
 			expectedOutput: protocol.Message{
-				Data:      `php_invoke mbstring: already enabled for PHP 8.4 cgi sapi`,
+				Data:      []byte(`php_invoke mbstring: already enabled for PHP 8.4 cgi sapi`),
 				Hostname:  "Host1",
 				Timestamp: timeParse6Panic("2025-12-21T19:08:28.506905-08:00"),
 				Fields: map[string]any{
@@ -195,7 +196,7 @@ func TestParseLine(t *testing.T) {
 			// Serialize
 			output := parseLine(tt.input, localHostname)
 			after := time.Now()
-			if output.Data != tt.expectedOutput.Data {
+			if !bytes.Equal(output.Data, tt.expectedOutput.Data) {
 				t.Errorf("expected Data to be '%s', but got '%s'", tt.expectedOutput.Data, output.Data)
 			}
 			if output.Timestamp != tt.expectedOutput.Timestamp {

@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sdsyslog/internal/crypto/ecdh"
@@ -85,7 +86,7 @@ func TestProcessor_Basic(t *testing.T) {
 		Fields: map[string]any{
 			"test": "msg",
 		},
-		Data: "hello",
+		Data: []byte("hello"),
 	}
 
 	tests := []struct {
@@ -113,7 +114,7 @@ func TestProcessor_Basic(t *testing.T) {
 					"a": strings.Repeat("x", 100),
 					"b": []byte(strings.Repeat("x", 100)),
 				},
-				Data: strings.Repeat("o", mockMaxPayloadSize*8),
+				Data: bytes.Repeat([]byte("o"), mockMaxPayloadSize*8),
 			},
 			pastCutoffTime:     10 * time.Minute,
 			futureCutoffTime:   10 * time.Minute,
@@ -132,7 +133,7 @@ func TestProcessor_Basic(t *testing.T) {
 				Fields: map[string]any{
 					"test": "msg",
 				},
-				Data: "hello",
+				Data: []byte("hello"),
 			},
 			pastCutoffTime:       10 * time.Minute,
 			futureCutoffTime:     10 * time.Minute,
@@ -147,7 +148,7 @@ func TestProcessor_Basic(t *testing.T) {
 				Fields: map[string]any{
 					"test": "msg",
 				},
-				Data: "hello",
+				Data: []byte("hello"),
 			},
 			pastCutoffTime:       10 * time.Minute,
 			futureCutoffTime:     10 * time.Minute,

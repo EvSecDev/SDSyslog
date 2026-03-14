@@ -15,7 +15,7 @@ func (mf MessageFilter) Match(msg Message) (msgMatch bool) {
 	if mf.FieldsKey != nil {
 		keyMatched := false
 		for key := range msg.Fields {
-			keyMatched = mf.FieldsKey.Match(key)
+			keyMatched = mf.FieldsKey.Match([]byte(key))
 			if keyMatched {
 				break
 			}
@@ -26,7 +26,8 @@ func (mf MessageFilter) Match(msg Message) (msgMatch bool) {
 	if mf.FieldsValue != nil {
 		valMatched := false
 		for _, val := range msg.Fields {
-			valMatched = mf.FieldsValue.Match(fmt.Sprint(val))
+			textVal := []byte(fmt.Sprint(val))
+			valMatched = mf.FieldsValue.Match(textVal)
 			if valMatched {
 				break
 			}

@@ -177,6 +177,9 @@ func TestProcessor_Basic(t *testing.T) {
 				IsShardShutdownFunc: func(s string) bool {
 					return false
 				},
+				GetNonDrainingIDsFunc: func() []string {
+					return []string{"s1"}
+				},
 				GetShardFunc: func(s string) *shard.Instance {
 					return mockShard
 				},

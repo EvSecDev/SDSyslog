@@ -4,7 +4,7 @@ package global
 import "time"
 
 const (
-	ProgVersion string  = "v0.17.2"
+	ProgVersion string  = "v0.17.3"
 	SendMode    string  = "send"
 	RecvMode    string  = "receive"
 	CtxModeKey  CtxMode = "mode" // Identifying if program is in sender or receiver mode

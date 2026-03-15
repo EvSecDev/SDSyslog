@@ -69,6 +69,11 @@ func (instance *Instance) run() {
 				return
 			}
 
+			if endIndex == 0 {
+				// Empty packets are always ignored
+				return
+			}
+
 			payload := append([]byte(nil), buffer[:endIndex]...)
 
 			// Pre validation
@@ -82,6 +87,7 @@ func (instance *Instance) run() {
 			}
 
 			// Replay attack protection - level 1
+			//   minLen protects against packets smaller than key sizes
 			pubKey := payload[registry.SuiteIDLen : registry.SuiteIDLen+suiteInfo.KeySize]
 			if instance.isReplayed(pubKey) {
 				instance.Metrics.InvalidPackets.Add(1)

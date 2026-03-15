@@ -14,6 +14,10 @@ func Trend(busyTimes []float64) (scaleUp bool, scaleDown bool) {
 	for _, v := range busyTimes {
 		sum += v
 	}
+	if len(busyTimes) == 0 {
+		// No data - no-op
+		return
+	}
 	avg := sum / float64(len(busyTimes))
 
 	// Trend detection via linear regression

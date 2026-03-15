@@ -34,10 +34,10 @@ type routingSnapshot struct {
 type Instance struct {
 	Shard *shard.Instance // Fragment container and watcher
 
-	namespace []string
-	outbox    *mpmc.Queue[protocol.Payload]
-	Metrics   MetricStorage
+	outbox  *mpmc.Queue[protocol.Payload]
+	Metrics MetricStorage
 
+	ctx    context.Context
 	wg     sync.WaitGroup     // Waiter for both instances
 	cancel context.CancelFunc // Shared cancel (stops both pairs)
 }

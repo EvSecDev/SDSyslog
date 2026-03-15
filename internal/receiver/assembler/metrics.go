@@ -63,6 +63,8 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	sumNs := instance.Metrics.SumNs.Swap(0)
 	maxNs := instance.Metrics.MaxNs.Swap(0)
 
+	namespace := logctx.GetTagList(instance.ctx)
+
 	// Record read time
 	recordTime := time.Now()
 
@@ -70,7 +72,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTProcessBuckets,
 			Description: "Number of buckets successfully processed in the interval",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      valid,
 				Unit:     "count",
@@ -82,7 +84,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTSumWorkTime,
 			Description: "Total time spent processing buckets in the interval (excludes pop/push from queues)",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumNs,
 				Unit:     "ns",
@@ -94,7 +96,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		{
 			Name:        MTMaxWorkTime,
 			Description: "Maximum (seen) time spent processing buckets in the interval (excludes pop/push from queues)",
-			Namespace:   instance.namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxNs,
 				Unit:     "ns",

@@ -1,7 +1,6 @@
 package assembler
 
 import (
-	"context"
 	"fmt"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
@@ -20,19 +19,14 @@ func (manager *Manager) AddInstance() (instanceID string) {
 	}
 	manager.nextInstanceID++
 
-	// Add log context
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, instanceID)
-	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
+	// Create new context for both watcher/assembler
+	workerCtx, cancelPair := logctx.NewCancelWithValues(manager.ctx, instanceID)
 
 	// Create new defrag instance
-	shard := shard.New(logctx.GetTagList(manager.ctx), 1024, &manager.Config.PacketDeadline)
+	shard := shard.New(logctx.GetTagList(workerCtx), 1024, &manager.Config.PacketDeadline)
 	instance := manager.newWorker(shard)
-
-	// Create new context for both watcher/assembler
-	workerCtx, cancelInstances := context.WithCancel(manager.ctx)
-
-	// Cancel for both instances
-	instance.cancel = cancelInstances
+	instance.ctx = logctx.AppendCtxTag(workerCtx, logctx.NSAssm)
+	instance.cancel = cancelPair
 
 	instance.wg.Add(2)
 	go func() {
@@ -44,8 +38,7 @@ func (manager *Manager) AddInstance() (instanceID string) {
 	go func() {
 		// Run the assembler
 		defer instance.wg.Done()
-		workerCtx := logctx.OverwriteCtxTag(workerCtx, instance.namespace)
-		instance.run(workerCtx)
+		instance.run()
 	}()
 
 	// Update routing view

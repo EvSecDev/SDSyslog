@@ -49,7 +49,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 // Checks manager configuration for invalid/missing values
 func (config *ManagerConfig) validate() (err error) {
 	if config.MinInstanceCount.Load() == 0 {
-		err = fmt.Errorf("empty MaxQueueCapacity")
+		err = fmt.Errorf("empty MinQueueCapacity")
 	}
 	if config.MaxInstanceCount.Load() == 0 {
 		err = fmt.Errorf("empty MaxQueueCapacity")

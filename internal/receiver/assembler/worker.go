@@ -11,15 +11,16 @@ import (
 
 func (manager *Manager) newWorker(shard *shard.Instance) (new *Instance) {
 	new = &Instance{
-		namespace: append(logctx.GetTagList(manager.ctx), logctx.NSAssm),
-		Shard:     shard,
-		outbox:    manager.outQueue,
-		Metrics:   MetricStorage{},
+		Shard:   shard,
+		outbox:  manager.outQueue,
+		Metrics: MetricStorage{},
 	}
 	return
 }
 
-func (instance *Instance) run(ctx context.Context) {
+func (instance *Instance) run() {
+	ctx := instance.ctx
+
 	for {
 		// Stop this worker when cancel requested
 		select {

@@ -68,7 +68,7 @@ func (config *ManagerConfig) validate() (err error) {
 		err = fmt.Errorf("minimum queue capacity cannot be equal to or less than max queue capacity")
 	}
 	if config.MinInstanceCount.Load() == 0 {
-		err = fmt.Errorf("empty MaxQueueCapacity")
+		err = fmt.Errorf("empty MinQueueCapacity")
 	}
 	if config.MaxInstanceCount.Load() == 0 {
 		err = fmt.Errorf("empty MaxQueueCapacity")

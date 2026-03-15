@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/netip"
 	"runtime/debug"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/shard"
@@ -73,6 +74,12 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 	if err != nil {
 		logctx.LogStdErr(ctx,
 			"error waiting for original sender address: %w\n", err)
+		return
+	}
+
+	origAddr, err := netip.ParseAddr(session.OriginalSender())
+	if err != nil {
+		logctx.LogStdErr(ctx, "invalid original sender address received from remote: %w\n", err)
 		return
 	}
 
@@ -163,7 +170,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 	}
 
 	// Push to local shard router - using new processing start time for bucket deadline
-	success := shard.RouteFragment(ctx, instance.localRoutingView, session.OriginalSender(), fragment, fragProcessingStartTime)
+	success := shard.RouteFragment(ctx, instance.localRoutingView, origAddr, fragment, fragProcessingStartTime)
 	if !success {
 		err = fmt.Errorf("failed to route fragment to shard queue")
 

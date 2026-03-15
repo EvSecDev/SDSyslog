@@ -230,12 +230,12 @@ func setDefaults(old protocol.Message, raw string, localHostname string) (new pr
 // Fmt: '2020-01-01T10:10:10.123456789Z Server01 MyApp[1234]: Daemon: [INFO]: this is a log message'
 func formatAsText(ctx context.Context, msg protocol.Payload) (text string, err error) {
 	var remoteID string
-	if msg.RemoteIP != "" && msg.Hostname != "" {
-		remoteID = msg.RemoteIP + "/" + msg.Hostname
-	} else if msg.RemoteIP == "" {
+	if msg.RemoteIP.IsValid() && msg.Hostname != "" {
+		remoteID = msg.RemoteIP.String() + "/" + msg.Hostname
+	} else if !msg.RemoteIP.IsValid() {
 		remoteID = msg.Hostname
 	} else if msg.Hostname == "" {
-		remoteID = msg.RemoteIP
+		remoteID = msg.RemoteIP.String()
 	}
 
 	var keyValString []string

@@ -13,12 +13,12 @@ func (payload Payload) Size() (bytes int) {
 	bytes += 24 // Timestamp (time.Time)
 	bytes += 8  // PaddingLen (int)
 
+	bytes += 24 // netip.Addr size
+
 	// String headers (16B each on 64-bit)
-	bytes += 16 // RemoteIP
 	bytes += 16 // Hostname
 
 	// String backing storage
-	bytes += len(payload.RemoteIP)
 	bytes += len(payload.Hostname)
 
 	// Data

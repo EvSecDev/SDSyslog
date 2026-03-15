@@ -3,6 +3,7 @@ package shard
 import (
 	"context"
 	"fmt"
+	"net/netip"
 	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
@@ -345,8 +346,17 @@ func TestRouteFragment(t *testing.T) {
 			}
 			logger := logctx.GetLogger(mockCtx)
 
+			var remoteAddr netip.Addr
+			var err error
+			if tt.remoteAddr != "" {
+				remoteAddr, err = netip.ParseAddr(tt.remoteAddr)
+				if err != nil {
+					t.Fatalf("unexpected parsing error: %v", err)
+				}
+			}
+
 			for _, fragment := range tt.inputFrags {
-				routeSuccess := RouteFragment(mockCtx, &tt.mockRV, tt.remoteAddr, fragment, tt.processStartTime)
+				routeSuccess := RouteFragment(mockCtx, &tt.mockRV, remoteAddr, fragment, tt.processStartTime)
 				allLogLines := logger.GetFormattedLogLines()
 				var foundMatchingExpectedError bool
 				for _, line := range allLogLines {

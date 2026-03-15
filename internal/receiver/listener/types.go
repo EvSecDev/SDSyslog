@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"net"
+	"net/netip"
 	"sdsyslog/internal/queue/mpmc"
 	"sync"
 	"sync/atomic"
@@ -54,5 +55,5 @@ type Container struct {
 	Meta Metadata
 }
 type Metadata struct {
-	RemoteIP string
+	RemoteIP netip.Addr
 }

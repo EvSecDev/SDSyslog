@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/netip"
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/global"
@@ -220,7 +221,7 @@ func TestProcessor_Basic(t *testing.T) {
 				container := listener.Container{
 					Data: packet,
 					Meta: listener.Metadata{
-						RemoteIP: "127.0.0.1",
+						RemoteIP: netip.MustParseAddr("127.0.0.1"),
 					},
 				}
 				success := procMgr.Inbox.Push(container)

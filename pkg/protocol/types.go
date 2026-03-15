@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"net/netip"
 	"sdsyslog/internal/filtering"
 	"time"
 )
@@ -28,7 +29,7 @@ type MessageFilter struct {
 
 // Friendly container for internal use - most fields are optional (filled in automatically) - leave exported
 type Payload struct {
-	RemoteIP      string // Derived by receiver, not sent across the wire
+	RemoteIP      netip.Addr // Derived by receiver, not sent across the wire
 	HostID        int
 	MsgID         int
 	MessageSeq    int

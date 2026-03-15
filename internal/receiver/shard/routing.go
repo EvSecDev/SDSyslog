@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"sdsyslog/internal/logctx"
@@ -16,11 +17,11 @@ import (
 
 // Route a fragment to a shard/process. Deterministic for all fragments of a message.
 // Dynamically reroutes and tracks when targeted shard/process is shutdown.
-func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress string, fragment protocol.Payload, processingStartTime time.Time) (success bool) {
+func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress netip.Addr, fragment protocol.Payload, processingStartTime time.Time) (success bool) {
 	// Identifier for all fragments within a given message per host
 	var b strings.Builder
-	b.Grow(len(remoteAddress) + 32)
-	b.WriteString(remoteAddress)
+	b.Grow(len(remoteAddress.String()) + 32)
+	b.WriteString(remoteAddress.String())
 	b.WriteByte('-')
 	b.WriteString(strconv.FormatInt(int64(fragment.HostID), 10))
 	b.WriteByte('-')

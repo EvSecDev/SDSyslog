@@ -23,7 +23,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 		"HOSTNAME":             msg.Hostname,
 		"SYSLOG_HOSTNAME":      msg.Hostname,
 		"SYSLOG_TIMESTAMP":     msg.Timestamp.Format(time.RFC3339Nano),
-		"REMOTE_IP":            msg.RemoteIP,
+		"REMOTE_IP":            msg.RemoteIP.String(),
 	}
 	for key, value := range msg.CustomFields {
 		key = strings.TrimPrefix(key, "_") // Remove journal internal fields prefix before write

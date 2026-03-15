@@ -56,7 +56,7 @@ func (instance *Instance) run() {
 			}
 			processingStartTime := time.Now() // Record start time immediately after we read the queue entry
 
-			size := len(queueEntry.Data) + len(queueEntry.Meta.RemoteIP)
+			size := len(queueEntry.Data) + 24 // netip.Addr obj size
 			// Subtract data size from sum
 			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(size), 4)
 
@@ -107,13 +107,13 @@ func (instance *Instance) run() {
 			if msg.Timestamp.After(processingStartTime.Add(instance.futureTimestampLimit)) {
 				logctx.LogStdErr(ctx,
 					"message from %s (msgID: %d) has a timestamp too far in the future (>=%s), dropping\n",
-					msg.RemoteIP, msg.MsgID, instance.futureTimestampLimit.String())
+					msg.RemoteIP.String(), msg.MsgID, instance.futureTimestampLimit.String())
 				instance.Metrics.InvalidPayloads.Add(1)
 				return
 			} else if msg.Timestamp.Before(processingStartTime.Add(-instance.pastTimestampLimit)) {
 				logctx.LogStdErr(ctx,
 					"message from %s (msgID: %d) has a timestamp too far in the past (<%s), dropping\n",
-					msg.RemoteIP, msg.MsgID, instance.pastTimestampLimit.String())
+					msg.RemoteIP.String(), msg.MsgID, instance.pastTimestampLimit.String())
 				instance.Metrics.InvalidPayloads.Add(1)
 				return
 			}

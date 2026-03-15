@@ -3,6 +3,7 @@ package fiprsend
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"runtime/debug"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/pkg/fipr"
@@ -11,7 +12,7 @@ import (
 
 // Sends fragment to another process.
 // Any error should only be logged and fragment should route local.
-func RouteFragment(socketPath string, messageID string, remoteAddress string, fragment protocol.Payload) (rerouteLocally bool, err error) {
+func RouteFragment(socketPath string, messageID string, remoteAddress netip.Addr, fragment protocol.Payload) (rerouteLocally bool, err error) {
 	// Record panics and route local
 	defer func() {
 		if fatalError := recover(); fatalError != nil {
@@ -45,7 +46,7 @@ func RouteFragment(socketPath string, messageID string, remoteAddress string, fr
 	}
 
 	// Session setup
-	err = session.SendOnBehalfOf(remoteAddress)
+	err = session.SendOnBehalfOf(remoteAddress.String())
 	if err != nil {
 		return
 	}

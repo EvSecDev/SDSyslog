@@ -93,7 +93,7 @@ func (instance *Instance) run() {
 
 			var newQueueEntry Container
 			newQueueEntry.Data = payload
-			newQueueEntry.Meta.RemoteIP = remoteAddr.IP.String()
+			newQueueEntry.Meta.RemoteIP = remoteAddr.AddrPort().Addr()
 
 			// Record time metrics post-validation
 			durNs := time.Since(start).Nanoseconds()
@@ -113,7 +113,8 @@ func (instance *Instance) run() {
 			instance.outbox.Push(newQueueEntry)
 
 			// Add data size to sum
-			size := len(newQueueEntry.Data) + len(newQueueEntry.Meta.RemoteIP)
+			const netipAddrSize = 24
+			size := len(newQueueEntry.Data) + netipAddrSize
 			instance.outbox.ActiveWrite.Load().Metrics.Bytes.Add(uint64(size))
 
 			instance.Metrics.ValidPackets.Add(1) // increment success after push

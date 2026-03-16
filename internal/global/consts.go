@@ -4,7 +4,7 @@ package global
 import "time"
 
 const (
-	ProgVersion string  = "v0.17.3"
+	ProgVersion string  = "v0.18.0"
 	SendMode    string  = "send"
 	RecvMode    string  = "receive"
 	CtxModeKey  CtxMode = "mode" // Identifying if program is in sender or receiver mode
@@ -15,6 +15,7 @@ const (
 	DefaultConfigSend        string        = DefaultConfigDir + "/" + ProgBaseName + "-sender.json"
 	DefaultConfigRecv        string        = DefaultConfigDir + "/" + ProgBaseName + ".json"
 	DefaultConfigPinKeys     string        = DefaultConfigDir + "/" + "pinned-sender-keys.json"
+	DefaultSendSigningKey    string        = DefaultConfigDir + "/" + "sender-signer.key"
 	DefaultStateDir          string        = "/var/cache/" + ProgBaseName
 	DefaultStateFile         string        = DefaultStateDir + "/last.state"
 	DefaultReceiverPort      int           = 8514

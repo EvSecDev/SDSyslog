@@ -192,7 +192,7 @@ func (cfg *Config) setDefaults() {
 }
 
 // Loads newest config from disk and pulls newest pinned keys map.
-func (daemon *Daemon) ReloadPinnedKeys() (newCount int, err error) {
+func (daemon *Daemon) ReloadSigningKeys() (newCount int, err error) {
 	cfg, err := LoadConfig(daemon.cfg.path)
 	if err != nil {
 		err = fmt.Errorf("failed to re-read daemon configuration file: %w", err)

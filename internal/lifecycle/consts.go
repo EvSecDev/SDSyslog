@@ -12,6 +12,6 @@ const (
 	EnvNameReadinessFD       string        = "READY_FD"
 	EnvNameSelfUpdate        string        = "UPDATING_CHILD_PID"
 
-	FullUpdateSignal   syscall.Signal = syscall.SIGHUP
-	PinKeyReloadSignal syscall.Signal = syscall.SIGUSR1
+	FullUpdateSignal       syscall.Signal = syscall.SIGHUP
+	SigningKeyReloadSignal syscall.Signal = syscall.SIGUSR1
 )

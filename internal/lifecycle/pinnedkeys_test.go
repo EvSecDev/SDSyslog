@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestIssueLivePinnedKeyReload(t *testing.T) {
+func TestIssueLiveSigningKeyReload(t *testing.T) {
 	type testCase struct {
 		name                string
 		configPath          string
@@ -132,7 +132,7 @@ func TestIssueLivePinnedKeyReload(t *testing.T) {
 			}
 			defer func() { syscallKill = origKill }()
 
-			err := IssueLivePinnedKeyReload(tt.configPath, tt.programName)
+			err := IssueLiveSigningKeyReload(tt.configPath, tt.programName)
 			if err != nil && tt.expectedErr == "" {
 				t.Fatalf("expected no error from reload issuance, but got %v", err)
 			}

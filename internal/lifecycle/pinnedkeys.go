@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// Finds running process via program name and config path and issues signal to reload pinned keys config file
-func IssueLivePinnedKeyReload(configPath string, programName string) (err error) {
+// Finds running process via program name and config path and issues signal to reload signing keys config file
+func IssueLiveSigningKeyReload(configPath string, programName string) (err error) {
 	programName = filepath.Base(programName)
 
 	cmd := exec.Command("ps", "-axo", "pid,comm,args")
@@ -67,14 +67,14 @@ func IssueLivePinnedKeyReload(configPath string, programName string) (err error)
 
 	if foundPID == 0 {
 		// No-op - but tell user
-		fmt.Printf("Could not find running process to send pinned keys reload signal (no error)\n")
+		fmt.Printf("Could not find running process to send signing keys reload signal (no error)\n")
 		return
 	}
 
 	// Issue custom reload signal to tell process to pick up new file contents
-	err = syscallKill(foundPID, PinKeyReloadSignal)
+	err = syscallKill(foundPID, SigningKeyReloadSignal)
 	if err != nil {
-		err = fmt.Errorf("failed to send pinned keys reload signal: %w", err)
+		err = fmt.Errorf("failed to send signing keys reload signal: %w", err)
 		return
 	}
 

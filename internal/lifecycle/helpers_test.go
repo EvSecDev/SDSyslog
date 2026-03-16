@@ -41,7 +41,7 @@ func (d daemonFuncAdapter) StopFIPR() {
 	}
 }
 
-func (d daemonFuncAdapter) ReloadPinnedKeys() (n int, err error) {
+func (d daemonFuncAdapter) ReloadSigningKeys() (n int, err error) {
 	return
 }
 

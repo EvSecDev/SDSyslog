@@ -118,7 +118,7 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 	}
 
 	// Find and issue reload signal to running receiver daemon
-	err = lifecycle.IssueLivePinnedKeyReload(confPath, os.Args[0])
+	err = lifecycle.IssueLiveSigningKeyReload(confPath, os.Args[0])
 	if err != nil {
 		err = fmt.Errorf("failed live reload of new pinned keys: %w", err)
 		return
@@ -218,7 +218,7 @@ func RemovePinnedKey(confPath, removeHostname string) (err error) {
 	}
 
 	// Find and issue reload signal to running receiver daemon
-	err = lifecycle.IssueLivePinnedKeyReload(confPath, os.Args[0])
+	err = lifecycle.IssueLiveSigningKeyReload(confPath, os.Args[0])
 	if err != nil {
 		err = fmt.Errorf("failed live reload of new pinned keys: %w", err)
 		return

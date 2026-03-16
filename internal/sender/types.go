@@ -12,9 +12,9 @@ import (
 )
 
 type JSONConfig struct {
-	PublicKey         string `json:"publicKey"`
-	SigningPrivateKey string `json:"signingPrivateKey,omitempty"`
-	Network           struct {
+	PublicKey      string `json:"publicKey"`
+	SigningKeyFile string `json:"signingKeyFile,omitempty"`
+	Network        struct {
 		Address        string `json:"address"`
 		Port           int    `json:"port"`
 		MaxPayloadSize int    `json:"maxPayloadSize,omitempty"`
@@ -46,6 +46,8 @@ type JSONConfig struct {
 }
 
 type Config struct {
+	path string // JSON config path
+
 	// Crypto
 	signingPrivateKey      []byte
 	transportCryptoSuiteID uint8

@@ -230,8 +230,18 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 // Attempts graceful shutdown of child process, force kills if timeout.
 // All events (including errors) logged to context log buffer.
 func terminateChildProcess(ctx context.Context, cmd *exec.Cmd) {
+	if cmd == nil {
+		// Successful (already exited)
+		return
+	}
+
 	killErr := cmdProcSignal(cmd, syscall.Signal(0))
 	if killErr == nil {
+		if cmd == nil {
+			// Successful (exited between check and now)
+			return
+		}
+
 		logctx.LogStdWarn(ctx,
 			"Found child PID %d still alive despite not sending readiness signal\n", cmd.Process.Pid)
 

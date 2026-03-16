@@ -50,6 +50,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 
 	// Pre-startup
 	syslog.InitBidiMaps()
+	daemon.cfg.setDefaults()
 	err = wrappers.SetupEncryptInnerPayload(serverPub)
 	if err != nil {
 		err = fmt.Errorf("failed to setup encryption function: %w", err)
@@ -63,6 +64,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		}
 		err = info.ValidateKey(daemon.cfg.signingPrivateKey)
 		if err != nil {
+			err = fmt.Errorf("invalid signing key: %w", err)
 			return
 		}
 		err = wrappers.SetupCreateSignature(daemon.cfg.signingPrivateKey)
@@ -71,7 +73,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			return
 		}
 	}
-	daemon.cfg.setDefaults()
 
 	// Stage 3 - Output Manager
 	outMgrConf := &output.ManagerConfig{

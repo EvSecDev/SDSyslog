@@ -13,10 +13,10 @@ type DaemonLike interface {
 	Shutdown()
 	StartFIPR() (err error)
 	StopFIPR()
-	ReloadPinnedKeys() (count int, err error)
+	ReloadSigningKeys() (count int, err error)
 }
 
-// Process OS signals and handle orchestrating updates via SIGHUP.
+// Process OS signals and handle orchestrating updates via SIGHUP,USR1.
 // Handles all incoming signals from external sources.
 // Initiates daemon shutdown and exits program.
 func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
@@ -25,7 +25,7 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 		syscall.SIGQUIT,
 		syscall.SIGTERM,
 		FullUpdateSignal,
-		PinKeyReloadSignal,
+		SigningKeyReloadSignal,
 	)
 
 	for {
@@ -47,13 +47,13 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 		}
 
 		// Reload pinned keys
-		if recvSignal == PinKeyReloadSignal {
-			logctx.LogStdInfo(ctx, "Beginning pinned keys reload...\n")
-			count, err := daemonManager.ReloadPinnedKeys()
+		if recvSignal == SigningKeyReloadSignal {
+			logctx.LogStdInfo(ctx, "Beginning signing keys reload...\n")
+			count, err := daemonManager.ReloadSigningKeys()
 			if err != nil {
-				logctx.LogStdErr(ctx, "Pinned keys reload failed: %w\n", err)
+				logctx.LogStdErr(ctx, "Signing key(s) reload failed: %w\n", err)
 			} else {
-				logctx.LogStdInfo(ctx, "Pinned keys reload succeeded (%d modifications made)\n", count)
+				logctx.LogStdInfo(ctx, "Signing key(s) reload succeeded (%d modification(s) made)\n", count)
 			}
 			continue
 		}
@@ -62,7 +62,7 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 		var childProc *exec.Cmd
 		if recvSignal == FullUpdateSignal {
 			logctx.LogStdInfo(ctx,
-				"Beginning reload...\n")
+				"Beginning full reload...\n")
 
 			err := NotifyReload(ctx)
 			if err != nil {

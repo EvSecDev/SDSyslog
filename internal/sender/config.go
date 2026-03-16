@@ -1,14 +1,16 @@
 package sender
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"runtime"
+	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
+	"sdsyslog/pkg/crypto/registry"
 	"time"
 )
 
@@ -30,12 +32,16 @@ func LoadConfig(path string) (cfg JSONConfig, err error) {
 }
 
 // Parses JSON config into daemon config
-func (cfg JSONConfig) NewDaemonConf() (config Config, err error) {
+func (cfg JSONConfig) NewDaemonConf(originalConfigPath string) (config Config, err error) {
+	config.path = originalConfigPath
+
 	// Signatures
-	config.signingPrivateKey, err = base64.StdEncoding.DecodeString(cfg.SigningPrivateKey)
-	if err != nil {
-		err = fmt.Errorf("failed to decode signing key: %w", err)
-		return
+	if cfg.SigningKeyFile != "" {
+		config.signingPrivateKey, err = loadSigningKey(cfg.SigningKeyFile)
+		if err != nil {
+			err = fmt.Errorf("failed to decode signing key: %w", err)
+			return
+		}
 	}
 
 	// Network settings
@@ -147,42 +153,61 @@ func (cfg *Config) setDefaults() {
 	}
 }
 
-// No-op to satisfy receiver daemon method (for daemonlike type in lifecycle)
-func (daemon *Daemon) ReloadPinnedKeys() (newCount int, err error) {
+// Reads in signing private key from dedicated file
+func loadSigningKey(keyPath string) (key []byte, err error) {
+	var encodedSigningKey []byte
+	encodedSigningKey, err = os.ReadFile(keyPath)
+	if err != nil {
+		err = fmt.Errorf("failed to read signing private key: %w", err)
+		return
+	}
+
+	encodedSigningKey = bytes.Trim(encodedSigningKey, "\n")
+	encodedSigningKey = bytes.TrimSpace(encodedSigningKey)
+
+	key, err = base64.StdEncoding.DecodeString(string(encodedSigningKey))
+	if err != nil {
+		err = fmt.Errorf("failed to decode signing key: %w", err)
+		return
+	}
 	return
 }
 
-// Overwrites JSON config signing key and writes back to config file
-func WriteNewSigningKey(configPath string, jsonCfg JSONConfig) (err error) {
-	if jsonCfg.SigningPrivateKey != "" {
-		// No-op when existing key is present
+// Reloads running sender daemon with new private signing key (all new outbound packets immediately start using it)
+func (daemon *Daemon) ReloadSigningKeys() (newCount int, err error) {
+	cfg, err := LoadConfig(daemon.cfg.path)
+	if err != nil {
+		err = fmt.Errorf("failed to re-read daemon configuration file: %w", err)
 		return
 	}
-
-	keyBytes, err := io.ReadAll(os.Stdin)
+	if cfg.SigningKeyFile == "" {
+		// No-op
+		return
+	}
+	// Write new key to daemon
+	daemon.cfg.signingPrivateKey, err = loadSigningKey(cfg.SigningKeyFile)
 	if err != nil {
 		return
 	}
 
-	newSigningKey := make([]byte, len(keyBytes))
-	_, err = base64.StdEncoding.Decode(newSigningKey, keyBytes)
-	if err != nil {
-		err = fmt.Errorf("failed to decode signing key base64: %w", err)
-		return
+	// Update signing function
+	if len(daemon.cfg.signingPrivateKey) > 0 {
+		info, validID := registry.GetSignatureInfo(daemon.cfg.signatureSuiteID)
+		if !validID {
+			err = fmt.Errorf("invalid signature suite ID: %d", daemon.cfg.signatureSuiteID)
+			return
+		}
+		err = info.ValidateKey(daemon.cfg.signingPrivateKey)
+		if err != nil {
+			return
+		}
+		err = wrappers.SetupCreateSignature(daemon.cfg.signingPrivateKey)
+		if err != nil {
+			err = fmt.Errorf("failed to re-setup signing function: %w", err)
+			return
+		}
 	}
 
-	jsonCfg.SigningPrivateKey = string(newSigningKey)
-
-	newConfFile, err := json.MarshalIndent(jsonCfg, "", "  ")
-	if err != nil {
-		err = fmt.Errorf("failed to marshal updated config: %w", err)
-		return
-	}
-	err = os.WriteFile(configPath, newConfFile, 0600)
-	if err != nil {
-		err = fmt.Errorf("failed to write updated config: %w", err)
-		return
-	}
-
+	newCount = 1 // Always one for sender daemon
 	return
 }

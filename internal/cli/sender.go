@@ -59,7 +59,7 @@ func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args
 		os.Exit(1)
 	}
 
-	daemonConfig, err := jsonCfg.NewDaemonConf()
+	daemonConfig, err := jsonCfg.NewDaemonConf(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

@@ -15,7 +15,7 @@ func DefineOptions() (cmdOpts *CommandSet) {
 	root.ChildCommands[global.SendMode] = &CommandSet{
 		CommandName:     global.SendMode,
 		Description:     "Send Messages",
-		FullDescription: "Reads messages from external sources, encrypts, fragments and transmits to configured destination",
+		FullDescription: "Reads messages from external sources, fragments, encrypts and transmits to configured destination",
 		ChildCommands:   nil,
 	}
 
@@ -31,7 +31,7 @@ func DefineOptions() (cmdOpts *CommandSet) {
 	root.ChildCommands["configure"] = &CommandSet{
 		CommandName:     "configure",
 		Description:     "Setup Actions",
-		FullDescription: "Configure various aspects of installation, generation, and runtime",
+		FullDescription: "Configure various aspects of installation, generation, and configuration files",
 		ChildCommands:   nil,
 	}
 

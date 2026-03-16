@@ -1,4 +1,4 @@
-// Centralized package for any constants/variables/types that are used across the entire program but do not import anything
+// Centralized package for any constants/variables/types that are used across the entire program but do not import any other internals
 package global
 
 import "time"

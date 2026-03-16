@@ -47,7 +47,7 @@ func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args
 	if writeSigningKey {
 		err := sender.WriteNewSigningKey(configPath, jsonCfg)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: failed to decode signing key base64: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 		return

@@ -81,21 +81,24 @@ func (instance *Instance) run() {
 
 			innerPayload, err := protocol.DeconstructOuterPayload(data)
 			if err != nil {
-				logctx.LogStdErr(ctx, "failed outer payload deconstruction: %s\n", err.Error())
+				logctx.LogStdErr(ctx, "failed outer payload deconstruction (source: %s): %s\n",
+					queueEntry.Meta.RemoteIP.String(), err.Error())
 				instance.Metrics.InvalidPayloads.Add(1)
 				return
 			}
 
 			payload, err := protocol.DeconstructInnerPayload(innerPayload)
 			if err != nil {
-				logctx.LogStdErr(ctx, "failed inner payload deconstruction: %s\n", err.Error())
+				logctx.LogStdErr(ctx, "failed inner payload deconstruction (source: %s): %s\n",
+					queueEntry.Meta.RemoteIP.String(), err.Error())
 				instance.Metrics.InvalidPayloads.Add(1)
 				return
 			}
 
 			msg, err := protocol.DeconstructPayload(payload)
 			if err != nil {
-				logctx.LogStdErr(ctx, "invalid payload: %s\n", err.Error())
+				logctx.LogStdErr(ctx, "invalid payload (source: %s): %s\n",
+					queueEntry.Meta.RemoteIP.String(), err.Error())
 				instance.Metrics.InvalidPayloads.Add(1)
 				return
 			}

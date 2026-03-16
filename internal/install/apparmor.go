@@ -11,8 +11,7 @@ import (
 
 // If apparmor LSM is available on this system and running as root, auto install the profile - failures are not printed under normal verbosity
 func installAAProfile() (err error) {
-	const appArmorProfilePath string = "/etc/apparmor.d/" + DefaultAAProfName
-	appArmorProfile, err := installationFiles.ReadFile("static-files/" + DefaultAAProfName)
+	appArmorProfile, err := installationFiles.ReadFile("static-files/" + apparmorProfName)
 	if err != nil {
 		err = fmt.Errorf("unable to retrieve configuration file from embedded filesystem: %w", err)
 		return
@@ -21,15 +20,14 @@ func installAAProfile() (err error) {
 	// Inject variables into config
 	newaaProf := strings.Replace(string(appArmorProfile), "=$executableFilePath", "="+global.DefaultBinaryPath, 1)
 	newaaProf = strings.Replace(newaaProf, "=$configurationDirPath", "="+global.DefaultConfigDir, 1)
-	newaaProf = strings.Replace(newaaProf, "=$privateKeyFilePath", "="+DefaultPrivKeyPath, 1)
+	newaaProf = strings.Replace(newaaProf, "=$privateKeyFilePath", "="+encryptionPrivKeyPath, 1)
 	newaaProf = strings.Replace(newaaProf, "=$progStateDirPath", "="+global.DefaultStateDir, 1)
 	newaaProf = strings.Replace(newaaProf, "=$drainingSocketsMapPinPath", "="+ebpf.KernelDrainMapPath, 1)
 	newaaProf = strings.Replace(newaaProf, "=$drainingSocketsFuncPinPath", "="+ebpf.KernelSocketRouteFunc, 1)
 	appArmorProfile = []byte(newaaProf)
 
 	// Check if apparmor /sys path exists
-	systemAAPath := "/sys/kernel/security/apparmor/profiles"
-	_, err = os.Stat(systemAAPath)
+	_, err = os.Stat(sysAAProfilePath)
 	if os.IsNotExist(err) {
 		fmt.Printf("AppArmor not supported by this system\n")
 		err = nil
@@ -59,11 +57,8 @@ func installAAProfile() (err error) {
 }
 
 func uninstallAAProfile() (err error) {
-	const appArmorProfilePath string = DefaultAAProfDir + DefaultAAProfName
-
 	// Check if apparmor /sys path exists
-	systemAAPath := "/sys/kernel/security/apparmor/profiles"
-	_, err = os.Stat(systemAAPath)
+	_, err = os.Stat(sysAAProfilePath)
 	if os.IsNotExist(err) {
 		err = nil
 		return

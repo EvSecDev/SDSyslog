@@ -12,9 +12,20 @@ func installBinary() (err error) {
 		return
 	}
 
+	if selfPath == global.DefaultBinaryPath {
+		// No-op
+		return
+	}
+
 	err = os.Rename(selfPath, global.DefaultBinaryPath)
 	if err != nil {
 		err = fmt.Errorf("failed to move: %w", err)
+		return
+	}
+
+	err = os.Chmod(global.DefaultBinaryPath, 0755)
+	if err != nil {
+		err = fmt.Errorf("failed to change permissions: %w", err)
 		return
 	}
 

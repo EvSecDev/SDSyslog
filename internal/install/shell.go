@@ -7,7 +7,6 @@ import (
 )
 
 func installBashAutocomplete() (err error) {
-	const sysAutocompleteDir string = "/usr/share/bash-completion/completions"
 	autoCompleteFunc, err := installationFiles.ReadFile("static-files/autocomplete.sh")
 	if err != nil {
 		err = fmt.Errorf("unable to retrieve autocomplete file from embedded filesystem: %w", err)
@@ -54,8 +53,6 @@ func installBashAutocomplete() (err error) {
 }
 
 func uninstallBashAutocomplete() (err error) {
-	const sysAutocompleteDir string = "/usr/share/bash-completion/completions"
-
 	executablePath, err := filepath.Abs(os.Args[0])
 	if err != nil {
 		err = fmt.Errorf("failed to retrieve absolute executable path for profile installation: %w", err)

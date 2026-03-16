@@ -1,7 +1,6 @@
 package install
 
 import (
-	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -18,8 +17,6 @@ import (
 	"sdsyslog/internal/sender/ingest"
 	"sdsyslog/pkg/protocol"
 	"strings"
-
-	"golang.org/x/term"
 )
 
 func installConfig(mode string) (err error) {
@@ -47,22 +44,8 @@ func installConfig(mode string) (err error) {
 	// Don't overwrite existing
 	_, err = os.Stat(configFilePath)
 	if err == nil {
-		// No terminal - no overwrite
-		if !term.IsTerminal(int(os.Stdout.Fd())) {
-			fmt.Printf("Existing configuration file present, not overwriting\n")
-			return
-		}
-
-		// File exists, prompt user for confirmation to overwrite
-		fmt.Printf("Configuration file already exists at '%s'. Are you SURE you want to overwrite it? (yes/no): ", configFilePath)
-		reader := bufio.NewReader(os.Stdin)
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
-		if strings.ToLower(input) != "yes" {
-			fmt.Printf("Not overwriting configuration file\n")
-			return
-		}
+		fmt.Printf("Existing configuration file present, not overwriting\n")
+		return
 	}
 
 	switch mode {
@@ -75,7 +58,7 @@ func installConfig(mode string) (err error) {
 			return
 		}
 
-		_, err = os.Stat(DefaultPrivKeyPath)
+		_, err = os.Stat(encryptionPrivKeyPath)
 		if err != nil {
 			if !os.IsNotExist(err) {
 				err = fmt.Errorf("failed checking private key file existence: %w", err)
@@ -83,7 +66,7 @@ func installConfig(mode string) (err error) {
 			}
 
 			var privKeyFile *os.File
-			privKeyFile, err = os.OpenFile(DefaultPrivKeyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+			privKeyFile, err = os.OpenFile(encryptionPrivKeyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 			if err != nil {
 				err = fmt.Errorf("failed to open private key file: %w", err)
 				return
@@ -94,7 +77,7 @@ func installConfig(mode string) (err error) {
 				err = fmt.Errorf("failed to write new private key: %w", err)
 				return
 			}
-			fmt.Printf("Successfully wrote new private key file to '%s'\n", DefaultPrivKeyPath)
+			fmt.Printf("Successfully wrote new private key file to '%s'\n", encryptionPrivKeyPath)
 			fmt.Printf("  IMPORTANT: Public key (use this for all senders): %s\n", base64.StdEncoding.EncodeToString(public))
 		}
 
@@ -113,12 +96,12 @@ func installConfig(mode string) (err error) {
 
 func uninstallConfig(mode string) (err error) {
 	if mode == "receive" {
-		err = os.Remove(DefaultPrivKeyPath)
+		err = os.Remove(encryptionPrivKeyPath)
 		if err != nil && !os.IsNotExist(err) {
 			err = fmt.Errorf("failed to remove private key file: %w", err)
 			return
 		}
-		fmt.Printf("Successfully removed private key file '%s'\n", DefaultPrivKeyPath)
+		fmt.Printf("Successfully removed private key file '%s'\n", encryptionPrivKeyPath)
 	}
 
 	err = os.RemoveAll(global.DefaultConfigDir)
@@ -248,7 +231,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	newCfg.Outputs.JournaldURL = journald.DefaultURL
 	newCfg.Outputs.BeatsAddress = beats.DefaultAddress
 
-	newCfg.PrivateKeyFile = DefaultPrivKeyPath
+	newCfg.PrivateKeyFile = encryptionPrivKeyPath
 
 	newCfg.Metrics.MaxAge = "72h"
 	newCfg.Metrics.Interval = "5s"

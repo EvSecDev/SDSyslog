@@ -14,10 +14,10 @@ func installService(mode string) (err error) {
 	var templateFile string
 	switch mode {
 	case "send":
-		unitFilePath = DefaultSystemdUnitDir + global.ProgBaseName + "-send.service"
+		unitFilePath = senderUnitPath
 		templateFile = "static-files/" + global.ProgBaseName + "-sender.service"
 	case "receive":
-		unitFilePath = DefaultSystemdUnitDir + global.ProgBaseName + ".service"
+		unitFilePath = receiverUnitPath
 		templateFile = "static-files/" + global.ProgBaseName + ".service"
 	default:
 		err = fmt.Errorf("unknown mode '%s'", mode)
@@ -81,9 +81,9 @@ func uninstallService(mode string) (err error) {
 	var unitFilePath string
 	switch mode {
 	case "send":
-		unitFilePath = DefaultSystemdUnitDir + global.ProgBaseName + "-send.service"
+		unitFilePath = senderUnitPath
 	case "receive":
-		unitFilePath = DefaultSystemdUnitDir + global.ProgBaseName + ".service"
+		unitFilePath = receiverUnitPath
 	default:
 		err = fmt.Errorf("unknown mode '%s'", mode)
 		return

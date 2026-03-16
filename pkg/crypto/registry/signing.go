@@ -14,10 +14,19 @@ func init() {
 		Name:               "NoSignature",
 		MinSignatureLength: 0,
 		MaxSignatureLength: 0,
-		ValidateKey:        func([]byte) (err error) { return nil },
-		Sign:               func([]byte, []byte) ([]byte, error) { return nil, nil },
-		Verify:             func([]byte, []byte, []byte) bool { return true }, // Intentional verify (pass-through)
-		NewKey:             func() ([]byte, []byte, error) { return nil, nil, nil },
+		ValidateKey: func(key []byte) (err error) {
+			// If called with a key, produce error to ensure failed signing efforts are not masked
+			if len(key) > 0 {
+				err = fmt.Errorf("attempt to validate non-empty signing key is invalid for signature suite ID 0")
+			}
+			return
+		},
+		Sign:   func([]byte, []byte) ([]byte, error) { return nil, nil },
+		Verify: func([]byte, []byte, []byte) bool { return true }, // Intentional verify (pass-through)
+		NewKey: func() (priv []byte, pub []byte, err error) {
+			err = fmt.Errorf("attempt to create new signing keys is invalid for signature suite ID 0")
+			return
+		},
 	}
 	signatureSuites[1] = &SigInfo{
 		Name:               "ed25519",
@@ -32,7 +41,7 @@ func init() {
 		},
 		Sign: func(priv []byte, msg []byte) (signature []byte, err error) {
 			if len(priv) != ed25519.PrivateKeySize {
-				err = fmt.Errorf("invalid ed25519 private key size (provided key is %d bytes)", len(priv))
+				err = fmt.Errorf("invalid ed25519 private key size: must be %d (provided key is %d bytes)", ed25519.PrivateKeySize, len(priv))
 				return
 			}
 			signature = ed25519.Sign(ed25519.PrivateKey(priv), msg)

@@ -7,16 +7,17 @@ import (
 
 func TestSignatureSuites(t *testing.T) {
 	tests := []struct {
-		id               uint8
-		name             string
-		expectValid      bool
-		expectVerifyFail bool
+		id                  uint8
+		name                string
+		expectValid         bool
+		expectKeyCreateFail bool
+		expectVerifyFail    bool
 	}{
 		{
-			id:               0,
-			name:             "NoSignature",
-			expectValid:      true,
-			expectVerifyFail: true,
+			id:                  0,
+			name:                "NoSignature",
+			expectValid:         true,
+			expectKeyCreateFail: true,
 		},
 		{
 			id:          1,
@@ -52,6 +53,9 @@ func TestSignatureSuites(t *testing.T) {
 			// Key generation
 			priv, pub, err := info.NewKey()
 			if err != nil {
+				if tt.expectKeyCreateFail {
+					return
+				}
 				t.Fatalf("NewKey failed: %v", err)
 			}
 

@@ -18,59 +18,64 @@ import (
 var installationFiles embed.FS
 
 // Full installation (idempotent)
-func Run(mode string) {
+func Run(mode string) (err error) {
 	// Must run as root
 	if os.Geteuid() != 0 {
-		fmt.Fprintf(os.Stderr, "Installation must be run as root\n")
-		os.Exit(1)
+		err = fmt.Errorf("installation must be run as root")
+		return
 	}
 
 	// Move binary (self) into place
-	err := installBinary()
+	err = installBinary()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error installing binary: %v\n", err)
-		os.Exit(1)
+		err = fmt.Errorf("executable file: %w", err)
+		return
 	}
 
 	// Add shell autocomplete
 	err = installBashAutocomplete()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error setting bash autocomplete: %v\n", err)
-		os.Exit(1)
+		err = fmt.Errorf("bash autocomplete: %w", err)
+		return
 	}
 
 	// Create template config
 	err = installConfig(mode)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error with template config: %v\n", err)
-		os.Exit(1)
+		err = fmt.Errorf("configuration file: %w", err)
+		return
 	}
 
 	// Create apparmor profile if system supports it
 	err = installAAProfile()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error with AppArmor profile: %v\n", err)
-		os.Exit(1)
+		err = fmt.Errorf("apparmor: %w", err)
+		return
 	}
 
 	// Create systemd service
 	err = installService(mode)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error with Systemd service: %v\n", err)
-		os.Exit(1)
+		err = fmt.Errorf("systemd: %w", err)
+		return
 	}
 
 	fmt.Printf("Installation completed successfully\n")
+	return
 }
 
 // Full uninstall
 func Remove(mode string) {
 	// Only ask if in terminal
-	if term.IsTerminal(int(os.Stdout.Fd())) {
+	if term.IsTerminal(int(os.Stdin.Fd())) {
 		// File exists, prompt user for confirmation to overwrite
 		fmt.Printf("Are you SURE you want to uninstall? (this will remove the configuration files) (yes/no): ")
 		reader := bufio.NewReader(os.Stdin)
-		input, _ := reader.ReadString('\n')
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
 		input = strings.TrimSpace(input)
 
 		if strings.ToLower(input) != "yes" {

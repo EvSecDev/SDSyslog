@@ -3,11 +3,22 @@ package install
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sdsyslog/internal/global"
 )
 
 func installBinary() (err error) {
 	selfPath, err := os.Executable()
+	if err != nil {
+		return
+	}
+
+	// Normalize paths
+	selfPath, err = filepath.EvalSymlinks(selfPath)
+	if err != nil {
+		return
+	}
+	selfPath, err = filepath.Abs(selfPath)
 	if err != nil {
 		return
 	}

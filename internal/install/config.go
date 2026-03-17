@@ -16,7 +16,6 @@ import (
 	"sdsyslog/internal/sender"
 	"sdsyslog/internal/sender/ingest"
 	"sdsyslog/pkg/protocol"
-	"strings"
 )
 
 func installConfig(mode string) (err error) {
@@ -33,7 +32,7 @@ func installConfig(mode string) (err error) {
 
 	err = os.Mkdir(global.DefaultConfigDir, 0755)
 	if err != nil {
-		if strings.HasSuffix(err.Error(), "file exists") {
+		if os.IsNotExist(err) {
 			err = nil
 		} else {
 			err = fmt.Errorf("failed to create configuration directory: %w", err)
@@ -71,6 +70,12 @@ func installConfig(mode string) (err error) {
 				err = fmt.Errorf("failed to open private key file: %w", err)
 				return
 			}
+			defer func() {
+				lerr := privKeyFile.Close()
+				if err == nil && lerr != nil {
+					err = lerr
+				}
+			}()
 
 			_, err = privKeyFile.Write([]byte(base64.StdEncoding.EncodeToString(private)))
 			if err != nil {

@@ -53,15 +53,16 @@ func installService(mode string) (err error) {
 	// Check if enabled
 	command = exec.Command("systemctl", "is-enabled", unitName)
 	output, err = command.CombinedOutput()
+	enableStatus := strings.Trim(string(output), "\n")
+	enableStatus = strings.TrimSpace(enableStatus)
 	if err != nil {
-		if !strings.Contains(string(output), "disabled") {
-			err = fmt.Errorf("failed to check systemd service enablement status: %w: %s", err, string(output))
+		if enableStatus != "disabled" {
+			err = fmt.Errorf("failed to check systemd service enablement status: %w: %s", err, enableStatus)
 			return
 		}
 		// Disabled status is exit code 1
 		err = nil
 	}
-	enableStatus := strings.Trim(string(output), "\n")
 
 	if strings.ToLower(enableStatus) != "enabled" {
 		command := exec.Command("systemctl", "enable", unitName)
@@ -122,8 +123,9 @@ func uninstallService(mode string) (err error) {
 		}
 	}
 	serviceStatus := strings.Trim(string(output), "\n")
+	serviceStatus = strings.ToLower(serviceStatus)
 
-	if strings.Contains(serviceStatus, "running") {
+	if strings.Contains(serviceStatus, "activestate=active") {
 		command = exec.Command("systemctl", "stop", unitName)
 		output, err = command.CombinedOutput()
 		if err != nil {
@@ -133,11 +135,12 @@ func uninstallService(mode string) (err error) {
 	}
 
 	err = os.Remove(unitFilePath)
+	removed := err == nil
 	if err != nil && !os.IsNotExist(err) {
 		return
 	}
 
-	if os.IsNotExist(err) {
+	if removed {
 		// Reload for removed unit file
 		command = exec.Command("systemctl", "daemon-reload")
 		output, err = command.CombinedOutput()

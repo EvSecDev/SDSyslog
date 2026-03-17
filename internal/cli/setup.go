@@ -53,9 +53,9 @@ func SetupMode(cliOpts *CommandSet, commandname string, args []string) {
 	} else if newRecvConf {
 		err = install.CreateRecvTemplateConfig(confPath)
 	} else if installSender {
-		install.Run("send")
+		err = install.Run("send")
 	} else if installReceiver {
-		install.Run("receive")
+		err = install.Run("receive")
 	} else if uninstallSender {
 		install.Remove("send")
 	} else if uninstallReceiver {

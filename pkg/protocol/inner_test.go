@@ -208,7 +208,7 @@ func TestLongPayload(t *testing.T) {
 	}
 }
 
-func TestInvaliData(t *testing.T) {
+func TestInvalidData(t *testing.T) {
 	fields := innerWireFormat{
 		HostID:        12345,
 		MsgID:         96789,
@@ -231,9 +231,9 @@ func TestInvaliData(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error for construction, but got nil")
 	}
-	expectedErr := "failed to serialize Data: field cannot be empty"
+	expectedErr := ErrProtocolViolation.Error() + ": Data: field cannot be empty"
 	if err.Error() != expectedErr {
-		t.Errorf("Expected error '%s', got %v", expectedErr, err)
+		t.Errorf("Expected error '%s', got '%v'", expectedErr, err)
 	}
 }
 

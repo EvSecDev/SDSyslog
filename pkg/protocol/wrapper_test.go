@@ -247,7 +247,7 @@ func TestProtocol(t *testing.T) {
 				packets[0][0] ^= 0xFF
 				return packets
 			},
-			expectErrExtract: "invalid suite ID (254) in blob",
+			expectErrExtract: "failed to deserialize outer payload for fragment 0: " + ErrUnknownSuite.Error() + ": ID 254",
 			expectedMsg: Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "corrupt-host",
@@ -294,7 +294,7 @@ func TestProtocol(t *testing.T) {
 					t.Fatalf("expected create error, got nil")
 				}
 				if !strings.Contains(err.Error(), tt.expectErrCreate) {
-					t.Fatalf("expected error %q, but got %q", err.Error(), tt.expectErrCreate)
+					t.Fatalf("expected error %q, but got %q", tt.expectErrCreate, err.Error())
 				}
 				return
 			}
@@ -339,7 +339,7 @@ func TestProtocol(t *testing.T) {
 					t.Fatalf("expected extract error, got nil")
 				}
 				if !strings.Contains(err.Error(), tt.expectErrExtract) {
-					t.Fatalf("expected error %q, but got %q", err.Error(), tt.expectErrExtract)
+					t.Fatalf("expected error %q, but got %q", tt.expectErrExtract, err.Error())
 				}
 				return
 			}

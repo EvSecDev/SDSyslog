@@ -1,6 +1,9 @@
 package protocol
 
-import "sdsyslog/pkg/crypto/registry"
+import (
+	"errors"
+	"sdsyslog/pkg/crypto/registry"
+)
 
 const (
 	EmptyFieldChar             string = "-"
@@ -99,4 +102,15 @@ const (
 		minCtxValLen +
 		lenCtxValTerminator +
 		lenContextSectionTerminator
+)
+
+var (
+	ErrInvalidPayload        = errors.New("invalid payload")
+	ErrProtocolViolation     = errors.New("protocol violation")
+	ErrSerialization         = errors.New("serialization failure")
+	ErrFragmentation         = errors.New("fragmentation failure")
+	ErrUnknownSuite          = errors.New("unknown crypto suite")
+	ErrUnknownSignatureSuite = errors.New("unknown signature suite")
+	ErrInvalidContextField   = errors.New("invalid context field")
+	ErrCryptoFailure         = errors.New("cryptographic failure")
 )

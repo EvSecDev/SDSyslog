@@ -134,7 +134,7 @@ func TestConstructPayload(t *testing.T) {
 				PaddingLen: 18,
 			},
 			sigID: 1,
-			err:   "signature length 63 for id 1 must be between 64 and 64 bytes",
+			err:   ErrInvalidPayload.Error() + ": signature length 63 for id 1 must be between 64 and 64 bytes",
 		},
 		{
 			name: "messageSeq larger than messageSeqMax",
@@ -152,7 +152,7 @@ func TestConstructPayload(t *testing.T) {
 				PaddingLen: 16,
 			},
 			expected: innerWireFormat{},
-			err:      "message sequence cannot be larger than maximum sequence",
+			err:      ErrInvalidPayload.Error() + ": message sequence cannot be larger than maximum sequence",
 		},
 		{
 			name: "invalid padding length",
@@ -170,7 +170,7 @@ func TestConstructPayload(t *testing.T) {
 				PaddingLen: 500, // Invalid padding length
 			},
 			expected: innerWireFormat{},
-			err:      fmt.Sprintf("invalid padding length 500: must be between %d and %d", minPaddingLen, maxPaddingLen),
+			err:      fmt.Sprintf("%v: invalid padding length 500: must be between %d and %d", ErrInvalidPayload, minPaddingLen, maxPaddingLen),
 		},
 	}
 
@@ -354,7 +354,7 @@ func TestDeconstructPayload(t *testing.T) {
 				PaddingLen: 16,
 			},
 			expected: Payload{},
-			err:      "empty host ID",
+			err:      ErrInvalidPayload.Error() + ": empty host ID",
 		},
 		{
 			name: "empty msg ID",
@@ -381,7 +381,7 @@ func TestDeconstructPayload(t *testing.T) {
 				PaddingLen: 16,
 			},
 			expected: Payload{},
-			err:      "empty msg ID",
+			err:      ErrInvalidPayload.Error() + ": empty msg ID",
 		},
 	}
 

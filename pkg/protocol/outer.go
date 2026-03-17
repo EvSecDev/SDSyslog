@@ -12,32 +12,34 @@ import (
 func ConstructOuterPayload(innerPayload []byte, suiteID uint8) (outerPayload []byte, err error) {
 	// Reject empty payload
 	if len(innerPayload) < 1 {
-		err = fmt.Errorf("payload cannot be empty")
+		err = fmt.Errorf("%w: payload cannot be empty", ErrProtocolViolation)
 		return
 	}
 
 	// Validate lengths based on requested suiteID
 	suite, validID := registry.GetSuiteInfo(suiteID)
 	if !validID {
-		err = fmt.Errorf("unknown suite ID %d", suiteID)
+		err = fmt.Errorf("%w: ID %d", ErrUnknownSuite, suiteID)
 		return
 	}
 
 	// Encrypt inner payload
 	ciphertext, ephemeralPub, nonce, err := wrappers.EncryptInnerPayload(innerPayload, suiteID)
 	if err != nil {
-		err = fmt.Errorf("failed encryption: %w", err)
+		err = fmt.Errorf("%w: %w", ErrCryptoFailure, err)
 		return
 	}
 
 	// Validate ephemeral against chosen suite
 	if len(ephemeralPub) != suite.KeySize {
-		err = fmt.Errorf("invalid key length: suite ID %d requires length %d, but received key length %d", suiteID, suite.KeySize, len(ephemeralPub))
+		err = fmt.Errorf("%w: invalid key length: suite ID %d requires length %d, but received key length %d",
+			ErrProtocolViolation, suiteID, suite.KeySize, len(ephemeralPub))
 		return
 	}
 
 	if len(nonce) != suite.NonceSize {
-		err = fmt.Errorf("invalid nonce length: suite ID %d requires length %d, but received nonce length %d", suiteID, suite.NonceSize, len(nonce))
+		err = fmt.Errorf("%w: invalid nonce length: suite ID %d requires length %d, but received nonce length %d",
+			ErrProtocolViolation, suiteID, suite.NonceSize, len(nonce))
 		return
 	}
 
@@ -49,25 +51,25 @@ func ConstructOuterPayload(innerPayload []byte, suiteID uint8) (outerPayload []b
 	var buffer bytes.Buffer
 
 	// Write fields in order
-	writeErrMsg := "failed to write field %s to blob buffer"
+	writeErrMsg := "%w: failed to write field %s to blob buffer"
 	err = buffer.WriteByte(suiteID)
 	if err != nil {
-		err = fmt.Errorf(writeErrMsg, "suiteID")
+		err = fmt.Errorf(writeErrMsg, ErrSerialization, "suiteID")
 		return
 	}
 	_, err = buffer.Write(ephemeralPub)
 	if err != nil {
-		err = fmt.Errorf(writeErrMsg, "ephemeralPub")
+		err = fmt.Errorf(writeErrMsg, ErrSerialization, "ephemeralPub")
 		return
 	}
 	_, err = buffer.Write(nonce)
 	if err != nil {
-		err = fmt.Errorf(writeErrMsg, "nonce")
+		err = fmt.Errorf(writeErrMsg, ErrSerialization, "nonce")
 		return
 	}
 	_, err = buffer.Write(ciphertext)
 	if err != nil {
-		err = fmt.Errorf(writeErrMsg, "payload")
+		err = fmt.Errorf(writeErrMsg, ErrSerialization, "payload")
 		return
 	}
 
@@ -85,7 +87,7 @@ func ConstructOuterPayload(innerPayload []byte, suiteID uint8) (outerPayload []b
 func DeconstructOuterPayload(blob []byte) (innerPayload []byte, err error) {
 	// Initial check to ensure there's at least one byte
 	if len(blob) < 1 {
-		err = fmt.Errorf("blob is empty")
+		err = fmt.Errorf("%w: blob is empty", ErrProtocolViolation)
 		return
 	}
 
@@ -98,7 +100,7 @@ func DeconstructOuterPayload(blob []byte) (innerPayload []byte, err error) {
 	// Validate ID is known
 	suite, validSuite := registry.GetSuiteInfo(suiteID)
 	if !validSuite {
-		err = fmt.Errorf("invalid suite ID (%d) in blob", suiteID)
+		err = fmt.Errorf("%w: ID %d", ErrUnknownSuite, suiteID)
 		return
 	}
 
@@ -107,7 +109,8 @@ func DeconstructOuterPayload(blob []byte) (innerPayload []byte, err error) {
 
 	// Reject packets below header length
 	if len(blob) < minLength {
-		err = fmt.Errorf("suite id %d: blob size is too small: expected minimum size %d but got %d", suiteID, minLength, len(blob))
+		err = fmt.Errorf("%w: suite id %d: blob size is too small: expected minimum size %d but got %d",
+			ErrProtocolViolation, suiteID, minLength, len(blob))
 		return
 	}
 
@@ -122,13 +125,15 @@ func DeconstructOuterPayload(blob []byte) (innerPayload []byte, err error) {
 
 	// Reject invalid minimum length inner payloads
 	if len(ciphertext) < minInnerPayloadLen+suite.CipherOverhead {
-		err = fmt.Errorf("suite id %d: blob payload is invalid minimum length", suiteID)
+		err = fmt.Errorf("%w: suite id %d: blob payload is invalid minimum length",
+			ErrProtocolViolation, suiteID)
 		return
 	}
 
 	// Decrypt the payload
 	innerPayload, err = wrappers.DecryptInnerPayload(ciphertext, pubKey, nonce, suiteID)
 	if err != nil {
+		err = fmt.Errorf("%w: %w", ErrCryptoFailure, err)
 		return
 	}
 

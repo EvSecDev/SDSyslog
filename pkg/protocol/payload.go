@@ -16,7 +16,7 @@ import (
 func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err error) {
 	// MessageHostID
 	if request.HostID == 0 {
-		err = fmt.Errorf("host ID cannot be zero")
+		err = fmt.Errorf("%w: host ID cannot be zero", ErrInvalidPayload)
 		return
 	}
 	proto.HostID = uint32(request.HostID)
@@ -24,13 +24,13 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 	// MessageID
 	proto.MsgID = uint32(request.MsgID)
 	if request.MsgID == 0 {
-		err = fmt.Errorf("message ID cannot be zero")
+		err = fmt.Errorf("%w: message ID cannot be zero", ErrInvalidPayload)
 		return
 	}
 
 	// Sequence ID and Sequence Max
 	if request.MessageSeq > request.MessageSeqMax {
-		err = fmt.Errorf("message sequence cannot be larger than maximum sequence")
+		err = fmt.Errorf("%w: message sequence cannot be larger than maximum sequence", ErrInvalidPayload)
 		return
 	}
 	proto.MessageSeq = uint16(request.MessageSeq)
@@ -50,17 +50,18 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 			// Validate pre-computed signature
 			suite, validID := registry.GetSignatureInfo(sigID)
 			if !validID {
-				err = fmt.Errorf("unknown signature ID %d", sigID)
+				err = fmt.Errorf("%w: %w: ID %d",
+					ErrInvalidPayload, ErrUnknownSignatureSuite, sigID)
 				return
 			}
 			if sigID != request.SignatureID {
-				err = fmt.Errorf("pre-computed payload signature ID %d does not match requested signature ID %d",
-					request.SignatureID, sigID)
+				err = fmt.Errorf("%w: pre-computed payload signature ID %d does not match requested signature ID %d",
+					ErrInvalidPayload, request.SignatureID, sigID)
 				return
 			}
 			if len(request.Signature) > suite.MaxSignatureLength || len(request.Signature) < suite.MinSignatureLength {
-				err = fmt.Errorf("signature length %d for id %d must be between %d and %d bytes",
-					len(request.Signature), sigID, suite.MinSignatureLength, suite.MaxSignatureLength)
+				err = fmt.Errorf("%w: signature length %d for id %d must be between %d and %d bytes",
+					ErrInvalidPayload, len(request.Signature), sigID, suite.MinSignatureLength, suite.MaxSignatureLength)
 				return
 			}
 
@@ -73,12 +74,13 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 			// Signature: sign timestamp and hostname
 			proto.Signature, err = wrappers.CreateSignature(bytesToSign, sigID)
 			if err != nil {
+				err = fmt.Errorf("%w: %w", ErrCryptoFailure, err)
 				return
 			}
 		}
 		if len(proto.Signature) < minSignatureLen || len(proto.Signature) > maxSignatureLen {
-			err = fmt.Errorf("invalid signature length: must be between %d and %d bytes",
-				minSignatureLen, maxSignatureLen)
+			err = fmt.Errorf("%w: invalid signature length: must be between %d and %d bytes",
+				ErrInvalidPayload, minSignatureLen, maxSignatureLen)
 			return
 		}
 	}
@@ -101,7 +103,13 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 
 			cleanKey := cleanStringToBytes(key, maxCtxKeyLen)
 			if len(cleanKey) < minCtxKeyLen {
-				err = fmt.Errorf("custom field key cannot be less than %d byte(s)", minCtxKeyLen)
+				err = fmt.Errorf("%w: %w: key cannot be less than %d byte(s)",
+					ErrInvalidPayload, ErrInvalidContextField, minCtxKeyLen)
+				return
+			}
+			if len(cleanKey) > maxCtxKeyLen {
+				err = fmt.Errorf("%w: %w: key %q: cannot be more than %d byte(s)",
+					ErrInvalidPayload, ErrInvalidContextField, cleanKey, minCtxKeyLen)
 				return
 			}
 
@@ -114,20 +122,23 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 			} else {
 				cleanType, cleanValue, err = serializeAnyValue(value)
 				if err != nil {
-					err = fmt.Errorf("invalid custom field '%s': %w", cleanKey, err)
+					err = fmt.Errorf("%w: key %q: %w",
+						ErrSerialization, cleanKey, err)
 					return
 				}
 				if len(cleanValue) < minCtxValLen {
 					cleanValue = []byte(EmptyFieldChar)
 				}
 				if len(cleanValue) > maxCtxValLen {
-					err = fmt.Errorf("value too long for key '%s' (must be less than %d bytes)", key, maxCtxValLen)
+					err = fmt.Errorf("%w: %w: field %q: value too long for, must be less than %d bytes",
+						ErrInvalidPayload, ErrInvalidContextField, key, maxCtxValLen)
 					return
 				}
 				// Only strings enforce utf8
 				if cleanType == ContextString {
 					if !utf8.Valid(cleanValue) {
-						err = fmt.Errorf("non-UTF8 context field value for key '%s' is unsupported", string(cleanKey))
+						err = fmt.Errorf("%w: %w: key %q: non-UTF8 values are unsupported",
+							ErrInvalidPayload, ErrInvalidContextField, string(cleanKey))
 						return
 					}
 				}
@@ -146,12 +157,14 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 		}
 
 		if totalCtxLen < minCtxSecLenWithData {
-			err = fmt.Errorf("custom field serialized length is below expected minimum")
+			err = fmt.Errorf("%w: custom fields serialized length is below expected minimum",
+				ErrInvalidPayload)
 			return
 		}
 
 		if totalCtxLen > maxCtxSectionLen {
-			err = fmt.Errorf("context section exceeds maximum custom field section limit (%d bytes)", maxCtxSectionLen)
+			err = fmt.Errorf("%w: context section exceeds maximum custom field section limit (%d bytes)",
+				ErrInvalidPayload, maxCtxSectionLen)
 			return
 		}
 	}
@@ -161,7 +174,8 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 
 	// Padding Length (random padding is generated as part of the trailer)
 	if request.PaddingLen < minPaddingLen || request.PaddingLen > maxPaddingLen {
-		err = fmt.Errorf("invalid padding length %d: must be between %d and %d", request.PaddingLen, minPaddingLen, maxPaddingLen)
+		err = fmt.Errorf("%w: invalid padding length %d: must be between %d and %d",
+			ErrInvalidPayload, request.PaddingLen, minPaddingLen, maxPaddingLen)
 		return
 	}
 	proto.PaddingLen = request.PaddingLen
@@ -173,21 +187,22 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 	// Validate HostID
 	if proto.HostID == 0 {
-		err = fmt.Errorf("empty host ID")
+		err = fmt.Errorf("%w: empty host ID", ErrInvalidPayload)
 		return
 	}
 	validated.HostID = int(proto.HostID)
 
 	// Validate MsgID
 	if proto.MsgID == 0 {
-		err = fmt.Errorf("empty msg ID")
+		err = fmt.Errorf("%w: empty msg ID", ErrInvalidPayload)
 		return
 	}
 	validated.MsgID = int(proto.MsgID)
 
 	// Validate Sequence ID and Sequence Max
 	if proto.MessageSeq > proto.MessageSeqMax {
-		err = fmt.Errorf("message sequence greater than maximum: %d > %d", proto.MessageSeq, proto.MessageSeqMax)
+		err = fmt.Errorf("%w: message sequence greater than maximum: %d > %d",
+			ErrInvalidPayload, proto.MessageSeq, proto.MessageSeqMax)
 		return
 	}
 	validated.MessageSeq = int(proto.MessageSeq)
@@ -198,15 +213,17 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 
 	// Validate Hostname length and convert back to string
 	if len(proto.Hostname) == 0 {
-		err = fmt.Errorf("empty hostname")
+		err = fmt.Errorf("%w: empty hostname", ErrInvalidPayload)
 		return
 	}
 	if len(proto.Hostname) > maxHostnameLen {
-		err = fmt.Errorf("exceeded maximum hostname length %d", maxHostnameLen)
+		err = fmt.Errorf("%w: exceeded maximum hostname length %d",
+			ErrInvalidPayload, maxHostnameLen)
 		return
 	}
 	if !isPrintableASCII(proto.Hostname) {
-		err = fmt.Errorf("non-ASCII hostname '%s' is not supported", proto.Hostname)
+		err = fmt.Errorf("%w: non-ASCII hostname '%s' is not supported",
+			ErrInvalidPayload, proto.Hostname)
 		return
 	}
 	// Strip trust markers if in the hostname
@@ -217,7 +234,8 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 	pubKey, knownHost := wrappers.LookupPinnedSender(validated.Hostname)
 	if knownHost && proto.SignatureID == 0 {
 		// Pinned key without signature - Drop
-		err = fmt.Errorf("sender has a pinned key but received packet has no signature")
+		err = fmt.Errorf("%w: sender has a pinned key but received packet has no signature",
+			ErrInvalidPayload)
 		return
 	} else if !knownHost && proto.SignatureID == 0 {
 		// No pinned key and no signature - allow and mark untrusted
@@ -231,10 +249,12 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 		var valid bool
 		valid, err = wrappers.VerifySignature(pubKey, bytesToVerify, proto.Signature, proto.SignatureID)
 		if err != nil {
+			err = fmt.Errorf("%w: %w", ErrCryptoFailure, err)
 			return
 		}
 		if !valid {
-			err = fmt.Errorf("payload with alleged hostname %q has invalid signature", validated.Hostname)
+			err = fmt.Errorf("%w: payload with alleged hostname %q has invalid signature",
+				ErrInvalidPayload, validated.Hostname)
 			return
 		}
 	}
@@ -248,25 +268,34 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 		for _, field := range proto.ContextFields {
 			// Key
 			keyLength := len(field.Key)
-			if keyLength < minCtxKeyLen || keyLength > maxCtxKeyLen {
-				err = fmt.Errorf("invalid context field key length: %d", keyLength)
+			if keyLength < minCtxKeyLen {
+				err = fmt.Errorf("%w: %w: key cannot be less than %d byte(s)",
+					ErrInvalidPayload, ErrInvalidContextField, minCtxKeyLen)
+				return
+			}
+			if keyLength > maxCtxKeyLen {
+				err = fmt.Errorf("%w: %w: key %q: length of %d, cannot be more than %d byte(s)",
+					ErrInvalidPayload, ErrInvalidContextField, string(field.Key), keyLength, minCtxKeyLen)
 				return
 			}
 			if !isPrintableASCII(field.Key) {
-				err = fmt.Errorf("non-ASCII context field key '%s' is not supported", field.Key)
+				err = fmt.Errorf("%w: %w: key %q: non-ASCII key text is not supported",
+					ErrInvalidPayload, ErrInvalidContextField, field.Key)
 				return
 			}
 
 			// Value
 			valueLength := len(field.Value)
 			if valueLength < minCtxValLen || valueLength > maxCtxValLen {
-				err = fmt.Errorf("invalid context field value length: %d", valueLength)
+				err = fmt.Errorf("%w: %w: key %q: value length %d is invalid, must be between %d and %d",
+					ErrInvalidPayload, ErrInvalidContextField, field.Key, valueLength, minCtxValLen, maxCtxValLen)
 				return
 			}
 			// Only strings enforce utf8
 			if field.valType == ContextString {
 				if !utf8.Valid(field.Value) {
-					err = fmt.Errorf("non-UTF8 context field value for key '%s' is unsupported", string(field.Key))
+					err = fmt.Errorf("%w: %w: key %q: non-UTF8 values are unsupported",
+						ErrInvalidPayload, ErrInvalidContextField, string(field.Key))
 					return
 				}
 			}
@@ -274,7 +303,8 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 			var value any
 			value, err = deserializeAnyValue(field.valType, field.Value)
 			if err != nil {
-				err = fmt.Errorf("invalid custom field '%s': %w", string(field.Key), err)
+				err = fmt.Errorf("%w: key %q: %w",
+					ErrSerialization, string(field.Key), err)
 				return
 			}
 
@@ -284,14 +314,15 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 
 	// Validate data length
 	if len(proto.Data) == 0 {
-		err = fmt.Errorf("empty data text")
+		err = fmt.Errorf("%w: empty data text", ErrInvalidPayload)
 		return
 	}
 	validated.Data = proto.Data
 
 	// Validate PaddingLen
 	if proto.PaddingLen < minPaddingLen || proto.PaddingLen > maxPaddingLen {
-		err = fmt.Errorf("invalid PaddingLen %d: must be between %d and %d", proto.PaddingLen, minPaddingLen, maxPaddingLen)
+		err = fmt.Errorf("%w: invalid PaddingLen %d: must be between %d and %d",
+			ErrInvalidPayload, proto.PaddingLen, minPaddingLen, maxPaddingLen)
 		return
 	}
 	validated.PaddingLen = proto.PaddingLen
@@ -321,7 +352,7 @@ func (proto innerWireFormat) SerializeForSignature() (signable []byte) {
 func CalculateProtocolOverhead(suiteID uint8, primaryPayload Payload) (fixedOverhead int, err error) {
 	cryptoInfo, validSuiteID := registry.GetSuiteInfo(suiteID)
 	if !validSuiteID {
-		err = fmt.Errorf("unknown crypto suite ID %d", suiteID)
+		err = fmt.Errorf("%w: ID %d", ErrUnknownSuite, suiteID)
 		return
 	}
 
@@ -343,7 +374,8 @@ func CalculateProtocolOverhead(suiteID uint8, primaryPayload Payload) (fixedOver
 			var data []byte
 			_, data, err = serializeAnyValue(value)
 			if err != nil {
-				err = fmt.Errorf("failed to get serialized length for field '%s': %w", key, err)
+				err = fmt.Errorf("%w: failed to get length for field %q: %w",
+					ErrSerialization, key, err)
 				return
 			}
 			innerVariableLength += len(data)

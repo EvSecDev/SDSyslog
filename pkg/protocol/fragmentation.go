@@ -11,11 +11,11 @@ import (
 // Sets random padding length per fragment
 func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int) (payloads []Payload, err error) {
 	if maxPayloadSize <= 0 {
-		err = fmt.Errorf("maxPayloadSize must be greater than 0")
+		err = fmt.Errorf("%w: maxPayloadSize must be greater than 0", ErrFragmentation)
 		return
 	}
 	if fixedProtocolSize <= 0 {
-		err = fmt.Errorf("fixedProtocolSize must be greater than 0")
+		err = fmt.Errorf("%w: fixedProtocolSize must be greater than 0", ErrFragmentation)
 		return
 	}
 
@@ -30,7 +30,7 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 		// Get a random padding length for this section of the data
 		payloadFragment.PaddingLen, err = random.NumberInRange(minPaddingLen, maxPaddingLen)
 		if err != nil {
-			err = fmt.Errorf("failed to generate padding length: %w", err)
+			err = fmt.Errorf("%w: failed to generate padding length: %w", ErrFragmentation, err)
 			return
 		}
 
@@ -39,7 +39,7 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 		if maxMessageSize <= 0 {
 			err = fmt.Errorf("max_payload_size=%d bytes < protocol_overhead=%d bytes", maxPayloadSize, fixedProtocolSize+payloadFragment.PaddingLen)
 			err = fmt.Errorf("no room left for message in packet: %w", err)
-			err = fmt.Errorf("protocol overhead (including custom fields) exceeded max payload size: %w", err)
+			err = fmt.Errorf("%w: protocol overhead (including custom fields) exceeded max payload size: %w", ErrFragmentation, err)
 			return
 		}
 
@@ -68,13 +68,13 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 // Expects validated (individual) payloads - only run post payload parsing
 func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 	if len(payloads) == 0 {
-		err = fmt.Errorf("received no payloads to defrag")
+		err = fmt.Errorf("%w: received no payloads to defrag", ErrFragmentation)
 		return
 	}
 
 	// Inconsistent shared fields are not corruption (would have failed decryption)
 	if !allFieldsEqual(payloads) {
-		err = fmt.Errorf("some received payloads have shared fields that are not identical - could indicate client misbehavior")
+		err = fmt.Errorf("%w: some received payloads have shared fields that are not identical - could indicate client misbehavior", ErrFragmentation)
 		return
 	}
 

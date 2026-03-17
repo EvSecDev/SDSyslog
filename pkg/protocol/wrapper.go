@@ -32,29 +32,28 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int, cryptoSuite, signat
 
 	fragments, err := Fragment(newMsg, maxPayloadSize, protocolOverhead)
 	if err != nil {
-		err = fmt.Errorf("failed to fragment message: %w", err)
 		return
 	}
 
-	for _, fragment := range fragments {
+	for index, fragment := range fragments {
 		var payload innerWireFormat
 		payload, err = ConstructPayload(fragment, signatureSuite)
 		if err != nil {
-			err = fmt.Errorf("invalid payload: %w", err)
+			err = fmt.Errorf("fragment %d: %w", index, err)
 			return
 		}
 
 		var innerPayload []byte
 		innerPayload, err = ConstructInnerPayload(payload)
 		if err != nil {
-			err = fmt.Errorf("failed to serialize inner payload: %w", err)
+			err = fmt.Errorf("failed to serialize inner fragment %d: %w", index, err)
 			return
 		}
 
 		var outterPayload []byte
 		outterPayload, err = ConstructOuterPayload(innerPayload, cryptoSuite)
 		if err != nil {
-			err = fmt.Errorf("failed to serialize outer payload: %w", err)
+			err = fmt.Errorf("failed to serialize outer fragment %d: %w", index, err)
 			return
 		}
 
@@ -74,21 +73,21 @@ func Extract(packets [][]byte) (recvMsg Message, hostID int, err error) {
 		var innerPayload []byte
 		innerPayload, err = DeconstructOuterPayload(packet)
 		if err != nil {
-			err = fmt.Errorf("failed to deserialize outer payload for packet %d: %w", index, err)
+			err = fmt.Errorf("failed to deserialize outer payload for fragment %d: %w", index, err)
 			return
 		}
 
 		var payload innerWireFormat
 		payload, err = DeconstructInnerPayload(innerPayload)
 		if err != nil {
-			err = fmt.Errorf("failed to deserialize inner payload for packet %d: %w", index, err)
+			err = fmt.Errorf("failed to deserialize inner payload for fragment %d: %w", index, err)
 			return
 		}
 
 		var messageFragment Payload
 		messageFragment, err = DeconstructPayload(payload)
 		if err != nil {
-			err = fmt.Errorf("invalid payload for packet %d: %w", index, err)
+			err = fmt.Errorf("fragment %d: %w", index, err)
 			return
 		}
 
@@ -97,7 +96,6 @@ func Extract(packets [][]byte) (recvMsg Message, hostID int, err error) {
 
 	primaryPayload, err := Defragment(fragments)
 	if err != nil {
-		err = fmt.Errorf("failed to defragment message: %w", err)
 		return
 	}
 

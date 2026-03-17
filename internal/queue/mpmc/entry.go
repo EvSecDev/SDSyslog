@@ -88,7 +88,7 @@ func newQueueInst[T any](namespace []string, capacity uint64) (new *QueueInst[T]
 		Metrics:   &MetricStorage{},
 	}
 	new.mask.Store(capacity - 1)
-	new.Metrics.Size.Store(capacity)
+	new.Metrics.Capacity.Store(capacity)
 	return
 }
 
@@ -99,8 +99,7 @@ func (container *Queue[T]) PushBlocking(ctx context.Context, value T, size int) 
 		case <-ctx.Done():
 			return
 		default:
-			if container.Push(value) { // try once
-				container.ActiveWrite.Load().Metrics.Bytes.Add(uint64(size))
+			if container.Push(value, uint64(size)) { // try once
 				return
 			}
 			time.Sleep(10 * time.Millisecond) // or backoff
@@ -109,7 +108,7 @@ func (container *Queue[T]) PushBlocking(ctx context.Context, value T, size int) 
 }
 
 // Attempts to write an element (non success = queue full)
-func (container *Queue[T]) Push(value T) (success bool) {
+func (container *Queue[T]) Push(value T, size uint64) (success bool) {
 	var queue *QueueInst[T]
 
 	// Retry to get valid pointer
@@ -148,7 +147,9 @@ func (container *Queue[T]) Push(value T) (success bool) {
 
 	cell.data = value
 	cell.seq.Store(pos + 1)
+	cell.size.Store(size)
 	queue.Metrics.Depth.Add(1)
+	queue.Metrics.Bytes.Add(size)
 
 	// notify blocked consumers, non-blocking
 	select {
@@ -184,6 +185,11 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 				if !ok {
 					logctx.LogStdWarn(ctx,
 						"failed to decrement queue depth metric after successful pop\n")
+				}
+				ok = atomics.Subtract(&queue.Metrics.Bytes, cell.size.Swap(0), 4) // max retries set at 4
+				if !ok {
+					logctx.LogStdWarn(ctx,
+						"failed to decrement queue byte size metric after successful pop\n")
 				}
 
 				// Check for last pop on migrating queue (wake consumers)

@@ -7,6 +7,7 @@ import (
 
 type cell[T any] struct {
 	seq  atomic.Uint64
+	size atomic.Uint64
 	data T
 }
 

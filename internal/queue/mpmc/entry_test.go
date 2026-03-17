@@ -71,7 +71,7 @@ func TestQueue_PushPopScenarios(t *testing.T) {
 
 			for i, op := range tt.ops {
 				if op.push != nil {
-					if !q.Push(*op.push) {
+					if !q.Push(*op.push, 8) {
 						t.Fatalf("op %d: push(%d) failed", i, *op.push)
 					}
 				} else if op.want != nil {
@@ -127,10 +127,10 @@ func TestPushFailures(t *testing.T) {
 			}
 
 			for _, v := range tt.prefill {
-				q.Push(v)
+				q.Push(v, 8)
 			}
 
-			ok := q.Push(tt.testPush)
+			ok := q.Push(tt.testPush, 8)
 			if ok != tt.expectOK {
 				t.Fatalf("expected %v, got %v", tt.expectOK, ok)
 			}
@@ -138,7 +138,7 @@ func TestPushFailures(t *testing.T) {
 			// Special case: retry test
 			if tt.name == "RetryAfterSpace" {
 				q.Pop(context.Background())
-				if !q.Push(tt.testPush) {
+				if !q.Push(tt.testPush, 8) {
 					t.Fatalf("retry push should succeed")
 				}
 			}
@@ -155,7 +155,7 @@ func TestNotEmptyChannel(t *testing.T) {
 	// Test that the notEmpty channel works correctly
 	go func() {
 		for i := 0; i < 5; i++ {
-			success := queue.Push(i)
+			success := queue.Push(i, 8)
 			if !success {
 				t.Errorf("Push failed for value %d", i)
 			}
@@ -180,7 +180,7 @@ func TestQueueThroughput(t *testing.T) {
 
 	// Simulate high throughput
 	for i := 0; i < 10000000; i++ {
-		success := queue.Push(i)
+		success := queue.Push(i, 8)
 		if !success {
 			t.Fatalf("Push failed for value %d", i)
 		}

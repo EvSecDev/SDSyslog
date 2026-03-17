@@ -86,11 +86,8 @@ func (instance *Instance) run() {
 			retryWait := 5 * time.Millisecond
 			success := false
 			for range maxRetries {
-				success = instance.outbox.Push(finalMsg)
+				success = instance.outbox.Push(finalMsg, uint64(finalMsg.Size()))
 				if success {
-					// Add data size to sum
-					size := finalMsg.Size()
-					instance.outbox.ActiveWrite.Load().Metrics.Bytes.Add(uint64(size))
 					break
 				}
 

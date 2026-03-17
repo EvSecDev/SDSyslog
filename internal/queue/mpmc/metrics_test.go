@@ -63,12 +63,10 @@ func TestMetricsPresence(t *testing.T) {
 
 			// Push items
 			for i := 0; i < tt.pushCount; i++ {
-				success := q.Push(i)
+				success := q.Push(i, uint64(tt.bytesPerItem))
 				if !success {
 					t.Fatalf("push %d failed unexpectedly", i)
 				}
-				// simulate bytes metric
-				q.ActiveWrite.Load().Metrics.Bytes.Add(uint64(tt.bytesPerItem))
 			}
 
 			// Pop items (consume some/all)
@@ -79,8 +77,6 @@ func TestMetricsPresence(t *testing.T) {
 					t.Fatalf("pop %d failed unexpectedly", i)
 				}
 				_ = val
-				// decrement bytes to simulate consumption
-				q.ActiveRead.Load().Metrics.Bytes.Add(^uint64(tt.bytesPerItem - 1)) // subtract
 			}
 
 			// Collect metrics
@@ -94,22 +90,22 @@ func TestMetricsPresence(t *testing.T) {
 				}
 			}
 
-			if got := mmap["depth"]; got != tt.expectDepth {
+			if got := mmap[MTDepth]; got != tt.expectDepth {
 				t.Errorf("depth: got %d, want %d", got, tt.expectDepth)
 			}
-			if got := mmap["byte_sum"]; got != tt.expectBytes {
+			if got := mmap[MTBytes]; got != tt.expectBytes {
 				t.Errorf("byte_sum: got %d, want %d", got, tt.expectBytes)
 			}
-			if got := mmap["push_attempts"]; got != tt.expectPush {
+			if got := mmap[MTPushAttempt]; got != tt.expectPush {
 				t.Errorf("push_attempts: got %d, want %d", got, tt.expectPush)
 			}
-			if got := mmap["push_success"]; got != tt.expectPushSuc {
+			if got := mmap[MTPushSuc]; got != tt.expectPushSuc {
 				t.Errorf("push_success: got %d, want %d", got, tt.expectPushSuc)
 			}
-			if got := mmap["pop_attempts"]; got != tt.expectPop {
+			if got := mmap[MTPopAttempt]; got != tt.expectPop {
 				t.Errorf("pop_attempts: got %d, want %d", got, tt.expectPop)
 			}
-			if got := mmap["pop_success"]; got != tt.expectPopSuc {
+			if got := mmap[MTPopSuc]; got != tt.expectPopSuc {
 				t.Errorf("pop_success: got %d, want %d", got, tt.expectPopSuc)
 			}
 		})

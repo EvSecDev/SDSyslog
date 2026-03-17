@@ -72,7 +72,7 @@ func TestQueueMigration(t *testing.T) {
 				go func(id int) {
 					defer wg.Done()
 					for i := id; i < tt.numItems; i += tt.numProducers {
-						for !q.Push(i) {
+						for !q.Push(i, 1) {
 							time.Sleep(time.Microsecond) // backoff
 						}
 						produced <- i

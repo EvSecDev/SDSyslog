@@ -224,7 +224,8 @@ func TestProcessor_Basic(t *testing.T) {
 						RemoteIP: netip.MustParseAddr("127.0.0.1"),
 					},
 				}
-				success := procMgr.Inbox.Push(container)
+				size := len(packet) + 40 // Estimate of overhead of struct plus data
+				success := procMgr.Inbox.Push(container, uint64(size))
 				if !success {
 					t.Fatalf("push to processor queue was not successful")
 				}

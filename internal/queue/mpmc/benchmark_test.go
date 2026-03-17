@@ -24,13 +24,13 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 
 		// Warm-up to stabilize caches, allocator, CPU frequency, ect
 		for i := 0; i < 1000; i++ {
-			queue.Push(i)
+			queue.Push(i, 8)
 			queue.Pop(context.Background())
 		}
 
 		b.Run(fmt.Sprintf("QueueCapacity=%d", n), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				queue.Push(i)
+				queue.Push(i, 8)
 				queue.Pop(context.Background())
 			}
 			perOp[idx] = float64(b.Elapsed().Nanoseconds()) / float64(b.N)
@@ -53,7 +53,7 @@ func BenchmarkQueue_PushAllocations(b *testing.B) {
 	}
 
 	allocs := testing.AllocsPerRun(10000, func() {
-		queue.Push(42)
+		queue.Push(42, 8)
 		queue.Pop(context.Background())
 	})
 

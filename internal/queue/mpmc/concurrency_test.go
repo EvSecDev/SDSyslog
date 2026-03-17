@@ -36,7 +36,7 @@ func TestQueue_Concurrency(t *testing.T) {
 			for i := 0; i < tt.numGoroutines; i++ {
 				go func() {
 					for j := 0; j < tt.numOps; j++ {
-						for !queue.Push(j) {
+						for !queue.Push(j, 8) {
 							runtime.Gosched()
 						}
 					}
@@ -76,7 +76,7 @@ func TestQueue_ContextBehavior(t *testing.T) {
 			done <- result
 		}()
 		time.Sleep(50 * time.Millisecond)
-		queue.Push(42)
+		queue.Push(42, 8)
 		<-done
 	})
 
@@ -100,7 +100,7 @@ func TestQueue_ContextBehavior(t *testing.T) {
 			t.Fatalf("expected no error in creating queue, but got '%v'", err)
 		}
 
-		queue.Push(10)
+		queue.Push(10, 8)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		_, success := queue.Pop(ctx)
@@ -134,7 +134,7 @@ func TestQueue_StressIntegrity(t *testing.T) {
 	producer := func(id int) {
 		defer wg.Done()
 		for i := 0; i < N/numProducers; i++ {
-			for !queue.Push(i + id*N/numProducers) { // Push different range per producer
+			for !queue.Push(i+id*N/numProducers, 8) { // Push different range per producer
 				// Random delay between push attempts
 				time.Sleep(time.Nanosecond)
 			}

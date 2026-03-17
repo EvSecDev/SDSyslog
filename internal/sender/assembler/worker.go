@@ -98,14 +98,12 @@ func (instance *Instance) run() {
 			}
 
 			for _, packet := range packets {
-				success := instance.outbox.Push(packet)
+				success := instance.outbox.Push(packet, uint64(len(packet)))
 				if !success {
 					logctx.LogStdErr(ctx,
 						"Sender queue full, fragment dropped\n")
 					continue
 				}
-				// Add data size to sum
-				instance.outbox.ActiveWrite.Load().Metrics.Bytes.Add(uint64(len(packet)))
 			}
 		}()
 	}

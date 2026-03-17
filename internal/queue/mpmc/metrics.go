@@ -7,9 +7,9 @@ import (
 )
 
 type MetricStorage struct {
-	Size  atomic.Uint64 // Current size of active queue
-	Depth atomic.Uint64 // Current items in queue
-	Bytes atomic.Uint64 // Current byte size in queue (just data)
+	Capacity atomic.Uint64 // Current size of active queue
+	Depth    atomic.Uint64 // Current items in queue
+	Bytes    atomic.Uint64 // Current byte size in queue (just data)
 
 	PushAttempts   atomic.Uint64 // every Push call
 	PushSuccess    atomic.Uint64 // CAS success
@@ -22,9 +22,9 @@ type MetricStorage struct {
 
 // Metric Names
 const (
-	MTSize         string = "size"
+	MTSize         string = "capacity"
 	MTDepth        string = "depth"
-	MTBytes        string = "byte_sum"
+	MTBytes        string = "total_bytes"
 	MTPushAttempt  string = "push_attempts"
 	MTPushSuc      string = "push_success"
 	MTPushCASRetry string = "push_cas_retries"
@@ -42,7 +42,7 @@ func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []
 	}
 
 	// Only for active
-	currentSize := queues[0].Metrics.Size.Load()
+	currentCapacity := queues[0].Metrics.Capacity.Load()
 
 	// Aggregate metrics across all queues
 	agg := struct {
@@ -80,7 +80,7 @@ func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []
 		})
 	}
 
-	add(MTSize, currentSize, "size", metrics.Summary, "Current active queue max entries (total size) at time of metric collection")
+	add(MTSize, currentCapacity, "capacity", metrics.Summary, "Current active queue max capacity (total allocated entries) at time of metric collection")
 	add(MTDepth, agg.Depth, "count", metrics.Gauge, "Current number of items in the queue")
 	add(MTBytes, agg.Bytes, "bytes", metrics.Gauge, "Byte sum of all items in the queue")
 	add(MTPushAttempt, agg.PushAttempts, "count", metrics.Counter, "Total push attempts in the interval")

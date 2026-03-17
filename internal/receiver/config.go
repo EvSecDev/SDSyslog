@@ -112,14 +112,16 @@ func (cfg *Config) setDefaults() {
 	}
 	// Maximums
 	logicalCPUCount := runtime.NumCPU()
+	maxCPU := global.MaxValue(logicalCPUCount)
+	minCPU := global.MinValue(logicalCPUCount)
 	if cfg.MaxListeners == 0 {
-		cfg.MaxListeners = logicalCPUCount
+		cfg.MaxListeners = maxCPU
 	}
 	if cfg.MaxProcessors == 0 {
-		cfg.MaxProcessors = logicalCPUCount
+		cfg.MaxProcessors = maxCPU
 	}
 	if cfg.MaxDefrags == 0 {
-		cfg.MaxDefrags = logicalCPUCount
+		cfg.MaxDefrags = maxCPU
 	}
 	if cfg.MaxProcessorQueueSize == 0 {
 		cfg.MaxProcessorQueueSize = global.DefaultMaxQueueSize
@@ -129,14 +131,14 @@ func (cfg *Config) setDefaults() {
 	}
 
 	// Minimums
-	if cfg.MinDefrags > logicalCPUCount {
-		cfg.MinDefrags = logicalCPUCount
+	if cfg.MinDefrags > minCPU {
+		cfg.MinDefrags = minCPU
 	}
-	if cfg.MinListeners > logicalCPUCount {
-		cfg.MinListeners = logicalCPUCount
+	if cfg.MinListeners > minCPU {
+		cfg.MinListeners = minCPU
 	}
-	if cfg.MinProcessors > logicalCPUCount {
-		cfg.MinProcessors = logicalCPUCount
+	if cfg.MinProcessors > minCPU {
+		cfg.MinProcessors = minCPU
 	}
 	if cfg.MinProcessorQueueSize == 0 {
 		cfg.MinProcessorQueueSize = global.DefaultMinQueueSize

@@ -6,13 +6,19 @@ import (
 	"fmt"
 	"runtime"
 	"sdsyslog/internal/atomics"
+	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sync/atomic"
 	"time"
 )
 
 // Creates a new queue
-func New[T any](namespace []string, initialCapacity uint64, minCapacity, maxCapacity int) (new *Queue[T], err error) {
+func New[T any](
+	namespace []string,
+	initialCapacity uint64,
+	minCapacity global.MinValue,
+	maxCapacity global.MaxValue) (new *Queue[T], err error) {
+
 	qInst, err := newQueueInst[T](namespace, initialCapacity)
 	if err != nil {
 		return

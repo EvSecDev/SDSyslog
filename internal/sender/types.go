@@ -3,6 +3,7 @@ package sender
 import (
 	"context"
 	"net/http"
+	"sdsyslog/internal/global"
 	metricGlb "sdsyslog/internal/metrics"
 	"sdsyslog/internal/sender/metrics"
 	"sdsyslog/internal/sender/shared"
@@ -32,16 +33,16 @@ type JSONConfig struct {
 		QueryServerPort   int    `json:"HTTPQueryServerPort"`
 	} `json:"metrics"`
 	AutoScaling struct {
-		Enabled               bool   `json:"enabled"`
-		PollInterval          string `json:"pollInterval"`
-		MinOutputs            int    `json:"minOutputs,omitempty"`
-		MaxOutputs            int    `json:"maxOutputs,omitempty"`
-		MinAssemblers         int    `json:"minAssemblers,omitempty"`
-		MaxAssemblers         int    `json:"maxAssemblers,omitempty"`
-		MinOutputQueueSize    int    `json:"minOutputQueueSize,omitempty"`
-		MaxOutputQueueSize    int    `json:"maxOutputQueueSize,omitempty"`
-		MinAssemblerQueueSize int    `json:"minAssemblerQueueSize,omitempty"`
-		MaxAssemblerQueueSize int    `json:"maxAssemblerQueueSize,omitempty"`
+		Enabled               bool            `json:"enabled"`
+		PollInterval          string          `json:"pollInterval"`
+		MinOutputs            global.MinValue `json:"minOutputs,omitempty"`
+		MaxOutputs            global.MaxValue `json:"maxOutputs,omitempty"`
+		MinAssemblers         global.MinValue `json:"minAssemblers,omitempty"`
+		MaxAssemblers         global.MaxValue `json:"maxAssemblers,omitempty"`
+		MinOutputQueueSize    global.MinValue `json:"minOutputQueueSize,omitempty"`
+		MaxOutputQueueSize    global.MaxValue `json:"maxOutputQueueSize,omitempty"`
+		MinAssemblerQueueSize global.MinValue `json:"minAssemblerQueueSize,omitempty"`
+		MaxAssemblerQueueSize global.MaxValue `json:"maxAssemblerQueueSize,omitempty"`
 	} `json:"autoscaling"`
 }
 
@@ -71,17 +72,17 @@ type Config struct {
 	SyslogSourceListenPort int
 
 	// Worker scaling boundaries
-	MinOutputs    int
-	MinAssemblers int
-	MaxOutputs    int
-	MaxAssemblers int
+	MinOutputs    global.MinValue
+	MinAssemblers global.MinValue
+	MaxOutputs    global.MaxValue
+	MaxAssemblers global.MaxValue
 
 	// Queue boundaries
-	MinOutputQueueSize int
-	MaxOutputQueueSize int
+	MinOutputQueueSize global.MinValue
+	MaxOutputQueueSize global.MaxValue
 
-	MinAssemblerQueueSize int
-	MaxAssemblerQueueSize int
+	MinAssemblerQueueSize global.MinValue
+	MaxAssemblerQueueSize global.MaxValue
 
 	// Metrics
 	MetricQueryServerEnabled bool

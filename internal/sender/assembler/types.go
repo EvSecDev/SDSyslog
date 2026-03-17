@@ -2,6 +2,7 @@ package assembler
 
 import (
 	"context"
+	"sdsyslog/internal/global"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 	"sync"
@@ -9,14 +10,14 @@ import (
 )
 
 type ManagerConfig struct {
-	MinQueueCapacity       int           // Minimum queue size (also starting size)
-	MaxQueueCapacity       int           // Maximum queue size
-	MinInstanceCount       atomic.Uint32 // Minimum number of instances at any one time
-	MaxInstanceCount       atomic.Uint32 // Maximum number of instances at any one time
-	HostID                 int           // ID for all sent messages
-	DestinationIP          string        // Destination address for output
-	OverrideMaxPayloadSize int           // Use supplied maximum payload size
-	MaxPayloadSize         int           // Maximum payload size for configured destination
+	MinQueueCapacity       global.MinValue // Minimum queue size (also starting size)
+	MaxQueueCapacity       global.MaxValue // Maximum queue size
+	MinInstanceCount       atomic.Uint32   // Minimum number of instances at any one time
+	MaxInstanceCount       atomic.Uint32   // Maximum number of instances at any one time
+	HostID                 int             // ID for all sent messages
+	DestinationIP          string          // Destination address for output
+	OverrideMaxPayloadSize int             // Use supplied maximum payload size
+	MaxPayloadSize         int             // Maximum payload size for configured destination
 	CryptoSuiteID          uint8
 	SigSuiteID             uint8
 }

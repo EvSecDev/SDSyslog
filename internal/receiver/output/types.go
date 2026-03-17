@@ -5,14 +5,15 @@ import (
 	"sdsyslog/internal/externalio/beats"
 	"sdsyslog/internal/externalio/file"
 	"sdsyslog/internal/externalio/journald"
+	"sdsyslog/internal/global"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 	"sync"
 )
 
 type ManagerConfig struct {
-	MinQueueCapacity int // Minimum queue size (also starting size)
-	MaxQueueCapacity int // Maximum queue size
+	MinQueueCapacity global.MinValue // Minimum queue size (also starting size)
+	MaxQueueCapacity global.MaxValue // Maximum queue size
 }
 
 type Manager struct {

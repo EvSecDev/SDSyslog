@@ -3,16 +3,17 @@ package output
 import (
 	"context"
 	"net"
+	"sdsyslog/internal/global"
 	"sdsyslog/internal/queue/mpmc"
 	"sync"
 	"sync/atomic"
 )
 
 type ManagerConfig struct {
-	MinQueueCapacity int           // Minimum queue size (also starting size)
-	MaxQueueCapacity int           // Maximum queue size
-	MinInstanceCount atomic.Uint32 // Minimum number of instances at any one time
-	MaxInstanceCount atomic.Uint32 // Maximum number of instances at any one time
+	MinQueueCapacity global.MinValue // Minimum queue size (also starting size)
+	MaxQueueCapacity global.MaxValue // Maximum queue size
+	MinInstanceCount atomic.Uint32   // Minimum number of instances at any one time
+	MaxInstanceCount atomic.Uint32   // Maximum number of instances at any one time
 	DestinationIP    string
 	DestinationPort  int
 }

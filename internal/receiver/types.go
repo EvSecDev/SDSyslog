@@ -3,6 +3,7 @@ package receiver
 import (
 	"context"
 	"net/http"
+	"sdsyslog/internal/global"
 	metricGlb "sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/metrics"
 	"sdsyslog/internal/receiver/shard/fiprrecv"
@@ -30,16 +31,16 @@ type JSONConfig struct {
 		QueryServerPort   int    `json:"HTTPQueryServerPort"`
 	} `json:"metrics"`
 	AutoScaling struct {
-		Enabled          bool   `json:"enabled"`
-		PollInterval     string `json:"pollInterval"`
-		MinListeners     int    `json:"minListeners,omitempty"`
-		MaxListeners     int    `json:"maxListeners,omitempty"`
-		MinProcessors    int    `json:"minProcessors,omitempty"`
-		MaxProcessors    int    `json:"maxProcessors,omitempty"`
-		MinProcQueueSize int    `json:"minProcQueueSize,omitempty"`
-		MaxProcQueueSize int    `json:"maxProcQueueSize,omitempty"`
-		MinDefrags       int    `json:"minAssemblers,omitempty"`
-		MaxDefrags       int    `json:"maxAssemblers,omitempty"`
+		Enabled          bool            `json:"enabled"`
+		PollInterval     string          `json:"pollInterval"`
+		MinListeners     global.MinValue `json:"minListeners,omitempty"`
+		MaxListeners     global.MaxValue `json:"maxListeners,omitempty"`
+		MinProcessors    global.MinValue `json:"minProcessors,omitempty"`
+		MaxProcessors    global.MaxValue `json:"maxProcessors,omitempty"`
+		MinProcQueueSize global.MinValue `json:"minProcQueueSize,omitempty"`
+		MaxProcQueueSize global.MaxValue `json:"maxProcQueueSize,omitempty"`
+		MinDefrags       global.MinValue `json:"minAssemblers,omitempty"`
+		MaxDefrags       global.MaxValue `json:"maxAssemblers,omitempty"`
 	} `json:"autoscaling"`
 }
 
@@ -62,19 +63,19 @@ type Config struct {
 	AutoscaleCheckInterval time.Duration
 
 	// Worker scaling boundaries
-	MinListeners  int
-	MaxListeners  int
-	MinProcessors int
-	MaxProcessors int
-	MinDefrags    int
-	MaxDefrags    int
+	MinListeners  global.MinValue
+	MaxListeners  global.MaxValue
+	MinProcessors global.MinValue
+	MaxProcessors global.MaxValue
+	MinDefrags    global.MinValue
+	MaxDefrags    global.MaxValue
 
 	// Queue boundaries
-	MinOutputQueueSize    int
-	MaxOutputQueueSize    int
+	MinOutputQueueSize    global.MinValue
+	MaxOutputQueueSize    global.MaxValue
 	ShardBufferSize       int
-	MinProcessorQueueSize int
-	MaxProcessorQueueSize int
+	MinProcessorQueueSize global.MinValue
+	MaxProcessorQueueSize global.MaxValue
 
 	// Message validity
 	ReplayProtectionWindow time.Duration // Short term replay protection window size (For Listener)

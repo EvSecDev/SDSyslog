@@ -45,7 +45,7 @@ func (config *ManagerConfig) validate() (err error) {
 	if config.MaxQueueCapacity == 0 {
 		err = fmt.Errorf("empty MaxQueueCapacity")
 	}
-	if config.MinQueueCapacity >= config.MaxQueueCapacity {
+	if int(config.MinQueueCapacity) >= int(config.MaxQueueCapacity) {
 		err = fmt.Errorf("minimum queue capacity cannot be equal to or less than max queue capacity")
 	}
 	return

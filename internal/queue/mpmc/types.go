@@ -1,6 +1,9 @@
 package mpmc
 
-import "sync/atomic"
+import (
+	"sdsyslog/internal/global"
+	"sync/atomic"
+)
 
 type cell[T any] struct {
 	seq  atomic.Uint64
@@ -27,6 +30,6 @@ type Queue[T any] struct {
 	ActiveWrite atomic.Pointer[QueueInst[T]] // Pointer to queue for producers
 	ActiveRead  atomic.Pointer[QueueInst[T]] // Pointer to queue for consumers
 	migrateCh   atomic.Value                 // Buffered channel, used to wake a consumer once migration is ready to complete (flip read pointer to write one)
-	minimumSize int                          // Lower configurable bound for scaling
-	maximumSize int                          // Upper configurable bound for scaling
+	minimumSize global.MinValue              // Lower configurable bound for scaling
+	maximumSize global.MaxValue              // Upper configurable bound for scaling
 }

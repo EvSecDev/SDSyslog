@@ -105,11 +105,13 @@ func (cfg *Config) setDefaults() {
 
 	// Maximums
 	logicalCPUCount := runtime.NumCPU()
+	maxCPU := global.MaxValue(logicalCPUCount)
+	minCPU := global.MinValue(logicalCPUCount)
 	if cfg.MaxAssemblers == 0 {
-		cfg.MaxAssemblers = logicalCPUCount
+		cfg.MaxAssemblers = maxCPU
 	}
 	if cfg.MaxOutputs == 0 {
-		cfg.MaxOutputs = logicalCPUCount
+		cfg.MaxOutputs = maxCPU
 	}
 	if cfg.MaxOutputQueueSize == 0 {
 		cfg.MaxOutputQueueSize = global.DefaultMaxQueueSize
@@ -119,11 +121,11 @@ func (cfg *Config) setDefaults() {
 	}
 
 	// Minimums
-	if cfg.MinAssemblers > logicalCPUCount {
-		cfg.MinAssemblers = logicalCPUCount
+	if cfg.MinAssemblers > minCPU {
+		cfg.MinAssemblers = minCPU
 	}
-	if cfg.MinOutputs > logicalCPUCount {
-		cfg.MinOutputs = logicalCPUCount
+	if cfg.MinOutputs > minCPU {
+		cfg.MinOutputs = minCPU
 	}
 	if cfg.MinAssemblerQueueSize == 0 {
 		cfg.MinAssemblerQueueSize = global.DefaultMinQueueSize

@@ -37,7 +37,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 		PaddingLen:    6,
 	}
 
-	queue := New([]string{logctx.NSTest}, global.DefaultMinQueueSize, &mockDeadline)
+	queue := New([]string{logctx.NSTest}, int(global.DefaultMinQueueSize), &mockDeadline)
 
 	// Warm-up to stabilize caches, allocator, CPU frequency, ect
 	for i := 0; i < 1000; i++ {

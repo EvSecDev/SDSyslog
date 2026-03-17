@@ -90,7 +90,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	}
 
 	// Stage 3 - Output Instances
-	for i := 0; i < daemon.cfg.MinOutputs; i++ {
+	for i := 0; i < int(daemon.cfg.MinOutputs); i++ {
 		_ = daemon.Mgrs.Out.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
@@ -114,7 +114,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	}
 
 	// Stage 2 - Assembler Instance
-	for i := 0; i < daemon.cfg.MinAssemblers; i++ {
+	for i := 0; i < int(daemon.cfg.MinAssemblers); i++ {
 		_ = daemon.Mgrs.Assem.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,

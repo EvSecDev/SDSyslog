@@ -2,6 +2,7 @@ package mpmc
 
 import (
 	"context"
+	"sdsyslog/internal/global"
 	"testing"
 	"time"
 )
@@ -12,8 +13,8 @@ func TestMetricsPresence(t *testing.T) {
 	tests := []struct {
 		name          string
 		initialCap    uint64
-		minCap        int
-		maxCap        int
+		minCap        global.MinValue
+		maxCap        global.MaxValue
 		pushCount     int
 		bytesPerItem  int
 		expectDepth   uint64

@@ -14,11 +14,11 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 	currentDepth := activeQueue.Metrics.Depth.Load()
 
 	// At minimum limit, nothing to do
-	if currentCapacity <= container.minimumSize {
+	if currentCapacity <= int(container.minimumSize) {
 		return
 	}
 	// At maximum limit, nothing to do
-	if currentCapacity >= container.maximumSize {
+	if currentCapacity >= int(container.maximumSize) {
 		return
 	}
 

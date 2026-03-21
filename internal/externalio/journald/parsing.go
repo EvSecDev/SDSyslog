@@ -61,8 +61,7 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 	// PRIORITY
 	journalPriority, ok := fields["PRIORITY"]
 	if !ok {
-		err = fmt.Errorf("journal entry has no priority field")
-		return
+		journalPriority = "6" // Default when missing (some auditd logs generate missing)
 	}
 	jrnlPriInt, err := strconv.Atoi(journalPriority)
 	if err != nil {

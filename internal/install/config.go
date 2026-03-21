@@ -32,7 +32,7 @@ func installConfig(mode string) (err error) {
 
 	err = os.Mkdir(global.DefaultConfigDir, 0755)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsExist(err) {
 			err = nil
 		} else {
 			err = fmt.Errorf("failed to create configuration directory: %w", err)

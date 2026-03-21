@@ -15,10 +15,10 @@ curl http://{LISTEN_ADDR}:{LISTEN_PORT}/
 <p>Returns a JSON array of available metrics matching optional filters.</p>
 <p>Query Parameters:</p>
 <ul>
-  <li><code>name</code> — Metric name filter (substring match).</li>
-  <li><code>description</code> — Filter by metric description.</li>
-  <li><code>unit</code> — Filter by metric unit.</li>
-  <li><code>type</code> — Filter by metric type: <code>counter</code>, <code>gauge</code>, <code>summary</code>.</li>
+  <li><code>name</code> - Metric name filter (substring match).</li>
+  <li><code>description</code> - Filter by metric description.</li>
+  <li><code>unit</code> - Filter by metric unit.</li>
+  <li><code>type</code> - Filter by metric type: <code>counter</code>, <code>gauge</code>, <code>summary</code>.</li>
 </ul>
 <pre>
 # Example: discover all gauges containing "depth"
@@ -33,13 +33,13 @@ curl "http://{LISTEN_ADDR}:{LISTEN_PORT}{DISCOVER_PATH}Receiver/Ingest"
 <p>Returns a JSON array of metric values within a time window.</p>
 <p>Query Parameters:</p>
 <ul>
-  <li><code>name</code> — Metric name filter.</li>
-  <li><code>starttime</code> — Start of time window. Supports:</li>
+  <li><code>name</code> - Metric name filter.</li>
+  <li><code>starttime</code> - Start of time window. Supports:</li>
   <ul>
     <li>RFC3339 timestamp, e.g. <code>2025-12-31T16:00:00Z</code></li>
     <li>Relative duration, e.g. <code>-2h</code>, <code>-30m</code> (relative to now)</li>
   </ul>
-  <li><code>endtime</code> — End of time window. Default is now. RFC3339 format only.</li>
+  <li><code>endtime</code> - End of time window. Default is now. RFC3339 format only.</li>
 </ul>
 <pre>
 # Example: get last 2 hours of "depth" metric
@@ -57,8 +57,8 @@ curl "http://{LISTEN_ADDR}:{LISTEN_PORT}{DATA_PATH}Receiver/Ingest?name=usage"
 <p>Returns a JSON object of aggregated metrics matching filters.</p>
 <p>Query Parameters:</p>
 <ul>
-  <li><code>name</code> — Metric name filter (exact match).</li>
-  <li><code>aggregation</code> — Filter by aggregation type: <code>Average</code>, <code>Sum</code>, <code>Min</code>,
+  <li><code>name</code> - Metric name filter (exact match).</li>
+  <li><code>aggregation</code> - Filter by aggregation type: <code>Average</code>, <code>Sum</code>, <code>Min</code>,
     <code>Max</code>
   </li>
 </ul>
@@ -67,14 +67,52 @@ curl "http://{LISTEN_ADDR}:{LISTEN_PORT}{DATA_PATH}Receiver/Ingest?name=usage"
 curl "http://{LISTEN_ADDR}:{LISTEN_PORT}{AGGREGATION_PATH}Sender/Packaging/0/Worker?aggregation=Average&name=depth&starttime=-5m"
 </pre>
 
+<h2>Metric Bulk</h2>
+<p>URL: <code>{BULK_PATH}</code></p>
+<p>Returns a JSON array of an array of matching metrics in order of supplied filters.</p>
+<p>Query JSON Body (see example for format):</p>
+<ul>
+  <li><code>type</code> - Type of search: <code>data</code>, <code>aggregation</code></li>
+  <li><code>aggregationType</code> - Filter by aggregation type (if applicable): <code>Average</code>, <code>Sum</code>,
+    <code>Min</code>,
+    <code>Max</code>
+  <li><code>name</code> - Metric name filter (exact match).</li>
+  <li><code>namespace</code> - Metric Namespace delimited by forward slashes</li>
+  <li><code>startTime</code> - Search time range start timestamp (absolute or relative)</li>
+  <li><code>endTime</code> - Search time range end timestamp (default is now)(absolute or relative)</li>
+</ul>
+<pre>
+# Example: Get the sum of bytes of the ingest to processor queue and the raw sizes of the assembler to output queue
+curl -X POST "http://{LISTEN_ADDR}:{LISTEN_PORT}{BULK_PATH} -d '{
+  "filters":[
+    {
+      "type": "aggregation",
+      "aggregationType": "sum",
+      "name": "total_bytes",
+      "namespace": "Receiver/Processor",
+      "startTime": "-5m",
+      "endTime": "now"
+    },
+    {
+      "type": "data",
+      "name": "size",
+      "namespace": "Receiver/Output",
+      "startTime": "-5m",
+      "endTime": "now"
+    }
+  ]
+}'"
+</pre>
+
 <h2>Notes</h2>
 <ul>
   <li>All endpoints respond with JSON arrays. If no results are found, a JSON error message is returned.</li>
-  <li>Namespaces are specified in the URL path and are case sensitive, e.g.,
+  <li>Namespaces are specified in the URL path (or the body for bulk) and are case sensitive, e.g.,
     <code>{AGGREGATION_PATH}Receiver/Ingest</code>.
   </li>
   <li>Discovery metric values are not provided intentionally and are usually nil</li>
-  <li>Relative times in <code>starttime</code> use standard Go duration strings (<code>-30s</code>, <code>-5m</code>,
+  <li>Relative times in <code>starttime</code> or <code>endtime</code> use standard Go duration strings
+    (<code>-30s</code>, <code>-5m</code>,
     <code>-2h</code>).
   </li>
 </ul>

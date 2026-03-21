@@ -60,6 +60,30 @@ func TestHandleDiscovery(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 		{
+			name:  "valid results with type 2",
+			query: "Receiver/Defrag/?name=test&type=gauge",
+			results: []metrics.Metric{
+				{
+					Name:      "test",
+					Namespace: []string{"Receiver", "Defrag"},
+					Type:      metrics.Gauge,
+				},
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:  "valid results with type 3",
+			query: "Receiver/Defrag/?name=test&type=summary",
+			results: []metrics.Metric{
+				{
+					Name:      "test",
+					Namespace: []string{"Receiver", "Defrag"},
+					Type:      metrics.Summary,
+				},
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
 			name:       "invalid metric type",
 			query:      "?type=invalid",
 			wantStatus: http.StatusBadRequest,

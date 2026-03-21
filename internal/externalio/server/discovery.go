@@ -3,12 +3,22 @@ package server
 import (
 	"context"
 	"net/http"
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"strings"
 )
 
 // Handles metric search to discover metrics (returns no actual data, only sample metric per individual metric)
 func handleDiscovery(baseCtx context.Context, discover Discoverer, serverResponder http.ResponseWriter, clientRequest *http.Request) {
+	baseCtx = logctx.AppendCtxTag(baseCtx, logctx.NSMetricDiscovery)
+	baseCtx = logctx.AppendCtxTag(baseCtx, clientRequest.RemoteAddr)
+
+	if clientRequest.Method != http.MethodGet {
+		logctx.LogStdErr(baseCtx, "Received invalid HTTP method %s\n", clientRequest.Method)
+		serverResponder.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, DiscoveryPath)
 
 	var reqNamespace []string
@@ -35,6 +45,7 @@ func handleDiscovery(baseCtx context.Context, discover Discoverer, serverRespond
 	default:
 		// Empty is valid
 		if rawType != "" {
+			logctx.LogStdErr(baseCtx, "Received unsupported metric type %q\n", rawType)
 			serverResponder.WriteHeader(http.StatusBadRequest)
 			return
 		}

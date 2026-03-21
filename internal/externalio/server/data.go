@@ -3,13 +3,22 @@ package server
 import (
 	"context"
 	"net/http"
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"strings"
-	"time"
 )
 
 // Handles metric search requests based on time for data
 func handleData(baseCtx context.Context, search DataSearcher, serverResponder http.ResponseWriter, clientRequest *http.Request) {
+	baseCtx = logctx.AppendCtxTag(baseCtx, logctx.NSMetricData)
+	baseCtx = logctx.AppendCtxTag(baseCtx, clientRequest.RemoteAddr)
+
+	if clientRequest.Method != http.MethodGet {
+		logctx.LogStdErr(baseCtx, "Received invalid HTTP method %s\n", clientRequest.Method)
+		serverResponder.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	rawNamespace := strings.TrimPrefix(clientRequest.URL.Path, DataPath)
 	reqNamespace := strings.Split(rawNamespace, "/")
 
@@ -18,36 +27,13 @@ func handleData(baseCtx context.Context, search DataSearcher, serverResponder ht
 	var err error
 
 	rawStartTime := clientRequest.FormValue("starttime")
-	var reqStartTime time.Time
-	if rawStartTime == "" {
-		// Default start is last minute
-		reqStartTime = time.Now().Add(-1 * time.Minute)
-	} else if rawStartTime[0] == '-' || rawStartTime[0] == '+' {
-		dur, err := time.ParseDuration(rawStartTime)
-		if err == nil {
-			reqStartTime = time.Now().Add(dur)
-		} else {
-			// Default start is last minute
-			reqStartTime = time.Now().Add(-1 * time.Minute)
-		}
-	} else {
-		reqStartTime, err = time.Parse(time.RFC3339Nano, rawStartTime)
-		if err != nil {
-			serverResponder.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
-
 	rawEndTime := clientRequest.FormValue("endtime")
-	var reqEndTime time.Time
-	if rawEndTime == "now" || rawEndTime == "" {
-		reqEndTime = time.Now() // Default end is now
-	} else {
-		reqEndTime, err = time.Parse(time.RFC3339Nano, rawEndTime)
-		if err != nil {
-			serverResponder.WriteHeader(http.StatusBadRequest)
-			return
-		}
+
+	reqStartTime, reqEndTime, err := parseTimeRangeNow(rawStartTime, rawEndTime)
+	if err != nil {
+		logctx.LogStdErr(baseCtx, "Received invalid search time range: %w\n", err)
+		serverResponder.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	// Query internal metric registry

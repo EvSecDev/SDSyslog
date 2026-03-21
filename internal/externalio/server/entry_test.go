@@ -5,34 +5,21 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"strings"
 	"testing"
 )
 
 func TestSetupListener_RoutingAndHTML(t *testing.T) {
-	ctx := context.Background()
-
-	server, err := SetupListener(
-		ctx,
-		8080,
-		mockDataSearcher(nil),
-		mockDiscoverer(nil),
-		mockAggSearcher(metrics.Metric{}, nil),
-	)
-	if err != nil {
-		t.Fatalf("SetupListener error: %v", err)
-	}
-
-	ts := httptest.NewServer(server.Handler)
-	defer ts.Close()
-
 	tests := []struct {
-		name       string
-		method     string
-		path       string
-		wantStatus int
-		checkHTML  bool
+		name              string
+		method            string
+		path              string
+		wantStatus        int
+		expectedError     bool
+		expectedErrorText string
+		checkHTML         bool
 	}{
 		{
 			name:       "root GET returns HTML with replacements",
@@ -42,39 +29,82 @@ func TestSetupListener_RoutingAndHTML(t *testing.T) {
 			checkHTML:  true,
 		},
 		{
-			name:       "root POST rejected",
-			method:     http.MethodPost,
-			path:       "/",
-			wantStatus: http.StatusMethodNotAllowed,
+			name:              "root POST rejected",
+			method:            http.MethodPost,
+			path:              "/",
+			wantStatus:        http.StatusMethodNotAllowed,
+			expectedError:     true,
+			expectedErrorText: "Received invalid HTTP method POST",
 		},
 		{
-			name:       "data incorrect method",
-			method:     http.MethodPost,
-			path:       DataPath,
-			wantStatus: http.StatusMethodNotAllowed,
+			name:              "data incorrect method",
+			method:            http.MethodPost,
+			path:              DataPath,
+			wantStatus:        http.StatusMethodNotAllowed,
+			expectedError:     true,
+			expectedErrorText: "Received invalid HTTP method POST",
 		},
 		{
-			name:       "discover incorrect method",
-			method:     http.MethodPatch,
-			path:       DiscoveryPath,
-			wantStatus: http.StatusMethodNotAllowed,
+			name:              "discover incorrect method",
+			method:            http.MethodPatch,
+			path:              DiscoveryPath,
+			wantStatus:        http.StatusMethodNotAllowed,
+			expectedError:     true,
+			expectedErrorText: "Received invalid HTTP method PATCH",
 		},
 		{
-			name:       "aggregation incorrect method",
-			method:     http.MethodDelete,
-			path:       AggregationPath,
-			wantStatus: http.StatusMethodNotAllowed,
+			name:              "aggregation incorrect method",
+			method:            http.MethodDelete,
+			path:              AggregationPath,
+			wantStatus:        http.StatusMethodNotAllowed,
+			expectedError:     true,
+			expectedErrorText: "Received invalid HTTP method DELETE",
 		},
 		{
-			name:       "unknown path",
-			method:     http.MethodGet,
-			path:       "/unknown",
-			wantStatus: http.StatusNotFound,
+			name:              "bulk root path",
+			method:            http.MethodPost,
+			path:              BulkPath,
+			wantStatus:        http.StatusBadRequest, // request handler should return for empty body
+			expectedError:     true,
+			expectedErrorText: "Received invalid search JSON request: EOF",
+		},
+		{
+			name:              "bulk root path no trailing slash",
+			method:            http.MethodPost,
+			path:              "/" + BulkMode,
+			wantStatus:        http.StatusBadRequest, // request handler should return for empty body
+			expectedError:     true,
+			expectedErrorText: "Received invalid search JSON request: EOF",
+		},
+		{
+			name:              "unknown path",
+			method:            http.MethodGet,
+			path:              "/unknown",
+			wantStatus:        http.StatusNotFound,
+			expectedError:     true,
+			expectedErrorText: "Received invalid request path \"/unknown\"",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			ctx = logctx.New(ctx, logctx.NSTest, 1, ctx.Done())
+
+			server, err := SetupListener(
+				ctx,
+				8080,
+				mockDataSearcher(nil),
+				mockDiscoverer(nil),
+				mockAggSearcher(metrics.Metric{}, nil),
+			)
+			if err != nil {
+				t.Fatalf("SetupListener error: %v", err)
+			}
+
+			ts := httptest.NewServer(server.Handler)
+			defer ts.Close()
+
 			req, _ := http.NewRequest(tt.method, ts.URL+tt.path, nil)
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
@@ -101,12 +131,48 @@ func TestSetupListener_RoutingAndHTML(t *testing.T) {
 					"{DATA_PATH}",
 					"{DISCOVER_PATH}",
 					"{AGGREGATION_PATH}",
+					"{BULK_PATH}",
 				}
 
 				for _, ph := range placeholders {
 					if strings.Contains(html, ph) {
 						t.Fatalf("HTML placeholder not replaced: %s", ph)
 					}
+				}
+			}
+
+			// Check logs
+			logger := logctx.GetLogger(ctx)
+			logger.Wake()
+			lines := logger.GetFormattedLogLines()
+			var foundErrors []string
+			for _, line := range lines {
+				if !strings.Contains(line, logctx.ErrorLog) && !strings.Contains(line, logctx.WarnLog) {
+					continue
+				}
+				foundErrors = append(foundErrors, line)
+			}
+
+			if !tt.expectedError && len(foundErrors) == 0 {
+				return
+			} else if tt.expectedError && len(foundErrors) == 0 {
+				t.Fatalf("expected error %q, but found none", tt.expectedErrorText)
+			} else if !tt.expectedError && len(foundErrors) > 0 {
+				t.Errorf("unexpected errors in logger:\n")
+				for _, err := range foundErrors {
+					t.Errorf("    %s", err)
+				}
+			} else if tt.expectedError && len(foundErrors) > 0 {
+				var foundExpected bool
+				for _, err := range foundErrors {
+					if strings.Contains(err, tt.expectedErrorText) {
+						foundExpected = true
+						continue
+					}
+					t.Errorf("encountered unexpected error in logger: %s", err)
+				}
+				if !foundExpected {
+					t.Errorf("expected error %q in logger, but found none", tt.expectedErrorText)
 				}
 			}
 		})

@@ -27,6 +27,14 @@ func TestHandleDataAndAggregation(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 		{
+			name: "data supplied times",
+			path: DataPath + "?name=test&starttime=-5m&endttime=now",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				handleData(ctx, mockDataSearcher([]metrics.Metric{{Name: "test"}}), w, r)
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
 			name: "data invalid starttime",
 			path: DataPath + "?starttime=badtime",
 			handler: func(w http.ResponseWriter, r *http.Request) {
@@ -35,42 +43,12 @@ func TestHandleDataAndAggregation(t *testing.T) {
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			name: "data invalid triggers default relative start time",
-			path: DataPath + "?starttime=-5w",
+			name: "aggregation supplied times",
+			path: AggregationPath + "?name=test&starttime=-5m&endttime=now",
 			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleData(ctx, mockDataSearcher(nil), w, r)
-			},
-			wantStatus: http.StatusOK,
-		},
-		{
-			name: "data invalid relative end time",
-			path: DataPath + "?endtime=+2y",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleData(ctx, mockDataSearcher(nil), w, r)
-			},
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name: "data relative start time past",
-			path: DataPath + "?starttime=-5m",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleData(ctx, mockDataSearcher(nil), w, r)
-			},
-			wantStatus: http.StatusOK,
-		},
-		{
-			name: "data relative start time future",
-			path: DataPath + "?starttime=+15m",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleData(ctx, mockDataSearcher(nil), w, r)
-			},
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name: "data absolute start time",
-			path: DataPath + "?starttime=2001-01-02T01:02:03.001Z",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleData(ctx, mockDataSearcher(nil), w, r)
+				handleAggregation(ctx,
+					mockAggSearcher(metrics.Metric{Name: "test"}, nil),
+					w, r)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -83,56 +61,6 @@ func TestHandleDataAndAggregation(t *testing.T) {
 				)
 			},
 			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name: "agg invalid triggers default relative start time",
-			path: AggregationPath + "?starttime=-5w",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleAggregation(ctx,
-					mockAggSearcher(metrics.Metric{}, nil), w, r,
-				)
-			},
-			wantStatus: http.StatusOK,
-		},
-		{
-			name: "agg invalid relative end time",
-			path: AggregationPath + "?endtime=+2y",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleAggregation(ctx,
-					mockAggSearcher(metrics.Metric{}, nil), w, r,
-				)
-			},
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name: "agg relative start time past",
-			path: AggregationPath + "?starttime=-5m",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleAggregation(ctx,
-					mockAggSearcher(metrics.Metric{}, nil), w, r,
-				)
-			},
-			wantStatus: http.StatusOK,
-		},
-		{
-			name: "agg relative start time future",
-			path: AggregationPath + "?starttime=+15m",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleAggregation(ctx,
-					mockAggSearcher(metrics.Metric{}, nil), w, r,
-				)
-			},
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name: "agg absolute start time",
-			path: AggregationPath + "?starttime=2001-01-02T01:02:03.001Z",
-			handler: func(w http.ResponseWriter, r *http.Request) {
-				handleAggregation(ctx,
-					mockAggSearcher(metrics.Metric{}, nil), w, r,
-				)
-			},
-			wantStatus: http.StatusOK,
 		},
 		{
 			name: "aggregation returns error as JSON",

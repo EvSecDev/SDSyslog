@@ -36,14 +36,17 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 	helpPage = bytes.ReplaceAll(helpPage, []byte("{DATA_PATH}"), []byte(DataPath))
 	helpPage = bytes.ReplaceAll(helpPage, []byte("{DISCOVER_PATH}"), []byte(DiscoveryPath))
 	helpPage = bytes.ReplaceAll(helpPage, []byte("{AGGREGATION_PATH}"), []byte(AggregationPath))
+	helpPage = bytes.ReplaceAll(helpPage, []byte("{BULK_PATH}"), []byte(BulkPath))
 
 	// Root help page
 	requestMultiplexer.HandleFunc("/", func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
 		if clientRequest.Method != http.MethodGet {
+			logctx.LogStdErr(ctx, "Received invalid HTTP method %s\n", clientRequest.Method)
 			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
 		if clientRequest.URL.Path != "/" {
+			logctx.LogStdErr(ctx, "Received invalid request path %q\n", clientRequest.URL.Path)
 			serverResponder.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -55,29 +58,25 @@ func SetupListener(ctx context.Context, port int, search DataSearcher, discover 
 
 	// Metric Discovery Requests
 	requestMultiplexer.HandleFunc(DiscoveryPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
-		if clientRequest.Method != http.MethodGet {
-			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
 		handleDiscovery(ctx, discover, serverResponder, clientRequest)
 	})
 
 	// Metric Data Requests
 	requestMultiplexer.HandleFunc(DataPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
-		if clientRequest.Method != http.MethodGet {
-			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
 		handleData(ctx, search, serverResponder, clientRequest)
 	})
 
 	// Metric Aggregation Requests
 	requestMultiplexer.HandleFunc(AggregationPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
-		if clientRequest.Method != http.MethodGet {
-			serverResponder.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
 		handleAggregation(ctx, aggregation, serverResponder, clientRequest)
+	})
+
+	// Metric Bulk Requests
+	requestMultiplexer.HandleFunc("/"+BulkMode, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
+		handleBulk(ctx, search, aggregation, serverResponder, clientRequest)
+	})
+	requestMultiplexer.HandleFunc(BulkPath, func(serverResponder http.ResponseWriter, clientRequest *http.Request) {
+		handleBulk(ctx, search, aggregation, serverResponder, clientRequest)
 	})
 
 	// Server configuration
@@ -116,7 +115,8 @@ func Start(ctx context.Context, server *http.Server) {
 // Encodes JSON and sends as response body
 func jResp(ctx context.Context, serverResponder http.ResponseWriter, content any) {
 	buf := new(bytes.Buffer)
-	if err := json.NewEncoder(buf).Encode(content); err != nil {
+	err := json.NewEncoder(buf).Encode(content)
+	if err != nil {
 		serverResponder.WriteHeader(http.StatusInternalServerError)
 		logctx.LogStdErr(ctx, "Failed marshaling metric results: %w\n", err)
 		return
@@ -132,11 +132,7 @@ func (logWriter httpLogWriter) Write(p []byte) (n int, err error) {
 	if n == 0 {
 		return
 	}
-	logctx.LogEvent(
-		logWriter.ctx,
-		logctx.VerbosityStandard,
-		logctx.ErrorLog,
-		"%s\n", strings.TrimSpace(string(p)),
-	)
+	message := strings.TrimSpace(string(p))
+	logctx.LogStdErr(logWriter.ctx, "%s\n", message)
 	return
 }

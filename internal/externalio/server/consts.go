@@ -13,7 +13,13 @@ const (
 	WriteTimeout       time.Duration = 10 * time.Second
 	IdleTimeout        time.Duration = 180 * time.Second
 
-	DiscoveryPath   string = "/discover/"
-	DataPath        string = "/data/"
-	AggregationPath string = "/aggregation/"
+	DiscoverMode    string = "discover"
+	DataMode        string = "data"
+	AggregationMode string = "aggregation"
+	BulkMode        string = "bulk"
+
+	DiscoveryPath   string = "/" + DiscoverMode + "/"
+	DataPath        string = "/" + DataMode + "/"
+	AggregationPath string = "/" + AggregationMode + "/"
+	BulkPath        string = "/" + BulkMode + "/"
 )

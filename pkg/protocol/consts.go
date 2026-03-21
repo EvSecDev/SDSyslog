@@ -34,7 +34,7 @@ const (
 	minCtxKeyLen     int = 1
 	maxCtxKeyLen     int = 32
 	minCtxValLen     int = 1
-	maxCtxValLen     int = 255
+	MaxCtxValLen     int = 255
 	minDataLen       int = 1
 	maxDataLen       int = (1 << (8 * lenDataNxtLen)) - 1
 	minPaddingLen    int = 10

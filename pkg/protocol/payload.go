@@ -129,9 +129,9 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 				if len(cleanValue) < minCtxValLen {
 					cleanValue = []byte(EmptyFieldChar)
 				}
-				if len(cleanValue) > maxCtxValLen {
-					err = fmt.Errorf("%w: %w: field %q: value too long for, must be less than %d bytes",
-						ErrInvalidPayload, ErrInvalidContextField, key, maxCtxValLen)
+				if len(cleanValue) > MaxCtxValLen {
+					err = fmt.Errorf("%w: %w: field %q: value size of %d too long, must be less than %d bytes",
+						ErrInvalidPayload, ErrInvalidContextField, key, len(cleanValue), MaxCtxValLen)
 					return
 				}
 				// Only strings enforce utf8
@@ -286,9 +286,9 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 
 			// Value
 			valueLength := len(field.Value)
-			if valueLength < minCtxValLen || valueLength > maxCtxValLen {
+			if valueLength < minCtxValLen || valueLength > MaxCtxValLen {
 				err = fmt.Errorf("%w: %w: key %q: value length %d is invalid, must be between %d and %d",
-					ErrInvalidPayload, ErrInvalidContextField, field.Key, valueLength, minCtxValLen, maxCtxValLen)
+					ErrInvalidPayload, ErrInvalidContextField, field.Key, valueLength, minCtxValLen, MaxCtxValLen)
 				return
 			}
 			// Only strings enforce utf8

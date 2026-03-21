@@ -118,6 +118,11 @@ func parseFields(fields map[string]string, localHostname string) (message protoc
 			continue
 		}
 
+		// Truncate to size for protocol compliance
+		if len(jrnlValue) > protocol.MaxCtxValLen {
+			jrnlValue = jrnlValue[:MaxTruncatedFieldLen] + FieldTruncationSuffix
+		}
+
 		message.Fields[field] = jrnlValue
 	}
 

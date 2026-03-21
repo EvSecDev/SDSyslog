@@ -7,6 +7,7 @@ import (
 	"sdsyslog/internal/syslog"
 	"sdsyslog/pkg/protocol"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -142,6 +143,46 @@ func TestParseFields(t *testing.T) {
 			},
 		},
 		{
+			name: "priority fallback",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+			},
+			expected: protocol.Message{
+				Data:      []byte("hello"),
+				Hostname:  localHostname,
+				Timestamp: expectedTime,
+				Fields: map[string]any{
+					externalio.CFappname:   "my-app",
+					externalio.CFprocessid: os.Getpid(),
+					externalio.CFfacility:  "daemon",
+					externalio.CFseverity:  "info",
+				},
+			},
+		},
+		{
+			name: "excessive custom field value length",
+			input: map[string]string{
+				"MESSAGE":              "hello",
+				"__REALTIME_TIMESTAMP": strconv.FormatInt(baseTimestampUs, 10),
+				"SYSLOG_IDENTIFIER":    "my-app",
+				"_CMDLINE":             strings.Repeat("a", protocol.MaxCtxValLen+1),
+			},
+			expected: protocol.Message{
+				Data:      []byte("hello"),
+				Hostname:  localHostname,
+				Timestamp: expectedTime,
+				Fields: map[string]any{
+					externalio.CFappname:   "my-app",
+					externalio.CFprocessid: os.Getpid(),
+					externalio.CFfacility:  "daemon",
+					externalio.CFseverity:  "info",
+					"_CMDLINE":             strings.Repeat("a", MaxTruncatedFieldLen) + FieldTruncationSuffix,
+				},
+			},
+		},
+		{
 			name: "pid fallback to global PID",
 			input: map[string]string{
 				"MESSAGE":              "hello",
@@ -252,6 +293,23 @@ func TestParseFields(t *testing.T) {
 			}
 			if expected != got {
 				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFseverity, expected, got)
+			}
+
+			// Check output custom fields contains expected
+			for field, expectedValue := range tt.expected.Fields {
+				gotValue, ok := msg.Fields[field]
+				if !ok {
+					t.Errorf("expected custom field %s to be present, but found nothing", field)
+				}
+				if expectedValue != gotValue {
+					t.Errorf("expected custom field %s to be '%v', but got '%v'", field, expectedValue, gotValue)
+				}
+			}
+			for field := range msg.Fields {
+				// Check if the field is in the expected Fields
+				if _, found := tt.expected.Fields[field]; !found {
+					t.Errorf("unexpected custom field %s found in output", field)
+				}
 			}
 		})
 	}

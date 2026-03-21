@@ -44,7 +44,7 @@ Steps:
 
 Downloading the new binary and running the installation again will update any files on disk.
 
-It will overwrite and reload most things, but will *not* overwrite the configuration file unless requested.
+It will overwrite and reload most things, but will *not* overwrite the configuration file.
 
 To update the running daemon with zero interruption to traffic, a `SIGHUP` signal will trigger an in-place upgrade.
 

@@ -229,6 +229,7 @@ Options:
   -a <arch>    Architecture of compiled binary (amd64, arm64) [default: amd64]
   -o <os>      Which operating system to build for (linux, windows) [default: linux]
   -u           Update go packages for program
+  -D           Print dependency tree
   -p           Prepare release notes and attachments
   -P <version> Publish release to github
   -h           Print this help menu
@@ -242,7 +243,7 @@ skipTests='false'
 intenseTests='false'
 
 # Argument parsing
-while getopts 'a:o:P:bfunph' opt; do
+while getopts 'a:o:P:bfuDnph' opt; do
 	case "$opt" in
 		'a')
 			architecture="$OPTARG"
@@ -261,6 +262,9 @@ while getopts 'a:o:P:bfunph' opt; do
 			;;
 		'u')
 			updatepackages='true'
+			;;
+		'D')
+			printDepTree='true'
 			;;
 		'p')
 			prepareRelease='true'
@@ -281,13 +285,18 @@ done
 
 if [[ $prepareRelease == true ]]; then
 	compile_program_prechecks
+	check_package_licenses 'false'
 	compile_program "$architecture" "$os" 'true' 'false' 'true'
 	tempReleaseDir=$(prepare_github_release_files "$fullNameProgramPrefix")
+	generate_third_party_licenses "$tempReleaseDir/THIRD_PARTY_LICENSES.txt"
 	create_release_notes "$repoRoot" "$tempReleaseDir"
 elif [[ -n $publishVersion ]]; then
 	create_github_release "$githubUser" "$githubRepoName" "$publishVersion"
 elif [[ $updatepackages == true ]]; then
 	update_go_packages "$repoRoot" "$SRCdir"
+	check_package_licenses 'true'
+elif [[ $printDepTree == true ]]; then
+	print_dependency_tree
 elif [[ $buildmode == true ]]; then
 	compile_program_prechecks
 	compile_program "$architecture" "$os" 'false' "$skipTests" "$intenseTests"

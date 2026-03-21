@@ -11,7 +11,7 @@ function update_go_packages {
 		return
 	fi
 
-	echo "[*] Updating Controller Go packages..."
+	echo "[*] Updating Go packages..."
 	go get -u all
 	if [[ $? != 0 ]]; then
 		echo -e "${RED}[-] ERROR${RESET}: Go module update failed"

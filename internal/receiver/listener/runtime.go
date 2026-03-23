@@ -124,7 +124,7 @@ func (manager *Manager) RemoveLastInstance() (removedID int) {
 		case <-done:
 		case <-time.After(closeWaitTime):
 			// Leaving as info print as it's neither warning nor error
-			logctx.LogStdInfo(manager.ctx, "Timeout: listener socket did not close within %v seconds after cancellation (no error)",
+			logctx.LogStdInfo(manager.ctx, "Timeout: listener socket did not close within %v seconds after cancellation (no error)\n",
 				closeWaitTime.Seconds())
 			return
 		}

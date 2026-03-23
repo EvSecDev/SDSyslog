@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -134,6 +135,11 @@ func TestRecvConstantFlow(t *testing.T) {
 
 			// Send test traffic
 			for _, packet := range packets {
+				if len(packet) > maxPayloadSize {
+					writerErr = fmt.Errorf("expected maximum payload size to create packets of size %d, but got packet of size %d",
+						maxPayloadSize, len(packet))
+				}
+
 				_, err := destConn.Write(packet)
 				if err != nil {
 					writerErr = err

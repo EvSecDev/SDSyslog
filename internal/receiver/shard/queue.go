@@ -40,12 +40,20 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment prot
 	} else {
 		// Discard newest fragment if duplicate keys exist within the deadline
 		if bucket.filled {
+			var haveSeq []int
+			for _, fragment := range bucket.Fragments {
+				haveSeq = append(haveSeq, fragment.MessageSeq)
+			}
+			logctx.LogStdWarn(ctx, "Received fragment with sequence %d after bucket %d was filled (bucket already has sequences %v)\n",
+				fragment.MessageSeq, bucketKey, haveSeq)
 			return
 		}
 
 		// Discard newest fragment if message sequence doesn't match last
 		// Root of trust is first fragment received
 		if bucket.maxSeq != fragment.MessageSeqMax {
+			logctx.LogStdWarn(ctx, "Received invalid maximum sequence: fragment has maximum sequence %d but bucket %s is set for maximum sequence %d\n",
+				fragment.MessageSeqMax, bucketKey, bucket.maxSeq)
 			return
 		}
 	}
@@ -64,6 +72,10 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment prot
 	// Even though this should never occur, evaluate deadline anyways in case a remote end tries to sneak a false packet in
 	if elapsed > queue.packetDeadline.Load() {
 		bucket.filled = true
+
+		logctx.LogStdWarn(ctx, "Late fragment arrived in %s, exceeding maximum time %s (bucket %s - late fragment sequence %d\n",
+			time.Duration(elapsed).String(), time.Duration(queue.packetDeadline.Load()).String(),
+			bucketKey, fragment.MessageSeq)
 
 		select {
 		case <-ctx.Done():

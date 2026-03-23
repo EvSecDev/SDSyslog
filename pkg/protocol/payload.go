@@ -46,38 +46,33 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 	proto.Hostname = cleanStringToBytes(request.Hostname, maxHostnameLen)
 
 	if sigID > 0 {
-		if len(request.Signature) > 0 {
-			// Validate pre-computed signature
-			suite, validID := registry.GetSignatureInfo(sigID)
-			if !validID {
-				err = fmt.Errorf("%w: %w: ID %d",
-					ErrInvalidPayload, ErrUnknownSignatureSuite, sigID)
-				return
-			}
-			if sigID != request.SignatureID {
-				err = fmt.Errorf("%w: pre-computed payload signature ID %d does not match requested signature ID %d",
-					ErrInvalidPayload, request.SignatureID, sigID)
-				return
-			}
-			if len(request.Signature) > suite.MaxSignatureLength || len(request.Signature) < suite.MinSignatureLength {
-				err = fmt.Errorf("%w: signature length %d for id %d must be between %d and %d bytes",
-					ErrInvalidPayload, len(request.Signature), sigID, suite.MinSignatureLength, suite.MaxSignatureLength)
-				return
-			}
-
-			// Permit pre-computed signature pass-through
-			proto.Signature = request.Signature
-		} else {
-			// Concatenate values for signing
-			bytesToSign := proto.SerializeForSignature()
-
-			// Signature: sign timestamp and hostname
-			proto.Signature, err = wrappers.CreateSignature(bytesToSign, sigID)
-			if err != nil {
-				err = fmt.Errorf("%w: %w", ErrCryptoFailure, err)
-				return
-			}
+		// Only allow pre-computed signature pass-through
+		if len(request.Signature) == 0 {
+			err = fmt.Errorf("%w: signature ID %d requires a signature present in supplied payload",
+				ErrInvalidPayload, sigID)
+			return
 		}
+
+		// Validate pre-computed signature
+		suite, validID := registry.GetSignatureInfo(sigID)
+		if !validID {
+			err = fmt.Errorf("%w: %w: ID %d",
+				ErrInvalidPayload, ErrUnknownSignatureSuite, sigID)
+			return
+		}
+		if sigID != request.SignatureID {
+			err = fmt.Errorf("%w: pre-computed payload signature ID %d does not match requested signature ID %d",
+				ErrInvalidPayload, request.SignatureID, sigID)
+			return
+		}
+		if len(request.Signature) > suite.MaxSignatureLength || len(request.Signature) < suite.MinSignatureLength {
+			err = fmt.Errorf("%w: signature length %d for id %d must be between %d and %d bytes",
+				ErrInvalidPayload, len(request.Signature), sigID, suite.MinSignatureLength, suite.MaxSignatureLength)
+			return
+		}
+
+		proto.Signature = request.Signature
+
 		if len(proto.Signature) < minSignatureLen || len(proto.Signature) > maxSignatureLen {
 			err = fmt.Errorf("%w: invalid signature length: must be between %d and %d bytes",
 				ErrInvalidPayload, minSignatureLen, maxSignatureLen)
@@ -245,7 +240,7 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 		validated.Hostname = HostPrefixUnkSig + validated.Hostname
 	} else if knownHost && proto.SignatureID != 0 {
 		// Pinned key with signature: verify timestamp and hostname
-		bytesToVerify := proto.SerializeForSignature()
+		bytesToVerify := SerializeSignature(proto.Hostname, proto.HostID, proto.Timestamp)
 		var valid bool
 		valid, err = wrappers.VerifySignature(pubKey, bytesToVerify, proto.Signature, proto.SignatureID)
 		if err != nil {
@@ -331,20 +326,20 @@ func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
 }
 
 // Creates a concatenated byte slice of protocol fields that are signed/verified
-func (proto innerWireFormat) SerializeForSignature() (signable []byte) {
+func SerializeSignature(hostname []byte, hostID uint32, timestamp uint64) (signable []byte) {
 	// Total length = ctx + timestamp(64b) + hostid(32b) + hostname
-	signable = make([]byte, len(IdentitySignatureContext)+8+4+len(proto.Hostname))
+	signable = make([]byte, len(IdentitySignatureContext)+8+4+len(hostname))
 
 	copy(signable, IdentitySignatureContext)
 
 	tsStartIndex := len(IdentitySignatureContext)
 	tsEndIndex := tsStartIndex + lenTimestamp
-	binary.BigEndian.PutUint64(signable[tsStartIndex:tsEndIndex], proto.Timestamp)
+	binary.BigEndian.PutUint64(signable[tsStartIndex:tsEndIndex], timestamp)
 
 	idEndIndex := tsEndIndex + lenHostID
-	binary.BigEndian.PutUint32(signable[tsEndIndex:idEndIndex], proto.HostID)
+	binary.BigEndian.PutUint32(signable[tsEndIndex:idEndIndex], hostID)
 
-	copy(signable[idEndIndex:], proto.Hostname)
+	copy(signable[idEndIndex:], hostname)
 	return
 }
 
@@ -365,6 +360,7 @@ func CalculateProtocolOverhead(suiteID uint8, primaryPayload Payload) (fixedOver
 	// Calculate variable lengths from primary payload
 	// padding length changes, omit from this calculation
 	innerVariableLength := len(primaryPayload.Hostname)
+	innerVariableLength += len(primaryPayload.Signature)
 	if len(primaryPayload.CustomFields) > 0 {
 		for key, value := range primaryPayload.CustomFields {
 			innerVariableLength += ctxFieldOverhead

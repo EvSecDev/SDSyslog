@@ -160,6 +160,29 @@ func TestProtocol(t *testing.T) {
 			},
 		},
 		{
+			name: "multi fragment - large payload - with signature",
+			msg: Message{
+				Timestamp: now,
+				Hostname:  "host-large-w-sig",
+				Fields:    map[string]any{"env": "prod"},
+				Data:      bytes.Repeat([]byte("A"), 10_000),
+			},
+			hostID:         42,
+			maxPayloadSize: 256,
+			signingPrivKey: ed25519.NewKeyFromSeed(bytes.Repeat([]byte("x"), ed25519.SeedSize)),
+			cryptoID:       1,
+			sigID:          1,
+			pinnedPubKeys: map[string][]byte{
+				"host-large-w-sig": ed25519.NewKeyFromSeed(bytes.Repeat([]byte("x"), ed25519.SeedSize)).Public().(ed25519.PublicKey),
+			},
+			expectedMsg: Message{
+				Timestamp: now,
+				Hostname:  "host-large-w-sig",
+				Fields:    map[string]any{"env": "prod"},
+				Data:      bytes.Repeat([]byte("A"), 10_000),
+			},
+		},
+		{
 			name: "exact boundary payload",
 			msg: Message{
 				Timestamp: now,
@@ -326,6 +349,14 @@ func TestProtocol(t *testing.T) {
 
 			if len(packets) == 0 {
 				t.Fatalf("expected packets, got none")
+			}
+
+			// Verify packet sizes
+			for _, packet := range packets {
+				if len(packet) > tt.maxPayloadSize {
+					t.Fatalf("expected maximum payload size to create packets of size %d, but got packet of size %d",
+						tt.maxPayloadSize, len(packet))
+				}
 			}
 
 			// Optional packet mutation

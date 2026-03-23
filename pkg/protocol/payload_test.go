@@ -72,7 +72,7 @@ func TestConstructPayload(t *testing.T) {
 			err: "",
 		},
 		{
-			name: "valid payload create signature",
+			name: "missing payload signature",
 			input: Payload{
 				HostID:        1,
 				MsgID:         2,
@@ -115,7 +115,7 @@ func TestConstructPayload(t *testing.T) {
 				Data:       []byte("log message"),
 				PaddingLen: 16,
 			},
-			err: "",
+			err: "invalid payload: signature ID 1 requires a signature present in supplied payload",
 		},
 		{
 			name: "invalid precomputed signature",
@@ -219,7 +219,7 @@ func TestConstructPayload(t *testing.T) {
 
 			if tt.sigID > 0 {
 				// Validate signature
-				signedBytes := proto.SerializeForSignature()
+				signedBytes := SerializeSignature(proto.Hostname, proto.HostID, proto.Timestamp)
 				valid, err := wrappers.VerifySignature(publicKey, signedBytes, proto.Signature, tt.sigID)
 				if err != nil {
 					t.Errorf("unexpected error verifying signature: '%v'", err)
@@ -414,7 +414,7 @@ func TestDeconstructPayload(t *testing.T) {
 				t.Fatalf("expected no error creating verification function, but got: %v", err)
 			}
 
-			bytesToSign := tt.input.SerializeForSignature()
+			bytesToSign := SerializeSignature(tt.input.Hostname, tt.input.HostID, tt.input.Timestamp)
 			tt.input.Signature, err = wrappers.CreateSignature(bytesToSign, tt.input.SignatureID)
 			if err != nil {
 				t.Fatalf("expected no error creating mock signature, but got: %v", err)

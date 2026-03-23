@@ -48,12 +48,16 @@ func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
 
 				if time.Since(bucket.lastProcessStartTime) > packetDeadline {
 					// If the bucket has timed out, process it
-					logctx.LogStdWarn(ctx, "Bucket %s timed out\n", bucketKey)
-
-					// Process the bucket
 					bucket.filled = true
 					keysToSend = append(keysToSend, bucketKey)
 					shard.Metrics.TimedOutBuckets.Add(1)
+
+					var haveSeq []int
+					for _, fragment := range bucket.Fragments {
+						haveSeq = append(haveSeq, fragment.MessageSeq)
+					}
+					logctx.LogStdWarn(ctx, "Bucket %s timed out (expected %d packets within %s, only received sequences %v)\n",
+						bucketKey, bucket.maxSeq+1, packetDeadline.String(), haveSeq)
 				}
 			}
 			shard.Mu.Unlock()

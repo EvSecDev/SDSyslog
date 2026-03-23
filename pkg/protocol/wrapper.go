@@ -4,6 +4,7 @@ package protocol
 import (
 	"fmt"
 	"sdsyslog/internal/crypto/random"
+	"sdsyslog/internal/crypto/wrappers"
 )
 
 // Main Entry Point: Takes in a new message to be sent and creates packets (transport layer payload)
@@ -23,6 +24,18 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int, cryptoSuite, signat
 		CustomFields: sendMsg.Fields,
 		Data:         sendMsg.Data,
 	}
+
+	// Create signature pre-fragmentation (signature validation is done in payload construction)
+	if signatureSuite > 0 {
+		bitTime := uint64(newMsg.Timestamp.UnixMilli())
+		bytesToSign := SerializeSignature([]byte(newMsg.Hostname), uint32(newMsg.HostID), bitTime)
+		newMsg.Signature, err = wrappers.CreateSignature(bytesToSign, signatureSuite)
+		if err != nil {
+			err = fmt.Errorf("%w: %w", ErrCryptoFailure, err)
+			return
+		}
+	}
+	newMsg.SignatureID = signatureSuite
 
 	protocolOverhead, err := CalculateProtocolOverhead(cryptoSuite, newMsg)
 	if err != nil {

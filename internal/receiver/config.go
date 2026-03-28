@@ -88,6 +88,12 @@ func (cfg JSONConfig) NewDaemonConf(originalConfigPath string) (config Config, e
 	config.MaxProcessors = cfg.AutoScaling.MaxProcessors
 	config.MaxDefrags = cfg.AutoScaling.MaxDefrags
 
+	// Queues
+	config.MinProcessorQueueSize = cfg.AutoScaling.MinProcQueueSize
+	config.MaxProcessorQueueSize = cfg.AutoScaling.MaxProcQueueSize
+	config.MinOutputQueueSize = cfg.AutoScaling.MinOutQueueSize
+	config.MaxOutputQueueSize = cfg.AutoScaling.MaxOutQueueSize
+
 	// Metric settings
 	config.MetricQueryServerEnabled = cfg.Metrics.EnableQueryServer
 	config.MetricQueryServerPort = cfg.Metrics.QueryServerPort

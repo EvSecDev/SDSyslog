@@ -232,6 +232,12 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	newCfg.AutoScaling.MaxProcessors = 16
 	newCfg.AutoScaling.MaxDefrags = 16
 
+	// Queues
+	newCfg.AutoScaling.MinProcQueueSize = global.DefaultMinQueueSize
+	newCfg.AutoScaling.MaxProcQueueSize = global.DefaultMaxQueueSize
+	newCfg.AutoScaling.MinOutQueueSize = global.DefaultMinQueueSize
+	newCfg.AutoScaling.MaxOutQueueSize = global.DefaultMaxQueueSize
+
 	newCfg.Outputs.FilePath = "/var/log/all.log"
 	newCfg.Outputs.JournaldURL = journald.DefaultURL
 	newCfg.Outputs.BeatsAddress = beats.DefaultAddress

@@ -41,6 +41,8 @@ type JSONConfig struct {
 		MaxProcQueueSize global.MaxValue `json:"maxProcQueueSize,omitempty"`
 		MinDefrags       global.MinValue `json:"minAssemblers,omitempty"`
 		MaxDefrags       global.MaxValue `json:"maxAssemblers,omitempty"`
+		MinOutQueueSize  global.MinValue `json:"minOutQueueSize,omitempty"`
+		MaxOutQueueSize  global.MaxValue `json:"maxOutQueueSize,omitempty"`
 	} `json:"autoscaling"`
 }
 

@@ -82,8 +82,8 @@ func (instance *Instance) run() {
 			}
 
 			// Push combined message to Stage 4 queue
-			maxRetries := 4
-			retryWait := 5 * time.Millisecond
+			maxRetries := 10
+			retryWait := 10 * time.Millisecond
 			success := false
 			for range maxRetries {
 				success = instance.outbox.Push(finalMsg, uint64(finalMsg.Size()))

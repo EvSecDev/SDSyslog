@@ -22,8 +22,10 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	manager.cancel = cancelInstance
 	manager.Instance = *manager.newWorker()
 
+	const defaultFileBatchSize int = 20
+
 	// Add outputs
-	manager.Instance.fileMod, err = file.NewOutput(filePath)
+	manager.Instance.fileMod, err = file.NewOutput(filePath, defaultFileBatchSize)
 	if err != nil {
 		return
 	}

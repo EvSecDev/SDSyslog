@@ -11,6 +11,11 @@ type MetricStorage struct {
 	Success   atomic.Uint64 // number of messages processed successfully
 }
 
+const (
+	MTLinesRead string = "lines_read"
+	MTSuc       string = "success_processed"
+)
+
 func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
 	// Read and clear
 	lines := mod.metrics.LinesRead.Swap(0)
@@ -21,7 +26,7 @@ func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metric
 
 	collection = []metrics.Metric{
 		{
-			Name:        "lines_read",
+			Name:        MTLinesRead,
 			Description: "Total lines read from file in the interval",
 			Namespace:   mod.Namespace,
 			Value: metrics.MetricValue{
@@ -33,7 +38,7 @@ func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metric
 			Timestamp: recordTime,
 		},
 		{
-			Name:        "success_processed",
+			Name:        MTSuc,
 			Description: "Total processed messages extracted from file in the interval",
 			Namespace:   mod.Namespace,
 			Value: metrics.MetricValue{

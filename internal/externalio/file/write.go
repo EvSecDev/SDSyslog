@@ -14,10 +14,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (linesWri
 		return
 	}
 
-	newEntry, err := formatAsText(ctx, msg)
-	if err != nil {
-		return
-	}
+	newEntry := formatAsText(ctx, msg)
 
 	// Always ensure outputs have only one trailing newline
 	var lineParts []string
@@ -31,8 +28,8 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (linesWri
 	// Buffer small amount to reorder and write in batches
 	*mod.batchBuffer = append(*mod.batchBuffer, newLine)
 
-	// Batch 20 at a time
-	if len(*mod.batchBuffer) > 20 {
+	// Flush buffer if full
+	if len(*mod.batchBuffer) > mod.batchSize {
 		linesWritten, err = mod.FlushBuffer()
 		if err != nil {
 			return
@@ -69,8 +66,8 @@ func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
 		ti := getTime((*mod.batchBuffer)[i])
 		tj := getTime((*mod.batchBuffer)[j])
 
-		// Newest first, compare reverse
-		return ti.After(tj)
+		// Newest last
+		return tj.After(ti)
 	})
 
 	for _, line := range *mod.batchBuffer {

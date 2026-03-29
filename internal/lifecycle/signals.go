@@ -5,7 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"sdsyslog/internal/logctx"
-	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 type DaemonLike interface {
@@ -21,9 +22,9 @@ type DaemonLike interface {
 // Initiates daemon shutdown and exits program.
 func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 	sigChan := getSigNotifyChannel(DefaultSignalChannelSize,
-		syscall.SIGINT,
-		syscall.SIGQUIT,
-		syscall.SIGTERM,
+		unix.SIGINT,
+		unix.SIGQUIT,
+		unix.SIGTERM,
 		FullUpdateSignal,
 		SigningKeyReloadSignal,
 	)
@@ -39,7 +40,7 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 		logctx.LogStdInfo(ctx,
 			"Received signal: %v\n", sig)
 
-		recvSignal, ok := sig.(syscall.Signal)
+		recvSignal, ok := sig.(unix.Signal)
 		if !ok {
 			logctx.LogStdErr(ctx,
 				"Failed to type assert received signal: %v\n", sig)

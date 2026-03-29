@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 // Retrieve last read position for the log file from the state file
@@ -87,13 +86,13 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 
 	// Avoid offsets beyond end of file
 	fileSize := fileInfo.Size()
-	if position > fileSize {
-		position = fileSize
+	if posParsed > fileSize {
+		posParsed = fileSize
 	}
 
 	// Avoid using cached offsets if inode is not current
-	stat := fileInfo.Sys().(*syscall.Stat_t)
-	currentInode := stat.Ino
+	id, err := getFileID(fileInfo)
+	currentInode := id.ino
 
 	// If inode matches, return cached offset, else reset offset to 0
 	if inodeParsed == currentInode {

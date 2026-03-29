@@ -2,164 +2,80 @@ package file
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/logctx"
 	"strings"
-	"syscall"
 )
 
+// Watches file path for changes and rotations (truncation or move/create).
+// Does NOT guarantee data integrity of intermediate files when rotated rapidly (2+ in sub-millisecond intervals).
 func (mod *InModule) Reader(ctx context.Context) {
-	logFileInode, logFileOffset, err := getLastPosition(mod.filePath, mod.stateFile)
-	if err != nil {
-		logctx.LogStdWarn(ctx,
-			"failed to get position of last source file read for '%s': %w\n", mod.filePath, err)
-	}
-
-	_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
-	if err != nil {
-		logctx.LogStdErr(ctx,
-			"failed to resume last source file read position for '%s': %w\n", mod.filePath, err)
-	}
-
-	var localHostname string
+	// For hostname periodic refresh
 	var iter uint64
 	const refreshMask = 1024 - 1
-	localHostname, err = os.Hostname()
-	if err != nil {
-		logctx.LogStdWarn(ctx,
-			"failed to retrieve current local hostname: %w\n", err)
-		localHostname = "-"
-	}
 
-	// Create inotify background watcher
-	fileHasChanged := make(chan bool, 1) // Main blocker for reading new lines
-	fileHasRotated := make(chan bool, 1) // Notify when to switch file inode and reset offset
-	go watcher(ctx, mod.filePath, fileHasChanged, fileHasRotated)
+	mod.watcher.Start()
 
 	buf := make([]byte, 65536)
-	lineBuf := []byte{} // note: unbounded
+	lineBuf := []byte{} // note: unbounded per line (reset at line completion)
 
 	for {
-		for {
-			// Record current file position before read
-			startOfChunk, err := mod.sink.Seek(0, io.SeekCurrent)
-			if err != nil {
-				logctx.LogStdErr(ctx,
-					"failed to retrieve current position in log file: %w\n", err)
-			}
-
-			n, err := mod.sink.Read(buf)
-			if n == 0 {
-				// no more bytes available, break to outer select for blocking
-				break
-			} else if err == io.EOF {
-				// no more bytes available, break to outer select for blocking
-				break
-			} else if err != nil {
-				logctx.LogStdErr(ctx, "read error: %w", err)
-				break
-			}
-
-			// process the bytes read
-			offset := startOfChunk
-			for i := 0; i < n; i++ {
-				b := buf[i]
-
-				if b != byte('\n') {
-					// Regular line characters, add to buffer
-					lineBuf = append(lineBuf, b)
-					offset++
-					continue
-				}
-
-				// line complete, process it
-				mod.metrics.LinesRead.Add(1)
-
-				msg := parseLine(string(lineBuf), localHostname)
-
-				msg.Fields[externalio.CtxKey] = strings.Join(mod.Namespace, "/")
-
-				if len(mod.filters) > 0 {
-					var msgMatches bool
-					for _, filter := range mod.filters {
-						msgMatches = filter.Match(msg)
-						if msgMatches {
-							// First filter match wins
-							break
-						}
-					}
-					if msgMatches {
-						// Do not push message (drop)
-						break
-					}
-				}
-
-				mod.outbox.PushBlocking(ctx, msg, msg.Size())
-				mod.metrics.Success.Add(1)
-
-				// reset line buffer
-				lineBuf = []byte{}
-				offset++ // move past newline
-			}
-			logFileOffset = offset
-
-			// if line was complete, break inner loop to block
-			if len(lineBuf) == 0 {
-				break
-			}
+		// Read all new file data since last read
+		err := mod.fileReadAll(ctx, &lineBuf, buf)
+		if err != nil {
+			logctx.LogStdErr(ctx, "%w\n", err)
 		}
 
 		// Block until file change, file rotation, or cancellation
 		select {
 		case <-ctx.Done():
-			err := savePosition(mod.stateFile, logFileInode, logFileOffset)
+			mod.watcher.Stop()
+			err = savePosition(mod.stateFile, mod.currentReadID.ino, mod.currentReadOffset)
 			if err != nil {
 				logctx.LogStdErr(ctx,
 					"failed to save position in file source '%s': %w\n", mod.filePath, err)
 			}
 			return
-		case <-fileHasChanged:
+		case <-mod.watcher.FileChanged():
 			// file changed, continue scanning
-		case reopenLogFile := <-fileHasRotated:
-			if reopenLogFile {
-				// Reopen at file path
-				err := mod.sink.Close()
+		case <-mod.watcher.FileRotated():
+			err = mod.fileReadAll(ctx, &lineBuf, buf)
+			if err != nil {
+				logctx.LogStdErr(ctx,
+					"error reading pre-rotation file: %w\n", err)
+			} else {
+				err = mod.reopenLogfile(ctx)
 				if err != nil {
-					logctx.LogStdErr(ctx,
-						"failed to close previous file '%s': %w\n", mod.filePath, err)
+					logctx.LogStdErr(ctx, "%w\n", err)
 				}
-				mod.sink, err = os.Open(mod.filePath)
-				if err != nil {
-					logctx.LogStdErr(ctx,
-						"failed to reopen rotated log file: %w\n", err)
-					continue
-				}
-
-				// Retrieve new file inode
-				fileInfo, err := os.Stat(mod.filePath)
-				if err != nil {
-					logctx.LogStdErr(ctx,
-						"unable to stat new source file: %w\n", err)
-					continue
-				}
-				stat := fileInfo.Sys().(*syscall.Stat_t)
-
-				// Save new file inode to state var
-				logFileInode = stat.Ino
-
-				// Reset offset position for new file
-				logFileOffset = 0
 			}
+		}
+
+		// Check for truncation
+		file, err := mod.sink.Stat()
+		if err != nil {
+			logctx.LogStdWarn(ctx, "failed to stat current tracked file: %w\n", err)
+			// Can't do anything about the error here, just read from beginning
+			mod.currentReadOffset = 0
+			lineBuf = lineBuf[:0]
+		}
+		if mod.currentReadOffset > file.Size() {
+			// Truncation detected - reset state and seek to beginning
+			logctx.LogStdWarn(ctx, "file '%s' has been truncated, seeking to start of file (warning: late writes to file might be missed)\n",
+				mod.filePath)
+			mod.currentReadOffset = 0
+			lineBuf = lineBuf[:0]
 		}
 
 		// Local hostname periodic refresh
 		iter++
 		if iter&refreshMask == 0 {
 			newName, err := os.Hostname()
-			if err == nil && newName != localHostname {
-				localHostname = newName
+			if err == nil && newName != mod.localHostname {
+				mod.localHostname = newName
 			} else if err != nil {
 				logctx.LogStdWarn(ctx,
 					"failed to refresh current local hostname: %w\n", err)
@@ -167,10 +83,76 @@ func (mod *InModule) Reader(ctx context.Context) {
 		}
 
 		// Re-scan for new lines after the last offset
-		_, err = mod.sink.Seek(logFileOffset, io.SeekStart)
+		_, err = mod.sink.Seek(mod.currentReadOffset, io.SeekStart)
 		if err != nil {
 			logctx.LogStdErr(ctx,
 				"failed to seek to last offset: %w\n", err)
 		}
+	}
+}
+
+// Reads file lines continuously until 0 bytes left or EOF in file
+func (mod *InModule) fileReadAll(ctx context.Context, lineBuf *[]byte, buf []byte) (err error) {
+	for {
+		// Record current file position before read
+		mod.currentReadOffset, err = mod.sink.Seek(0, io.SeekCurrent)
+		if err != nil {
+			err = fmt.Errorf("failed to retrieve current position in log file: %w", err)
+			return
+		}
+
+		var n int
+		n, err = mod.sink.Read(buf)
+		if n == 0 || err == io.EOF {
+			// no more bytes available, break to outer select for blocking
+			err = nil
+			break
+		} else if err != nil {
+			err = fmt.Errorf("read error: %w", err)
+			break
+		}
+
+		// process the bytes read
+		mod.processFileChunk(ctx, lineBuf, buf[:n])
+	}
+	return
+}
+
+// Steps through raw data from file and extracts lines
+func (mod *InModule) processFileChunk(ctx context.Context, lineBuf *[]byte, buf []byte) {
+	for i := 0; i < len(buf); i++ {
+		char := buf[i]
+
+		if char != '\n' {
+			// Regular line characters, add to buffer
+			*lineBuf = append(*lineBuf, char)
+			mod.currentReadOffset++
+			continue
+		}
+
+		// line complete, process it
+		mod.metrics.LinesRead.Add(1)
+
+		msg := parseLine(string(*lineBuf), mod.localHostname)
+
+		msg.Fields[externalio.CtxKey] = strings.Join(mod.Namespace, "/")
+
+		var dropMsg bool
+		for _, filter := range mod.filters {
+			dropMsg = filter.Match(msg)
+			if dropMsg {
+				// First filter match wins
+				break
+			}
+		}
+
+		if !dropMsg {
+			mod.outbox.PushBlocking(ctx, msg, msg.Size())
+			mod.metrics.Success.Add(1)
+		}
+
+		// reset line buffer
+		*lineBuf = (*lineBuf)[:0] // alter original to remove contents
+		mod.currentReadOffset++   // move past newline
 	}
 }

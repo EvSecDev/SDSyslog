@@ -7,9 +7,10 @@ import (
 	"os/exec"
 	"sdsyslog/internal/logctx"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestPostUpdateActions_ErrorPaths(t *testing.T) {
@@ -48,7 +49,7 @@ func TestPostUpdateActions_ErrorPaths(t *testing.T) {
 		{
 			name:        "already reaped (ECHILD)",
 			envValue:    "123",
-			waitErr:     syscall.ECHILD,
+			waitErr:     unix.ECHILD,
 			expectedErr: "already reaped or no longer a child",
 		},
 	}
@@ -71,13 +72,13 @@ func TestPostUpdateActions_ErrorPaths(t *testing.T) {
 			}()
 
 			origKill := syscallKill
-			syscallKill = func(int, syscall.Signal) error {
+			syscallKill = func(int, unix.Signal) error {
 				return tt.killErr
 			}
 			defer func() { syscallKill = origKill }()
 
 			origWait := syscallWait4
-			syscallWait4 = func(pid int, w *syscall.WaitStatus, options int, r *syscall.Rusage) (int, error) {
+			syscallWait4 = func(pid int, w *unix.WaitStatus, options int, r *unix.Rusage) (int, error) {
 				return tt.waitPID, tt.waitErr
 			}
 			defer func() { syscallWait4 = origWait }()

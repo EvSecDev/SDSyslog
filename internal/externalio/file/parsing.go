@@ -6,6 +6,7 @@ import (
 	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -228,7 +229,7 @@ func setDefaults(old protocol.Message, raw string, localHostname string) (new pr
 
 // Main raw log line format for outputs
 // Fmt: '2020-01-01T10:10:10.123456789Z Server01 MyApp[1234]: Daemon: [INFO]: this is a log message'
-func formatAsText(ctx context.Context, msg protocol.Payload) (text string, err error) {
+func formatAsText(ctx context.Context, msg protocol.Payload) (text string) {
 	var remoteID string
 	if msg.RemoteIP.IsValid() && msg.Hostname != "" {
 		remoteID = msg.RemoteIP.String() + "/" + msg.Hostname
@@ -276,6 +277,8 @@ func formatAsText(ctx context.Context, msg protocol.Payload) (text string, err e
 		string(msg.Data)
 
 	if len(keyValString) > 0 {
+		// Stabilize ordering
+		slices.Sort(keyValString)
 		text += " (" + strings.Join(keyValString, ";") + ")"
 	}
 	return

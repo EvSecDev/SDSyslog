@@ -10,8 +10,9 @@ import (
 	"sdsyslog/internal/logctx"
 	"slices"
 	"strconv"
-	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 // Creates new daemon process as child to temporarily handle traffic during main process update.
@@ -160,7 +161,7 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 	}
 
 	// Graceful shutdown of child
-	err = syscallKill(pid, syscall.SIGTERM)
+	err = syscallKill(pid, unix.SIGTERM)
 	if err != nil {
 		logctx.LogStdErr(ctx,
 			"failed to issue SIGTERM to child PID %d to integer (child process still running): %w\n", pid, err)
@@ -169,19 +170,19 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 
 	deadline := time.Now().Add(timeout)
 
-	var status syscall.WaitStatus
+	var status unix.WaitStatus
 
 	// Poll for process exit
 	for {
 		// Try to reap child (non-blocking)
-		wpid, err := syscallWait4(pid, &status, syscall.WNOHANG, nil)
+		wpid, err := syscallWait4(pid, &status, unix.WNOHANG, nil)
 		if wpid == pid {
 			logctx.LogStdInfo(ctx,
 				"Child PID %d exited and was reaped (status=%v)\n", pid, status)
 			return
 		}
 
-		if errors.Is(err, syscall.ECHILD) {
+		if errors.Is(err, unix.ECHILD) {
 			// Already reaped or not our child anymore
 			logctx.LogStdInfo(ctx,
 				"Child PID %d already reaped or no longer a child\n", pid)
@@ -193,8 +194,8 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 				"Child PID %d did not exit gracefully, forcing shutdown\n", pid)
 
 			// Force kill
-			err = syscallKill(pid, syscall.SIGKILL)
-			if err != nil && err != syscall.ESRCH {
+			err = syscallKill(pid, unix.SIGKILL)
+			if err != nil && err != unix.ESRCH {
 				logctx.LogStdErr(ctx,
 					"failed to issue SIGKILL to child PID %d (child process might be still running): %w\n", pid, err)
 				return
@@ -208,12 +209,12 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 						"Child PID %d killed and reaped (status=%v)\n", pid, status)
 					return
 				}
-				if err != nil && err != syscall.ECHILD {
+				if err != nil && err != unix.ECHILD {
 					logctx.LogStdErr(ctx,
 						"failed to wait for child PID %d (child process might be a zombie): %w\n", pid, err)
 					return
 				}
-				if err == syscall.ECHILD {
+				if err == unix.ECHILD {
 					logctx.LogStdInfo(ctx,
 						"Child PID %d force killed and was cleaned up by something else\n", pid)
 					break
@@ -235,7 +236,7 @@ func terminateChildProcess(ctx context.Context, cmd *exec.Cmd) {
 		return
 	}
 
-	killErr := cmdProcSignal(cmd, syscall.Signal(0))
+	killErr := cmdProcSignal(cmd, unix.Signal(0))
 	if killErr == nil {
 		if cmd == nil {
 			// Successful (exited between check and now)
@@ -246,7 +247,7 @@ func terminateChildProcess(ctx context.Context, cmd *exec.Cmd) {
 			"Found child PID %d still alive despite not sending readiness signal\n", cmd.Process.Pid)
 
 		// Attempt graceful shutdown
-		lerr := cmdProcSignal(cmd, syscall.SIGTERM)
+		lerr := cmdProcSignal(cmd, unix.SIGTERM)
 		if lerr != nil {
 			logctx.LogStdWarn(ctx,
 				"Failed to send graceful shutdown signal to child PID %d: %w\n", cmd.Process.Pid, lerr)

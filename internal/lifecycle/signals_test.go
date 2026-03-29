@@ -8,9 +8,10 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestSignalHandling(t *testing.T) {
@@ -29,13 +30,13 @@ func TestSignalHandling(t *testing.T) {
 	}{
 		{
 			name:                 "Success: regular shutdown",
-			signal:               syscall.SIGTERM,
+			signal:               unix.SIGTERM,
 			expectExit:           true,
 			expectDaemonShutdown: true,
 		},
 		{
 			name:                 "Success: update (exec works)",
-			signal:               syscall.SIGHUP,
+			signal:               unix.SIGHUP,
 			expectExit:           true,
 			expectExecCall:       true,
 			expectedNotifies:     1,
@@ -44,7 +45,7 @@ func TestSignalHandling(t *testing.T) {
 		},
 		{
 			name:   "Failure: update (exec fails)",
-			signal: syscall.SIGHUP,
+			signal: unix.SIGHUP,
 			fail: failureConfig{
 				execErr: os.ErrPermission,
 			},
@@ -58,7 +59,7 @@ func TestSignalHandling(t *testing.T) {
 		},
 		{
 			name:   "Failure: fipr startup",
-			signal: syscall.SIGHUP,
+			signal: unix.SIGHUP,
 			fail: failureConfig{
 				startFIPRErr: os.ErrPermission,
 			},
@@ -69,7 +70,7 @@ func TestSignalHandling(t *testing.T) {
 		},
 		{
 			name:   "Failure: child process start",
-			signal: syscall.SIGHUP,
+			signal: unix.SIGHUP,
 			fail: failureConfig{
 				cmdStartErr: os.ErrNotExist,
 			},
@@ -80,7 +81,7 @@ func TestSignalHandling(t *testing.T) {
 		},
 		{
 			name:   "Failure: daemon restart",
-			signal: syscall.SIGHUP,
+			signal: unix.SIGHUP,
 			fail: failureConfig{
 				execErr:    os.ErrInvalid,
 				restartErr: fmt.Errorf("invalid parameter"),

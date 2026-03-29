@@ -31,7 +31,7 @@ func (manager *Manager) AddFileInstance(filePath string, stateFile string) (err 
 	// Worker for this file
 	ingestInstance := &FileWorker{}
 	filters := manager.Config.SourceDropFilters[FileSource]
-	ingestInstance.Module, err = file.NewInput(logctx.GetTagList(manager.ctx), filePath, stateFile, filters, manager.outQueue)
+	ingestInstance.Module, err = file.NewInput(manager.ctx, filePath, stateFile, filters, manager.outQueue)
 	if err != nil {
 		return
 	}

@@ -4,7 +4,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 // Mockable functions that access external resources (low level OS interactions)
@@ -19,18 +20,18 @@ func getSigNotifyChannelReal(bufSize int, sig ...os.Signal) (sigChan chan os.Sig
 }
 
 // Send signal to process ID
-var syscallKill func(pid int, sendSig syscall.Signal) (err error) = syscallKillReal
+var syscallKill func(pid int, sendSig unix.Signal) (err error) = syscallKillReal
 
-func syscallKillReal(pid int, sendSig syscall.Signal) (err error) {
-	err = syscall.Kill(pid, sendSig)
+func syscallKillReal(pid int, sendSig unix.Signal) (err error) {
+	err = unix.Kill(pid, sendSig)
 	return
 }
 
 // Wait for process to change state to the wstatus
-var syscallWait4 func(pid int, wstatus *syscall.WaitStatus, options int, rusage *syscall.Rusage) (wpid int, err error) = syscallWait4Real
+var syscallWait4 func(pid int, wstatus *unix.WaitStatus, options int, rusage *unix.Rusage) (wpid int, err error) = syscallWait4Real
 
-func syscallWait4Real(pid int, wstatus *syscall.WaitStatus, options int, rusage *syscall.Rusage) (wpid int, err error) {
-	wpid, err = syscall.Wait4(pid, wstatus, options, rusage)
+func syscallWait4Real(pid int, wstatus *unix.WaitStatus, options int, rusage *unix.Rusage) (wpid int, err error) {
+	wpid, err = unix.Wait4(pid, wstatus, options, rusage)
 	return
 }
 
@@ -38,7 +39,7 @@ func syscallWait4Real(pid int, wstatus *syscall.WaitStatus, options int, rusage 
 var syscallExec func(argv0 string, argv []string, envv []string) (err error) = syscallExecReal
 
 func syscallExecReal(argv0 string, argv []string, envv []string) (err error) {
-	err = syscall.Exec(argv0, argv, envv)
+	err = unix.Exec(argv0, argv, envv)
 	return
 }
 

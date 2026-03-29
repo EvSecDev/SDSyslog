@@ -2,6 +2,8 @@ package file
 
 import (
 	"bytes"
+	"context"
+	"net/netip"
 	"os"
 	"sdsyslog/internal/externalio"
 	"sdsyslog/pkg/protocol"
@@ -290,4 +292,125 @@ func timeParse6Panic(val string) (res time.Time) {
 		panic(err)
 	}
 	return
+}
+
+func TestFormatAsText(t *testing.T) {
+	ctx := context.Background()
+	nowTime := time.Now()
+
+	tests := []struct {
+		name           string
+		input          protocol.Payload
+		expectedOutput string
+	}{
+		{
+			name: "All fields present",
+			input: protocol.Payload{
+				RemoteIP:  netip.MustParseAddr("127.0.0.1"),
+				Hostname:  "localhost",
+				Timestamp: nowTime,
+				CustomFields: map[string]any{
+					externalio.CFappname:   "app1",
+					externalio.CFseverity:  "info",
+					externalio.CFfacility:  "daemon",
+					externalio.CFprocessid: "123",
+				},
+				Data: []byte("test message"),
+			},
+			expectedOutput: nowTime.Format(time.RFC3339Nano) + " 127.0.0.1/localhost app1[123]: daemon: [info]: test message",
+		},
+		{
+			name: "Missing hostname",
+			input: protocol.Payload{
+				RemoteIP:  netip.MustParseAddr("127.0.0.1"),
+				Timestamp: nowTime,
+				CustomFields: map[string]any{
+					externalio.CFappname:   "app1",
+					externalio.CFseverity:  "info",
+					externalio.CFfacility:  "daemon",
+					externalio.CFprocessid: "123",
+				},
+				Data: []byte("test message"),
+			},
+			expectedOutput: nowTime.Format(time.RFC3339Nano) + " 127.0.0.1 app1[123]: daemon: [info]: test message",
+		},
+		{
+			name: "Missing ip",
+			input: protocol.Payload{
+				RemoteIP:  netip.Addr{},
+				Timestamp: nowTime,
+				Hostname:  "localhost",
+				CustomFields: map[string]any{
+					externalio.CFappname:   "app1",
+					externalio.CFseverity:  "info",
+					externalio.CFfacility:  "daemon",
+					externalio.CFprocessid: "123",
+				},
+				Data: []byte("test message"),
+			},
+			expectedOutput: nowTime.Format(time.RFC3339Nano) + " localhost app1[123]: daemon: [info]: test message",
+		},
+		{
+			name: "Single extra custom field",
+			input: protocol.Payload{
+				RemoteIP:  netip.Addr{},
+				Timestamp: nowTime,
+				Hostname:  "localhost",
+				CustomFields: map[string]any{
+					externalio.CFappname:   "app1",
+					externalio.CFseverity:  "info",
+					externalio.CFfacility:  "daemon",
+					externalio.CFprocessid: "123",
+					"type":                 "extra",
+				},
+				Data: []byte("test message"),
+			},
+			expectedOutput: nowTime.Format(time.RFC3339Nano) + " localhost app1[123]: daemon: [info]: test message (type=extra)",
+		},
+		{
+			name: "Multiple extra custom field",
+			input: protocol.Payload{
+				RemoteIP:  netip.Addr{},
+				Timestamp: nowTime,
+				Hostname:  "localhost",
+				CustomFields: map[string]any{
+					externalio.CFappname:   "app1",
+					externalio.CFseverity:  "info",
+					externalio.CFfacility:  "daemon",
+					externalio.CFprocessid: "123",
+					"type":                 "extra",
+					"field1":               "value1",
+					"place":                "location",
+				},
+				Data: []byte("test message"),
+			},
+			expectedOutput: nowTime.Format(time.RFC3339Nano) + " localhost app1[123]: daemon: [info]: test message (field1=value1;place=location;type=extra)",
+		},
+		{
+			name: "Unsupported custom field",
+			input: protocol.Payload{
+				RemoteIP:  netip.Addr{},
+				Timestamp: nowTime,
+				Hostname:  "localhost",
+				CustomFields: map[string]any{
+					externalio.CFappname:   "app1",
+					externalio.CFseverity:  "info",
+					externalio.CFfacility:  "daemon",
+					externalio.CFprocessid: "123",
+					"fieldinvalid":         struct{}{},
+				},
+				Data: []byte("test message"),
+			},
+			expectedOutput: nowTime.Format(time.RFC3339Nano) + " localhost app1[123]: daemon: [info]: test message",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := formatAsText(ctx, tt.input)
+			if output != tt.expectedOutput {
+				t.Fatalf("output mismatch:\nexpected:%q\ngot:     %q\n", tt.expectedOutput, output)
+			}
+		})
+	}
 }

@@ -4,8 +4,9 @@ import (
 	"os/exec"
 	"sdsyslog/internal/global"
 	"strings"
-	"syscall"
 	"testing"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestIssueLiveSigningKeyReload(t *testing.T) {
@@ -125,7 +126,7 @@ func TestIssueLiveSigningKeyReload(t *testing.T) {
 			var syscallCalled bool
 			var targetedPID int
 			origKill := syscallKill
-			syscallKill = func(pid int, sys syscall.Signal) error {
+			syscallKill = func(pid int, sys unix.Signal) error {
 				targetedPID = pid
 				syscallCalled = true
 				return nil

@@ -110,6 +110,7 @@ func (cfg *JSONConfig) loadInputs() (err error) {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// No-op
+			err = nil
 			return
 		}
 		return

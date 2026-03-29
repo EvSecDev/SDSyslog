@@ -52,8 +52,8 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   # State Keeping
   @{stateDir}{,/**} rw,
 
-  # [Sender] Journald reading
-  /usr/bin/journalctl rUx,
+  # [Sender] Custom per-host log inputs
+  include if exists <$includeExtraLocalPath>
 
   # [Receiver] Required for journald output
   /proc/sys/kernel/random/boot_id r,

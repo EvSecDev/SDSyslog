@@ -19,4 +19,5 @@ const (
 	apparmorProfDir     string = "/etc/apparmor.d/"
 	apparmorProfName    string = "usr.local.bin." + global.ProgBaseName
 	appArmorProfilePath string = apparmorProfDir + apparmorProfName
+	appArmorExtrasPath  string = "local/" + apparmorProfName // Relative to /etc/apparmor.d
 )

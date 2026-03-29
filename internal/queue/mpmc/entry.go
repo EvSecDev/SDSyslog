@@ -92,6 +92,13 @@ func newQueueInst[T any](namespace []string, capacity uint64) (new *QueueInst[T]
 	return
 }
 
+// Resync's depth metric for queue
+func (queue *QueueInst[T]) ResyncDepthMetric() {
+	head := queue.head.Load()
+	tail := queue.tail.Load()
+	queue.Metrics.Depth.Store(tail - head)
+}
+
 // Poll based wrapper around Push function to block until succeed (includes built-in poll interval)
 func (container *Queue[T]) PushBlocking(ctx context.Context, value T, size int) {
 	for {

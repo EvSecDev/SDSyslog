@@ -336,6 +336,7 @@ func (daemon *Daemon) Shutdown() {
 			"Draining processor worker queue...\n")
 
 		queue := daemon.Mgrs.Proc.Inbox.ActiveWrite.Load()
+		queue.ResyncDepthMetric()
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)
 		if !success {
 			logctx.LogStdWarn(daemon.ctx, "assembler inbox queue did not empty in time: dropped %d messages\n", last)
@@ -373,6 +374,7 @@ func (daemon *Daemon) Shutdown() {
 			"Draining output worker queue\n")
 
 		queue := daemon.Mgrs.Output.Inbox.ActiveWrite.Load()
+		queue.ResyncDepthMetric()
 
 		// Wait here before shutting down (active write always has newest data)
 		success, last := atomics.WaitUntilZero(&queue.Metrics.Depth, 10*time.Second)

@@ -20,13 +20,9 @@ type JSONConfig struct {
 		Port           int    `json:"port"`
 		MaxPayloadSize int    `json:"maxPayloadSize,omitempty"`
 	} `json:"network"`
-	StateFile string `json:"stateFile"`
-	Inputs    struct {
-		DropFilters    map[string][]protocol.MessageFilter `json:"dropFilters,omitempty"`
-		FilePaths      []string                            `json:"filePaths,omitempty"`
-		JournalEnabled bool                                `json:"journalEnabled,omitempty"`
-	} `json:"inputs"`
-	Metrics struct {
+	StateFile string     `json:"stateFile"`
+	Inputs    JSONInputs `json:"inputs"`
+	Metrics   struct {
 		Interval          string `json:"collectionInterval"`
 		MaxAge            string `json:"maximumRetention,omitempty"`
 		EnableQueryServer bool   `json:"enableHTTPQueryServer"`
@@ -44,6 +40,13 @@ type JSONConfig struct {
 		MinAssemblerQueueSize global.MinValue `json:"minAssemblerQueueSize,omitempty"`
 		MaxAssemblerQueueSize global.MaxValue `json:"maxAssemblerQueueSize,omitempty"`
 	} `json:"autoscaling"`
+}
+
+type JSONInputs struct {
+	Include        string                              `json:"include,omitempty"`
+	DropFilters    map[string][]protocol.MessageFilter `json:"dropFilters,omitempty"`
+	FilePaths      []string                            `json:"filePaths,omitempty"`
+	JournalEnabled bool                                `json:"journalEnabled,omitempty"`
 }
 
 type Config struct {

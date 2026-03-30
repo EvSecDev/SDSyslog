@@ -8,6 +8,9 @@
 @{drainPinPath}=$drainingSocketsMapPinPath
 @{drainFuncPath}=$drainingSocketsFuncPinPath
 
+# Compatibility with different Debian-like kernels (i.e. Proxmox)
+abi <abi/3.0>,
+
 ## Profile Begin
 profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   # Receive signals
@@ -18,14 +21,17 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   # Self update
   @{exelocation} rix,
 
-  # Capabilities
+  # Network access
   network inet dgram,
   network inet6 dgram,
   network inet stream,
   network inet6 stream,
+  network netlink raw,
+
+  # For Systemd reloads (notify)
   network unix stream,
   network unix dgram,
-  network netlink raw,
+  /run/systemd/notify w,
 
   # CLI usage
   /dev/pts/* rw,

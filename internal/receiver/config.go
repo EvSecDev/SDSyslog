@@ -9,6 +9,7 @@ import (
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
+	"slices"
 	"time"
 )
 
@@ -200,7 +201,7 @@ func (cfg *Config) setDefaults() {
 }
 
 // Loads newest config from disk and pulls newest pinned keys map.
-func (daemon *Daemon) ReloadSigningKeys() (newCount int, err error) {
+func (daemon *Daemon) ReloadSigningKeys() (diffCount int, err error) {
 	cfg, err := LoadConfig(daemon.cfg.path)
 	if err != nil {
 		err = fmt.Errorf("failed to re-read daemon configuration file: %w", err)
@@ -218,23 +219,40 @@ func (daemon *Daemon) ReloadSigningKeys() (newCount int, err error) {
 		// No-op
 		return
 	}
-	oldPinnedKeysCount := len(daemon.cfg.PinnedSigningKeys)
-	var pinnedKeys map[string][]byte
-	err = json.Unmarshal(pinnedKeysFile, &pinnedKeys)
+	var newPinnedKeys map[string][]byte
+	err = json.Unmarshal(pinnedKeysFile, &newPinnedKeys)
 	if err != nil {
 		err = fmt.Errorf("failed to parse pinned keys JSON: %w", err)
 		return
 	}
-	if len(pinnedKeys) == 0 {
-		// No-op
-		return
+	if len(newPinnedKeys) == 0 {
+		// No more pinned keys - zero out in-use map
+		newPinnedKeys = make(map[string][]byte)
 	}
-	// Update map
-	wrappers.NewPinnedSenders(pinnedKeys)
+	// Update in-use map
+	wrappers.NewPinnedSenders(newPinnedKeys)
 
-	newCount = oldPinnedKeysCount - len(pinnedKeys)
-	if newCount < 0 {
-		newCount = -newCount
+	// Find differences to count modifications (adds or deletes)
+	oldPinnedKeys := daemon.cfg.PinnedSigningKeys
+	for newKey, newVal := range newPinnedKeys {
+		oldVal, present := oldPinnedKeys[newKey]
+		if !present {
+			diffCount++
+			continue
+		}
+		if !slices.Equal(oldVal, newVal) {
+			diffCount++
+			continue
+		}
 	}
+	for oldKey := range oldPinnedKeys {
+		_, present := newPinnedKeys[oldKey]
+		if !present {
+			diffCount++
+			continue
+		}
+	}
+
+	daemon.cfg.PinnedSigningKeys = newPinnedKeys
 	return
 }

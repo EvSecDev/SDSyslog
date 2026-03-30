@@ -345,7 +345,7 @@ func loadSigningKey(keyPath string) (key []byte, err error) {
 }
 
 // Reloads running sender daemon with new private signing key (all new outbound packets immediately start using it)
-func (daemon *Daemon) ReloadSigningKeys() (newCount int, err error) {
+func (daemon *Daemon) ReloadSigningKeys() (diffCount int, err error) {
 	cfg, err := LoadConfig(daemon.cfg.path)
 	if err != nil {
 		err = fmt.Errorf("failed to re-read daemon configuration file: %w", err)
@@ -379,6 +379,6 @@ func (daemon *Daemon) ReloadSigningKeys() (newCount int, err error) {
 		}
 	}
 
-	newCount = 1 // Always one for sender daemon
+	diffCount = 1 // Always one for sender daemon
 	return
 }

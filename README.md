@@ -25,6 +25,8 @@ Warning: This program is early in its development and *does* contain bugs.
 
 ## Installation
 
+Note: Receive mode is currently only supported on Linux.
+
 Steps:
 
 - Copy binary to the desired system

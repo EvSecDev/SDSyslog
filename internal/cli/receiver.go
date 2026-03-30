@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver"
@@ -40,6 +41,12 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 
 	// Embed mode name in context
 	ctx = context.WithValue(ctx, global.CtxModeKey, commandname)
+
+	// Protect listener syscall actions failing for platforms not supported
+	if runtime.GOOS != global.GOOSLinux {
+		err = fmt.Errorf("receive mode is not supported on OS %q", runtime.GOOS)
+		return
+	}
 
 	// Configuration options (non-daemon)
 	if addPinnedKey != "" {

@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"sdsyslog/internal/global"
 
 	"github.com/cilium/ebpf"
 	"golang.org/x/sys/unix"
@@ -12,7 +13,7 @@ import (
 
 // Retrieve unique identifier (cookie) for a given socket file descriptor.
 func GetSocketCookie(conn *net.UDPConn) (cookie uint64, err error) {
-	if runtime.GOOS != "linux" {
+	if runtime.GOOS != global.GOOSLinux {
 		return
 	}
 
@@ -46,7 +47,7 @@ func GetSocketCookie(conn *net.UDPConn) (cookie uint64, err error) {
 // Mark a given socket identifier (cookie) as draining.
 // Uses eBPF program to prevent kernel from sending additional data to sockets buffer.
 func MarkSocketDraining(pinnedMapPath string, socketCookie uint64) (err error) {
-	if runtime.GOOS != "linux" {
+	if runtime.GOOS != global.GOOSLinux {
 		return
 	}
 

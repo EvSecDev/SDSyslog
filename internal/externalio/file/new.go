@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sdsyslog/internal/externalio/file/inotify"
+	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
@@ -70,7 +71,7 @@ func NewInput(ctx context.Context, filePath string, baseStateFile string, filter
 
 	// Get watcher for OS (also gates file inode cross platform problem)
 	switch runtime.GOOS {
-	case "linux":
+	case global.GOOSLinux:
 		// Linux inotify event watcher
 		module.watcher, err = inotify.New(ctx, module.filePath)
 		if err != nil {

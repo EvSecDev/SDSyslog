@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sdsyslog/internal/global"
 
 	"github.com/cilium/ebpf"
 	"golang.org/x/sys/unix"
@@ -18,7 +19,7 @@ var byteCodeFS embed.FS
 // Takes compiled eBPF bytecode and loads it into the kernel.
 // It pins the draining_sockets map and reference to the current program in sys bpffs path.
 func LoadProgram() (err error) {
-	if runtime.GOOS != "linux" {
+	if runtime.GOOS != global.GOOSLinux {
 		return
 	}
 

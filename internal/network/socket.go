@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"sdsyslog/internal/ebpf"
+	"sdsyslog/internal/global"
 	"syscall"
 	"time"
 
@@ -142,9 +143,9 @@ func WaitUntilEmptySocket(conn *net.UDPConn) (remainingBytes int, err error) {
 
 	var fionread uint
 	switch runtime.GOOS {
-	case "linux":
+	case global.GOOSLinux:
 		fionread = 0x541B
-	case "darwin", "freebsd", "openbsd", "netbsd":
+	case global.GOOSDarwin, global.GOOSFreebsd, global.GOOSOpenbsd, global.GOOSNetbsd:
 		fionread = 0x4004667F
 	default:
 		return

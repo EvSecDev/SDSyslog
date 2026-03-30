@@ -4,10 +4,16 @@ package global
 import "time"
 
 const (
-	ProgVersion string  = "v0.20.2"
+	ProgVersion string  = "v0.20.3"
 	SendMode    string  = "send"
 	RecvMode    string  = "receive"
 	CtxModeKey  CtxMode = "mode" // Identifying if program is in sender or receiver mode
+
+	GOOSLinux   string = "linux"
+	GOOSDarwin  string = "darwin"
+	GOOSFreebsd string = "freebsd"
+	GOOSOpenbsd string = "openbsd"
+	GOOSNetbsd  string = "netbsd"
 
 	ProgBaseName             string        = "sdsyslog"
 	DefaultBinaryPath        string        = "/usr/local/bin/" + ProgBaseName

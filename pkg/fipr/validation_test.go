@@ -1,6 +1,7 @@
 package fipr
 
 import (
+	"sdsyslog/internal/tests/utils"
 	"testing"
 )
 
@@ -44,8 +45,9 @@ func TestValidateFrame(t *testing.T) {
 			session.seq = tt.sessionSeq
 			frame := &framebody{op: tt.op, payload: tt.payload, sequence: tt.frameSeq}
 			err := session.validateFrame(frame)
-			if err != tt.wantErr {
-				t.Errorf("got error '%v', want '%v'", err, tt.wantErr)
+			_, err = utils.MatchWrappedError(err, tt.wantErr)
+			if err != nil {
+				t.Fatalf("server: %v", err)
 			}
 		})
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 	"path/filepath"
-	"strings"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 )
 
@@ -92,31 +92,32 @@ type failureConfig struct {
 	cmdStartErr  error
 }
 
-func checkLogForErrors(line string, errors failureConfig) (matches bool) {
-	line = strings.TrimSuffix(line, "\n")
+func checkLogForErrors(t *testing.T, ctx context.Context, errors failureConfig) {
+	t.Helper()
+
 	if errors.execErr != nil {
-		if strings.HasSuffix(line, errors.execErr.Error()) {
-			matches = true
-			return
+		// Gather any logs from ctx logger
+		_, lerr := utils.MatchLogCtxErrors(ctx, errors.execErr.Error(), nil)
+		if lerr != nil {
+			t.Errorf("%v", lerr)
 		}
 	}
 	if errors.restartErr != nil {
-		if strings.Contains(line, errors.restartErr.Error()) {
-			matches = true
-			return
+		_, lerr := utils.MatchLogCtxErrors(ctx, errors.restartErr.Error(), nil)
+		if lerr != nil {
+			t.Errorf("%v", lerr)
 		}
 	}
 	if errors.startFIPRErr != nil {
-		if strings.HasSuffix(line, errors.startFIPRErr.Error()) {
-			matches = true
-			return
+		_, lerr := utils.MatchLogCtxErrors(ctx, errors.startFIPRErr.Error(), nil)
+		if lerr != nil {
+			t.Errorf("%v", lerr)
 		}
 	}
 	if errors.cmdStartErr != nil {
-		if strings.HasSuffix(line, errors.cmdStartErr.Error()) {
-			matches = true
-			return
+		_, lerr := utils.MatchLogCtxErrors(ctx, errors.cmdStartErr.Error(), nil)
+		if lerr != nil {
+			t.Errorf("%v", lerr)
 		}
 	}
-	return
 }

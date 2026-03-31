@@ -1,7 +1,7 @@
 package filtering
 
 import (
-	"strings"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 )
 
@@ -207,17 +207,11 @@ func TestTrimDurationPrecision(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.filter.Validate()
-			if err != nil && tt.expectedValidationError == "" {
-				t.Fatalf("expected no error from filter validation, but got '%v'", err)
-			}
-			if err == nil && tt.expectedValidationError != "" {
-				t.Fatalf("expected validation error %q, but got nil", tt.expectedValidationError)
-			}
-			if err != nil && strings.Contains(err.Error(), tt.expectedValidationError) {
+			gotExpected, err := utils.MatchErrorString(err, tt.expectedValidationError)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if gotExpected {
 				return
-			}
-			if err != nil && !strings.Contains(err.Error(), tt.expectedValidationError) {
-				t.Fatalf("expected validation error %q, but got '%v'", tt.expectedValidationError, err)
 			}
 
 			matches := tt.filter.Match([]byte(tt.input))

@@ -6,9 +6,9 @@ import (
 	"net/netip"
 	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/tests/utils"
 	"sdsyslog/pkg/protocol"
 	"slices"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -344,7 +344,6 @@ func TestRouteFragment(t *testing.T) {
 			if mockShard == nil {
 				t.Fatalf("mock shard not initialized`")
 			}
-			logger := logctx.GetLogger(mockCtx)
 
 			var remoteAddr netip.Addr
 			var err error
@@ -357,26 +356,11 @@ func TestRouteFragment(t *testing.T) {
 
 			for _, fragment := range tt.inputFrags {
 				routeSuccess := RouteFragment(mockCtx, &tt.mockRV, remoteAddr, fragment, tt.processStartTime)
-				allLogLines := logger.GetFormattedLogLines()
-				var foundMatchingExpectedError bool
-				for _, line := range allLogLines {
-					if !strings.Contains(line, "["+logctx.ErrorLog+"]") && !strings.Contains(line, "["+logctx.WarnLog+"]") {
-						continue
-					}
-					// Test is expecting error
-					if tt.expectedErrorLog == "" {
-						t.Errorf("expected no error in logs, but found: %q", line)
-						continue
-					}
-
-					if strings.Contains(line, tt.expectedErrorLog) {
-						foundMatchingExpectedError = true
-					}
-				}
-				if tt.expectedErrorLog != "" && !foundMatchingExpectedError {
-					t.Fatalf("expected error log containing %q, but found none", tt.expectedErrorLog)
-				} else if tt.expectedErrorLog != "" && foundMatchingExpectedError {
-					return // No additional test evaluations for this run
+				foundMatch, err := utils.MatchLogCtxErrors(mockCtx, tt.expectedErrorLog, []string{"disappeared while attempting to route fragment from message ID"})
+				if err != nil {
+					t.Fatalf("%v", err)
+				} else if foundMatch {
+					return
 				}
 
 				if routeSuccess != tt.expectedRouteSuccess {

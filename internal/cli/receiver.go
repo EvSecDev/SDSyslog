@@ -44,8 +44,8 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 
 	// Protect listener syscall actions failing for platforms not supported
 	if runtime.GOOS != global.GOOSLinux {
-		err = fmt.Errorf("receive mode is not supported on OS %q", runtime.GOOS)
-		return
+		fmt.Fprintf(os.Stderr, "Error: receive mode is not supported on OS %q\n", runtime.GOOS)
+		os.Exit(1)
 	}
 
 	// Configuration options (non-daemon)

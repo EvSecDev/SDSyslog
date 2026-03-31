@@ -1,8 +1,7 @@
 package server
 
 import (
-	"fmt"
-	"strings"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 	"time"
 )
@@ -16,7 +15,7 @@ func TestParseTimeRange(t *testing.T) {
 		rawEndTime   string
 		expectStart  string
 		expectEnd    string
-		expectError  error
+		expectError  string
 	}{
 		{
 			name:         "basic absolute",
@@ -43,47 +42,41 @@ func TestParseTimeRange(t *testing.T) {
 			name:         "invalid start relative",
 			rawStartTime: "-5w",
 			rawEndTime:   "-30m",
-			expectError:  fmt.Errorf("invalid relative end time \"-30m\""),
+			expectError:  "invalid relative end time \"-30m\"",
 		},
 		{
 			name:         "invalid start absolute",
 			rawStartTime: "2026-04-03",
 			rawEndTime:   "-30m",
-			expectError:  fmt.Errorf("invalid start time \"2026-04-03\""),
+			expectError:  "invalid start time \"2026-04-03\"",
 		},
 		{
 			name:         "invalid end relative",
 			rawStartTime: "-5m",
 			rawEndTime:   "-3w",
-			expectError:  fmt.Errorf("invalid relative end time \"-3w\""),
+			expectError:  "invalid relative end time \"-3w\"",
 		},
 		{
 			name:         "invalid end absolute",
 			rawStartTime: "-30m",
 			rawEndTime:   "2022-01-12",
-			expectError:  fmt.Errorf("invalid end time \"2022-01-12\""),
+			expectError:  "invalid end time \"2022-01-12\"",
 		},
 		{
 			name:         "start after end",
 			rawStartTime: "-30m",
 			rawEndTime:   "-60m",
-			expectError:  fmt.Errorf("start time cannot be after end time"),
+			expectError:  "start time cannot be after end time",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			start, end, err := parseTimeRange(testCurrentTime, tt.rawStartTime, tt.rawEndTime)
-			if err != nil && tt.expectError == nil {
-				t.Fatalf("unexpected parsing error: '%v'", err)
-			}
-			if err == nil && tt.expectError != nil {
-				t.Fatalf("expected error '%v', but got nil", tt.expectError)
-			}
-			if err != nil && !strings.HasPrefix(err.Error(), tt.expectError.Error()) {
-				t.Fatalf("expected error '%v', but got error '%v'", tt.expectError, err)
-			}
-			if err != nil && strings.HasPrefix(err.Error(), tt.expectError.Error()) {
+			gotExpected, err := utils.MatchErrorString(err, tt.expectError)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if gotExpected {
 				return
 			}
 

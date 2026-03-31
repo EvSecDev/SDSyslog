@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"sdsyslog/internal/logctx"
-	"strings"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 	"time"
 
@@ -89,17 +89,10 @@ func TestPostUpdateActions_ErrorPaths(t *testing.T) {
 
 			PostUpdateActions(ctx, mock, 10*time.Millisecond)
 
-			logger := logctx.GetLogger(ctx)
-			lines := logger.GetFormattedLogLines()
-			var foundMatch bool
-			for _, line := range lines {
-				if !strings.Contains(line, tt.expectedErr) {
-					continue
-				}
-				foundMatch = true
-			}
-			if tt.expectedErr != "" && !foundMatch {
-				t.Errorf("expected error %q, but found none", tt.expectedErr)
+			// Gather any logs from ctx logger
+			_, err = utils.MatchLogCtxErrors(ctx, tt.expectedErr, nil)
+			if err != nil {
+				t.Errorf("%v", err)
 			}
 		})
 	}

@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/tests/utils"
 	"sdsyslog/pkg/protocol"
-	"strings"
 	"testing"
 	"time"
 )
@@ -189,6 +189,10 @@ func TestWriter(t *testing.T) {
 				}
 			}
 
+			if len(foundErrors) > 0 {
+				t.Fatalf("output write encountered failure(s): %v", foundErrors)
+			}
+
 			cancel()
 
 			written, err := outMod.FlushBuffer() // Normally caller handles this
@@ -207,28 +211,12 @@ func TestWriter(t *testing.T) {
 					tt.expectedWriteCount, writeCount)
 			}
 
-			// Validate no errors in ctx logger
-			logger := logctx.GetLogger(ctx)
-			logLines := logger.GetFormattedLogLines()
-			var foundExpectedError bool
-			for _, logLine := range logLines {
-				if strings.Contains(logLine, "["+logctx.InfoLog+"]") {
-					continue
-				}
-				if tt.expectedErrorMessage != "" && strings.Contains(logLine, tt.expectedErrorMessage) {
-					foundExpectedError = true
-					continue // Search for other errors
-				}
-				foundErrors = append(foundErrors, logLine)
-			}
-			if tt.expectedErrorMessage != "" && !foundExpectedError {
-				t.Errorf("expected error %q to be in the log buffer but found nothing", tt.expectedErrorMessage)
-			}
-			if len(foundErrors) > 0 {
-				t.Errorf("expected no errors in log buffer, but found lines:\n")
-				for _, err := range foundErrors {
-					t.Errorf("%s", err)
-				}
+			// Validate no errors in log
+			foundMatch, err := utils.MatchLogCtxErrors(ctx, tt.expectedErrorMessage, nil)
+			if err != nil {
+				t.Errorf("%v", err)
+			} else if foundMatch {
+				return
 			}
 
 			// Read file content (validate count and partial match only)

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
+	"sdsyslog/internal/tests/utils"
 	"strings"
 	"testing"
 )
@@ -142,38 +143,9 @@ func TestSetupListener_RoutingAndHTML(t *testing.T) {
 			}
 
 			// Check logs
-			logger := logctx.GetLogger(ctx)
-			logger.Wake()
-			lines := logger.GetFormattedLogLines()
-			var foundErrors []string
-			for _, line := range lines {
-				if !strings.Contains(line, logctx.ErrorLog) && !strings.Contains(line, logctx.WarnLog) {
-					continue
-				}
-				foundErrors = append(foundErrors, line)
-			}
-
-			if !tt.expectedError && len(foundErrors) == 0 {
-				return
-			} else if tt.expectedError && len(foundErrors) == 0 {
-				t.Fatalf("expected error %q, but found none", tt.expectedErrorText)
-			} else if !tt.expectedError && len(foundErrors) > 0 {
-				t.Errorf("unexpected errors in logger:\n")
-				for _, err := range foundErrors {
-					t.Errorf("    %s", err)
-				}
-			} else if tt.expectedError && len(foundErrors) > 0 {
-				var foundExpected bool
-				for _, err := range foundErrors {
-					if strings.Contains(err, tt.expectedErrorText) {
-						foundExpected = true
-						continue
-					}
-					t.Errorf("encountered unexpected error in logger: %s", err)
-				}
-				if !foundExpected {
-					t.Errorf("expected error %q in logger, but found none", tt.expectedErrorText)
-				}
+			_, err = utils.MatchLogCtxErrors(ctx, tt.expectedErrorText, nil)
+			if err != nil {
+				t.Errorf("%v", err)
 			}
 		})
 	}

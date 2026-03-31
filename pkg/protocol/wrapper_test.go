@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/wrappers"
+	"sdsyslog/internal/tests/utils"
 	"strings"
 	"testing"
 	"time"
@@ -312,17 +313,11 @@ func TestProtocol(t *testing.T) {
 			}
 
 			packets, err := Create(tt.msg, tt.hostID, tt.maxPayloadSize, tt.cryptoID, tt.sigID)
-			if tt.expectErrCreate != "" {
-				if err == nil {
-					t.Fatalf("expected create error, got nil")
-				}
-				if !strings.Contains(err.Error(), tt.expectErrCreate) {
-					t.Fatalf("expected error %q, but got %q", tt.expectErrCreate, err.Error())
-				}
-				return
-			}
+			gotExpected, err := utils.MatchErrorString(err, tt.expectErrCreate)
 			if err != nil {
-				t.Fatalf("unexpected create error: %v", err)
+				t.Fatalf("create: %v", err)
+			} else if gotExpected {
+				return
 			}
 
 			if len(tt.pinnedPubKeys) > 0 {
@@ -365,17 +360,11 @@ func TestProtocol(t *testing.T) {
 			}
 
 			recvMsg, recvHostID, err := Extract(packets)
-			if tt.expectErrExtract != "" {
-				if err == nil {
-					t.Fatalf("expected extract error, got nil")
-				}
-				if !strings.Contains(err.Error(), tt.expectErrExtract) {
-					t.Fatalf("expected error %q, but got %q", tt.expectErrExtract, err.Error())
-				}
-				return
-			}
+			gotExpected, err = utils.MatchErrorString(err, tt.expectErrExtract)
 			if err != nil {
-				t.Fatalf("unexpected extract error: %v", err)
+				t.Fatalf("extract: %v", err)
+			} else if gotExpected {
+				return
 			}
 
 			// Limited compare due to timing. Assert down to day only

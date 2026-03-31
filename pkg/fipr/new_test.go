@@ -2,8 +2,8 @@ package fipr
 
 import (
 	"bytes"
-	"errors"
 	"net"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 )
 
@@ -38,12 +38,13 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			session, err := New(tt.conn, tt.hmac)
-			if err != nil && errors.Is(err, tt.expectedErr) {
+			gotExpected, err := utils.MatchWrappedError(err, tt.expectedErr)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if gotExpected {
 				return
 			}
-			if err != nil && !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("expected error '%v', but got error '%v'", tt.expectedErr, err)
-			}
+
 			if !bytes.Equal(session.hmacSecret, tt.hmac) {
 				t.Errorf("expected hmac to be '%x', but found in session hmac '%x'", tt.hmac, session.hmacSecret)
 			}

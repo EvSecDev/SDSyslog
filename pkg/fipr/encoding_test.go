@@ -3,7 +3,7 @@ package fipr
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
+	"sdsyslog/internal/tests/utils"
 	"strings"
 	"testing"
 )
@@ -153,19 +153,14 @@ func TestEncodeDecode(t *testing.T) {
 
 			// Validate encode to bytes
 			wireFrame, encodeErr := tt.encodeSession.encodeFrame(tt.op, tt.payload)
-			if encodeErr != nil && tt.expectEncodeErr != nil {
-				if !errors.Is(encodeErr, tt.expectEncodeErr) {
-					t.Fatalf("expected encoding error '%v', but got '%v'", tt.expectEncodeErr, encodeErr)
-				} else {
-					// Testing a fatal, end test run
-					return
-				}
-			}
-			if encodeErr != nil && tt.expectEncodeErr == nil {
+			gotExpected, err := utils.MatchWrappedError(encodeErr, tt.expectEncodeErr)
+			if err != nil {
 				// Ignore encoding validation errors when test is expecting decoding errors
-				if tt.expectDecodeErr != nil && !strings.HasPrefix(encodeErr.Error(), "validation:") {
-					t.Fatalf("expected no encoding error, but got '%v'", encodeErr)
+				if !strings.HasPrefix(encodeErr.Error(), "validation:") {
+					t.Fatalf("encode: %v", err)
 				}
+			} else if gotExpected {
+				return
 			}
 
 			// Validate client recorded its sent frame
@@ -184,16 +179,11 @@ func TestEncodeDecode(t *testing.T) {
 
 			// Validate decode from bytes
 			frame, err := tt.decodeSession.decodeFrame(wireFrame)
-			if err != nil && tt.expectDecodeErr != nil {
-				if !errors.Is(err, tt.expectDecodeErr) {
-					t.Fatalf("expected decoding error '%v', but got '%v'", tt.expectDecodeErr, err)
-				} else {
-					// Testing a fatal, end test run
-					return
-				}
-			}
-			if err != nil && tt.expectDecodeErr == nil {
-				t.Fatalf("expected no decoding error, but got '%v'", err)
+			gotExpected, err = utils.MatchWrappedError(err, tt.expectDecodeErr)
+			if err != nil {
+				t.Fatalf("decode: %v", err)
+			} else if gotExpected {
+				return
 			}
 
 			// Verify integrity

@@ -184,7 +184,7 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 
 		if errors.Is(err, unix.ECHILD) {
 			// Already reaped or not our child anymore
-			logctx.LogStdInfo(ctx,
+			logctx.LogStdWarn(ctx,
 				"Child PID %d already reaped or no longer a child\n", pid)
 			return
 		}
@@ -215,7 +215,7 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 					return
 				}
 				if err == unix.ECHILD {
-					logctx.LogStdInfo(ctx,
+					logctx.LogStdWarn(ctx,
 						"Child PID %d force killed and was cleaned up by something else\n", pid)
 					break
 				}

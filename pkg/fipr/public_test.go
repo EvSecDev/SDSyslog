@@ -2,10 +2,10 @@ package fipr
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"net"
 	"os"
+	"sdsyslog/internal/tests/utils"
 	"strings"
 	"sync"
 	"testing"
@@ -227,20 +227,16 @@ func TestPublic_Full(t *testing.T) {
 
 			for len(clientErrChan) > 0 {
 				testClientError := <-clientErrChan
-				if errors.Is(testClientError, tt.expectedClientErr) {
-					continue
-				}
-				if testClientError != nil {
-					t.Errorf("test client had error: %v", testClientError)
+				_, err := utils.MatchWrappedError(testClientError, tt.expectedClientErr)
+				if err != nil {
+					t.Fatalf("client: %v", err)
 				}
 			}
 			for len(serverErrChan) > 0 {
 				testServerError := <-serverErrChan
-				if errors.Is(testServerError, tt.expectedServerErr) {
-					continue
-				}
-				if testServerError != nil {
-					t.Errorf("test server had error: %v", testServerError)
+				_, err := utils.MatchWrappedError(testServerError, tt.expectedServerErr)
+				if err != nil {
+					t.Fatalf("server: %v", err)
 				}
 			}
 		})

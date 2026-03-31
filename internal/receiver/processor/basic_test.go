@@ -3,7 +3,6 @@ package processor
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net/netip"
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/wrappers"
@@ -11,6 +10,7 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/shard"
+	"sdsyslog/internal/tests/utils"
 	"sdsyslog/pkg/protocol"
 	"strings"
 	"sync/atomic"
@@ -124,7 +124,7 @@ func TestProcessor_Basic(t *testing.T) {
 		{
 			name:             "invalid timestamp window",
 			input:            mockValidMessage,
-			expectedMgrError: "empty past message cutoff time",
+			expectedMgrError: "empty future message cutoff time",
 		},
 		{
 			name: "single packet too far in past",
@@ -203,13 +203,10 @@ func TestProcessor_Basic(t *testing.T) {
 			mgrConf.MaxInstanceCount.Store(4)
 
 			procMgr, err := mgrConf.NewManager(ctx, &mockRoutingView)
-			if err != nil && tt.expectedMgrError == "" {
-				t.Fatalf("unexpected error creating processor manager: %v", err)
-			}
-			if err == nil && tt.expectedMgrError != "" {
-				t.Fatalf("expected manager error %q, but got nil", tt.expectedMgrError)
-			}
-			if err != nil && strings.Contains(err.Error(), tt.expectedErrorMessage) {
+			gotExpected, err := utils.MatchErrorString(err, tt.expectedMgrError)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if gotExpected {
 				return
 			}
 
@@ -272,29 +269,9 @@ func TestProcessor_Basic(t *testing.T) {
 			}
 
 			// Validate no errors in log
-			logger := logctx.GetLogger(ctx)
-			lines := logger.GetFormattedLogLines()
-			var foundErrors []string
-			var foundExpectedError bool
-			for _, line := range lines {
-				if strings.Contains(line, "["+logctx.InfoLog+"]") {
-					continue
-				}
-				if tt.expectedErrorMessage != "" && strings.Contains(line, tt.expectedErrorMessage) {
-					foundExpectedError = true
-					continue // Search for other errors
-				}
-				foundErrors = append(foundErrors, line)
-			}
-			if tt.expectedErrorMessage != "" && !foundExpectedError {
-				t.Errorf("expected error %q to be in the log buffer but found nothing", tt.expectedErrorMessage)
-			}
-
-			if len(foundErrors) > 0 {
-				t.Errorf("expected no errors in log buffer, but found lines:\n")
-				for _, err := range foundErrors {
-					fmt.Printf("%s", err)
-				}
+			_, err = utils.MatchLogCtxErrors(ctx, tt.expectedErrorMessage, nil)
+			if err != nil {
+				t.Fatalf("%v", err)
 			}
 		})
 	}

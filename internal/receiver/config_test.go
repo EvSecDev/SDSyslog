@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"sdsyslog/internal/crypto/wrappers"
+	"sdsyslog/internal/tests/utils"
 	"slices"
-	"strings"
 	"testing"
 )
 
@@ -170,18 +170,10 @@ func TestReloadSigningKeys(t *testing.T) {
 
 			// Call reload
 			diffCount, err := mockDaemon.ReloadSigningKeys()
-
-			// Verify error state
-			if err != nil && tt.expectedError == "" {
-				t.Fatalf("unexpected error from reload: %v", err)
-			}
-			if err == nil && tt.expectedError != "" {
-				t.Fatalf("expected error %q, but got none", tt.expectedError)
-			}
-			if err != nil && !strings.Contains(err.Error(), tt.expectedError) {
-				t.Fatalf("expected error %q, but got error %v", tt.expectedError, err)
-			}
-			if err != nil && strings.Contains(err.Error(), tt.expectedError) {
+			gotExpected, err := utils.MatchErrorString(err, tt.expectedError)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if gotExpected {
 				return
 			}
 

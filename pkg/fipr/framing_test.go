@@ -3,10 +3,10 @@ package fipr
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"net"
 	"os"
+	"sdsyslog/internal/tests/utils"
 	"strings"
 	"sync"
 	"testing"
@@ -162,17 +162,13 @@ func TestReadFrame(t *testing.T) {
 			var gotFrames [][]byte
 			for i := 0; i < len(expectedWholeFrames); i++ {
 				frame, err := session.readFrame()
-				if err == nil && tt.expectedErr != nil {
-					t.Fatalf("expected error '%v', but got no error", tt.expectedErr)
-				} else if err != nil && tt.expectedErr != nil {
-					if !errors.Is(err, tt.expectedErr) {
-						t.Fatalf("expected error '%v' but got error '%v'", tt.expectedErr, err)
-					}
-					// Testing fatal errors, stop this test run
+				gotExpected, err := utils.MatchWrappedError(err, tt.expectedErr)
+				if err != nil {
+					t.Fatalf("readFrame: %v", err)
+				} else if gotExpected {
 					return
-				} else if err != nil && tt.expectedErr == nil {
-					t.Fatalf("expected no error reading frames, but got error '%v'", err)
 				}
+
 				gotFrames = append(gotFrames, frame)
 			}
 			wg.Wait()

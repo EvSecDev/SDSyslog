@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sdsyslog/internal/logctx"
-	"strings"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 	"time"
 )
@@ -202,28 +202,9 @@ func TestInotify(t *testing.T) {
 			}
 
 			// Validate no errors in log
-			logger := logctx.GetLogger(ctx)
-			lines := logger.GetFormattedLogLines()
-			var foundErrors []string
-			var foundExpectedError bool
-			for _, line := range lines {
-				if strings.Contains(line, "["+logctx.InfoLog+"]") {
-					continue
-				}
-				if tt.expectedErrorMessage != "" && strings.Contains(line, tt.expectedErrorMessage) {
-					foundExpectedError = true
-					continue // Search for other errors
-				}
-				foundErrors = append(foundErrors, line)
-			}
-			if tt.expectedErrorMessage != "" && !foundExpectedError {
-				t.Errorf("expected error %q to be in the log buffer but found nothing", tt.expectedErrorMessage)
-			}
-			if len(foundErrors) > 0 {
-				t.Errorf("expected no errors in log buffer, but found lines:\n")
-				for _, err := range foundErrors {
-					t.Errorf("%s", err)
-				}
+			_, err = utils.MatchLogCtxErrors(ctx, tt.expectedErrorMessage, nil)
+			if err != nil {
+				t.Errorf("%v", err)
 			}
 		})
 	}

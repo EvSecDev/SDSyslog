@@ -3,7 +3,7 @@ package lifecycle
 import (
 	"os/exec"
 	"sdsyslog/internal/global"
-	"strings"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 
 	"golang.org/x/sys/unix"
@@ -134,18 +134,11 @@ func TestIssueLiveSigningKeyReload(t *testing.T) {
 			defer func() { syscallKill = origKill }()
 
 			err := IssueLiveSigningKeyReload(tt.configPath, tt.programName)
-			if err != nil && tt.expectedErr == "" {
-				t.Fatalf("expected no error from reload issuance, but got %v", err)
-			}
-			if err == nil && tt.expectedErr != "" {
-				t.Fatalf("expected error '%s', but got nil", tt.expectedErr)
-			}
-			if err != nil && tt.expectedErr != "" {
-				if !strings.Contains(err.Error(), tt.expectedErr) {
-					t.Fatalf("expected error '%s' but got '%v'", tt.expectedErr, err)
-				} else {
-					return
-				}
+			gotExpected, err := utils.MatchErrorString(err, tt.expectedErr)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if gotExpected {
+				return
 			}
 
 			if syscallCalled != tt.expectSyscall {

@@ -216,25 +216,7 @@ func TestSignalHandling(t *testing.T) {
 				}
 			}
 
-			// Check logger for errors
-			logger := logctx.GetLogger(ctx)
-			logLines := logger.GetFormattedLogLines()
-			var foundErrors []string
-			for _, line := range logLines {
-				if strings.Contains(line, "["+logctx.InfoLog+"]") {
-					continue
-				}
-				if checkLogForErrors(line, tt.fail) {
-					continue
-				}
-				foundErrors = append(foundErrors, line)
-			}
-			if len(foundErrors) > 0 {
-				t.Error(" Found errors in logger")
-				for _, log := range foundErrors {
-					t.Errorf("  %s", log)
-				}
-			}
+			checkLogForErrors(t, ctx, tt.fail)
 
 			if shutdownCalled != tt.expectDaemonShutdown {
 				t.Fatalf("daemon shutdown call mismatch: expected call=%v but got %v", tt.expectDaemonShutdown, shutdownCalled)

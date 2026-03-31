@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/crypto/wrappers"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 	"time"
 )
@@ -201,20 +202,15 @@ func TestConstructPayload(t *testing.T) {
 			tt.expected.Timestamp = uint64(ttTime.UnixMilli())
 
 			proto, err := ConstructPayload(tt.input, tt.sigID)
-			if tt.err != "" {
-				if err == nil {
-					t.Fatalf("expected error but got nil")
-				} else if err.Error() != tt.err {
-					t.Fatalf("expected error '%v' but got '%v'", tt.err, err)
-				}
+			gotExpected, err := utils.MatchErrorString(err, tt.err)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if gotExpected {
 				return
-			} else {
-				if err != nil {
-					t.Fatalf("unexpected error: '%v'", err)
-				}
-				if !compareProtocols(proto, tt.expected) {
-					t.Fatalf("Protocols not equal:\n Expected '%v'\n Got      '%v'", tt.expected, proto)
-				}
+			}
+
+			if !compareProtocols(proto, tt.expected) {
+				t.Fatalf("Protocols not equal:\n Expected '%v'\n Got      '%v'", tt.expected, proto)
 			}
 
 			if tt.sigID > 0 {

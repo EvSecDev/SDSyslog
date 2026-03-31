@@ -3,14 +3,16 @@ package output
 import (
 	"context"
 	"fmt"
+	"io"
 	"sdsyslog/internal/iomodules/beats"
 	"sdsyslog/internal/iomodules/file"
+	"sdsyslog/internal/iomodules/generic"
 	"sdsyslog/internal/iomodules/journald"
 	"sdsyslog/internal/logctx"
 )
 
 // Create and start new output instance
-func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAddress string) (err error) {
+func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAddress string, rawWriter io.WriteCloser) (err error) {
 	if filePath == "" && journaldURL == "" && beatsAddress == "" {
 		err = fmt.Errorf("no outputs enabled/configured")
 		return
@@ -37,6 +39,7 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	if err != nil {
 		return
 	}
+	manager.Instance.rawMod = generic.NewOutput(rawWriter, 0)
 
 	// Start worker
 	manager.wg.Add(1)
@@ -69,5 +72,10 @@ func (manager *Manager) RemoveInstance() {
 	if err != nil {
 		logctx.LogStdErr(manager.ctx,
 			"failed to shutdown beats module: %w\n", err)
+	}
+	err = manager.Instance.rawMod.Shutdown()
+	if err != nil {
+		logctx.LogStdErr(manager.ctx,
+			"failed to shutdown raw module: %w\n", err)
 	}
 }

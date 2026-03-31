@@ -2,6 +2,7 @@ package sender
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"sdsyslog/internal/global"
 	metricGlb "sdsyslog/internal/metrics"
@@ -73,6 +74,7 @@ type Config struct {
 	FileSourcePaths        []string
 	SyslogSourceListenIP   string
 	SyslogSourceListenPort int
+	RawInput               io.ReadCloser
 
 	// Worker scaling boundaries
 	MinOutputs    global.MinValue

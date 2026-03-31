@@ -134,7 +134,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 				return
 			}
 		}
+
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"%d file ingest instance started successfully\n", len(daemon.cfg.FileSourcePaths))
 	}
+
 	if daemon.cfg.JournalSourceEnabled {
 		err = daemon.Mgrs.In.AddJrnlInstance(daemon.cfg.StateFilePath)
 		if err != nil {
@@ -142,9 +146,19 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			daemon.Shutdown()
 			return
 		}
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"1 journal ingest instance started successfully\n")
 	}
-	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
-		"1 ingest instance started successfully\n")
+	if daemon.cfg.RawInput != nil {
+		err = daemon.Mgrs.In.AddRawInstance(daemon.cfg.RawInput)
+		if err != nil {
+			err = fmt.Errorf("failed creating raw ingest instance: %w", err)
+			daemon.Shutdown()
+			return
+		}
+		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"1 raw ingest instance started successfully\n")
+	}
 
 	// Metrics Collector
 	daemon.metricsCollector = metrics.New(daemon.Mgrs.In,
@@ -282,6 +296,15 @@ func (daemon *Daemon) Shutdown() {
 			} else {
 				logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 					"Successfully stopped ingest journald instance\n")
+			}
+		}
+		if daemon.Mgrs.In.RawSource != nil {
+			err := daemon.Mgrs.In.RemoveRawInstance()
+			if err != nil {
+				logctx.LogStdWarn(daemon.ctx, "ingest raw worker shutdown failed: %w\n", err)
+			} else {
+				logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
+					"Successfully stopped ingest raw instance\n")
 			}
 		}
 	}

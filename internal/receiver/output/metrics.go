@@ -11,6 +11,7 @@ type MetricStorage struct {
 	SuccessfulFileWrites  atomic.Uint64
 	SuccessfulJrnlWrites  atomic.Uint64
 	SuccessfulBeatsWrites atomic.Uint64
+	SuccessfulRawWrites   atomic.Uint64
 }
 
 const (
@@ -19,6 +20,7 @@ const (
 	MTFileWritesSuc  string = "success_file_writes"
 	MTJrnlWritesSuc  string = "success_journal_writes"
 	MTBeatsWritesSuc string = "success_beats_writes"
+	MTRawWritesSuc   string = "success_beats_writes"
 )
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
@@ -27,8 +29,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	fileWrites := instance.Metrics.SuccessfulFileWrites.Swap(0)
 	jrnlWrites := instance.Metrics.SuccessfulJrnlWrites.Swap(0)
 	beatsWrites := instance.Metrics.SuccessfulBeatsWrites.Swap(0)
-
-	totalWrites := fileWrites + jrnlWrites
+	rawWrites := instance.Metrics.SuccessfulBeatsWrites.Swap(0)
 
 	// Record read time
 	recordTime := time.Now()
@@ -40,18 +41,6 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      recvMsgs,
-				Unit:     "count",
-				Interval: interval,
-			},
-			Type:      metrics.Counter,
-			Timestamp: recordTime,
-		},
-		{
-			Name:        MTSentMsgs,
-			Description: "Total writes to any outputs (across all outputs)",
-			Namespace:   instance.namespace,
-			Value: metrics.MetricValue{
-				Raw:      totalWrites,
 				Unit:     "count",
 				Interval: interval,
 			},
@@ -88,6 +77,18 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      beatsWrites,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        MTRawWritesSuc,
+			Description: "Total writes to raw output",
+			Namespace:   instance.namespace,
+			Value: metrics.MetricValue{
+				Raw:      rawWrites,
 				Unit:     "count",
 				Interval: interval,
 			},

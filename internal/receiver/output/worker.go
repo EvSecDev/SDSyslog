@@ -104,6 +104,13 @@ func (instance *Instance) run(ctx context.Context) {
 						"Failed to write message(s) to beats output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulBeatsWrites.Add(uint64(n))
+
+				n, err = instance.rawMod.Write(ctx, msg)
+				if err != nil {
+					logctx.LogStdErr(ctx,
+						"Failed to write message(s) to raw output: %w\n", err)
+				}
+				instance.Metrics.SuccessfulRawWrites.Add(uint64(n))
 			}()
 		}
 	}

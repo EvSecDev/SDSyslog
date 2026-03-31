@@ -17,6 +17,7 @@ type Manager struct {
 	FileSourceMu  sync.RWMutex
 	FileSources   map[string]iomodules.Input // File sources keyed by path
 	JournalSource iomodules.Input
+	RawSource     iomodules.Input               // Pass through of raw io reader from daemon config
 	outQueue      *mpmc.Queue[protocol.Message] // Queue for worked completed by the pair
 	ctx           context.Context
 }

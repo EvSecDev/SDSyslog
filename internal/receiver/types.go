@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"sdsyslog/internal/global"
 	metricGlb "sdsyslog/internal/metrics"
@@ -88,6 +89,7 @@ type Config struct {
 	OutputFilePath string
 	JournaldURL    string
 	BeatsEndpoint  string
+	RawWriter      io.WriteCloser
 
 	// Metrics
 	MetricQueryServerEnabled bool

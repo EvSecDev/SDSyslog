@@ -30,6 +30,7 @@ type Instance struct {
 	fileMod   iomodules.Output
 	jrnlMod   iomodules.Output
 	beatsMod  iomodules.Output
+	rawMod    iomodules.Output
 	inbox     *mpmc.Queue[protocol.Payload]
 	Metrics   MetricStorage
 }

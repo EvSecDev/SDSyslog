@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/logctx"
 	"strings"
@@ -26,71 +27,88 @@ func (mod *InModule) reader() {
 	lineBuf := []byte{} // note: unbounded per line (reset at line completion)
 
 	for {
-		// Read all new file data since last read
-		err := mod.fileReadAll(ctx, &lineBuf, buf)
-		if err != nil {
-			logctx.LogStdErr(ctx, "%w\n", err)
-		}
-
-		// Block until file change, file rotation, or cancellation
 		select {
 		case <-ctx.Done():
-			mod.watcher.Stop()
-			err = savePosition(mod.stateFile, mod.currentReadID.ino, mod.currentReadOffset)
-			if err != nil {
-				logctx.LogStdErr(ctx,
-					"failed to save position in file source '%s': %w\n", mod.filePath, err)
-			}
 			return
-		case <-mod.watcher.FileChanged():
-			// file changed, continue scanning
-		case <-mod.watcher.FileRotated():
-			err = mod.fileReadAll(ctx, &lineBuf, buf)
+		default:
+		}
+
+		func() {
+			// Record panics and continue processing
+			defer func() {
+				if fatalError := recover(); fatalError != nil {
+					stack := debug.Stack()
+					logctx.LogStdErr(ctx,
+						"panic in file ingest module thread: %v\n%s", fatalError, stack)
+				}
+			}()
+
+			// Read all new file data since last read
+			err := mod.fileReadAll(ctx, &lineBuf, buf)
 			if err != nil {
-				logctx.LogStdErr(ctx,
-					"error reading pre-rotation file: %w\n", err)
-			} else {
-				err = mod.reopenLogfile(ctx)
+				logctx.LogStdErr(ctx, "%w\n", err)
+			}
+
+			// Block until file change, file rotation, or cancellation
+			select {
+			case <-ctx.Done():
+				mod.watcher.Stop()
+				err = savePosition(mod.stateFile, mod.currentReadID.ino, mod.currentReadOffset)
 				if err != nil {
-					logctx.LogStdErr(ctx, "%w\n", err)
+					logctx.LogStdErr(ctx,
+						"failed to save position in file source '%s': %w\n", mod.filePath, err)
+				}
+				return
+			case <-mod.watcher.FileChanged():
+				// file changed, continue scanning
+			case <-mod.watcher.FileRotated():
+				err = mod.fileReadAll(ctx, &lineBuf, buf)
+				if err != nil {
+					logctx.LogStdErr(ctx,
+						"error reading pre-rotation file: %w\n", err)
+				} else {
+					err = mod.reopenLogfile(ctx)
+					if err != nil {
+						logctx.LogStdErr(ctx, "%w\n", err)
+					}
 				}
 			}
-		}
 
-		// Check for truncation
-		file, err := mod.sink.Stat()
-		if err != nil {
-			logctx.LogStdWarn(ctx, "failed to stat current tracked file: %w\n", err)
-			// Can't do anything about the error here, just read from beginning
-			mod.currentReadOffset = 0
-			lineBuf = lineBuf[:0]
-		}
-		if mod.currentReadOffset > file.Size() {
-			// Truncation detected - reset state and seek to beginning
-			logctx.LogStdWarn(ctx, "file '%s' has been truncated, seeking to start of file (warning: late writes to file might be missed)\n",
-				mod.filePath)
-			mod.currentReadOffset = 0
-			lineBuf = lineBuf[:0]
-		}
-
-		// Local hostname periodic refresh
-		iter++
-		if iter&refreshMask == 0 {
-			newName, err := os.Hostname()
-			if err == nil && newName != mod.localHostname {
-				mod.localHostname = newName
-			} else if err != nil {
-				logctx.LogStdWarn(ctx,
-					"failed to refresh current local hostname: %w\n", err)
+			// Check for truncation
+			file, err := mod.sink.Stat()
+			if err != nil {
+				logctx.LogStdWarn(ctx, "failed to stat current tracked file: %w\n", err)
+				// Can't do anything about the error here, just read from beginning
+				mod.currentReadOffset = 0
+				lineBuf = lineBuf[:0]
 			}
-		}
+			if mod.currentReadOffset > file.Size() {
+				// Truncation detected - reset state and seek to beginning
+				logctx.LogStdWarn(ctx, "file '%s' has been truncated, seeking to start of file (warning: late writes to file might be missed)\n",
+					mod.filePath)
+				mod.currentReadOffset = 0
+				lineBuf = lineBuf[:0]
+			}
 
-		// Re-scan for new lines after the last offset
-		_, err = mod.sink.Seek(mod.currentReadOffset, io.SeekStart)
-		if err != nil {
-			logctx.LogStdErr(ctx,
-				"failed to seek to last offset: %w\n", err)
-		}
+			// Local hostname periodic refresh
+			iter++
+			if iter&refreshMask == 0 {
+				newName, err := os.Hostname()
+				if err == nil && newName != mod.localHostname {
+					mod.localHostname = newName
+				} else if err != nil {
+					logctx.LogStdWarn(ctx,
+						"failed to refresh current local hostname: %w\n", err)
+				}
+			}
+
+			// Re-scan for new lines after the last offset
+			_, err = mod.sink.Seek(mod.currentReadOffset, io.SeekStart)
+			if err != nil {
+				logctx.LogStdErr(ctx,
+					"failed to seek to last offset: %w\n", err)
+			}
+		}()
 	}
 }
 

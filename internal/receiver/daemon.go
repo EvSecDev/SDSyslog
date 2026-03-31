@@ -97,7 +97,10 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	// Stage 4 - Output Instance
-	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath, daemon.cfg.JournaldURL, daemon.cfg.BeatsEndpoint)
+	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath,
+		daemon.cfg.JournaldURL,
+		daemon.cfg.BeatsEndpoint,
+		daemon.cfg.RawWriter)
 	if err != nil {
 		err = fmt.Errorf("failed starting output: %w", err)
 		return

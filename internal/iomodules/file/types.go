@@ -1,10 +1,12 @@
 package file
 
 import (
+	"context"
 	"io"
 	"os"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
+	"sync"
 )
 
 type OutModule struct {
@@ -14,7 +16,6 @@ type OutModule struct {
 }
 
 type InModule struct {
-	Namespace     []string
 	localHostname string
 
 	// Read Source
@@ -31,6 +32,10 @@ type InModule struct {
 
 	outbox  *mpmc.Queue[protocol.Message]
 	metrics MetricStorage
+
+	wg     sync.WaitGroup     // Waiter for instance
+	cancel context.CancelFunc // cancel instance
+	ctx    context.Context
 }
 
 // Cross-platform file watching worker

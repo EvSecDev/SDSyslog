@@ -3,9 +3,9 @@ package output
 import (
 	"context"
 	"fmt"
-	"sdsyslog/internal/externalio/beats"
-	"sdsyslog/internal/externalio/file"
-	"sdsyslog/internal/externalio/journald"
+	"sdsyslog/internal/iomodules/beats"
+	"sdsyslog/internal/iomodules/file"
+	"sdsyslog/internal/iomodules/journald"
 	"sdsyslog/internal/logctx"
 )
 

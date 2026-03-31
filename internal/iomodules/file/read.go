@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sdsyslog/internal/externalio"
+	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/logctx"
 	"strings"
 )
 
 // Watches file path for changes and rotations (truncation or move/create).
 // Does NOT guarantee data integrity of intermediate files when rotated rapidly (2+ in sub-millisecond intervals).
-func (mod *InModule) Reader(ctx context.Context) {
+func (mod *InModule) reader() {
+	defer mod.wg.Done()
+	ctx := mod.ctx
+
 	// For hostname periodic refresh
 	var iter uint64
 	const refreshMask = 1024 - 1
@@ -135,7 +138,7 @@ func (mod *InModule) processFileChunk(ctx context.Context, lineBuf *[]byte, buf 
 
 		msg := parseLine(string(*lineBuf), mod.localHostname)
 
-		msg.Fields[externalio.CtxKey] = strings.Join(mod.Namespace, "/")
+		msg.Fields[iomodules.CtxKey] = strings.Join(logctx.GetTagList(ctx), "/")
 
 		var dropMsg bool
 		for _, filter := range mod.filters {

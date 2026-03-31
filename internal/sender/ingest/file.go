@@ -1,59 +1,43 @@
 package ingest
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
-	"sdsyslog/internal/externalio/file"
-	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/iomodules/file"
 )
 
 // Create file ingest instance
 func (manager *Manager) AddFileInstance(filePath string, stateFile string) (err error) {
-	manager.Mu.Lock()
-	defer manager.Mu.Unlock()
+	manager.FileSourceMu.Lock()
+	defer manager.FileSourceMu.Unlock()
 
 	filename := filepath.Base(filePath)
-
 	_, ok := manager.FileSources[filename]
 	if ok {
 		err = fmt.Errorf("cannot start a new file instance with one running for path '%s'", filePath)
 		return
 	}
 
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, logctx.NSoFile)
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, filename)
-	defer func() {
-		manager.ctx = logctx.RemoveLastCtxTag(manager.ctx)
-		manager.ctx = logctx.RemoveLastCtxTag(manager.ctx)
-	}()
-
 	// Worker for this file
-	ingestInstance := &FileWorker{}
 	filters := manager.Config.SourceDropFilters[FileSource]
-	ingestInstance.Module, err = file.NewInput(manager.ctx, filePath, stateFile, filters, manager.outQueue)
+	new, err := file.NewInput(manager.ctx, filePath, stateFile, filters, manager.outQueue)
 	if err != nil {
 		return
 	}
 
-	// Create new context
-	ingestCtx, cancelInstances := context.WithCancel(manager.ctx)
-	manager.FileSources[filePath] = ingestInstance
-	ingestInstance.cancel = cancelInstances
+	err = new.Start()
+	if err != nil {
+		return
+	}
 
-	ingestInstance.wg.Add(1)
-	go func() {
-		defer ingestInstance.wg.Done()
-		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Module.Namespace)
-		ingestInstance.Module.Reader(ingestCtx)
-	}()
+	manager.FileSources[filePath] = new
 	return
 }
 
 // Remove existing file ingest instance
 func (manager *Manager) RemoveFileInstance(filename string) (err error) {
-	manager.Mu.Lock()
-	defer manager.Mu.Unlock()
+	manager.FileSourceMu.Lock()
+	defer manager.FileSourceMu.Unlock()
 
 	fileSource, ok := manager.FileSources[filename]
 	if !ok {
@@ -61,14 +45,10 @@ func (manager *Manager) RemoveFileInstance(filename string) (err error) {
 		return
 	}
 
-	err = fileSource.Module.Shutdown()
+	err = fileSource.Shutdown()
 	if err != nil {
 		return
 	}
-	if fileSource.cancel != nil {
-		fileSource.cancel()
-	}
-	fileSource.wg.Wait()
 	manager.FileSources[filename] = nil
 	return
 }

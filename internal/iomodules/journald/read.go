@@ -2,26 +2,22 @@ package journald
 
 import (
 	"bufio"
-	"context"
 	"io"
 	"os"
 	"runtime/debug"
-	"sdsyslog/internal/externalio"
+	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/logctx"
 	"strings"
 )
 
-func (mod *InModule) Reader(ctx context.Context) {
+func (mod *InModule) reader() {
+	defer mod.wg.Done()
+	ctx := mod.ctx
+
 	reader := bufio.NewReader(mod.sink)
 
-	var localHostname string
 	var iter uint64
 	const refreshMask = 1024 - 1
-	localHostname, err := os.Hostname()
-	if err != nil {
-		logctx.LogStdWarn(ctx, "failed to retrieve current local hostname: %w\n", err)
-		localHostname = "-"
-	}
 
 	var readPosition string
 	for {
@@ -48,6 +44,11 @@ func (mod *InModule) Reader(ctx context.Context) {
 
 			var err error
 
+			// Signal startup success
+			mod.readyOnce.Do(func() {
+				close(mod.readerReady)
+			})
+
 			// Grab an entry from journal
 			fields, err := extractEntry(reader)
 			if err != nil {
@@ -72,7 +73,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			}
 
 			// Parse and retrieve fields we need
-			msg, err := parseFields(fields, localHostname)
+			msg, err := parseFields(fields, mod.localHostname)
 			if err != nil {
 				if err == io.EOF {
 					return
@@ -83,7 +84,7 @@ func (mod *InModule) Reader(ctx context.Context) {
 			}
 			mod.metrics.LinesRead.Add(1)
 
-			msg.Fields[externalio.CtxKey] = strings.Join(mod.Namespace, "/")
+			msg.Fields[iomodules.CtxKey] = strings.Join(logctx.GetTagList(ctx), "/")
 
 			if len(mod.filters) > 0 {
 				for _, filter := range mod.filters {
@@ -102,8 +103,8 @@ func (mod *InModule) Reader(ctx context.Context) {
 			iter++
 			if iter&refreshMask == 0 {
 				newName, err := os.Hostname()
-				if err == nil && newName != localHostname {
-					localHostname = newName
+				if err == nil && newName != mod.localHostname {
+					mod.localHostname = newName
 				} else if err != nil {
 					logctx.LogStdWarn(ctx, "failed to refresh current local hostname: %w\n", err)
 				}

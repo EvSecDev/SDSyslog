@@ -3,6 +3,7 @@ package ingest
 
 import (
 	"context"
+	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
@@ -21,7 +22,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 
 	new = &Manager{
 		Config:      config,
-		FileSources: make(map[string]*FileWorker),
+		FileSources: make(map[string]iomodules.Input),
 		outQueue:    outbox,
 		ctx:         ctx,
 	}

@@ -55,3 +55,8 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent
 	}
 	return
 }
+
+// No-op (for now) - satisfies common type
+func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
+	return
+}

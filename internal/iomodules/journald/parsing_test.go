@@ -3,8 +3,8 @@ package journald
 import (
 	"bytes"
 	"os"
-	"sdsyslog/internal/externalio"
-	"sdsyslog/internal/syslog"
+	"sdsyslog/internal/iomodules"
+	"sdsyslog/internal/iomodules/syslog"
 	"sdsyslog/pkg/protocol"
 	"strconv"
 	"strings"
@@ -52,15 +52,15 @@ func TestParseFields(t *testing.T) {
 				Hostname:  "test-host",
 				Timestamp: expectedTime,
 				Fields: map[string]any{
-					externalio.CFappname:   "my-app",
-					externalio.CFprocessid: 1234,
-					externalio.CFfacility:  "daemon",
-					externalio.CFseverity:  "info",
-					"_EXE":                 "/usr/bin/my-app",
-					"_COMM":                "my-app",
-					"_CMDLINE":             "my-app --start --config /etc/myapp.config",
-					"_UID":                 "1000",
-					"_GID":                 "1001",
+					iomodules.CFappname:   "my-app",
+					iomodules.CFprocessid: 1234,
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFseverity:  "info",
+					"_EXE":                "/usr/bin/my-app",
+					"_COMM":               "my-app",
+					"_CMDLINE":            "my-app --start --config /etc/myapp.config",
+					"_UID":                "1000",
+					"_GID":                "1001",
 				},
 			},
 		},
@@ -106,10 +106,10 @@ func TestParseFields(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: expectedTime,
 				Fields: map[string]any{
-					externalio.CFappname:   "user.service",
-					externalio.CFprocessid: os.Getpid(),
-					externalio.CFfacility:  "daemon",
-					externalio.CFseverity:  "notice",
+					iomodules.CFappname:   "user.service",
+					iomodules.CFprocessid: os.Getpid(),
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFseverity:  "notice",
 				},
 			},
 		},
@@ -135,10 +135,10 @@ func TestParseFields(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: expectedTime,
 				Fields: map[string]any{
-					externalio.CFappname:   "my-app",
-					externalio.CFprocessid: os.Getpid(),
-					externalio.CFfacility:  "daemon",
-					externalio.CFseverity:  "info",
+					iomodules.CFappname:   "my-app",
+					iomodules.CFprocessid: os.Getpid(),
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFseverity:  "info",
 				},
 			},
 		},
@@ -154,10 +154,10 @@ func TestParseFields(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: expectedTime,
 				Fields: map[string]any{
-					externalio.CFappname:   "my-app",
-					externalio.CFprocessid: os.Getpid(),
-					externalio.CFfacility:  "daemon",
-					externalio.CFseverity:  "info",
+					iomodules.CFappname:   "my-app",
+					iomodules.CFprocessid: os.Getpid(),
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFseverity:  "info",
 				},
 			},
 		},
@@ -174,11 +174,11 @@ func TestParseFields(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: expectedTime,
 				Fields: map[string]any{
-					externalio.CFappname:   "my-app",
-					externalio.CFprocessid: os.Getpid(),
-					externalio.CFfacility:  "daemon",
-					externalio.CFseverity:  "info",
-					"_CMDLINE":             strings.Repeat("a", MaxTruncatedFieldLen) + FieldTruncationSuffix,
+					iomodules.CFappname:   "my-app",
+					iomodules.CFprocessid: os.Getpid(),
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFseverity:  "info",
+					"_CMDLINE":            strings.Repeat("a", MaxTruncatedFieldLen) + FieldTruncationSuffix,
 				},
 			},
 		},
@@ -195,10 +195,10 @@ func TestParseFields(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: expectedTime,
 				Fields: map[string]any{
-					externalio.CFappname:   "my-app",
-					externalio.CFprocessid: os.Getpid(),
-					externalio.CFfacility:  "daemon",
-					externalio.CFseverity:  "info",
+					iomodules.CFappname:   "my-app",
+					iomodules.CFprocessid: os.Getpid(),
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFseverity:  "info",
 				},
 			},
 		},
@@ -259,40 +259,40 @@ func TestParseFields(t *testing.T) {
 				t.Fatalf("expected Timestamp '%s', but got '%s'", tt.expected.Timestamp, msg.Timestamp)
 			}
 
-			expected := tt.expected.Fields[externalio.CFappname]
-			got, ok := msg.Fields[externalio.CFappname]
+			expected := tt.expected.Fields[iomodules.CFappname]
+			got, ok := msg.Fields[iomodules.CFappname]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFappname)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", iomodules.CFappname)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFappname, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", iomodules.CFappname, expected, got)
 			}
 
-			expected = tt.expected.Fields[externalio.CFfacility]
-			got, ok = msg.Fields[externalio.CFfacility]
+			expected = tt.expected.Fields[iomodules.CFfacility]
+			got, ok = msg.Fields[iomodules.CFfacility]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFfacility)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", iomodules.CFfacility)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFfacility, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", iomodules.CFfacility, expected, got)
 			}
 
-			expected = tt.expected.Fields[externalio.CFprocessid]
-			got, ok = msg.Fields[externalio.CFprocessid]
+			expected = tt.expected.Fields[iomodules.CFprocessid]
+			got, ok = msg.Fields[iomodules.CFprocessid]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFprocessid)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", iomodules.CFprocessid)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFprocessid, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", iomodules.CFprocessid, expected, got)
 			}
 
-			expected = tt.expected.Fields[externalio.CFseverity]
-			got, ok = msg.Fields[externalio.CFseverity]
+			expected = tt.expected.Fields[iomodules.CFseverity]
+			got, ok = msg.Fields[iomodules.CFseverity]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFseverity)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", iomodules.CFseverity)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFseverity, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", iomodules.CFseverity, expected, got)
 			}
 
 			// Check output custom fields contains expected

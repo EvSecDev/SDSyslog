@@ -1,6 +1,7 @@
 package file
 
 import (
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics"
 	"sync/atomic"
 	"time"
@@ -24,11 +25,13 @@ func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metric
 	// Record read time
 	recordTime := time.Now()
 
+	namespace := logctx.GetTagList(mod.ctx)
+
 	collection = []metrics.Metric{
 		{
 			Name:        MTLinesRead,
 			Description: "Total lines read from file in the interval",
-			Namespace:   mod.Namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      lines,
 				Unit:     "count",
@@ -40,7 +43,7 @@ func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metric
 		{
 			Name:        MTSuc,
 			Description: "Total processed messages extracted from file in the interval",
-			Namespace:   mod.Namespace,
+			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      suc,
 				Unit:     "count",

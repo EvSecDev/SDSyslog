@@ -1,10 +1,8 @@
 package ingest
 
 import (
-	"context"
 	"fmt"
-	"sdsyslog/internal/externalio/journald"
-	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/iomodules/journald"
 )
 
 // Create journal ingest instance
@@ -14,53 +12,21 @@ func (manager *Manager) AddJrnlInstance(stateFile string) (err error) {
 		return
 	}
 
-	manager.ctx = logctx.AppendCtxTag(manager.ctx, logctx.NSoJrnl)
-	defer func() { manager.ctx = logctx.RemoveLastCtxTag(manager.ctx) }()
-
 	filters := manager.Config.SourceDropFilters[JrnlSource]
-	new, err := journald.NewInput(logctx.GetTagList(manager.ctx), stateFile, filters, manager.outQueue)
+	manager.JournalSource, err = journald.NewInput(manager.ctx, stateFile, filters, manager.outQueue)
 	if err != nil {
 		return
 	}
 
-	// Create new context
-	ingestCtx, cancelInstances := context.WithCancel(manager.ctx)
-
-	// Worker for local journal
-	ingestInstance := &JrnlWorker{
-		Module: new,
-		cancel: cancelInstances,
-	}
-	manager.JournalSource = ingestInstance
-
-	ingestInstance.wg.Add(1)
-	go func() {
-		defer ingestInstance.wg.Done()
-		ingestCtx := logctx.OverwriteCtxTag(ingestCtx, ingestInstance.Module.Namespace)
-		ingestInstance.Module.Reader(ingestCtx)
-	}()
-
-	err = new.Start()
+	err = manager.JournalSource.Start()
 	if err != nil {
 		return
 	}
-	err = new.CheckError()
-	if err != nil {
-		return
-	}
-
 	return
 }
 
 // Remove existing journal ingest instance
 func (manager *Manager) RemoveJrnlInstance() (err error) {
-	manager.Mu.Lock()
-	defer manager.Mu.Unlock()
-
-	if manager.JournalSource.cancel != nil {
-		manager.JournalSource.cancel()
-	}
-	manager.JournalSource.wg.Wait()
-	err = manager.JournalSource.Module.Shutdown()
+	err = manager.JournalSource.Shutdown()
 	return
 }

@@ -5,7 +5,7 @@ import (
 	"context"
 	"net/netip"
 	"os"
-	"sdsyslog/internal/externalio"
+	"sdsyslog/internal/iomodules"
 	"sdsyslog/pkg/protocol"
 	"testing"
 	"time"
@@ -33,10 +33,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: time.Now(),
 				Fields: map[string]any{
-					externalio.CFappname:   "-",
-					externalio.CFprocessid: testPid,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "-",
+					iomodules.CFprocessid: testPid,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -48,10 +48,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: time.Now(),
 				Fields: map[string]any{
-					externalio.CFappname:   "-",
-					externalio.CFprocessid: testPid,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "-",
+					iomodules.CFprocessid: testPid,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -63,10 +63,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Jul  9 18:05:33"),
 				Fields: map[string]any{
-					externalio.CFappname:   "rsyslogd",
-					externalio.CFprocessid: testPid,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "rsyslogd",
+					iomodules.CFprocessid: testPid,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -78,10 +78,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Nov 17 09:52:41"),
 				Fields: map[string]any{
-					externalio.CFappname:   "kernel",
-					externalio.CFprocessid: testPid,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "kernel",
+					iomodules.CFprocessid: testPid,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -93,10 +93,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse1Panic("Nov 17 12:18:00"),
 				Fields: map[string]any{
-					externalio.CFappname:   "audisp-syslog",
-					externalio.CFprocessid: 1135,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "audisp-syslog",
+					iomodules.CFprocessid: 1135,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -108,10 +108,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: timeParse2Panic("2025/03/15 10:47:59"),
 				Fields: map[string]any{
-					externalio.CFappname:   "-",
-					externalio.CFprocessid: 33709,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  "notice",
+					iomodules.CFappname:   "-",
+					iomodules.CFprocessid: 33709,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  "notice",
 				},
 			},
 		},
@@ -123,10 +123,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: timeParse3Panic("2025-12-03 17:46:26"),
 				Fields: map[string]any{
-					externalio.CFappname:   "-",
-					externalio.CFprocessid: testPid,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "-",
+					iomodules.CFprocessid: testPid,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -138,10 +138,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: timeParse5Panic("28/Jul/2024:03:58:35 -0700"),
 				Fields: map[string]any{
-					externalio.CFappname:   "-",
-					externalio.CFprocessid: testPid,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "-",
+					iomodules.CFprocessid: testPid,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -153,10 +153,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  localHostname,
 				Timestamp: timeParse4Panic("19-Sep-2023 16:52:51"),
 				Fields: map[string]any{
-					externalio.CFappname:   "-",
-					externalio.CFprocessid: testPid,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "-",
+					iomodules.CFprocessid: testPid,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -168,10 +168,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse6Panic("2025-12-21T18:39:01.211585-08:00"),
 				Fields: map[string]any{
-					externalio.CFappname:   "systemd",
-					externalio.CFprocessid: 1,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "systemd",
+					iomodules.CFprocessid: 1,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -183,10 +183,10 @@ func TestParseLine(t *testing.T) {
 				Hostname:  "Host1",
 				Timestamp: timeParse6Panic("2025-12-21T19:08:28.506905-08:00"),
 				Fields: map[string]any{
-					externalio.CFappname:   "php8.4-cgi",
-					externalio.CFprocessid: testPid,
-					externalio.CFfacility:  externalio.DefaultFacility,
-					externalio.CFseverity:  externalio.DefaultSeverity,
+					iomodules.CFappname:   "php8.4-cgi",
+					iomodules.CFprocessid: testPid,
+					iomodules.CFfacility:  iomodules.DefaultFacility,
+					iomodules.CFseverity:  iomodules.DefaultSeverity,
 				},
 			},
 		},
@@ -210,40 +210,40 @@ func TestParseLine(t *testing.T) {
 				t.Errorf("expected Hostname to be '%s', but got '%s'", tt.expectedOutput.Hostname, output.Hostname)
 			}
 
-			expected := tt.expectedOutput.Fields[externalio.CFappname]
-			got, ok := output.Fields[externalio.CFappname]
+			expected := tt.expectedOutput.Fields[iomodules.CFappname]
+			got, ok := output.Fields[iomodules.CFappname]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFappname)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", iomodules.CFappname)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFappname, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", iomodules.CFappname, expected, got)
 			}
 
-			expected = tt.expectedOutput.Fields[externalio.CFfacility]
-			got, ok = output.Fields[externalio.CFfacility]
+			expected = tt.expectedOutput.Fields[iomodules.CFfacility]
+			got, ok = output.Fields[iomodules.CFfacility]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFfacility)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", iomodules.CFfacility)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFfacility, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", iomodules.CFfacility, expected, got)
 			}
 
-			expected = tt.expectedOutput.Fields[externalio.CFprocessid]
-			got, ok = output.Fields[externalio.CFprocessid]
+			expected = tt.expectedOutput.Fields[iomodules.CFprocessid]
+			got, ok = output.Fields[iomodules.CFprocessid]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFprocessid)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", iomodules.CFprocessid)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFprocessid, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", iomodules.CFprocessid, expected, got)
 			}
 
-			expected = tt.expectedOutput.Fields[externalio.CFseverity]
-			got, ok = output.Fields[externalio.CFseverity]
+			expected = tt.expectedOutput.Fields[iomodules.CFseverity]
+			got, ok = output.Fields[iomodules.CFseverity]
 			if !ok {
-				t.Errorf("expected %s to be present, but found nothing in custom fields", externalio.CFseverity)
+				t.Errorf("expected %s to be present, but found nothing in custom fields", iomodules.CFseverity)
 			}
 			if expected != got {
-				t.Errorf("expected %s to be '%s', but got '%s'", externalio.CFseverity, expected, got)
+				t.Errorf("expected %s to be '%s', but got '%s'", iomodules.CFseverity, expected, got)
 			}
 		})
 	}
@@ -310,10 +310,10 @@ func TestFormatAsText(t *testing.T) {
 				Hostname:  "localhost",
 				Timestamp: nowTime,
 				CustomFields: map[string]any{
-					externalio.CFappname:   "app1",
-					externalio.CFseverity:  "info",
-					externalio.CFfacility:  "daemon",
-					externalio.CFprocessid: "123",
+					iomodules.CFappname:   "app1",
+					iomodules.CFseverity:  "info",
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFprocessid: "123",
 				},
 				Data: []byte("test message"),
 			},
@@ -325,10 +325,10 @@ func TestFormatAsText(t *testing.T) {
 				RemoteIP:  netip.MustParseAddr("127.0.0.1"),
 				Timestamp: nowTime,
 				CustomFields: map[string]any{
-					externalio.CFappname:   "app1",
-					externalio.CFseverity:  "info",
-					externalio.CFfacility:  "daemon",
-					externalio.CFprocessid: "123",
+					iomodules.CFappname:   "app1",
+					iomodules.CFseverity:  "info",
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFprocessid: "123",
 				},
 				Data: []byte("test message"),
 			},
@@ -341,10 +341,10 @@ func TestFormatAsText(t *testing.T) {
 				Timestamp: nowTime,
 				Hostname:  "localhost",
 				CustomFields: map[string]any{
-					externalio.CFappname:   "app1",
-					externalio.CFseverity:  "info",
-					externalio.CFfacility:  "daemon",
-					externalio.CFprocessid: "123",
+					iomodules.CFappname:   "app1",
+					iomodules.CFseverity:  "info",
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFprocessid: "123",
 				},
 				Data: []byte("test message"),
 			},
@@ -357,11 +357,11 @@ func TestFormatAsText(t *testing.T) {
 				Timestamp: nowTime,
 				Hostname:  "localhost",
 				CustomFields: map[string]any{
-					externalio.CFappname:   "app1",
-					externalio.CFseverity:  "info",
-					externalio.CFfacility:  "daemon",
-					externalio.CFprocessid: "123",
-					"type":                 "extra",
+					iomodules.CFappname:   "app1",
+					iomodules.CFseverity:  "info",
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFprocessid: "123",
+					"type":                "extra",
 				},
 				Data: []byte("test message"),
 			},
@@ -374,13 +374,13 @@ func TestFormatAsText(t *testing.T) {
 				Timestamp: nowTime,
 				Hostname:  "localhost",
 				CustomFields: map[string]any{
-					externalio.CFappname:   "app1",
-					externalio.CFseverity:  "info",
-					externalio.CFfacility:  "daemon",
-					externalio.CFprocessid: "123",
-					"type":                 "extra",
-					"field1":               "value1",
-					"place":                "location",
+					iomodules.CFappname:   "app1",
+					iomodules.CFseverity:  "info",
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFprocessid: "123",
+					"type":                "extra",
+					"field1":              "value1",
+					"place":               "location",
 				},
 				Data: []byte("test message"),
 			},
@@ -393,11 +393,11 @@ func TestFormatAsText(t *testing.T) {
 				Timestamp: nowTime,
 				Hostname:  "localhost",
 				CustomFields: map[string]any{
-					externalio.CFappname:   "app1",
-					externalio.CFseverity:  "info",
-					externalio.CFfacility:  "daemon",
-					externalio.CFprocessid: "123",
-					"fieldinvalid":         struct{}{},
+					iomodules.CFappname:   "app1",
+					iomodules.CFseverity:  "info",
+					iomodules.CFfacility:  "daemon",
+					iomodules.CFprocessid: "123",
+					"fieldinvalid":        struct{}{},
 				},
 				Data: []byte("test message"),
 			},

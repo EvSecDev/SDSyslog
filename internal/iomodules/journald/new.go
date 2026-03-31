@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 	"strings"
@@ -16,7 +17,7 @@ import (
 )
 
 // Creates new journald listener module
-func NewInput(namespace []string, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[protocol.Message]) (new *InModule, err error) {
+func NewInput(ctx context.Context, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[protocol.Message]) (new *InModule, err error) {
 	// Create unique state file for journal
 	stateFileDir := filepath.Dir(baseStateFile)
 	stateFileName := filepath.Base(baseStateFile)
@@ -68,8 +69,13 @@ func NewInput(namespace []string, baseStateFile string, filters []protocol.Messa
 		}
 	}
 
+	// New context for journal
+	newNamespace := append(logctx.GetTagList(ctx), logctx.NSoJrnl)
+	modCtx := logctx.OverwriteCtxTag(ctx, newNamespace)
+	modCtx, cancel := context.WithCancel(modCtx)
+
 	new = &InModule{
-		Namespace: namespace,
+		ctx:       modCtx,
 		cmd:       jrnlCmd,
 		sink:      stdout,
 		err:       stderr,
@@ -77,7 +83,18 @@ func NewInput(namespace []string, baseStateFile string, filters []protocol.Messa
 		filters:   filters,
 		outbox:    queue,
 		metrics:   MetricStorage{},
+		cancel:    cancel,
 	}
+
+	new.localHostname, err = os.Hostname()
+	if err != nil {
+		err = fmt.Errorf("failed to retrieve current local hostname: %w", err)
+		return
+	}
+
+	// Channel to signal when go routine is about to block on first read
+	new.readerReady = make(chan struct{}, 1)
+
 	return
 }
 

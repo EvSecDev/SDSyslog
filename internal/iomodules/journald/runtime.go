@@ -9,17 +9,20 @@ import (
 
 // Starts journalctl command. Use after reader startup
 func (mod *InModule) Start() (err error) {
+	// Start reader in go routine
+	mod.wg.Add(1)
+	go mod.reader()
+
 	// Start command post goroutine startup
 	err = mod.cmd.Start()
 	if err != nil {
 		err = fmt.Errorf("failed to start journalctl command: %w", err)
 		return
 	}
-	return
-}
 
-// Checks running command for any fatal errors.
-func (mod *InModule) CheckError() (err error) {
+	// Wait until reader is started
+	<-mod.readerReady
+
 	// Assert to file to set a deadline
 	errFile := mod.err.(*os.File)
 	defer func() {
@@ -65,9 +68,16 @@ func (mod *InModule) Shutdown() (err error) {
 	if mod == nil {
 		return
 	}
+
+	if mod.cancel != nil {
+		mod.cancel()
+	}
+
 	if mod.sink != nil {
 		err = mod.sink.Close()
 	}
+
+	mod.wg.Wait()
 	return
 }
 

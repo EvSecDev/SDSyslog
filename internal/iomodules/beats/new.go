@@ -27,3 +27,9 @@ func NewOutput(endpoint string) (module *OutModule, err error) {
 	}
 	return
 }
+
+// Unsupported
+func NewInput() (err error) {
+	err = fmt.Errorf("beats input is currently not supported")
+	return
+}

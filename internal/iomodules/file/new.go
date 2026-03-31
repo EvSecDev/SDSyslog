@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sdsyslog/internal/externalio/file/inotify"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/iomodules/file/inotify"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
@@ -36,13 +36,20 @@ func NewInput(ctx context.Context, filePath string, baseStateFile string, filter
 	newStateFileName := base64.RawURLEncoding.EncodeToString([]byte(filePath)) + "_" + stateFileName // Using full file path as prefix to state file
 	newStateFile := filepath.Join(stateFileDir, newStateFileName)
 
+	// New context for file
+	newNamespace := append(logctx.GetTagList(ctx), logctx.NSoFile, filepath.Base(filePath))
+	modCtx := logctx.OverwriteCtxTag(ctx, newNamespace)
+	modCtx, cancel := context.WithCancel(modCtx)
+
 	module = &InModule{
-		Namespace: logctx.GetTagList(ctx),
 		filePath:  filePath,
 		stateFile: newStateFile,
 		filters:   filters,
 		outbox:    queue,
 		metrics:   MetricStorage{},
+
+		ctx:    modCtx,
+		cancel: cancel,
 	}
 
 	module.sink, err = os.OpenFile(filePath, os.O_RDONLY, 0)

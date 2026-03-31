@@ -11,8 +11,8 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/hash"
-	"sdsyslog/internal/externalio"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
@@ -195,7 +195,7 @@ func TestSendReceivePipeline(t *testing.T) {
 
 			// Hash input as source of truth for checking output integrity
 			expectedNamespace := []string{logctx.NSSend, logctx.NSmIngest, logctx.NSoFile, testInputFileName}
-			expectedOutput := tt.inputText + " (" + externalio.CtxKey + "=" + strings.Join(expectedNamespace, "/") + ")" + "\n"
+			expectedOutput := tt.inputText + " (" + iomodules.CtxKey + "=" + strings.Join(expectedNamespace, "/") + ")" + "\n"
 
 			inputHash, err := hash.MultipleSlices([]byte(expectedOutput))
 			if err != nil {

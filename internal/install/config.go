@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 	"sdsyslog/internal/crypto/ecdh"
-	"sdsyslog/internal/externalio"
-	"sdsyslog/internal/externalio/beats"
-	"sdsyslog/internal/externalio/journald"
-	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/filtering"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/iomodules"
+	"sdsyslog/internal/iomodules/beats"
+	"sdsyslog/internal/iomodules/journald"
+	"sdsyslog/internal/metrics/server"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
 	"sdsyslog/internal/sender/ingest"
@@ -164,7 +164,7 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 		ingest.JrnlSource: {
 			protocol.MessageFilter{
 				FieldsKey: &filtering.Filter{
-					Exact: externalio.CFfacility,
+					Exact: iomodules.CFfacility,
 				},
 				FieldsValue: &filtering.Filter{
 					Exact: "ftp",

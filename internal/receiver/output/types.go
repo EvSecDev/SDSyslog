@@ -2,10 +2,8 @@ package output
 
 import (
 	"context"
-	"sdsyslog/internal/externalio/beats"
-	"sdsyslog/internal/externalio/file"
-	"sdsyslog/internal/externalio/journald"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 	"sync"
@@ -29,9 +27,9 @@ type Manager struct {
 
 type Instance struct {
 	namespace []string
-	fileMod   *file.OutModule
-	jrnlMod   *journald.OutModule
-	beatsMod  *beats.OutModule
+	fileMod   iomodules.Output
+	jrnlMod   iomodules.Output
+	beatsMod  iomodules.Output
 	inbox     *mpmc.Queue[protocol.Payload]
 	Metrics   MetricStorage
 }

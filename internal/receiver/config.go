@@ -7,8 +7,8 @@ import (
 	"os"
 	"runtime"
 	"sdsyslog/internal/crypto/wrappers"
-	"sdsyslog/internal/externalio/server"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/metrics/server"
 	"slices"
 	"time"
 )

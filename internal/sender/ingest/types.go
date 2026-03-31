@@ -2,8 +2,7 @@ package ingest
 
 import (
 	"context"
-	"sdsyslog/internal/externalio/file"
-	"sdsyslog/internal/externalio/journald"
+	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 	"sync"
@@ -15,21 +14,9 @@ type ManagerConfig struct {
 
 type Manager struct {
 	Config        *ManagerConfig
-	Mu            sync.RWMutex
-	FileSources   map[string]*FileWorker // File sources keyed by path
-	JournalSource *JrnlWorker
+	FileSourceMu  sync.RWMutex
+	FileSources   map[string]iomodules.Input // File sources keyed by path
+	JournalSource iomodules.Input
 	outQueue      *mpmc.Queue[protocol.Message] // Queue for worked completed by the pair
 	ctx           context.Context
-}
-
-type FileWorker struct {
-	Module *file.InModule
-	wg     sync.WaitGroup     // Waiter for instance
-	cancel context.CancelFunc // cancel instance
-}
-
-type JrnlWorker struct {
-	Module *journald.InModule
-	wg     sync.WaitGroup     // Waiter for instance
-	cancel context.CancelFunc // cancel instance
 }

@@ -153,39 +153,20 @@ Sender:
 
 ## Input/Output Modules
 
+All external sources for both sending and receiving are located under `internal/iomodules`.
+
+Each sub-package represents a distinct source (like a specific protocol or system).
+
+These modules are used *explicitly* in the receiving daemon code at `internal/receiver/output`, and in the sender code at `internal/sender/ingest`.
+
+Explicit use is (for now) required due to the vastly different configurations each module can have for its `NewOuput() / NewInput()` package function.
+
+The interface that must be satisfied is located in `internal/iomodules/types.go`.
+
+The generic interface (with fairly permissive public methods) allows for easy integration with external sources for both sender and receiver.
+
 Note: Even though these modules are not run concurrently with each other (multiple inputs/multiple outputs), they must still remain concurrent/multi-process safe.
 This is to maintain the continuity of operation during in-place upgrades (where two processes could be writing (different messages) to the same output).
-
-Modules must satisfy this minimum contract:
-
-- function `NewInput`
-  - Takes: `namespace []string`, `baseStateFile string`, `filters []protocol.MessageFilter`, `outbox *mpmc.Queue[global.ParsedMessage]`, optional values...
-  - Returns: `*InModule`, `error`
-- function `NewOutput`
-  - Takes: optional values...
-  - Returns: `*OutModule`, `error`
-- type `InModule`
-  - Methods:
-    - Reader - Go routine
-      - Takes: `context.Context`
-      - Returns: nothing
-    - CollectMetrics
-      - Takes: `interval time.Duration`
-      - Returns: `[]metrics.Metric`
-    - Shutdown - Gracefully terminates any resources
-      - Takes: nothing
-      - Returns: `error`
-- type `OutModule`
-  - Methods:
-    - Write
-      - Takes: `context.Context`, `protocol.Payload`
-      - Returns: `int`, `error` (first return is number of entries written, likely 1 unless batching internally)
-    - CollectMetrics
-      - Takes: `interval time.Duration`
-      - Returns: `[]metrics.Metric`
-    - Shutdown - Gracefully terminates any resources
-      - Takes: nothing
-      - Returns: `error`
 
 ## Self Updater
 

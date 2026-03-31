@@ -13,7 +13,6 @@ import (
 	"sdsyslog/internal/tests/utils"
 	"sdsyslog/pkg/protocol"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -193,12 +192,10 @@ func TestReader(t *testing.T) {
 				t.Fatalf("unexpected error creating input module: %v", err)
 			}
 
-			var readerWait sync.WaitGroup
-			readerWait.Add(1)
-			go func() {
-				defer readerWait.Done()
-				inMod.Reader(ctx)
-			}()
+			err = inMod.Start()
+			if err != nil {
+				t.Fatalf("failed to start reader: %v", err)
+			}
 
 			// Send input to the watched file
 			logFile, err = os.OpenFile(logFilePath, os.O_APPEND|os.O_RDWR, 06440)
@@ -250,8 +247,6 @@ func TestReader(t *testing.T) {
 			}
 
 			// Shutdown instance
-			cancel()
-			readerWait.Wait()
 			err = inMod.Shutdown()
 			if err != nil {
 				t.Fatalf("failed to shutdown input module: %v", err)

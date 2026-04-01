@@ -119,7 +119,7 @@ func (instance *Instance) run() {
 			const netipAddrSize = 24
 			size := len(newQueueEntry.Data) + netipAddrSize
 
-			err = instance.outbox.Push(newQueueEntry, uint64(size))
+			err = instance.outbox.PushWithRetry(newQueueEntry, uint64(size), 4)
 			if err != nil {
 				logctx.LogStdWarn(ctx, "failed to push packet from %q to processor queue: %w\n",
 					remoteAddr.String(), err)

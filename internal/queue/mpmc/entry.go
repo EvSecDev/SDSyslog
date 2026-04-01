@@ -115,6 +115,22 @@ func (container *Queue[T]) PushBlocking(ctx context.Context, value T, size int) 
 	}
 }
 
+// Wrapper around Push function to retry push until succeed (includes build-in backoff timing - fixed length).
+// Empty maxRetries will only attempt push once
+func (container *Queue[T]) PushWithRetry(value T, size uint64, maxRetries int) (err error) {
+	if maxRetries == 0 {
+		maxRetries = 1
+	}
+	for range maxRetries {
+		err = container.Push(value, uint64(size)) // try once
+		if err == nil {
+			return
+		}
+		time.Sleep(10 * time.Millisecond) // or backoff
+	}
+	return
+}
+
 // Attempts to write an element (non success = queue full)
 func (container *Queue[T]) Push(value T, size uint64) (err error) {
 	var queue *QueueInst[T]

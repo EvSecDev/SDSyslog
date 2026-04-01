@@ -98,7 +98,7 @@ func (instance *Instance) run() {
 			}
 
 			for _, packet := range packets {
-				err := instance.outbox.Push(packet, uint64(len(packet)))
+				err := instance.outbox.PushWithRetry(packet, uint64(len(packet)), 4)
 				if err != nil {
 					logctx.LogStdErr(ctx, "failed to push fragment to output queue: %w\n", err)
 					continue

@@ -222,9 +222,9 @@ func TestProcessor_Basic(t *testing.T) {
 					},
 				}
 				size := len(packet) + 40 // Estimate of overhead of struct plus data
-				success := procMgr.Inbox.Push(container, uint64(size))
-				if !success {
-					t.Fatalf("push to processor queue was not successful")
+				err := procMgr.Inbox.Push(container, uint64(size))
+				if err != nil {
+					t.Fatalf("push to processor queue was not successful: %v", err)
 				}
 			}
 			expectedPopCount := len(packets)

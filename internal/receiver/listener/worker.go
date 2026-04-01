@@ -119,9 +119,11 @@ func (instance *Instance) run() {
 			const netipAddrSize = 24
 			size := len(newQueueEntry.Data) + netipAddrSize
 
-			success := instance.outbox.Push(newQueueEntry, uint64(size))
-			if !success {
-				logctx.LogStdWarn(ctx, "failed to push packet from %q to processor queue\n", remoteAddr.String())
+			err = instance.outbox.Push(newQueueEntry, uint64(size))
+			if err != nil {
+				logctx.LogStdWarn(ctx, "failed to push packet from %q to processor queue: %w\n",
+					remoteAddr.String(), err)
+				return
 			}
 			instance.Metrics.ValidPackets.Add(1) // increment pkt count after push (success or not)
 			instance.Metrics.BusyNs.Add(uint64(time.Since(start)))

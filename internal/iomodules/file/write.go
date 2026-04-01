@@ -41,6 +41,10 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (linesWri
 
 // Flushes line buffer to the file
 func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
+	if mod == nil {
+		return
+	}
+
 	if mod.batchBuffer == nil {
 		return
 	}

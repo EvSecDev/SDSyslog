@@ -88,10 +88,14 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 
 	// Journal input
 	if gatherer.Ingest.JournalSource != nil {
-		if gatherer.Ingest.JournalSource != nil {
-			m0 := gatherer.Ingest.JournalSource.CollectMetrics(interval)
-			gatherer.Registry.Add(timeSlice, m0)
-		}
+		m0 := gatherer.Ingest.JournalSource.CollectMetrics(interval)
+		gatherer.Registry.Add(timeSlice, m0)
+	}
+
+	// Raw Input
+	if gatherer.Ingest.RawSource != nil {
+		m0 := gatherer.Ingest.RawSource.CollectMetrics(interval)
+		gatherer.Registry.Add(timeSlice, m0)
 	}
 
 	// Packaging

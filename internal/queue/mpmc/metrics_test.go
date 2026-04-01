@@ -63,9 +63,9 @@ func TestMetricsPresence(t *testing.T) {
 
 			// Push items
 			for i := 0; i < tt.pushCount; i++ {
-				success := q.Push(i, uint64(tt.bytesPerItem))
-				if !success {
-					t.Fatalf("push %d failed unexpectedly", i)
+				err = q.Push(i, uint64(tt.bytesPerItem))
+				if err != nil {
+					t.Fatalf("push %d failed unexpectedly: %v", i, err)
 				}
 			}
 

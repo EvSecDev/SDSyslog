@@ -10,10 +10,15 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 		return
 	}
 
-	mod.buffer = append(mod.buffer, msg)
+	data := msg.Data
 
-	if len(mod.buffer) >= mod.batchSize {
-		entriesWritten, err = mod.FlushBuffer()
+	// Ensure exactly one trailing newline
+	if len(data) == 0 || data[len(data)-1] != '\n' {
+		data = append(data, '\n')
+	}
+
+	_, err = mod.sink.Write(data)
+	if err != nil {
 		return
 	}
 
@@ -21,26 +26,7 @@ func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesW
 	return
 }
 
+// No-op - satisfies common type
 func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
-	if mod == nil {
-		return
-	}
-
-	for _, msg := range mod.buffer {
-		data := msg.Data
-
-		// Ensure exactly one trailing newline
-		if len(data) == 0 || data[len(data)-1] != '\n' {
-			data = append(data, '\n')
-		}
-
-		_, err = mod.sink.Write(data)
-		if err != nil {
-			return
-		}
-	}
-
-	flushedCnt = len(mod.buffer)
-	mod.buffer = mod.buffer[:0]
 	return
 }

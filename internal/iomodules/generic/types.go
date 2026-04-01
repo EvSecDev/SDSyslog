@@ -22,7 +22,5 @@ type InModule struct {
 }
 
 type OutModule struct {
-	sink      io.WriteCloser
-	batchSize int
-	buffer    []protocol.Payload
+	sink io.WriteCloser
 }

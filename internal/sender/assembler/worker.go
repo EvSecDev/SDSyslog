@@ -98,10 +98,9 @@ func (instance *Instance) run() {
 			}
 
 			for _, packet := range packets {
-				success := instance.outbox.Push(packet, uint64(len(packet)))
-				if !success {
-					logctx.LogStdErr(ctx,
-						"Sender queue full, fragment dropped\n")
+				err := instance.outbox.Push(packet, uint64(len(packet)))
+				if err != nil {
+					logctx.LogStdErr(ctx, "failed to push fragment to output queue: %w\n", err)
 					continue
 				}
 			}

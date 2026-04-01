@@ -16,6 +16,8 @@ import (
 func (mod *InModule) read() {
 	defer mod.wg.Done()
 
+	pid := os.Getpid()
+
 	reader := bufio.NewReaderSize(mod.sink, 64*1024)
 
 	for {
@@ -26,7 +28,6 @@ func (mod *InModule) read() {
 		}
 
 		line, err := reader.ReadBytes('\n')
-
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				continue
@@ -44,7 +45,7 @@ func (mod *InModule) read() {
 			Fields: map[string]any{
 				iomodules.CtxKey:      logctx.NSoRaw,
 				iomodules.CFappname:   global.ProgBaseName,
-				iomodules.CFprocessid: os.Getpid,
+				iomodules.CFprocessid: pid,
 				iomodules.CFfacility:  iomodules.DefaultFacility,
 				iomodules.CFseverity:  iomodules.DefaultSeverity,
 			},
@@ -55,9 +56,10 @@ func (mod *InModule) read() {
 		mod.metrics.CompleteReads.Add(1)
 
 		totalSize := msg.Size()
-		success := mod.outbox.Push(msg, uint64(totalSize))
-		if !success {
-			logctx.LogStdErr(mod.ctx, "failed to push raw sink data to queue\n")
+		err = mod.outbox.Push(msg, uint64(totalSize))
+		if err != nil {
+			logctx.LogStdErr(mod.ctx, "failed to push raw sink data to queue: %w\n", err)
+			continue
 		}
 
 		mod.metrics.Success.Add(1)

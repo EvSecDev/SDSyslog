@@ -84,19 +84,18 @@ func (instance *Instance) run() {
 			// Push combined message to Stage 4 queue
 			maxRetries := 10
 			retryWait := 10 * time.Millisecond
-			success := false
 			for range maxRetries {
-				success = instance.outbox.Push(finalMsg, uint64(finalMsg.Size()))
-				if success {
+				err = instance.outbox.Push(finalMsg, uint64(finalMsg.Size()))
+				if err == nil {
 					break
 				}
 
 				time.Sleep(retryWait)
 			}
-			if !success {
+			if err != nil {
 				logctx.LogStdErr(ctx,
-					"Failed to push message to output queue: host id %d, message id %d, hostname %s\n",
-					finalMsg.HostID, finalMsg.MsgID, finalMsg.Hostname)
+					"Failed to push message to output queue: host id %d, message id %d, hostname %s: %w\n",
+					finalMsg.HostID, finalMsg.MsgID, finalMsg.Hostname, err)
 				return
 			}
 

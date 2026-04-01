@@ -106,7 +106,8 @@ func (container *Queue[T]) PushBlocking(ctx context.Context, value T, size int) 
 		case <-ctx.Done():
 			return
 		default:
-			if container.Push(value, uint64(size)) { // try once
+			err := container.Push(value, uint64(size)) // try once
+			if err == nil {
 				return
 			}
 			time.Sleep(10 * time.Millisecond) // or backoff
@@ -115,7 +116,7 @@ func (container *Queue[T]) PushBlocking(ctx context.Context, value T, size int) 
 }
 
 // Attempts to write an element (non success = queue full)
-func (container *Queue[T]) Push(value T, size uint64) (success bool) {
+func (container *Queue[T]) Push(value T, size uint64) (err error) {
 	var queue *QueueInst[T]
 
 	// Retry to get valid pointer
@@ -145,7 +146,7 @@ func (container *Queue[T]) Push(value T, size uint64) (success bool) {
 			}
 			queue.Metrics.PushCASRetries.Add(1)
 		} else if seq < pos {
-			success = false // queue full
+			err = fmt.Errorf("queue is full (size %d)", queue.Size)
 			return
 		} else {
 			runtime.Gosched() // yield then retry
@@ -164,7 +165,6 @@ func (container *Queue[T]) Push(value T, size uint64) (success bool) {
 	default:
 	}
 
-	success = true
 	return
 }
 

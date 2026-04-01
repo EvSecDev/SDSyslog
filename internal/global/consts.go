@@ -4,7 +4,7 @@ package global
 import "time"
 
 const (
-	ProgVersion string  = "v0.22.0"
+	ProgVersion string  = "v0.22.1"
 	SendMode    string  = "send"
 	RecvMode    string  = "receive"
 	CtxModeKey  CtxMode = "mode" // Identifying if program is in sender or receiver mode
@@ -25,8 +25,8 @@ const (
 	DefaultStateDir          string        = "/var/cache/" + ProgBaseName
 	DefaultStateFile         string        = DefaultStateDir + "/last.state"
 	DefaultReceiverPort      int           = 8514
-	DefaultMinQueueSize      MinValue      = 512
-	DefaultMaxQueueSize      MaxValue      = 4096
+	DefaultMinQueueSize      MinValue      = 2048
+	DefaultMaxQueueSize      MaxValue      = 8192
 	DefaultMinPacketDeadline time.Duration = 200 * time.Millisecond // Also default starting deadline
 	DefaultMaxPacketDeadline time.Duration = 1 * time.Second
 )

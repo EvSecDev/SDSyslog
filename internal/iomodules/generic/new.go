@@ -34,19 +34,13 @@ func NewInput(ctx context.Context, source io.ReadCloser, queue *mpmc.Queue[proto
 }
 
 // Creates new receiver pipeline output with the given destination
-func NewOutput(destination io.WriteCloser, batchSize int) (new *OutModule) {
+func NewOutput(destination io.WriteCloser) (new *OutModule) {
 	if destination == nil {
 		return
 	}
 
-	if batchSize == 0 {
-		batchSize = 20
-	}
-
 	new = &OutModule{
-		sink:      destination,
-		batchSize: batchSize,
-		buffer:    make([]protocol.Payload, 0, batchSize),
+		sink: destination,
 	}
 	return
 }

@@ -13,7 +13,7 @@ import (
 
 // Create and start new output instance
 func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAddress string, rawWriter io.WriteCloser) (err error) {
-	if filePath == "" && journaldURL == "" && beatsAddress == "" {
+	if filePath == "" && journaldURL == "" && beatsAddress == "" && rawWriter == nil {
 		err = fmt.Errorf("no outputs enabled/configured")
 		return
 	}
@@ -39,7 +39,7 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	if err != nil {
 		return
 	}
-	manager.Instance.rawMod = generic.NewOutput(rawWriter, 0)
+	manager.Instance.rawMod = generic.NewOutput(rawWriter)
 
 	// Start worker
 	manager.wg.Add(1)

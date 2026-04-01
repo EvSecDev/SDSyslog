@@ -138,11 +138,20 @@ func (cfg *Config) setDefaults() {
 	}
 
 	// Minimums
+	if cfg.MinDefrags == 0 {
+		cfg.MinDefrags = 1
+	}
 	if cfg.MinDefrags > minCPU {
 		cfg.MinDefrags = minCPU
 	}
+	if cfg.MinListeners == 0 {
+		cfg.MinListeners = 1
+	}
 	if cfg.MinListeners > minCPU {
 		cfg.MinListeners = minCPU
+	}
+	if cfg.MinProcessors == 0 {
+		cfg.MinProcessors = 1
 	}
 	if cfg.MinProcessors > minCPU {
 		cfg.MinProcessors = minCPU

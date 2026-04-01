@@ -290,8 +290,14 @@ func (cfg *Config) setDefaults() {
 	}
 
 	// Minimums
+	if cfg.MinAssemblers == 0 {
+		cfg.MinAssemblers = 1
+	}
 	if cfg.MinAssemblers > minCPU {
 		cfg.MinAssemblers = minCPU
+	}
+	if cfg.MinOutputs == 0 {
+		cfg.MinOutputs = 1
 	}
 	if cfg.MinOutputs > minCPU {
 		cfg.MinOutputs = minCPU

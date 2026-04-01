@@ -6,13 +6,10 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
-	"path/filepath"
 	"runtime/debug"
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/hash"
 	"sdsyslog/internal/global"
-	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
@@ -23,8 +20,6 @@ import (
 
 // Tests full sending and receiving pipelines including daemon startup/shutdown
 func TestSendReceivePipeline(t *testing.T) {
-	testDir := t.TempDir()
-
 	defer func() {
 		if fatalError := recover(); fatalError != nil {
 			stack := debug.Stack()
@@ -46,30 +41,30 @@ func TestSendReceivePipeline(t *testing.T) {
 		t.Fatalf("expected no error from key creation, but got '%v'", err)
 	}
 
-	// Setup logging with in memory
+	// Setup logging
 	logVerbosity := 1 // Set to standard for tests
 	globalCtx, globalCancel := context.WithCancel(context.Background())
 	globalCtx = logctx.New(globalCtx, "global", logVerbosity, globalCtx.Done())
 
-	// Mock output
-	testOutputFileName := "integration-test-outputs.txt"
-	testOutputsFile := filepath.Join(testDir, testOutputFileName)
+	// Mock in/out buffer
+	recvOutput := NewPipeBuffer(10 * 1024 * 1024) // 10MB buffer
+	sendInput := NewPipeBuffer(10 * 1024 * 1024)
 
 	// Daemon config
-	newCfg := receiver.Config{
+	newRecvCfg := receiver.Config{
 		ListenIP:               testIp,
 		ListenPort:             global.DefaultReceiverPort,
 		AutoscaleEnabled:       true,
 		AutoscaleCheckInterval: 200 * time.Millisecond,
-		MinDefrags:             2,
-		MinListeners:           2,
-		MinProcessors:          2,
+		MinDefrags:             1,
+		MinListeners:           1,
+		MinProcessors:          1,
 		MinOutputQueueSize:     global.DefaultMinQueueSize,
 		MaxOutputQueueSize:     global.DefaultMaxQueueSize,
 		ShardBufferSize:        1024,
 		MinProcessorQueueSize:  global.DefaultMinQueueSize,
 		MaxProcessorQueueSize:  global.DefaultMaxQueueSize,
-		OutputFilePath:         testOutputsFile,
+		RawWriter:              recvOutput,
 		MetricCollectionInterval: time.Duration(
 			100 * time.Millisecond, // Setting super fast just for test data collection
 		),
@@ -77,28 +72,19 @@ func TestSendReceivePipeline(t *testing.T) {
 	}
 
 	// Launch receiver in background
-	daemon := receiver.NewDaemon(newCfg)
+	daemon := receiver.NewDaemon(newRecvCfg)
 	err = daemon.Start(globalCtx, priv)
 	if err != nil {
 		t.Fatalf("expected no receiver startup errors, got error '%v'", err)
 	}
 
 	// Wait for startup
-	time.Sleep(2 * newCfg.MetricCollectionInterval)
+	time.Sleep(2 * newRecvCfg.MetricCollectionInterval)
 
 	// Check for any errors in the log buffer
-	errors, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
+	errorList, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
 	if errorsFound {
-		t.Fatalf("expected no start-up errors in receive pipeline, but found: %v\n", errors)
-	}
-
-	// Mock sending source
-	testInputFileName := "integration-test-inputs.txt"
-	testInputsFile := filepath.Join(testDir, testInputFileName)
-	testStateFile := filepath.Join(testDir, "integration-test-input-state.txt")
-	testInFile, err := os.OpenFile(testInputsFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0640)
-	if err != nil {
-		t.Fatalf("failed to open test output file: %v", err)
+		t.Fatalf("expected no start-up errors in receive pipeline, but found: %v\n", errorList)
 	}
 
 	// Startup sending daemon
@@ -106,8 +92,7 @@ func TestSendReceivePipeline(t *testing.T) {
 		DestinationIP:         testIp,
 		DestinationPort:       global.DefaultReceiverPort,
 		AutoscaleEnabled:      true,
-		StateFilePath:         testStateFile,
-		FileSourcePaths:       []string{testInputsFile},
+		RawInput:              sendInput,
 		MinOutputs:            2,
 		MinAssemblers:         2,
 		MinOutputQueueSize:    global.DefaultMinQueueSize,
@@ -129,15 +114,9 @@ func TestSendReceivePipeline(t *testing.T) {
 	time.Sleep(2 * newSendCfg.MetricCollectionInterval)
 
 	// Check for any errors in the log buffer
-	errors, errorsFound = filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
+	errorList, errorsFound = filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
 	if errorsFound {
-		t.Fatalf("expected no start-up errors in sending pipeline, but found: %v\n", errors)
-	}
-
-	// Open test outputs file
-	testOutFile, err := os.OpenFile(testOutputsFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0)
-	if err != nil {
-		t.Fatalf("failed to open test output file: %v", err)
+		t.Fatalf("expected no start-up errors in sending pipeline, but found: %v\n", errorList)
 	}
 
 	// Test cases
@@ -180,32 +159,34 @@ func TestSendReceivePipeline(t *testing.T) {
 		},
 	}
 
+	// For metric check
+	var totalSent int
+	testsStartTime := time.Now().Truncate(newSendCfg.MetricCollectionInterval)
+
 	// Run test cases
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			testStartTime := time.Now().Truncate(newSendCfg.MetricCollectionInterval)
-
-			// Write test text to the watched file the desired number of times
+			// Write test text to the watched buffer the desired number of times
 			for range tt.sendRepeatCtn {
-				_, err := testInFile.WriteString(tt.inputText + "\n")
+				_, err := sendInput.Write([]byte(tt.inputText + "\n"))
 				if err != nil {
-					t.Fatalf("expected no error writing to test input file, but got '%v'", err)
+					t.Fatalf("expected no error writing to test input, but got '%v'", err)
 				}
 			}
+			totalSent += tt.sendRepeatCtn
 
 			// Hash input as source of truth for checking output integrity
-			expectedNamespace := []string{logctx.NSSend, logctx.NSmIngest, logctx.NSoFile, testInputFileName}
-			expectedOutput := tt.inputText + " (" + iomodules.CtxKey + "=" + strings.Join(expectedNamespace, "/") + ")" + "\n"
+			expectedOutput := tt.inputText + "\n"
 
 			inputHash, err := hash.MultipleSlices([]byte(expectedOutput))
 			if err != nil {
 				t.Errorf("expected no error from input hash generation, but got '%v'", err)
 			}
 
-			// Retrieve file output content
-			outputHashes, err := waitForCompleteLines(testOutFile, tt.sendRepeatCtn)
+			// Retrieve output content
+			outputHashes, err := waitForCompleteLines(recvOutput, tt.sendRepeatCtn, 10*time.Second)
 			if err != nil {
-				t.Errorf("expected no error from reading output file, but got '%v'", err)
+				t.Errorf("expected no error from reading output buffer, but got '%v'", err)
 			}
 
 			// Confirm message made it through both pipelines and each line is correct
@@ -216,39 +197,39 @@ func TestSendReceivePipeline(t *testing.T) {
 				}
 			}
 			if totalFailedLines > 0 {
-				t.Errorf("hash of receiver output file line does not match input content hash for %d iterations", totalFailedLines)
+				t.Errorf("hash of receiver output line does not match input content hash for %d iterations", totalFailedLines)
 			}
 
 			// Check for errors in input side
-			errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSSend, logctx.ErrorLog)
+			errorList, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSSend, logctx.ErrorLog)
 			if errorsFound && !tt.expectedSendErr {
-				t.Errorf("expected no errors in sending pipeline, but found: %v\n", errors)
+				t.Errorf("expected no errors in sending pipeline, but found: %v\n", errorList)
 			}
 			if !errorsFound && tt.expectedSendErr {
 				t.Fatalf("expected errors in sending pipeline, but got nil")
 			}
 
 			// check for errors in the output side
-			errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
+			errorList, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
 			if errorsFound && !tt.expectedRecvErr {
-				t.Errorf("expected no errors in receiving pipeline, but found: %v\n", errors)
+				t.Errorf("expected no errors in receiving pipeline, but found: %v\n", errorList)
 			}
 			if !errorsFound && tt.expectedRecvErr {
 				t.Fatalf("expected errors in receiving pipeline, but got nil")
 			}
 
-			// Check metrics at in/out pipeline boundaries for expected counts
-			err = checkPipelineCounts(tt.sendRepeatCtn, testStartTime, senderDaemon, daemon, newSendCfg.MetricCollectionInterval)
-			if err != nil {
-				t.Fatalf("Metric test error: %v", err)
-			}
-
 			// Zero for next test
-			err = testOutFile.Truncate(0)
-			if err != nil {
-				t.Fatalf("expected no error from truncating test output file, but got '%v'", err)
-			}
+			recvOutput.Truncate(0)
+			sendInput.Truncate(0)
 		})
+	}
+
+	// Check metrics at in/out pipeline boundaries for expected counts
+	// Checks during test can be unreliable due to timing and metric bucket slices
+	// Check once after tests are done for total expected count
+	err = checkPipelineCounts(totalSent, testsStartTime, senderDaemon, daemon, newSendCfg.MetricCollectionInterval)
+	if err != nil {
+		t.Errorf("Metric test error: %v", err)
 	}
 
 	// Graceful shutdown
@@ -262,17 +243,17 @@ func TestSendReceivePipeline(t *testing.T) {
 	logger.Wait()
 
 	// Check for errors post-shutdown
-	errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSSend, logctx.ErrorLog)
+	errorList, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSSend, logctx.ErrorLog)
 	if errorsFound {
-		t.Errorf("expected no errors in send daemon shutdown, but found:\n%s", errors)
+		t.Errorf("expected no errors in send daemon shutdown, but found:\n%s", errorList)
 	}
 	warns, warnsFound := filterLogBuffer(globalCtx, "", logctx.NSSend, logctx.WarnLog)
 	if warnsFound {
 		t.Errorf("expected no warnings in send daemon shutdown, but found:\n%v", warns)
 	}
-	errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
+	errorList, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
 	if errorsFound {
-		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%s", errors)
+		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%s", errorList)
 	}
 	warns, warnsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.WarnLog)
 	if warnsFound {

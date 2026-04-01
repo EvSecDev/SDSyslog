@@ -144,6 +144,7 @@ function compile_program() {
 			integrationTests=(
 				"TestSendReceivePipeline:sdsyslog/$SRCdir/receiver,sdsyslog/$SRCdir/sender"
 				"TestRecvConstantFlow:sdsyslog/$SRCdir/receiver"
+				"TestMultipleSenders:sdsyslog/$SRCdir/receiver,sdsyslog/$SRCdir/sender"
 			)
 
 			coverProfileInteg="$repoRoot/coverprofile_integ.out"

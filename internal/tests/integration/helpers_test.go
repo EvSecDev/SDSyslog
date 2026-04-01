@@ -1,16 +1,18 @@
 package integration
 
 import (
-	"bytes"
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"regexp"
 	"sdsyslog/internal/crypto/hash"
+	"sdsyslog/internal/iomodules/generic"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver"
+	"sdsyslog/internal/receiver/output"
 	"sdsyslog/internal/sender"
 	"strings"
 	"time"
@@ -144,121 +146,78 @@ func filterLogBuffer(ctx context.Context, searchText, searchTag, searchSeverity 
 }
 
 // For watching for output of receiver pipeline
-func waitForCompleteLines(f *os.File, expected int) (lineHashes [][]byte, err error) {
-	deadline := time.Now().Add(10 * time.Second) // Default timeout
+func waitForCompleteLines(testOutput *PipeBuffer, expected int, readMaxIdleTime time.Duration) (lineHashes [][]byte, err error) {
+	reader := bufio.NewReaderSize(testOutput, 64*1024)
 
-	var (
-		lastSize    int64 = -1
-		stableSince time.Time
-	)
+	rawLines := make([][]byte, 0, expected)
 
-	for {
-		if time.Now().After(deadline) {
-			err = fmt.Errorf("timeout waiting for %d complete lines", expected)
+	for len(rawLines) < expected {
+		var line []byte
+		var readErr error
+
+		done := make(chan struct{})
+		go func() {
+			line, readErr = reader.ReadBytes('\n')
+			close(done)
+		}()
+		select {
+		case <-done:
+		case <-time.After(readMaxIdleTime):
+			err = fmt.Errorf("exceeded max line wait time before receiving %d lines (got %d)", expected, len(rawLines))
 			return
 		}
 
-		var info os.FileInfo
-		info, err = f.Stat()
-		if err != nil {
-			return
-		}
-
-		curSize := info.Size()
-
-		if curSize != lastSize {
-			// file changed
-			lastSize = curSize
-			stableSince = time.Now()
-		}
-
-		// read whole file
-		_, err = f.Seek(0, io.SeekStart)
-		if err != nil {
-			return
-		}
-
-		var data []byte
-		data, err = io.ReadAll(f)
-		if err != nil {
-			return
-		}
-
-		// split lines
-		rawLines := bytes.Split(data, []byte("\n"))
-
-		// discard incomplete final line
-		if len(rawLines) > 0 && len(rawLines[len(rawLines)-1]) == 0 {
-			rawLines = rawLines[:len(rawLines)-1]
-		}
-
-		// are there enough complete lines?
-		if len(rawLines) >= expected {
-			// Has file been quiet long enough?
-			if time.Since(stableSince) >= 150*time.Millisecond {
-				// Finalize hashing and return
-				for _, ln := range rawLines {
-					// Retrieve only data (omitting metadata from raw text output)
-					var data string
-					data, err = getDataFromFullLog(string(ln))
-					if err != nil {
-						err = fmt.Errorf("failed separating metadata: %w", err)
-						return
-					}
-
-					var h []byte
-					h, err = hash.MultipleSlices(append([]byte(data), '\n'))
-					if err != nil {
-						err = fmt.Errorf("hashing line: %w", err)
-						return
-					}
-					lineHashes = append(lineHashes, h)
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				// If EOF but we still got data without newline, ignore (incomplete line)
+				if len(line) == 0 {
+					err = fmt.Errorf("unexpected EOF before receiving %d lines (got %d)", expected, len(rawLines))
+					return
 				}
+
+				// If EOF returned a partial line without newline, drop it
+				if line[len(line)-1] != '\n' {
+					err = fmt.Errorf("incomplete line at EOF")
+					return
+				}
+			} else {
+				err = fmt.Errorf("failed reading from pipe: %w", readErr)
 				return
 			}
 		}
 
-		// otherwise wait and retry
-		time.Sleep(2 * time.Millisecond)
-	}
-}
+		// Ensure it's a complete line
+		if len(line) == 0 || line[len(line)-1] != '\n' {
+			continue
+		}
 
-func getDataFromFullLog(line string) (data string, err error) {
-	const sep string = "]:"
-
-	// find first occurrence
-	i1 := strings.Index(line, sep)
-	if i1 == -1 {
-		err = fmt.Errorf("unknown log format, unable to find known delimiter ']:'")
-		return
+		rawLines = append(rawLines, line)
 	}
 
-	// find second occurrence (search after the first)
-	i2 := strings.Index(line[i1+len(sep):], sep)
-	if i2 == -1 {
-		err = fmt.Errorf("unknown log format, unable to find known second delimiter ']:'")
-		return
+	for _, ln := range rawLines {
+		var h []byte
+		h, err = hash.MultipleSlices(ln)
+		if err != nil {
+			err = fmt.Errorf("hashing line: %w", err)
+			return
+		}
+
+		lineHashes = append(lineHashes, h)
 	}
 
-	// convert second index to absolute position
-	i2 = i1 + len(sep) + i2
-
-	// Second half is data
-	data = line[i2+len(sep):]
-	data = strings.TrimSpace(data)
 	return
 }
 
 // Verifies metric collection is functional and counts are correct
 func checkPipelineCounts(expectedCount int, startTime time.Time, senderDaemon *sender.Daemon, recvDaemon *receiver.Daemon, configuredPollInterval time.Duration) (err error) {
 	// Bake for additional metric poll interval before search
-	time.Sleep(2 * configuredPollInterval)
+	time.Sleep(configuredPollInterval)
 
 	endTime := time.Now()
 
 	// Send - Input
 	var totalSendInCtn int
-	sendInMetrics := senderDaemon.MetricDataSearcher("lines_read", []string{logctx.NSSend, logctx.NSmIngest}, startTime, endTime)
+	sendInMetrics := senderDaemon.MetricDataSearcher(generic.MTBatchesRead, []string{logctx.NSSend, logctx.NSmIngest, logctx.NSoRaw}, startTime, endTime)
 	for _, metric := range sendInMetrics {
 		cnt, ok := metric.Value.Raw.(uint64)
 		if !ok {
@@ -274,7 +233,7 @@ func checkPipelineCounts(expectedCount int, startTime time.Time, senderDaemon *s
 
 	// Receive - Output
 	var totalRecvOutCtn int
-	recvOutMetrics := recvDaemon.MetricDataSearcher("success_writes", []string{logctx.NSRecv, logctx.NSmOutput}, startTime, endTime)
+	recvOutMetrics := recvDaemon.MetricDataSearcher(output.MTRawWritesSuc, []string{logctx.NSRecv, logctx.NSmOutput}, startTime, endTime)
 	for _, metric := range recvOutMetrics {
 		cnt, ok := metric.Value.Raw.(uint64)
 		if !ok {

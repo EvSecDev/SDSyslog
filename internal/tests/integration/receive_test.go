@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
-	"path/filepath"
 	"runtime/debug"
 	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/global"
@@ -22,8 +20,6 @@ import (
 
 // Tests receiving pipeline using pre-baked packets (startup/shutdown sequence)
 func TestRecvConstantFlow(t *testing.T) {
-	testDir := t.TempDir()
-
 	defer func() {
 		if fatalError := recover(); fatalError != nil {
 			stack := debug.Stack()
@@ -49,7 +45,7 @@ func TestRecvConstantFlow(t *testing.T) {
 	}
 
 	// Mock output
-	testOutputsFile := filepath.Join(testDir, "recv-pipeline-test-outputs.txt")
+	recvOutput := NewPipeBuffer(10 * 1024 * 1024) // 10MB buffer
 
 	// Setup logging with in memory
 	logVerbosity := 1 // Set to standard for tests
@@ -70,7 +66,7 @@ func TestRecvConstantFlow(t *testing.T) {
 		ShardBufferSize:        1024,
 		MinProcessorQueueSize:  global.DefaultMinQueueSize,
 		MaxProcessorQueueSize:  global.DefaultMaxQueueSize,
-		OutputFilePath:         testOutputsFile,
+		RawWriter:              recvOutput,
 		MetricCollectionInterval: time.Duration(
 			100 * time.Millisecond, // Setting super fast just for test data collection
 		),
@@ -88,9 +84,9 @@ func TestRecvConstantFlow(t *testing.T) {
 	time.Sleep(2 * newCfg.MetricCollectionInterval)
 
 	// Check for any errors in the log buffer
-	errors, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
+	errorList, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
 	if errorsFound {
-		t.Fatalf("expected no start-up errors in receive pipeline, but found: %v\n", errors)
+		t.Fatalf("expected no start-up errors in receive pipeline, but found: %v\n", errorList)
 	}
 
 	destAddr, err := net.ResolveUDPAddr("udp", testIp+":"+strconv.Itoa(global.DefaultReceiverPort))
@@ -163,9 +159,9 @@ func TestRecvConstantFlow(t *testing.T) {
 			break
 		}
 
-		errors, foundError := filterLogBuffer(globalCtx, "", "Receiver", logctx.ErrorLog)
+		errorList, foundError := filterLogBuffer(globalCtx, "", "Receiver", logctx.ErrorLog)
 		if foundError {
-			t.Fatalf("expected no errors from receiver, but got:\n%s\n", errors)
+			t.Fatalf("expected no errors from receiver, but got:\n%s\n", errorList)
 		}
 
 		warnings, foundWarn := filterLogBuffer(globalCtx, "", "Receiver", logctx.WarnLog)
@@ -187,22 +183,19 @@ func TestRecvConstantFlow(t *testing.T) {
 	logger.Wait()
 
 	// Simple check - ensure lines in output file match number of messages sent
-	outputContents, err := os.ReadFile(testOutputsFile)
-	if err != nil {
-		t.Fatalf("expected no error checking output file, but got '%v'", err)
-	}
-	output := strings.Trim(string(outputContents), "\n")
+
+	output := strings.Trim(string(recvOutput.buffer), "\n")
 	lines := strings.Split(output, "\n")
 	if output == "" {
-		t.Errorf("expected outputs file to have %d lines, but is empty", totalMessagesSent.Load())
+		t.Errorf("expected output buffer to have %d lines, but is empty", totalMessagesSent.Load())
 	} else if len(lines) != int(totalMessagesSent.Load()) {
-		t.Errorf("expected outputs file to have %d lines, but it actually has %d lines", totalMessagesSent.Load(), len(lines))
+		t.Errorf("expected output buffer to have %d lines, but it actually has %d lines", totalMessagesSent.Load(), len(lines))
 	}
 
 	// Check for errors post-shutdown
-	errors, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
+	errorList, errorsFound = filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.ErrorLog)
 	if errorsFound {
-		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%s", errors)
+		t.Errorf("expected no errors in receive daemon shutdown, but found:\n%s", errorList)
 	}
 	warns, warnsFound := filterLogBuffer(globalCtx, "", logctx.NSRecv, logctx.WarnLog)
 	if warnsFound {

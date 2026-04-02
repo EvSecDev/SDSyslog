@@ -190,15 +190,15 @@ func TestTrend(t *testing.T) {
 
 		// THRESHOLD EDGE CASES
 		{
-			name:      "Upward trend but exactly 70% = no scale (threshold is > 70)",
-			values:    []uint64{60, 65, 68, 70},
+			name:      "Upward trend but exactly 40% = no scale (threshold is > 40)",
+			values:    []uint64{30, 35, 38, 40},
 			queueSize: 100,
 			wantUp:    false,
 			wantDown:  false,
 		},
 		{
-			name:      "Downward trend but exactly 15% = no scale (threshold is < 15)",
-			values:    []uint64{20, 18, 17, 15},
+			name:      "Downward trend but exactly 20% = no scale (threshold is < 20)",
+			values:    []uint64{31, 27, 23, 20},
 			queueSize: 100,
 			wantUp:    false,
 			wantDown:  false,

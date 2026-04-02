@@ -181,10 +181,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 
 	// Autoscaler
 	if daemon.cfg.AutoscaleEnabled {
-		if daemon.cfg.AutoscaleCheckInterval == 0 {
-			daemon.cfg.AutoscaleCheckInterval = 1 * time.Second
-		}
-
 		scaler := scaling.New(daemon.metricsCollector.Registry,
 			daemon.cfg.AutoscaleCheckInterval,
 			daemon.Mgrs,

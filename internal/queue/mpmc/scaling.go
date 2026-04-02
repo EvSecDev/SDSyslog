@@ -100,8 +100,8 @@ func Trend(depthValues []uint64, queueSize int) (scaleUp bool, scaleDown bool) {
 		return
 	}
 
-	const upThresholdPct = 70.0   // high watermark
-	const downThresholdPct = 15.0 // low watermark
+	const upThresholdPct = 40.0   // high watermark
+	const downThresholdPct = 20.0 // low watermark
 	const requireConsistent = 3   // trend must be consistently up/down
 
 	// Compute occupancy percent of last value

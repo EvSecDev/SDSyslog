@@ -252,7 +252,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	newCfg.PrivateKeyFile = encryptionPrivKeyPath
 
 	newCfg.Metrics.MaxAge = "72h"
-	newCfg.Metrics.Interval = "5s"
+	newCfg.Metrics.Interval = "1s"
 	newCfg.Metrics.QueryServerPort = server.ListenPortReceiver
 
 	newCfg.Network.Address = "[::1]"

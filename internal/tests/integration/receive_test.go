@@ -62,7 +62,7 @@ func TestRecvConstantFlow(t *testing.T) {
 		ListenIP:               testIp,
 		ListenPort:             global.DefaultReceiverPort,
 		AutoscaleEnabled:       true,
-		AutoscaleCheckInterval: 200 * time.Millisecond,
+		AutoscaleCheckInterval: 2 * global.DefaultMinPacketDeadline,
 		MinDefrags:             2,
 		MinListeners:           2,
 		MinProcessors:          2,

@@ -268,8 +268,12 @@ func (cfg *Config) setDefaults() {
 	}
 
 	// Scaling
-	if cfg.AutoscaleCheckInterval == 0 {
-		cfg.AutoscaleCheckInterval = 5 * time.Second
+	if cfg.AutoscaleCheckInterval < 1*time.Second {
+		cfg.AutoscaleCheckInterval = 100 * time.Millisecond // Enforced minimum
+	}
+	if cfg.AutoscaleCheckInterval > 1*time.Minute {
+		// Longer times are not useful
+		cfg.AutoscaleCheckInterval = 1 * time.Minute
 	}
 
 	// Maximums

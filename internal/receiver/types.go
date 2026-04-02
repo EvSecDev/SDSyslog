@@ -54,6 +54,9 @@ type Config struct {
 	ListenIP   string
 	ListenPort int
 
+	// Crypto
+	transportCryptoSuiteID uint8
+
 	// Signature Verification
 	PinnedSigningKeysFile string
 	PinnedSigningKeys     map[string][]byte

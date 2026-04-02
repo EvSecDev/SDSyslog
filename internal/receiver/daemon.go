@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/global"
@@ -22,6 +21,7 @@ import (
 	"sdsyslog/internal/receiver/processor"
 	"sdsyslog/internal/receiver/scaling"
 	"sdsyslog/internal/receiver/shard/fiprrecv"
+	"sdsyslog/pkg/crypto/registry"
 	"slices"
 	"time"
 )
@@ -52,7 +52,13 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Pre-startup
 	syslog.InitBidiMaps()
-	serverPub, err := ecdh.DerivePersistentPublicKey(serverPriv)
+	daemon.cfg.setDefaults()
+	info, validID := registry.GetSuiteInfo(daemon.cfg.transportCryptoSuiteID)
+	if !validID {
+		err = fmt.Errorf("invalid suite ID %d", daemon.cfg.transportCryptoSuiteID)
+		return
+	}
+	serverPub, err := info.DerivePublicKey(serverPriv)
 	if err != nil {
 		return
 	}
@@ -76,7 +82,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		err = fmt.Errorf("failed to setup signature verification function: %w", err)
 		return
 	}
-	daemon.cfg.setDefaults()
 
 	// Listener socket helper - kernel-side of socket drain feature
 	err = ebpf.LoadProgram()

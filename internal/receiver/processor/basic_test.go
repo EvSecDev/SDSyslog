@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"net/netip"
-	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/shard"
 	"sdsyslog/internal/tests/utils"
+	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
 	"strings"
 	"sync/atomic"
@@ -63,9 +63,11 @@ func (m *MockRoutingView) SocketDir() string {
 
 func TestProcessor_Basic(t *testing.T) {
 	// Mock program wide encrypt/decrypt
-	mockPriv, mockPub, err := ecdh.CreatePersistentKey()
+
+	info, _ := registry.GetSuiteInfo(1)
+	mockPriv, mockPub, err := info.NewKey()
 	if err != nil {
-		t.Fatalf("unexpected error generating test keys: %v", err)
+		t.Fatalf("failed to generate test keys: %v", err)
 	}
 	err = wrappers.SetupDecryptInnerPayload(mockPriv)
 	if err != nil {

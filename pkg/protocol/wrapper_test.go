@@ -3,31 +3,15 @@ package protocol
 import (
 	"bytes"
 	"crypto/ed25519"
-	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/tests/utils"
+	"sdsyslog/pkg/crypto/registry"
 	"strings"
 	"testing"
 	"time"
 )
 
 func TestProtocol(t *testing.T) {
-	private, public, err := ecdh.CreatePersistentKey()
-	if err != nil {
-		t.Fatalf("failed to generate test keys: %v", err)
-		return
-	}
-	err = wrappers.SetupDecryptInnerPayload(private)
-	if err != nil {
-		t.Fatalf("failed to setup decryption function: %v", err)
-		return
-	}
-	err = wrappers.SetupEncryptInnerPayload(public)
-	if err != nil {
-		t.Fatalf("failed to setup decryption function: %v", err)
-		return
-	}
-
 	now := time.Now()
 
 	tests := []struct {
@@ -304,6 +288,26 @@ func TestProtocol(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			info, validID := registry.GetSuiteInfo(tt.cryptoID)
+			if !validID {
+				t.Fatalf("invalid suite ID %d", tt.cryptoID)
+			}
+			private, public, err := info.NewKey()
+			if err != nil {
+				t.Fatalf("failed to generate test keys: %v", err)
+				return
+			}
+			err = wrappers.SetupDecryptInnerPayload(private)
+			if err != nil {
+				t.Fatalf("failed to setup decryption function: %v", err)
+				return
+			}
+			err = wrappers.SetupEncryptInnerPayload(public)
+			if err != nil {
+				t.Fatalf("failed to setup decryption function: %v", err)
+				return
+			}
+
 			// Setup create signature function
 			if len(tt.signingPrivKey) > 0 {
 				err = wrappers.SetupCreateSignature(tt.signingPrivKey)

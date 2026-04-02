@@ -2,106 +2,87 @@ package wrappers
 
 import (
 	"bytes"
-	"sdsyslog/internal/crypto/ecdh"
+	"sdsyslog/internal/tests/utils"
+	"sdsyslog/pkg/crypto/registry"
 	"strings"
 	"testing"
 )
 
 func TestEncryptionWrapper(t *testing.T) {
-	priv, pub, err := ecdh.CreatePersistentKey()
-	if err != nil {
-		panic(err)
-	}
-
-	suiteID := uint8(1)
+	// Force generation of actual keys from registry
+	priv := []byte("placeholder")
+	pub := []byte("placeholder")
 
 	tests := []struct {
 		name                   string
+		suiteID                uint8
 		privateKey             []byte
 		publicKey              []byte
 		payload                []byte
 		expectedPayload        []byte
-		expectedSetupEncError  bool
-		expectedSetupDecrError bool
-		expectedEncError       bool
-		expectedDecrError      bool
+		expectedSetupEncError  string
+		expectedSetupDecrError string
+		expectedEncError       string
+		expectedDecrError      string
 	}{
 		{
-			name:                   "regular",
-			privateKey:             priv,
-			publicKey:              pub,
-			payload:                []byte("some testing text"),
-			expectedPayload:        []byte("some testing text"),
-			expectedSetupEncError:  false,
-			expectedSetupDecrError: false,
-			expectedEncError:       false,
-			expectedDecrError:      false,
+			name:            "regular",
+			suiteID:         1,
+			privateKey:      priv,
+			publicKey:       pub,
+			payload:         []byte("some testing text"),
+			expectedPayload: []byte("some testing text"),
 		},
 		{
-			name:                   "large",
-			privateKey:             priv,
-			publicKey:              pub,
-			payload:                []byte(strings.Repeat("t", 1000)),
-			expectedPayload:        []byte(strings.Repeat("t", 1000)),
-			expectedSetupEncError:  false,
-			expectedSetupDecrError: false,
-			expectedEncError:       false,
-			expectedDecrError:      false,
+			name:            "large",
+			suiteID:         1,
+			privateKey:      priv,
+			publicKey:       pub,
+			payload:         []byte(strings.Repeat("t", 1000)),
+			expectedPayload: []byte(strings.Repeat("t", 1000)),
 		},
 		{
-			name:                   "nil payload",
-			privateKey:             priv,
-			publicKey:              pub,
-			payload:                nil,
-			expectedPayload:        nil,
-			expectedSetupEncError:  false,
-			expectedSetupDecrError: false,
-			expectedEncError:       false,
-			expectedDecrError:      false,
+			name:            "nil payload",
+			suiteID:         1,
+			privateKey:      priv,
+			publicKey:       pub,
+			payload:         nil,
+			expectedPayload: nil,
 		},
 		{
-			name:                   "nil public",
-			privateKey:             priv,
-			publicKey:              nil,
-			payload:                []byte("some testing text"),
-			expectedPayload:        []byte("some testing text"),
-			expectedSetupEncError:  true,
-			expectedSetupDecrError: false,
-			expectedEncError:       false,
-			expectedDecrError:      false,
+			name:                  "nil public",
+			suiteID:               1,
+			privateKey:            priv,
+			publicKey:             nil,
+			payload:               []byte("some testing text"),
+			expectedPayload:       []byte("some testing text"),
+			expectedSetupEncError: "provided no public key and encryption function is not already initialized",
 		},
 		{
 			name:                   "nil private",
+			suiteID:                1,
 			privateKey:             nil,
 			publicKey:              pub,
 			payload:                []byte("some testing text"),
 			expectedPayload:        []byte("some testing text"),
-			expectedSetupEncError:  false,
-			expectedSetupDecrError: true,
-			expectedEncError:       false,
-			expectedDecrError:      false,
+			expectedSetupDecrError: "provided no private key and encryption function is not already initialized",
 		},
 		{
-			name:                   "empty payload",
-			privateKey:             priv,
-			publicKey:              pub,
-			payload:                []byte{},
-			expectedPayload:        []byte{},
-			expectedSetupEncError:  false,
-			expectedSetupDecrError: false,
-			expectedEncError:       false,
-			expectedDecrError:      false,
+			name:            "empty payload",
+			suiteID:         1,
+			privateKey:      priv,
+			publicKey:       pub,
+			payload:         []byte{},
+			expectedPayload: []byte{},
 		},
 		{
-			name:                   "corrupted ciphertext",
-			privateKey:             priv,
-			publicKey:              pub,
-			payload:                []byte("some testing text"),
-			expectedPayload:        nil,
-			expectedSetupEncError:  false,
-			expectedSetupDecrError: false,
-			expectedEncError:       false,
-			expectedDecrError:      true, // Corrupt data will cause decryption failure
+			name:              "corrupted ciphertext",
+			suiteID:           1,
+			privateKey:        priv,
+			publicKey:         pub,
+			payload:           []byte("some testing text"),
+			expectedPayload:   nil,
+			expectedDecrError: "failed decryption of cipher text", // Corrupt data will cause decryption failure
 		},
 	}
 
@@ -111,36 +92,44 @@ func TestEncryptionWrapper(t *testing.T) {
 			EncryptInnerPayload = nil
 			DecryptInnerPayload = nil
 
-			err := SetupDecryptInnerPayload(tt.privateKey)
-			if err != nil && !tt.expectedSetupDecrError {
-				t.Fatalf("expected no decrypt setup error, but got '%v'", err)
+			info, validID := registry.GetSuiteInfo(tt.suiteID)
+			if !validID {
+				t.Fatalf("invalid suite ID %d", tt.suiteID)
 			}
-			if err == nil && tt.expectedSetupDecrError {
-				t.Fatalf("expected decrypt setup error, but got nil")
-			}
-			err = SetupEncryptInnerPayload(tt.publicKey)
-			if err != nil && !tt.expectedSetupEncError {
-				t.Fatalf("expected no encrypt setup error, but got '%v'", err)
-			}
-			if err == nil && tt.expectedSetupEncError {
-				t.Fatalf("expected encrypt setup error, but got nil")
+			privKey, pubKey, err := info.NewKey()
+			if err != nil {
+				t.Fatalf("failed to generate keys: %v", err)
 			}
 
-			// Expected setup errors, continue to next test
-			if tt.expectedSetupDecrError || tt.expectedSetupEncError {
+			if !bytes.Equal(tt.privateKey, []byte("placeholder")) {
+				privKey = tt.privateKey
+			}
+			if !bytes.Equal(tt.publicKey, []byte("placeholder")) {
+				pubKey = tt.publicKey
+			}
+
+			err = SetupDecryptInnerPayload(privKey)
+			matches, err := utils.MatchErrorString(err, tt.expectedSetupDecrError)
+			if err != nil {
+				t.Fatalf("setupDecrypt: %v", err)
+			} else if matches {
 				return
 			}
 
-			ciphertext, ephemeralPub, nonce, err := EncryptInnerPayload(tt.payload, suiteID)
-			if err != nil && !tt.expectedEncError {
-				t.Errorf("expected no encryption error, but got '%v'", err)
+			err = SetupEncryptInnerPayload(pubKey)
+			matches, err = utils.MatchErrorString(err, tt.expectedSetupEncError)
+			if err != nil {
+				t.Fatalf("setupEncrypt: %v", err)
+			} else if matches {
 				return
 			}
-			if err == nil && tt.expectedEncError {
-				t.Errorf("expected encryption error, but got no error")
-			}
-			if tt.expectedEncError {
-				return // encryption failures will fail decryptions
+
+			ciphertext, ephemeralPub, nonce, err := EncryptInnerPayload(tt.payload, tt.suiteID)
+			matches, err = utils.MatchErrorString(err, tt.expectedEncError)
+			if err != nil {
+				t.Fatalf("Encrypt: %v", err)
+			} else if matches {
+				return
 			}
 
 			// Simulate corruption or error before decryption
@@ -148,16 +137,12 @@ func TestEncryptionWrapper(t *testing.T) {
 				ciphertext[0] ^= 0x01 // change a byte
 			}
 
-			outPayload, err := DecryptInnerPayload(ciphertext, ephemeralPub, nonce, suiteID)
-			if err != nil && !tt.expectedDecrError {
-				t.Errorf("expected no decryption error, but got '%v'", err)
+			outPayload, err := DecryptInnerPayload(ciphertext, ephemeralPub, nonce, tt.suiteID)
+			matches, err = utils.MatchErrorString(err, tt.expectedDecrError)
+			if err != nil {
+				t.Fatalf("Decrypt: %v", err)
+			} else if matches {
 				return
-			}
-			if err == nil && tt.expectedDecrError {
-				t.Errorf("expected decryption error, but got no error")
-			}
-			if tt.expectedDecrError {
-				return // decryption failures will fail content compares
 			}
 
 			if !bytes.Equal(outPayload, tt.expectedPayload) {

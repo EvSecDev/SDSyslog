@@ -113,6 +113,9 @@ func (cfg JSONConfig) NewDaemonConf(originalConfigPath string) (config Config, e
 
 // Sets defaults for any missing/invalid values
 func (cfg *Config) setDefaults() {
+	// Default - only algo to use
+	cfg.transportCryptoSuiteID = 1
+
 	// Scaling
 	if cfg.AutoscaleCheckInterval == 0 {
 		cfg.AutoscaleCheckInterval = 5 * time.Second

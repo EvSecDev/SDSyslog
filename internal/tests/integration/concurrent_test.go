@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"net"
 	"runtime/debug"
-	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/hash"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
+	"sdsyslog/pkg/crypto/registry"
 	"strings"
 	"sync"
 	"testing"
@@ -36,9 +36,14 @@ func TestMultipleSenders(t *testing.T) {
 	testIp := findLocalTestIP(ifaces)
 
 	// Mock persistent keys
-	priv, pub, err := ecdh.CreatePersistentKey()
+	var cryptoSuite uint8 = 1
+	info, validID := registry.GetSuiteInfo(cryptoSuite)
+	if !validID {
+		t.Fatalf("invalid suite ID %d", cryptoSuite)
+	}
+	priv, pub, err := info.NewKey()
 	if err != nil {
-		t.Fatalf("expected no error from key creation, but got '%v'", err)
+		t.Fatalf("failed to generate keys: %v", err)
 	}
 
 	// Setup logging

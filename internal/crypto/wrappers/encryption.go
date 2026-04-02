@@ -1,13 +1,9 @@
+// Package to act as an entry point for generic cryptographic operations (wraps crypto/sig registry operations)
 package wrappers
 
 import (
-	"crypto/rand"
 	"fmt"
 	"sdsyslog/internal/crypto"
-	"sdsyslog/internal/crypto/aead"
-	"sdsyslog/internal/crypto/ecdh"
-	"sdsyslog/internal/crypto/hash"
-	"sdsyslog/internal/crypto/hkdf"
 	"sdsyslog/pkg/crypto/registry"
 )
 
@@ -56,39 +52,13 @@ func SetupEncryptInnerPayload(serverPub []byte) (err error) {
 			return
 		}
 
-		sharedSecret, ephemeralPub, err := ecdh.CreateSharedSecret(serverPub)
-		if err != nil {
-			err = fmt.Errorf("failed to create secret: %w", err)
+		suite, valid := registry.GetSuiteInfo(suiteID)
+		if !valid {
+			err = fmt.Errorf("invalid crypto suite ID %d", suiteID)
 			return
 		}
 
-		suite, _ := registry.GetSuiteInfo(1)
-		nonce = make([]byte, suite.NonceSize)
-		_, err = rand.Read(nonce)
-		if err != nil {
-			err = fmt.Errorf("failed to create random nonce: %w", err)
-			return
-		}
-
-		salt, err := hash.MultipleSlices(ephemeralPub, nonce)
-		if err != nil {
-			err = fmt.Errorf("failed to create salt: %w", err)
-			return
-		}
-
-		actualKey, err := hkdf.DeriveKey(sharedSecret, salt, suite.Name, suite.KeySize)
-		if err != nil {
-			err = fmt.Errorf("failed to derive key: %w", err)
-			return
-		}
-
-		aad := append([]byte{suiteID}, ephemeralPub...)
-		ciphertext, err = aead.Encrypt(payload, actualKey, nonce, aad)
-		if err != nil {
-			err = fmt.Errorf("failed encryption: %w", err)
-			return
-		}
-
+		ciphertext, ephemeralPub, nonce, err = suite.Encrypt(serverPub, payload)
 		return
 	}
 	return
@@ -115,31 +85,13 @@ func SetupDecryptInnerPayload(privateKey []byte) (err error) {
 			return
 		}
 
-		sharedSecret, err := ecdh.ReCreateSharedSecret(privateKey, ephemeralPub)
-		if err != nil {
-			err = fmt.Errorf("failed recreating secret: %w", err)
+		suite, valid := registry.GetSuiteInfo(suiteID)
+		if !valid {
+			err = fmt.Errorf("invalid crypto suite ID %d", suiteID)
 			return
 		}
 
-		salt, err := hash.MultipleSlices(ephemeralPub, nonce)
-		if err != nil {
-			err = fmt.Errorf("failed creating salt: %w", err)
-			return
-		}
-
-		suite, _ := registry.GetSuiteInfo(suiteID)
-		actualKey, err := hkdf.DeriveKey(sharedSecret, salt, suite.Name, suite.KeySize)
-		if err != nil {
-			err = fmt.Errorf("failed deriving key: %w", err)
-			return
-		}
-
-		aad := append([]byte{suiteID}, ephemeralPub...)
-		innerPayload, err = aead.Decrypt(ciphertext, actualKey, nonce, aad)
-		if err != nil {
-			return
-		}
-
+		innerPayload, err = suite.Decrypt(privateKey, ciphertext, ephemeralPub, nonce)
 		return
 	}
 	return

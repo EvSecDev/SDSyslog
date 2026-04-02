@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net"
 	"runtime/debug"
-	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
 	"sdsyslog/internal/receiver"
+	"sdsyslog/pkg/crypto/registry"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,9 +39,14 @@ func TestRecvConstantFlow(t *testing.T) {
 	}
 
 	// Mock persistent keys
-	priv, pub, err := ecdh.CreatePersistentKey()
+	var cryptoSuite uint8 = 1
+	info, validID := registry.GetSuiteInfo(cryptoSuite)
+	if !validID {
+		t.Fatalf("invalid suite ID %d", cryptoSuite)
+	}
+	priv, pub, err := info.NewKey()
 	if err != nil {
-		t.Fatalf("expected no error from key creation, but got '%v'", err)
+		t.Fatalf("failed to generate keys: %v", err)
 	}
 
 	// Mock output

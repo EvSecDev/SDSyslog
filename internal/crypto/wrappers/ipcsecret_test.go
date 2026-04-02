@@ -2,8 +2,8 @@ package wrappers
 
 import (
 	"bytes"
-	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/crypto/random"
+	"sdsyslog/pkg/crypto/registry"
 	"testing"
 )
 
@@ -40,8 +40,11 @@ func TestSetupGetSharedSecret(t *testing.T) {
 		},
 	}
 
-	// Mock a valid persistent key for tests
-	priv, _, err := ecdh.CreatePersistentKey()
+	info, validID := registry.GetSuiteInfo(1)
+	if !validID {
+		t.Fatalf("invalid suite ID %d", 1)
+	}
+	priv, _, err := info.NewKey()
 	if err != nil {
 		t.Fatalf("failed to create mock persistent key: %v", err)
 	}

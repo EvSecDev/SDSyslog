@@ -18,7 +18,7 @@ import (
 var installationFiles embed.FS
 
 // Full installation (idempotent)
-func Run(mode string) (err error) {
+func Run(mode string, suiteID uint8) (err error) {
 	// Must run as root
 	if os.Geteuid() != 0 {
 		err = fmt.Errorf("installation must be run as root")
@@ -40,7 +40,7 @@ func Run(mode string) (err error) {
 	}
 
 	// Create template config
-	err = installConfig(mode)
+	err = installConfig(mode, suiteID)
 	if err != nil {
 		err = fmt.Errorf("configuration file: %w", err)
 		return

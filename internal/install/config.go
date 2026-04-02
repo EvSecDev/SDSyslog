@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sdsyslog/internal/crypto/ecdh"
 	"sdsyslog/internal/filtering"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/iomodules"
@@ -15,10 +14,11 @@ import (
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
 	"sdsyslog/internal/sender/ingest"
+	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
 )
 
-func installConfig(mode string) (err error) {
+func installConfig(mode string, suiteID uint8) (err error) {
 	var configFilePath string
 	switch mode {
 	case "send":
@@ -51,9 +51,16 @@ func installConfig(mode string) (err error) {
 	case "send":
 		err = CreateSendTemplateConfig(configFilePath)
 	case "receive":
+		info, validID := registry.GetSuiteInfo(suiteID)
+		if !validID {
+			err = fmt.Errorf("invalid suite ID %d", suiteID)
+			return
+		}
+
 		var private, public []byte
-		private, public, err = ecdh.CreatePersistentKey()
+		private, public, err = info.NewKey()
 		if err != nil {
+			err = fmt.Errorf("failed to generate keys: %w", err)
 			return
 		}
 

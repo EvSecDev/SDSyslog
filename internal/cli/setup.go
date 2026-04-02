@@ -44,18 +44,20 @@ func SetupMode(cliOpts *CommandSet, commandname string, args []string) {
 		os.Exit(1)
 	}
 
+	var defaultSuiteID uint8 = 1
+
 	if newKeyPair {
-		err = install.GeneratePrivateKeys()
+		err = install.GeneratePrivateKeys(defaultSuiteID)
 	} else if newSigningKeys {
-		err = install.GenerateSigningKeys(1) // Default suite ID
+		err = install.GenerateSigningKeys(defaultSuiteID)
 	} else if newSendConf {
 		err = install.CreateSendTemplateConfig(confPath)
 	} else if newRecvConf {
 		err = install.CreateRecvTemplateConfig(confPath)
 	} else if installSender {
-		err = install.Run("send")
+		err = install.Run("send", defaultSuiteID)
 	} else if installReceiver {
-		err = install.Run("receive")
+		err = install.Run("receive", defaultSuiteID)
 	} else if uninstallSender {
 		install.Remove("send")
 	} else if uninstallReceiver {

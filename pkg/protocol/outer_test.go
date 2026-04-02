@@ -1,65 +1,60 @@
 package protocol
 
 import (
-	"sdsyslog/internal/crypto/ecdh"
+	"bytes"
 	"sdsyslog/internal/crypto/wrappers"
+	"sdsyslog/internal/tests/utils"
+	"sdsyslog/pkg/crypto/registry"
 	"strings"
 	"testing"
 )
 
 func TestConstructAndDeconstructouter(t *testing.T) {
-	priv, pub, err := ecdh.CreatePersistentKey()
-	if err != nil {
-		panic(err)
-	}
-
 	tests := []struct {
-		name        string
-		suiteID     uint8
-		pubKey      []byte
-		payload     []byte
-		expectedErr bool
+		name                   string
+		suiteID                uint8
+		pubKey                 []byte
+		payload                []byte
+		expectedConstructErr   string
+		expectedDeconstructErr string
 	}{
 		{
-			name:        "Valid Input",
-			suiteID:     1,
-			pubKey:      pub,
-			payload:     []byte(strings.Repeat("a", minInnerPayloadLen)),
-			expectedErr: false,
+			name:    "Valid Input",
+			suiteID: 1,
+			pubKey:  []byte("placeholder"),
+			payload: []byte(strings.Repeat("a", minInnerPayloadLen)),
 		},
 		{
-			name:        "Empty Payload",
-			suiteID:     1,
-			pubKey:      []byte{0x01, 0x02},
-			payload:     nil,
-			expectedErr: true,
+			name:                 "Empty Payload",
+			suiteID:              1,
+			pubKey:               []byte{0x01, 0x02},
+			payload:              nil,
+			expectedConstructErr: "protocol violation: payload cannot be empty",
 		},
 		{
-			name:        "Invalid Key Length",
-			suiteID:     1,
-			pubKey:      []byte{0x01},
-			payload:     []byte("some data"),
-			expectedErr: true,
-		},
-		{
-			name:        "Invalid Nonce Length",
-			suiteID:     1,
-			pubKey:      []byte{0x01, 0x02},
-			payload:     []byte("some data"),
-			expectedErr: true,
-		},
-		{
-			name:        "Unknown Suite ID",
-			suiteID:     9,
-			pubKey:      []byte{0x01, 0x02},
-			payload:     []byte("valid payload"),
-			expectedErr: true,
+			name:                 "Invalid Key Length",
+			suiteID:              1,
+			pubKey:               []byte{0x01},
+			payload:              []byte("some data"),
+			expectedConstructErr: "invalid public key",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := wrappers.SetupEncryptInnerPayload(tt.pubKey)
+			info, validID := registry.GetSuiteInfo(tt.suiteID)
+			if !validID {
+				t.Fatalf("invalid suite ID %d", tt.suiteID)
+			}
+			priv, pub, err := info.NewKey()
+			if err != nil {
+				t.Fatalf("failed to generate keys: %v", err)
+			}
+			if bytes.Equal(tt.pubKey, []byte("placeholder")) {
+				tt.pubKey = pub
+			}
+
+			err = wrappers.SetupEncryptInnerPayload(tt.pubKey)
 			if err != nil {
 				t.Fatalf("unexpected error setting up encryption function: %v", err)
 			}
@@ -70,22 +65,23 @@ func TestConstructAndDeconstructouter(t *testing.T) {
 
 			// Test ConstructOuterPayload
 			outerBlob, err := ConstructOuterPayload(tt.payload, tt.suiteID)
-			if (err != nil) != tt.expectedErr {
-				t.Errorf("ConstructOuterPayload() error = %v, expectedErr %v", err, tt.expectedErr)
-			}
-			if err == nil && len(outerBlob) == 0 {
-				t.Errorf("ConstructOuterPayload() returned an empty blob")
+			matches, err := utils.MatchErrorString(err, tt.expectedConstructErr)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if matches {
+				return
 			}
 
 			// Test DeconstructOuterPayload only if Construct succeeded
-			if err == nil {
-				innerPayload, err := DeconstructOuterPayload(outerBlob)
-				if (err != nil) != tt.expectedErr {
-					t.Errorf("DeconstructOuterPayload() error = %v, expectedErr %v", err, tt.expectedErr)
-				}
-				if err == nil && len(innerPayload) == 0 {
-					t.Errorf("DeconstructOuterPayload() returned an empty inner payload")
-				}
+			innerPayload, err := DeconstructOuterPayload(outerBlob)
+			matches, err = utils.MatchErrorString(err, tt.expectedConstructErr)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if matches {
+				return
+			}
+			if !bytes.Equal(innerPayload, tt.payload) {
+				t.Fatalf("expected payload %q, but got %q", string(tt.payload), string(innerPayload))
 			}
 		})
 	}

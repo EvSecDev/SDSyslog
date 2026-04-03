@@ -12,6 +12,7 @@ import (
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/metrics/server"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
 	"slices"
@@ -94,7 +95,11 @@ func (cfg JSONConfig) NewDaemonConf(originalConfigPath string) (config Config, e
 		err = fmt.Errorf("failed to parse collection interval time: %w", err)
 		return
 	}
-
+	err = parsing.VerifyWholeDuration(config.MetricCollectionInterval)
+	if err != nil {
+		err = fmt.Errorf("metric collection interval is not supported: %w", err)
+		return
+	}
 	return
 }
 

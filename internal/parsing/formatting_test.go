@@ -1,6 +1,7 @@
 package parsing
 
 import (
+	"sdsyslog/internal/tests/utils"
 	"testing"
 	"time"
 )
@@ -102,6 +103,60 @@ func TestTrimDurationPrecision(t *testing.T) {
 			output := TrimDurationPrecision(tt.input, tt.wantDecimals)
 			if output != tt.expected {
 				t.Fatalf("expected output %q, but got %q", tt.expected, output)
+			}
+		})
+	}
+}
+
+func TestVerifyWholeDuration(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         time.Duration
+		expectedError string
+	}{
+		{
+			name:  "clean ms",
+			input: 50 * time.Millisecond,
+		},
+		{
+			name:  "clean ms 2",
+			input: 200 * time.Millisecond,
+		},
+		{
+			name:  "clean second",
+			input: 5 * time.Second,
+		},
+		{
+			name:  "clean second 2",
+			input: 15 * time.Second,
+		},
+		{
+			name:  "clean minute",
+			input: 1 * time.Minute,
+		},
+		{
+			name:          "too large",
+			input:         1 * time.Hour,
+			expectedError: " must divide evenly into ",
+		},
+		{
+			name:          "negative",
+			input:         -1 * time.Second,
+			expectedError: "interval must be positive",
+		},
+		{
+			name:          "second not divisible",
+			input:         23 * time.Second,
+			expectedError: " must divide evenly into ",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := VerifyWholeDuration(tt.input)
+			_, err = utils.MatchErrorString(err, tt.expectedError)
+			if err != nil {
+				t.Fatalf("%v", err)
 			}
 		})
 	}

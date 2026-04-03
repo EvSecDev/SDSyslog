@@ -28,33 +28,44 @@ func (gatherer *Gatherer) Run(ctx context.Context) {
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSMetric)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	// Tracking last interval run time
-	lastRun := time.Now()
+	interval := gatherer.Interval
 
-	ticker := time.NewTicker(gatherer.Interval / 2) // Use polling interval half of desired record interval
-	defer ticker.Stop()
-
-	// Counter to track how many ticks have passed (for retention)
+	// For metric data retention checks
 	var tickCount int
 
 	for {
+		now := time.Now()
+
+		// Current aligned slice
+		currentSlice := now.Truncate(interval)
+
+		// Next boundary
+		nextSlice := currentSlice.Add(interval)
+
+		// Sleep only until next boundary
+		sleep := time.Until(nextSlice)
+		if sleep < 0 {
+			sleep = 0
+		}
+
 		select {
 		case <-ctx.Done():
 			return
-		case now := <-ticker.C:
-			if now.Sub(lastRun) >= gatherer.Interval {
-				timeSlice := gatherer.Registry.NewTimeSlice(now, gatherer.Interval)
+		case <-time.After(sleep):
+		}
 
-				lastRun = now
-				gatherer.runIntervalTasks(ctx, timeSlice, gatherer.Interval)
-			}
+		// Recompute "now" after wake up
+		now = time.Now()
+		timeSlice := now.Truncate(interval)
 
-			// Conduct old metric evaluations and cleanup
-			tickCount++
-			if tickCount >= 30 {
-				gatherer.Registry.Prune(now, gatherer.Retention)
-				tickCount = 0 // Reset the counter after cleanup
-			}
+		gatherer.Registry.NewTimeSlice(timeSlice, interval)
+		gatherer.runIntervalTasks(ctx, timeSlice, interval)
+
+		// Retention check periodically
+		tickCount++
+		if tickCount >= 30 {
+			gatherer.Registry.Prune(now, gatherer.Retention)
+			tickCount = 0
 		}
 	}
 }

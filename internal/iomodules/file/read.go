@@ -81,6 +81,7 @@ func (mod *InModule) reader() {
 				// Can't do anything about the error here, just read from beginning
 				mod.currentReadOffset = 0
 				lineBuf = lineBuf[:0]
+				return
 			}
 			if mod.currentReadOffset > file.Size() {
 				// Truncation detected - reset state and seek to beginning
@@ -88,6 +89,7 @@ func (mod *InModule) reader() {
 					mod.filePath)
 				mod.currentReadOffset = 0
 				lineBuf = lineBuf[:0]
+				return
 			}
 
 			// Local hostname periodic refresh

@@ -2,6 +2,7 @@
 package parsing
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -34,5 +35,32 @@ func TrimDurationPrecision(duration time.Duration, numDecimals int) (formatted s
 	}
 
 	formatted = formatted[:dot+1+numDecimals] + formatted[i:]
+	return
+}
+
+// Checks to see if time duration is a clean divisor of allowed parent duration units.
+func VerifyWholeDuration(interval time.Duration) (err error) {
+	if interval <= 0 {
+		err = fmt.Errorf("interval must be positive")
+		return
+	}
+
+	// Allowed parents
+	parents := []time.Duration{
+		time.Millisecond,
+		time.Second,
+		time.Minute,
+	}
+
+	for _, parent := range parents {
+		if parent%interval == 0 {
+			return
+		}
+	}
+
+	err = fmt.Errorf(
+		"interval %v must divide evenly into 1ms, 1s, or 1m",
+		interval,
+	)
 	return
 }

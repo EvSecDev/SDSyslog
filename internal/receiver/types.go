@@ -24,6 +24,7 @@ type JSONConfig struct {
 		FilePath     string `json:"filePath,omitempty"`
 		JournaldURL  string `json:"journaldURL,omitempty"`
 		BeatsAddress string `json:"beatsAddress,omitempty"`
+		DBUSNotify   bool   `json:"desktopNotifications,omitempty"`
 	} `json:"outputs"`
 	Metrics struct {
 		Interval          string `json:"collectionInterval"`
@@ -93,6 +94,7 @@ type Config struct {
 	JournaldURL    string
 	BeatsEndpoint  string
 	RawWriter      io.WriteCloser
+	DBUSNotify     bool
 
 	// Metrics
 	MetricQueryServerEnabled bool

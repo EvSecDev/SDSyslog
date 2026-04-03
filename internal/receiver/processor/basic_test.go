@@ -83,7 +83,7 @@ func TestProcessor_Basic(t *testing.T) {
 
 	mockMaxPayloadSize := 1320
 
-	mockValidMessage := protocol.Message{
+	mockValidMessage := &protocol.Message{
 		Timestamp: time.Now(),
 		Hostname:  "localhost",
 		Fields: map[string]any{
@@ -94,7 +94,7 @@ func TestProcessor_Basic(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		input                protocol.Message
+		input                *protocol.Message
 		pastCutoffTime       time.Duration
 		futureCutoffTime     time.Duration
 		expectedMgrError     string
@@ -110,7 +110,7 @@ func TestProcessor_Basic(t *testing.T) {
 		},
 		{
 			name: "highly fragmented packet",
-			input: protocol.Message{
+			input: &protocol.Message{
 				Timestamp: time.Now(),
 				Hostname:  "localhost",
 				Fields: map[string]any{
@@ -130,7 +130,7 @@ func TestProcessor_Basic(t *testing.T) {
 		},
 		{
 			name: "single packet too far in past",
-			input: protocol.Message{
+			input: &protocol.Message{
 				Timestamp: time.Now().Add(-30 * time.Minute),
 				Hostname:  "localhost",
 				Fields: map[string]any{
@@ -145,7 +145,7 @@ func TestProcessor_Basic(t *testing.T) {
 		},
 		{
 			name: "single packet too far in future",
-			input: protocol.Message{
+			input: &protocol.Message{
 				Timestamp: time.Now().Add(30 * time.Minute),
 				Hostname:  "localhost",
 				Fields: map[string]any{

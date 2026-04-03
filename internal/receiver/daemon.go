@@ -92,6 +92,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Stage 4 - Output Manager
 	outMgrConf := &output.ManagerConfig{
+		FilePath:         daemon.cfg.OutputFilePath,
+		JournaldURL:      daemon.cfg.JournaldURL,
+		BeatsAddress:     daemon.cfg.BeatsEndpoint,
+		RawWriter:        daemon.cfg.RawWriter,
+		EnableDBUSNotify: daemon.cfg.DBUSNotify,
 		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,
 		MaxQueueCapacity: daemon.cfg.MaxOutputQueueSize,
 	}
@@ -102,10 +107,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	// Stage 4 - Output Instance
-	err = daemon.Mgrs.Output.AddInstance(daemon.cfg.OutputFilePath,
-		daemon.cfg.JournaldURL,
-		daemon.cfg.BeatsEndpoint,
-		daemon.cfg.RawWriter)
+	err = daemon.Mgrs.Output.AddWorkers()
 	if err != nil {
 		err = fmt.Errorf("failed starting output: %w", err)
 		return
@@ -385,7 +387,7 @@ func (daemon *Daemon) Shutdown() {
 		if !success {
 			logctx.LogStdWarn(daemon.ctx, "output inbox queue did not empty in time: dropped %d messages\n", last)
 		}
-		daemon.Mgrs.Output.RemoveInstance()
+		daemon.Mgrs.Output.RemoveWorkers()
 		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 			"Successfully stopped output instance\n")
 	}

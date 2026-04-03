@@ -141,7 +141,7 @@ func mockPackets(numMessages int, rawMessage []byte, maxPayloadSize int, publicK
 		"ApplicationName": "test-app",
 	}
 
-	newMsg := protocol.Message{
+	newMsg := &protocol.Message{
 		Timestamp: time.Now(),
 		Hostname:  "localhost",
 		Fields:    fields,

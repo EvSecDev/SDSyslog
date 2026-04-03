@@ -63,7 +63,7 @@ func TestRouteFragment(t *testing.T) {
 
 	mockShard := &Instance{}
 
-	mockFrag := protocol.Payload{
+	mockFrag := &protocol.Payload{
 		HostID:        1234,
 		MsgID:         4567,
 		MessageSeq:    0,
@@ -79,7 +79,7 @@ func TestRouteFragment(t *testing.T) {
 		name                 string
 		mockRV               MockRoutingView
 		remoteAddr           string
-		inputFrags           []protocol.Payload
+		inputFrags           []*protocol.Payload
 		processStartTime     time.Time
 		expectedRouteSuccess bool
 		expectedShardIDDest  string
@@ -88,7 +88,7 @@ func TestRouteFragment(t *testing.T) {
 		{
 			name:                 "Local new fragment",
 			remoteAddr:           "127.0.0.1",
-			inputFrags:           []protocol.Payload{mockFrag},
+			inputFrags:           []*protocol.Payload{mockFrag},
 			processStartTime:     time.Now(),
 			expectedRouteSuccess: true,
 			expectedShardIDDest:  "s2",
@@ -119,7 +119,7 @@ func TestRouteFragment(t *testing.T) {
 		{
 			name:                 "Local new fragment single shard",
 			remoteAddr:           "127.0.0.1",
-			inputFrags:           []protocol.Payload{mockFrag},
+			inputFrags:           []*protocol.Payload{mockFrag},
 			processStartTime:     time.Now(),
 			expectedRouteSuccess: true,
 			expectedShardIDDest:  "s1",
@@ -150,7 +150,7 @@ func TestRouteFragment(t *testing.T) {
 		{
 			name:       "Local existing fragment",
 			remoteAddr: "127.0.0.1",
-			inputFrags: []protocol.Payload{
+			inputFrags: []*protocol.Payload{
 				{
 					HostID:        1234,
 					MsgID:         4321,
@@ -209,7 +209,7 @@ func TestRouteFragment(t *testing.T) {
 		{
 			name:       "Local existing fragment - default shard shutdown",
 			remoteAddr: "127.0.0.1",
-			inputFrags: []protocol.Payload{
+			inputFrags: []*protocol.Payload{
 				{
 					HostID:        1234,
 					MsgID:         5783,
@@ -271,7 +271,7 @@ func TestRouteFragment(t *testing.T) {
 		},
 		{
 			name:                 "Empty shard list",
-			inputFrags:           []protocol.Payload{mockFrag},
+			inputFrags:           []*protocol.Payload{mockFrag},
 			expectedErrorLog:     "no active shards available",
 			expectedRouteSuccess: false,
 			mockRV: MockRoutingView{
@@ -292,7 +292,7 @@ func TestRouteFragment(t *testing.T) {
 		{
 			name:       "Retry limit hit",
 			remoteAddr: "127.0.0.1",
-			inputFrags: []protocol.Payload{
+			inputFrags: []*protocol.Payload{
 				{
 					HostID:        1234,
 					MsgID:         5783,

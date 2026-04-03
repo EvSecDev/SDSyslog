@@ -13,9 +13,10 @@ import (
 )
 
 // Parses file line text for common formats and extracts metadata. (The Monstrosity of Assumption TM)
-func parseLine(rawLine string, localHostname string) (message protocol.Message) {
+func parseLine(rawLine string, localHostname string) (message *protocol.Message) {
 	line := strings.TrimSpace(rawLine)
 
+	message = &protocol.Message{}
 	message.Fields = make(map[string]any)
 
 	// Format: Syslog
@@ -193,7 +194,7 @@ func withCurrentYear(old time.Time) (new time.Time) {
 }
 
 // Replaces empty fields with expected defaults
-func setDefaults(old protocol.Message, raw string, localHostname string) (new protocol.Message) {
+func setDefaults(old *protocol.Message, raw string, localHostname string) (new *protocol.Message) {
 	new = old
 	if new.Timestamp.IsZero() {
 		new.Timestamp = time.Now()
@@ -229,7 +230,7 @@ func setDefaults(old protocol.Message, raw string, localHostname string) (new pr
 
 // Main raw log line format for outputs
 // Fmt: '2020-01-01T10:10:10.123456789Z Server01 MyApp[1234]: Daemon: [INFO]: this is a log message'
-func formatAsText(ctx context.Context, msg protocol.Payload) (text string) {
+func formatAsText(ctx context.Context, msg *protocol.Payload) (text string) {
 	var remoteID string
 	if msg.RemoteIP.IsValid() && msg.Hostname != "" {
 		remoteID = msg.RemoteIP.String() + "/" + msg.Hostname

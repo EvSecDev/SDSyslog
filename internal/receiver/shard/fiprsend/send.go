@@ -12,7 +12,7 @@ import (
 
 // Sends fragment to another process.
 // Any error should only be logged and fragment should route local.
-func RouteFragment(socketPath string, messageID string, remoteAddress netip.Addr, fragment protocol.Payload) (rerouteLocally bool, err error) {
+func RouteFragment(socketPath string, messageID string, remoteAddress netip.Addr, fragment *protocol.Payload) (rerouteLocally bool, err error) {
 	// Record panics and route local
 	defer func() {
 		if fatalError := recover(); fatalError != nil {

@@ -43,7 +43,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 		return
 	}
 
-	inbox, err := mpmc.New[protocol.Message](logctx.GetTagList(ctx),
+	inbox, err := mpmc.New[*protocol.Message](logctx.GetTagList(ctx),
 		uint64(config.MinQueueCapacity),
 		config.MinQueueCapacity,
 		config.MaxQueueCapacity)

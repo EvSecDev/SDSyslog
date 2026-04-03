@@ -2,9 +2,8 @@ package output
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"sdsyslog/internal/iomodules/beats"
+	"sdsyslog/internal/iomodules/dbusnotify"
 	"sdsyslog/internal/iomodules/file"
 	"sdsyslog/internal/iomodules/generic"
 	"sdsyslog/internal/iomodules/journald"
@@ -12,12 +11,7 @@ import (
 )
 
 // Create and start new output instance
-func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAddress string, rawWriter io.WriteCloser) (err error) {
-	if filePath == "" && journaldURL == "" && beatsAddress == "" && rawWriter == nil {
-		err = fmt.Errorf("no outputs enabled/configured")
-		return
-	}
-
+func (manager *Manager) AddWorkers() (err error) {
 	// Create new context for output instance
 	workerCtx, cancelInstance := context.WithCancel(manager.ctx)
 
@@ -27,19 +21,23 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 	const defaultFileBatchSize int = 20
 
 	// Add outputs
-	manager.Instance.fileMod, err = file.NewOutput(filePath, defaultFileBatchSize)
+	manager.Instance.fileMod, err = file.NewOutput(manager.Config.FilePath, defaultFileBatchSize)
 	if err != nil {
 		return
 	}
-	manager.Instance.jrnlMod, err = journald.NewOutput(journaldURL)
+	manager.Instance.jrnlMod, err = journald.NewOutput(manager.Config.JournaldURL)
 	if err != nil {
 		return
 	}
-	manager.Instance.beatsMod, err = beats.NewOutput(beatsAddress)
+	manager.Instance.beatsMod, err = beats.NewOutput(manager.Config.BeatsAddress)
 	if err != nil {
 		return
 	}
-	manager.Instance.rawMod = generic.NewOutput(rawWriter)
+	manager.Instance.rawMod = generic.NewOutput(manager.Config.RawWriter)
+	manager.Instance.DBUSnotify, err = dbusnotify.NewOutput(manager.Config.EnableDBUSNotify)
+	if err != nil {
+		return
+	}
 
 	// Start worker
 	manager.wg.Add(1)
@@ -52,7 +50,7 @@ func (manager *Manager) AddInstance(filePath string, journaldURL string, beatsAd
 }
 
 // Shutdown existing file output instance
-func (manager *Manager) RemoveInstance() {
+func (manager *Manager) RemoveWorkers() {
 	if manager.cancel != nil {
 		manager.cancel()
 	}
@@ -77,5 +75,10 @@ func (manager *Manager) RemoveInstance() {
 	if err != nil {
 		logctx.LogStdErr(manager.ctx,
 			"failed to shutdown raw module: %w\n", err)
+	}
+	err = manager.Instance.DBUSnotify.Shutdown()
+	if err != nil {
+		logctx.LogStdErr(manager.ctx,
+			"failed to shutdown DBUS notify module: %w\n", err)
 	}
 }

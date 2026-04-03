@@ -12,7 +12,7 @@ import (
 )
 
 // Creates new send pipeline input with the given source
-func NewInput(ctx context.Context, source io.ReadCloser, queue *mpmc.Queue[protocol.Message]) (new *InModule, err error) {
+func NewInput(ctx context.Context, source io.ReadCloser, queue *mpmc.Queue[*protocol.Message]) (new *InModule, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	newNamespace := append(logctx.GetTagList(ctx), logctx.NSoRaw)
 	ctx = logctx.OverwriteCtxTag(ctx, newNamespace)

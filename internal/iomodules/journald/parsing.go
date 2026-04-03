@@ -11,7 +11,8 @@ import (
 )
 
 // Extracts relevant fields from a journal entry
-func parseFields(fields map[string]string, localHostname string) (message protocol.Message, err error) {
+func parseFields(fields map[string]string, localHostname string) (message *protocol.Message, err error) {
+	message = &protocol.Message{}
 	message.Fields = make(map[string]any)
 
 	// RAW LOG

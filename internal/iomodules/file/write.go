@@ -9,7 +9,7 @@ import (
 )
 
 // Writes log message and associated metadata in one line to configured file
-func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (linesWritten int, err error) {
+func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (linesWritten int, err error) {
 	if mod == nil {
 		return
 	}

@@ -11,7 +11,7 @@ import (
 )
 
 // Create new defrag manager
-func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[protocol.Payload]) (new *Manager, err error) {
+func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[*protocol.Payload]) (new *Manager, err error) {
 	// Double check queues - should never get past build
 	if outbox == nil {
 		panic("FATAL: Receiver Defrag manager received empty outbox queue variable")

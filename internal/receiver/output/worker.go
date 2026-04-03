@@ -24,7 +24,7 @@ func (instance *Instance) run(ctx context.Context) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
-	popCh := make(chan protocol.Payload, 1)
+	popCh := make(chan *protocol.Payload, 1)
 
 	go func() {
 		for {
@@ -111,6 +111,13 @@ func (instance *Instance) run(ctx context.Context) {
 						"Failed to write message(s) to raw output: %w\n", err)
 				}
 				instance.Metrics.SuccessfulRawWrites.Add(uint64(n))
+
+				n, err = instance.DBUSnotify.Write(ctx, msg)
+				if err != nil {
+					logctx.LogStdErr(ctx,
+						"Failed to write message(s) to DBUS notify output: %w\n", err)
+				}
+				instance.Metrics.SuccessfulNotifyWrites.Add(uint64(n))
 			}()
 		}
 	}

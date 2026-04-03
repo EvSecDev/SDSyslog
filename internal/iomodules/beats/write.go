@@ -9,7 +9,7 @@ import (
 )
 
 // Writes log message and associated metadata to configured beats server
-func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (logsSent int, err error) {
+func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (logsSent int, err error) {
 	if mod == nil {
 		return
 	}

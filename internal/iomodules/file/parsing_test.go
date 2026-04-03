@@ -407,7 +407,7 @@ func TestFormatAsText(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output := formatAsText(ctx, tt.input)
+			output := formatAsText(ctx, &tt.input)
 			if output != tt.expectedOutput {
 				t.Fatalf("output mismatch:\nexpected:%q\ngot:     %q\n", tt.expectedOutput, output)
 			}

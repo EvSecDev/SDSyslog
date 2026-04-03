@@ -8,7 +8,7 @@ import (
 )
 
 // Main Entry Point: Takes in a new message to be sent and creates packets (transport layer payload)
-func Create(sendMsg Message, hostID int, maxPayloadSize int, cryptoSuite, signatureSuite uint8) (packets [][]byte, err error) {
+func Create(sendMsg *Message, hostID int, maxPayloadSize int, cryptoSuite, signatureSuite uint8) (packets [][]byte, err error) {
 	newMessageID, err := random.FourByte()
 	if err != nil {
 		err = fmt.Errorf("failed to generate random message identifier: %w", err)
@@ -16,7 +16,7 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int, cryptoSuite, signat
 	}
 
 	// Create internal payload object
-	newMsg := Payload{
+	newMsg := &Payload{
 		HostID:       hostID,
 		MsgID:        newMessageID,
 		Timestamp:    sendMsg.Timestamp,
@@ -49,7 +49,7 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int, cryptoSuite, signat
 	}
 
 	for index, fragment := range fragments {
-		var payload innerWireFormat
+		var payload *innerWireFormat
 		payload, err = ConstructPayload(fragment, signatureSuite)
 		if err != nil {
 			err = fmt.Errorf("fragment %d: %w", index, err)
@@ -76,12 +76,12 @@ func Create(sendMsg Message, hostID int, maxPayloadSize int, cryptoSuite, signat
 }
 
 // Main Entry Point: Takes in multiple raw packets (transport layer payload) and returns the message
-func Extract(packets [][]byte) (recvMsg Message, hostID int, err error) {
+func Extract(packets [][]byte) (recvMsg *Message, hostID int, err error) {
 	if len(packets) == 0 {
 		return
 	}
 
-	var fragments []Payload
+	var fragments []*Payload
 	for index, packet := range packets {
 		var innerPayload []byte
 		innerPayload, err = DeconstructOuterPayload(packet)
@@ -90,14 +90,14 @@ func Extract(packets [][]byte) (recvMsg Message, hostID int, err error) {
 			return
 		}
 
-		var payload innerWireFormat
+		var payload *innerWireFormat
 		payload, err = DeconstructInnerPayload(innerPayload)
 		if err != nil {
 			err = fmt.Errorf("failed to deserialize inner payload for fragment %d: %w", index, err)
 			return
 		}
 
-		var messageFragment Payload
+		var messageFragment *Payload
 		messageFragment, err = DeconstructPayload(payload)
 		if err != nil {
 			err = fmt.Errorf("fragment %d: %w", index, err)
@@ -112,7 +112,7 @@ func Extract(packets [][]byte) (recvMsg Message, hostID int, err error) {
 		return
 	}
 
-	recvMsg = Message{
+	recvMsg = &Message{
 		Timestamp: primaryPayload.Timestamp,
 		Hostname:  primaryPayload.Hostname,
 		Fields:    primaryPayload.CustomFields,

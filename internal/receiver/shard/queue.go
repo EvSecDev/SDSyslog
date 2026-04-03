@@ -23,7 +23,7 @@ func New(namespace []string, buffer int, packetDeadlinePtr *atomic.Int64) (new *
 }
 
 // Add fragment to bucket
-func (queue *Instance) push(ctx context.Context, bucketKey string, fragment protocol.Payload, processingStartTime time.Time) {
+func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *protocol.Payload, processingStartTime time.Time) {
 	queue.Mu.Lock()
 	defer queue.Mu.Unlock()
 
@@ -32,7 +32,7 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment prot
 	bucket, ok := queue.Buckets[bucketKey]
 	if !ok {
 		bucket = &Bucket{
-			Fragments: make(map[int]protocol.Payload),
+			Fragments: make(map[int]*protocol.Payload),
 			maxSeq:    fragment.MessageSeqMax,
 		}
 		queue.Buckets[bucketKey] = bucket

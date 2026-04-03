@@ -22,14 +22,14 @@ func TestConstructPayload(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		input    Payload
+		input    *Payload
 		sigID    uint8
-		expected innerWireFormat
+		expected *innerWireFormat
 		err      string
 	}{
 		{
 			name: "valid payload no sig",
-			input: Payload{
+			input: &Payload{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -44,7 +44,7 @@ func TestConstructPayload(t *testing.T) {
 				PaddingLen: 16,
 			},
 			sigID: 0,
-			expected: innerWireFormat{
+			expected: &innerWireFormat{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -74,7 +74,7 @@ func TestConstructPayload(t *testing.T) {
 		},
 		{
 			name: "missing payload signature",
-			input: Payload{
+			input: &Payload{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -89,7 +89,7 @@ func TestConstructPayload(t *testing.T) {
 				PaddingLen: 16,
 			},
 			sigID: 1,
-			expected: innerWireFormat{
+			expected: &innerWireFormat{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -120,7 +120,7 @@ func TestConstructPayload(t *testing.T) {
 		},
 		{
 			name: "invalid precomputed signature",
-			input: Payload{
+			input: &Payload{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -139,7 +139,7 @@ func TestConstructPayload(t *testing.T) {
 		},
 		{
 			name: "messageSeq larger than messageSeqMax",
-			input: Payload{
+			input: &Payload{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    5,
@@ -152,12 +152,12 @@ func TestConstructPayload(t *testing.T) {
 				Data:       []byte("log message"),
 				PaddingLen: 16,
 			},
-			expected: innerWireFormat{},
+			expected: &innerWireFormat{},
 			err:      ErrInvalidPayload.Error() + ": message sequence cannot be larger than maximum sequence",
 		},
 		{
 			name: "invalid padding length",
-			input: Payload{
+			input: &Payload{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -170,13 +170,17 @@ func TestConstructPayload(t *testing.T) {
 				Data:       []byte("log message"),
 				PaddingLen: 500, // Invalid padding length
 			},
-			expected: innerWireFormat{},
+			expected: &innerWireFormat{},
 			err:      fmt.Sprintf("%v: invalid padding length 500: must be between %d and %d", ErrInvalidPayload, minPaddingLen, maxPaddingLen),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.expected == nil {
+				tt.expected = &innerWireFormat{}
+			}
+
 			// Initialize signing functions for this test (also relies on setup funcs being callable multiple times)
 			var randSource []byte
 			err = random.PopulateEmptySlice(&randSource, ed25519.SeedSize)
@@ -238,13 +242,13 @@ func TestDeconstructPayload(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		input    innerWireFormat
-		expected Payload
+		input    *innerWireFormat
+		expected *Payload
 		err      string
 	}{
 		{
 			name: "valid protocol no signature",
-			input: innerWireFormat{
+			input: &innerWireFormat{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -267,7 +271,7 @@ func TestDeconstructPayload(t *testing.T) {
 				Data:       []byte("log message"),
 				PaddingLen: 16,
 			},
-			expected: Payload{
+			expected: &Payload{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -285,7 +289,7 @@ func TestDeconstructPayload(t *testing.T) {
 		},
 		{
 			name: "valid protocol with signature",
-			input: innerWireFormat{
+			input: &innerWireFormat{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -308,7 +312,7 @@ func TestDeconstructPayload(t *testing.T) {
 				Data:       []byte("log message"),
 				PaddingLen: 16,
 			},
-			expected: Payload{
+			expected: &Payload{
 				HostID:        1,
 				MsgID:         2,
 				MessageSeq:    3,
@@ -327,7 +331,7 @@ func TestDeconstructPayload(t *testing.T) {
 		},
 		{
 			name: "empty host ID",
-			input: innerWireFormat{
+			input: &innerWireFormat{
 				HostID:        0,
 				MsgID:         1,
 				MessageSeq:    1,
@@ -349,12 +353,12 @@ func TestDeconstructPayload(t *testing.T) {
 				Data:       []byte("log message"),
 				PaddingLen: 16,
 			},
-			expected: Payload{},
+			expected: &Payload{},
 			err:      ErrInvalidPayload.Error() + ": empty host ID",
 		},
 		{
 			name: "empty msg ID",
-			input: innerWireFormat{
+			input: &innerWireFormat{
 				HostID:        1,
 				MsgID:         0,
 				MessageSeq:    1,
@@ -376,7 +380,7 @@ func TestDeconstructPayload(t *testing.T) {
 				Data:       []byte("log message"),
 				PaddingLen: 16,
 			},
-			expected: Payload{},
+			expected: &Payload{},
 			err:      ErrInvalidPayload.Error() + ": empty msg ID",
 		},
 	}
@@ -445,7 +449,7 @@ func TestDeconstructPayload(t *testing.T) {
 }
 
 // Helper function to compare Protocol values
-func compareProtocols(p1, p2 innerWireFormat) bool {
+func compareProtocols(p1, p2 *innerWireFormat) bool {
 	basicMatch := p1.HostID == p2.HostID &&
 		p1.MsgID == p2.MsgID &&
 		p1.MessageSeq == p2.MessageSeq &&
@@ -473,7 +477,7 @@ func compareProtocols(p1, p2 innerWireFormat) bool {
 }
 
 // Helper function to compare Payload values
-func comparePayloads(p1, p2 Payload) bool {
+func comparePayloads(p1, p2 *Payload) bool {
 	basicMatch := p1.HostID == p2.HostID &&
 		p1.MsgID == p2.MsgID &&
 		p1.MessageSeq == p2.MessageSeq &&

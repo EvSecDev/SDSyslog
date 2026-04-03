@@ -18,12 +18,12 @@ func TestConstructAndDeconstruct(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		input       innerWireFormat
+		input       *innerWireFormat
 		expectedErr bool
 	}{
 		{
 			name: "Normal",
-			input: innerWireFormat{
+			input: &innerWireFormat{
 				HostID:        12345,
 				MsgID:         92789,
 				MessageSeq:    1,
@@ -49,7 +49,7 @@ func TestConstructAndDeconstruct(t *testing.T) {
 		},
 		{
 			name: "LongEven",
-			input: innerWireFormat{
+			input: &innerWireFormat{
 				HostID:        12345,
 				MsgID:         67819,
 				MessageSeq:    1,
@@ -75,7 +75,7 @@ func TestConstructAndDeconstruct(t *testing.T) {
 		},
 		{
 			name: "LongOdd",
-			input: innerWireFormat{
+			input: &innerWireFormat{
 				HostID:        12345,
 				MsgID:         67839,
 				MessageSeq:    1,
@@ -101,7 +101,7 @@ func TestConstructAndDeconstruct(t *testing.T) {
 		},
 		{
 			name: "Short",
-			input: innerWireFormat{
+			input: &innerWireFormat{
 				HostID:        1,
 				MsgID:         1,
 				MessageSeq:    1,
@@ -191,7 +191,7 @@ func TestShortPayload(t *testing.T) {
 
 func TestLongPayload(t *testing.T) {
 	// Test serialization with a payload exceeding length field
-	fields := innerWireFormat{
+	fields := &innerWireFormat{
 		HostID:        12345,
 		MsgID:         96789,
 		MessageSeq:    1,
@@ -209,7 +209,7 @@ func TestLongPayload(t *testing.T) {
 }
 
 func TestInvalidData(t *testing.T) {
-	fields := innerWireFormat{
+	fields := &innerWireFormat{
 		HostID:        12345,
 		MsgID:         96789,
 		MessageSeq:    1,
@@ -246,7 +246,7 @@ func TestPaddingLen(t *testing.T) {
 	mockInt := buf.Bytes()
 
 	// Test that padding is added correctly
-	fields := innerWireFormat{
+	fields := &innerWireFormat{
 		HostID:        12345,
 		MsgID:         96789,
 		MessageSeq:    1,
@@ -298,7 +298,7 @@ func TestPaddingLen(t *testing.T) {
 }
 
 func TestInvalidNextLengthByte(t *testing.T) {
-	fields := innerWireFormat{
+	fields := &innerWireFormat{
 		HostID:        12345,
 		MsgID:         96789,
 		MessageSeq:    1,

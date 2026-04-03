@@ -23,16 +23,16 @@ type ManagerConfig struct {
 }
 
 type Manager struct {
-	Config    *ManagerConfig                // Configuration Values
-	Instances atomic.Pointer[[]*Instance]   // Individual output workers
-	InQueue   *mpmc.Queue[protocol.Message] // Messages from source processors
-	outQueue  *mpmc.Queue[[]byte]           // Queued packets to be sent
+	Config    *ManagerConfig                 // Configuration Values
+	Instances atomic.Pointer[[]*Instance]    // Individual output workers
+	InQueue   *mpmc.Queue[*protocol.Message] // Messages from source processors
+	outQueue  *mpmc.Queue[[]byte]            // Queued packets to be sent
 	ctx       context.Context
 }
 
 type Instance struct {
-	inbox   *mpmc.Queue[protocol.Message] // messages from processors
-	outbox  *mpmc.Queue[[]byte]           // fragments for sender
+	inbox   *mpmc.Queue[*protocol.Message] // messages from processors
+	outbox  *mpmc.Queue[[]byte]            // fragments for sender
 	Metrics MetricStorage
 
 	cryptoSuiteID  uint8

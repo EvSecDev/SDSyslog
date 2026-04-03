@@ -30,7 +30,7 @@ type InModule struct {
 	currentReadOffset int64
 	currentReadID     fileID
 
-	outbox  *mpmc.Queue[protocol.Message]
+	outbox  *mpmc.Queue[*protocol.Message]
 	metrics MetricStorage
 
 	wg     sync.WaitGroup     // Waiter for instance

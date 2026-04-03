@@ -282,7 +282,7 @@ func TestMessageFilter(t *testing.T) {
 				t.Fatalf("unexpected error validating filter: %v", err)
 			}
 
-			match := tt.filter.Match(tt.input)
+			match := tt.filter.Match(&tt.input)
 			if match != tt.expectedMatch {
 				t.Fatalf("match mismatch result: expected match=%v - got match=%v", tt.expectedMatch, match)
 			}

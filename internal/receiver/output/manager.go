@@ -21,7 +21,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context) (new *Manager, err 
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSmOutput)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	inbox, err := mpmc.New[protocol.Payload](logctx.GetTagList(ctx),
+	inbox, err := mpmc.New[*protocol.Payload](logctx.GetTagList(ctx),
 		uint64(config.MinQueueCapacity),
 		config.MinQueueCapacity,
 		config.MaxQueueCapacity)
@@ -47,6 +47,14 @@ func (config *ManagerConfig) validate() (err error) {
 	}
 	if int(config.MinQueueCapacity) >= int(config.MaxQueueCapacity) {
 		err = fmt.Errorf("minimum queue capacity cannot be equal to or less than max queue capacity")
+	}
+	if config.FilePath == "" &&
+		config.JournaldURL == "" &&
+		config.BeatsAddress == "" &&
+		config.RawWriter == nil &&
+		!config.EnableDBUSNotify {
+		err = fmt.Errorf("no outputs enabled/configured")
+		return
 	}
 	return
 }

@@ -55,7 +55,7 @@ func (instance *Instance) run() {
 				return
 			}
 
-			var fragSlice []protocol.Payload
+			var fragSlice []*protocol.Payload
 			for _, fragment := range bucket.Fragments {
 				fragSlice = append(fragSlice, fragment)
 			}

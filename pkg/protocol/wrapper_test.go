@@ -16,7 +16,7 @@ func TestProtocol(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		msg              Message
+		msg              *Message
 		signingPrivKey   []byte
 		cryptoID         uint8
 		sigID            uint8
@@ -24,14 +24,14 @@ func TestProtocol(t *testing.T) {
 		maxPayloadSize   int
 		mutatePackets    func(packets [][]byte) [][]byte
 		pinnedPubKeys    map[string][]byte
-		expectedMsg      Message
+		expectedMsg      *Message
 		expectErrCreate  string
 		expectErrExtract string
 		expectEmptyRecv  bool
 	}{
 		{
 			name: "single fragment - small payload",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "host-a",
 				Fields:    map[string]any{"env": "dev"},
@@ -40,7 +40,7 @@ func TestProtocol(t *testing.T) {
 			hostID:         1,
 			maxPayloadSize: 1024,
 			cryptoID:       1,
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "host-a",
 				Fields:    map[string]any{"env": "dev"},
@@ -49,7 +49,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "valid signature",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "host-a-w-sig",
 				Fields:    map[string]any{"env": "dev"},
@@ -63,7 +63,7 @@ func TestProtocol(t *testing.T) {
 			pinnedPubKeys: map[string][]byte{
 				"host-a-w-sig": ed25519.NewKeyFromSeed(bytes.Repeat([]byte("x"), ed25519.SeedSize)).Public().(ed25519.PublicKey),
 			},
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  "host-a-w-sig",
 				Fields:    map[string]any{"env": "dev"},
@@ -72,7 +72,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "hostname forgery (incorrect signature)",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "host-a-fake",
 				Fields:    map[string]any{"env": "dev"},
@@ -90,7 +90,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "hostname forgery (no signature)",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "host-a-fake-2",
 				Fields:    map[string]any{"env": "dev"},
@@ -108,7 +108,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "unknown hostname with signature",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "host-unk-w-sig",
 				Fields:    map[string]any{"env": "dev"},
@@ -119,7 +119,7 @@ func TestProtocol(t *testing.T) {
 			signingPrivKey: ed25519.NewKeyFromSeed(bytes.Repeat([]byte("x"), ed25519.SeedSize)),
 			cryptoID:       1,
 			sigID:          1,
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnkSig + "host-unk-w-sig",
 				Fields:    map[string]any{"env": "dev"},
@@ -128,7 +128,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "multi fragment - large payload",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "host-b",
 				Fields:    map[string]any{"env": "prod"},
@@ -137,7 +137,7 @@ func TestProtocol(t *testing.T) {
 			hostID:         42,
 			maxPayloadSize: 256,
 			cryptoID:       1,
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "host-b",
 				Fields:    map[string]any{"env": "prod"},
@@ -146,7 +146,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "multi fragment - large payload - with signature",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "host-large-w-sig",
 				Fields:    map[string]any{"env": "prod"},
@@ -160,7 +160,7 @@ func TestProtocol(t *testing.T) {
 			pinnedPubKeys: map[string][]byte{
 				"host-large-w-sig": ed25519.NewKeyFromSeed(bytes.Repeat([]byte("x"), ed25519.SeedSize)).Public().(ed25519.PublicKey),
 			},
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  "host-large-w-sig",
 				Fields:    map[string]any{"env": "prod"},
@@ -169,7 +169,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "exact boundary payload",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "boundary-host",
 				Data:      bytes.Repeat([]byte("B"), 512),
@@ -177,7 +177,7 @@ func TestProtocol(t *testing.T) {
 			hostID:         7,
 			maxPayloadSize: 512,
 			cryptoID:       1,
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "boundary-host",
 				Data:      bytes.Repeat([]byte("B"), 512),
@@ -185,7 +185,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "unicode payload",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "unicode-host",
 				Fields:    map[string]any{"lang": ":)"},
@@ -194,7 +194,7 @@ func TestProtocol(t *testing.T) {
 			hostID:         9,
 			maxPayloadSize: 256,
 			cryptoID:       1,
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "unicode-host",
 				Fields:    map[string]any{"lang": ":)"},
@@ -203,7 +203,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "invalid max payload size",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "bad-payload",
 				Data:      []byte("test"),
@@ -212,7 +212,7 @@ func TestProtocol(t *testing.T) {
 			maxPayloadSize:  0,
 			cryptoID:        1,
 			expectErrCreate: "maxPayloadSize must be greater than 0",
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "bad-payload",
 				Data:      []byte("test"),
@@ -220,7 +220,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "custom fields exceed max payload size",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "too-bid-fields",
 				Fields: map[string]any{
@@ -232,7 +232,7 @@ func TestProtocol(t *testing.T) {
 			maxPayloadSize:  260,
 			cryptoID:        1,
 			expectErrCreate: "exceeded max payload size: no room left for message in packet",
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "too-bid-fields",
 				Fields: map[string]any{
@@ -243,7 +243,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "corrupted packet",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "corrupt-host",
 				Data:      []byte("valid data"),
@@ -256,7 +256,7 @@ func TestProtocol(t *testing.T) {
 				return packets
 			},
 			expectErrExtract: "failed to deserialize outer payload for fragment 0: " + ErrUnknownSuite.Error() + ": ID 254",
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "corrupt-host",
 				Data:      []byte("valid data"),
@@ -264,7 +264,7 @@ func TestProtocol(t *testing.T) {
 		},
 		{
 			name: "reordered fragments",
-			msg: Message{
+			msg: &Message{
 				Timestamp: now,
 				Hostname:  "reorder-host",
 				Data:      bytes.Repeat([]byte("Z"), 2048),
@@ -278,7 +278,7 @@ func TestProtocol(t *testing.T) {
 				}
 				return packets
 			},
-			expectedMsg: Message{
+			expectedMsg: &Message{
 				Timestamp: now,
 				Hostname:  HostPrefixUnverified + "reorder-host",
 				Data:      bytes.Repeat([]byte("Z"), 2048),

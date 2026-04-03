@@ -20,21 +20,21 @@ func TestPushPop_Basic(t *testing.T) {
 
 	tests := []struct {
 		name                   string
-		fragments              []protocol.Payload
+		fragments              []*protocol.Payload
 		pushDelay              time.Duration // Time between fragment push-to-queue
 		expectedTimeOutBuckets int
 		expectedBytes          uint64
 	}{
 		{
 			name: "single fragment completes bucket",
-			fragments: []protocol.Payload{
+			fragments: []*protocol.Payload{
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 			},
 			expectedBytes: 1,
 		},
 		{
 			name: "multi-fragment fills bucket in order",
-			fragments: []protocol.Payload{
+			fragments: []*protocol.Payload{
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
 				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("B")},
 			},
@@ -42,7 +42,7 @@ func TestPushPop_Basic(t *testing.T) {
 		},
 		{
 			name: "out-of-order fragments",
-			fragments: []protocol.Payload{
+			fragments: []*protocol.Payload{
 				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("B")},
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
 			},
@@ -50,7 +50,7 @@ func TestPushPop_Basic(t *testing.T) {
 		},
 		{
 			name: "duplicate fragments ignored",
-			fragments: []protocol.Payload{
+			fragments: []*protocol.Payload{
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 			},
@@ -58,7 +58,7 @@ func TestPushPop_Basic(t *testing.T) {
 		},
 		{
 			name: "timeout triggers bucket fill",
-			fragments: []protocol.Payload{
+			fragments: []*protocol.Payload{
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 2, Data: []byte("A")},
 			},
 			expectedTimeOutBuckets: 1,
@@ -66,7 +66,7 @@ func TestPushPop_Basic(t *testing.T) {
 		},
 		{
 			name: "timeout in hot path",
-			fragments: []protocol.Payload{
+			fragments: []*protocol.Payload{
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
 				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("fake")},
 			},
@@ -170,7 +170,7 @@ func TestPushPop_Parallel(t *testing.T) {
 			uniqueID, _ := random.FourByte()
 
 			for i := 0; i < fragsPerProducer; i++ {
-				frag := protocol.Payload{
+				frag := &protocol.Payload{
 					HostID:        pid,
 					MessageSeq:    i,
 					MessageSeqMax: fragsPerProducer - 1,

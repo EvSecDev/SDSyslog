@@ -18,7 +18,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		input             Payload
+		input             *Payload
 		maxPayloadSize    int
 		fixedProtocolSize int
 		expectError       bool
@@ -26,7 +26,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 	}{
 		{
 			name: "Valid fragmentation and defragmentation",
-			input: Payload{
+			input: &Payload{
 				HostID:       101,
 				MsgID:        555,
 				Timestamp:    now,
@@ -41,7 +41,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 		},
 		{
 			name: "Valid no frag",
-			input: Payload{
+			input: &Payload{
 				HostID:       1,
 				MsgID:        2,
 				Timestamp:    now,
@@ -56,7 +56,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 		},
 		{
 			name: "Valid large frag",
-			input: Payload{
+			input: &Payload{
 				HostID:       1,
 				MsgID:        2,
 				Timestamp:    now,
@@ -71,7 +71,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 		},
 		{
 			name: "Invalid maxPayloadSize",
-			input: Payload{
+			input: &Payload{
 				Data: []byte("test"),
 			},
 			maxPayloadSize:    0,
@@ -81,7 +81,7 @@ func TestFragmentAndDefragment(t *testing.T) {
 		},
 		{
 			name: "Invalid protocolSize",
-			input: Payload{
+			input: &Payload{
 				Data: []byte("test"),
 			},
 			maxPayloadSize:    100,
@@ -144,18 +144,18 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		input       []Payload
+		input       []*Payload
 		expectError bool
 		expectedLog []byte
 	}{
 		{
 			name:        "Empty input slice",
-			input:       []Payload{},
+			input:       []*Payload{},
 			expectError: true,
 		},
 		{
 			name: "Mismatched shared fields",
-			input: []Payload{
+			input: []*Payload{
 				{HostID: 1, MsgID: 5, CustomFields: templateCustomFields, Timestamp: now},
 				{HostID: 2, MsgID: 5, CustomFields: templateCustomFields, Timestamp: now},
 			},
@@ -163,7 +163,7 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 		},
 		{
 			name: "Out-of-order fragments",
-			input: []Payload{
+			input: []*Payload{
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("world")},
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("hello ")},
 			},
@@ -172,7 +172,7 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 		},
 		{
 			name: "Missing fragments beginning middle",
-			input: []Payload{
+			input: []*Payload{
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 1, MessageSeqMax: 3, Data: []byte("second text")},
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 3, MessageSeqMax: 3, Data: []byte("fourth text")},
 			},
@@ -181,7 +181,7 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 		},
 		{
 			name: "Missing fragments double middle",
-			input: []Payload{
+			input: []*Payload{
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 0, MessageSeqMax: 3, Data: []byte("first text")},
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 3, MessageSeqMax: 3, Data: []byte("fourth text")},
 			},
@@ -190,7 +190,7 @@ func TestDefragment_ErrorsAndOrdering(t *testing.T) {
 		},
 		{
 			name: "Missing fragments end",
-			input: []Payload{
+			input: []*Payload{
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 0, MessageSeqMax: 2, Data: []byte("first text")},
 				{HostID: 1, MsgID: 99, CustomFields: templateCustomFields, Timestamp: now, MessageSeq: 1, MessageSeqMax: 2, Data: []byte(" second text")},
 			},

@@ -11,7 +11,7 @@ import (
 
 // Serializes inner packet payload into transport payload
 // Does NOT validate fields against protocol spec.
-func ConstructInnerPayload(fields innerWireFormat) (payload []byte, err error) {
+func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) {
 	var buf bytes.Buffer
 
 	// HEADER
@@ -177,7 +177,9 @@ func writeFixedLength(buf *bytes.Buffer, data []byte, length int) (err error) {
 
 // Deserializes transport payload into inner payload.
 // Does NOT validate fields against protocol spec (only validates BASIC length)
-func DeconstructInnerPayload(payload []byte) (fields innerWireFormat, err error) {
+func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error) {
+	fields = &innerWireFormat{}
+
 	// Immediately reject invalid length
 	if len(payload) < minInnerPayloadLen {
 		err = fmt.Errorf("%w: invalid payload length %d: must be minimum length of %d",

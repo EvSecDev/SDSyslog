@@ -61,7 +61,7 @@ func (instance *Instance) run() {
 				customFields[key] = val
 			}
 
-			newMsg := protocol.Message{
+			newMsg := &protocol.Message{
 				Timestamp: container.Timestamp,
 				Hostname:  container.Hostname,
 				Fields:    customFields,

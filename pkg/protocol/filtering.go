@@ -5,7 +5,7 @@ import (
 )
 
 // Checks if filter matches the message fields
-func (mf MessageFilter) Match(msg Message) (msgMatch bool) {
+func (mf MessageFilter) Match(msg *Message) (msgMatch bool) {
 	matches := []bool{}
 
 	if mf.Data != nil {

@@ -9,7 +9,7 @@ import (
 
 // Creates payload objects based on main payload and the transports maximum payload size
 // Sets random padding length per fragment
-func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int) (payloads []Payload, err error) {
+func Fragment(primaryPayload *Payload, maxPayloadSize int, fixedProtocolSize int) (payloads []*Payload, err error) {
 	if maxPayloadSize <= 0 {
 		err = fmt.Errorf("%w: maxPayloadSize must be greater than 0", ErrFragmentation)
 		return
@@ -24,7 +24,7 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 
 	// Step through the payload to dynamically create fragment sizes
 	for len(remaining) > 0 {
-		payloadFragment := primaryPayload
+		payloadFragment := *primaryPayload
 		payloadFragment.MessageSeq = seq
 
 		// Get a random padding length for this section of the data
@@ -52,7 +52,7 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 			remaining = nil
 		}
 
-		payloads = append(payloads, payloadFragment)
+		payloads = append(payloads, &payloadFragment)
 		seq++
 	}
 
@@ -66,7 +66,7 @@ func Fragment(primaryPayload Payload, maxPayloadSize int, fixedProtocolSize int)
 
 // Recombines payload objects into singular object
 // Expects validated (individual) payloads - only run post payload parsing
-func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
+func Defragment(payloads []*Payload) (primaryPayload *Payload, err error) {
 	if len(payloads) == 0 {
 		err = fmt.Errorf("%w: received no payloads to defrag", ErrFragmentation)
 		return
@@ -121,12 +121,14 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 
 	// Create singular payload - Leave unused fields as default (0)
 	// We can use one of the payloads as a template
-	primaryPayload.RemoteIP = payloads[0].RemoteIP
-	primaryPayload.HostID = payloads[0].HostID
-	primaryPayload.MsgID = payloads[0].MsgID
-	primaryPayload.Timestamp = payloads[0].Timestamp
-	primaryPayload.CustomFields = payloads[0].CustomFields
-	primaryPayload.Hostname = payloads[0].Hostname
+	primaryPayload = &Payload{
+		RemoteIP:     payloads[0].RemoteIP,
+		HostID:       payloads[0].HostID,
+		MsgID:        payloads[0].MsgID,
+		Timestamp:    payloads[0].Timestamp,
+		CustomFields: payloads[0].CustomFields,
+		Hostname:     payloads[0].Hostname,
+	}
 
 	// Include the, now whole, log message
 	primaryPayload.Data = reassemblyBuffer.Bytes()
@@ -134,7 +136,7 @@ func Defragment(payloads []Payload) (primaryPayload Payload, err error) {
 }
 
 // Validates whether all shared fields in payload are equal across all payloads
-func allFieldsEqual(payloads []Payload) (valid bool) {
+func allFieldsEqual(payloads []*Payload) (valid bool) {
 	ref := payloads[0]
 	for _, payload := range payloads[1:] {
 		if !ref.EqualTo(payload) {
@@ -147,7 +149,7 @@ func allFieldsEqual(payloads []Payload) (valid bool) {
 }
 
 // Checks if reference payload is equal to payload.
-func (reference Payload) EqualTo(payload Payload) (equal bool) {
+func (reference *Payload) EqualTo(payload *Payload) (equal bool) {
 	// Check custom fields equality
 	if len(reference.CustomFields) != len(payload.CustomFields) {
 		equal = false

@@ -74,6 +74,7 @@ func (cfg JSONConfig) NewDaemonConf(originalConfigPath string) (config Config, e
 	config.JournaldURL = cfg.Outputs.JournaldURL
 	config.OutputFilePath = cfg.Outputs.FilePath
 	config.BeatsEndpoint = cfg.Outputs.BeatsAddress
+	config.DBUSNotify = cfg.Outputs.DBUSNotify
 
 	// Scaling settings
 	config.AutoscaleEnabled = cfg.AutoScaling.Enabled

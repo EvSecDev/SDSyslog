@@ -10,7 +10,7 @@ import (
 )
 
 // Creates new instance manager
-func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[protocol.Message]) (new *Manager) {
+func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[*protocol.Message]) (new *Manager) {
 	// Double check queues - should never get past build
 	if outbox == nil {
 		panic("FATAL: Sender Ingest manager received empty outbox queue variable")

@@ -4,7 +4,7 @@ import "reflect"
 
 // Size returns an estimate of the total in-memory footprint of Payload,
 // including stable Go runtime overhead (string/slice headers + backing data).
-func (payload Payload) Size() (bytes int) {
+func (payload *Payload) Size() (bytes int) {
 	// Fixed-size fields
 	bytes += 8  // HostID (int)
 	bytes += 8  // MsgID (int)
@@ -37,7 +37,7 @@ func (payload Payload) Size() (bytes int) {
 
 // Size returns an estimate of the total in-memory footprint of Message,
 // including stable Go runtime overhead (string/slice headers + backing data).
-func (msg Message) Size() (bytes int) {
+func (msg *Message) Size() (bytes int) {
 	// Fixed-size fields
 	bytes += 24 // Timestamp (time.Time)
 

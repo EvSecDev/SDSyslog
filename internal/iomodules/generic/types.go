@@ -12,7 +12,7 @@ type InModule struct {
 	localHostname string
 
 	sink   io.ReadCloser
-	outbox *mpmc.Queue[protocol.Message]
+	outbox *mpmc.Queue[*protocol.Message]
 
 	metrics MetricStorage
 

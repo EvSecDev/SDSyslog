@@ -31,7 +31,7 @@ type InModule struct {
 	err io.ReadCloser // stderr pipe from journalctl command
 
 	// Output
-	outbox *mpmc.Queue[protocol.Message]
+	outbox *mpmc.Queue[*protocol.Message]
 
 	// State
 	stateFile string

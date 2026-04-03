@@ -183,7 +183,7 @@ func TestReader(t *testing.T) {
 				_ = os.Remove(stateFile)
 			}()
 
-			queue, err := mpmc.New[protocol.Message]([]string{logctx.NSTest}, 1024, global.MinValue(1024), global.MaxValue(1024))
+			queue, err := mpmc.New[*protocol.Message]([]string{logctx.NSTest}, 1024, global.MinValue(1024), global.MaxValue(1024))
 			if err != nil {
 				t.Fatalf("unexpected error creating queue: %v", err)
 			}
@@ -220,7 +220,7 @@ func TestReader(t *testing.T) {
 			}
 
 			// Check outputs in queue (with timeout)
-			outputs := make(chan protocol.Message, len(tt.expectedMsgs))
+			outputs := make(chan *protocol.Message, len(tt.expectedMsgs))
 			errChan := make(chan error, len(tt.expectedMsgs))
 			done := make(chan struct{})
 			go func() {

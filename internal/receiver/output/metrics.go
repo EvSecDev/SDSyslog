@@ -7,20 +7,22 @@ import (
 )
 
 type MetricStorage struct {
-	ReceivedMessages      atomic.Uint64
-	SuccessfulFileWrites  atomic.Uint64
-	SuccessfulJrnlWrites  atomic.Uint64
-	SuccessfulBeatsWrites atomic.Uint64
-	SuccessfulRawWrites   atomic.Uint64
+	ReceivedMessages       atomic.Uint64
+	SuccessfulFileWrites   atomic.Uint64
+	SuccessfulJrnlWrites   atomic.Uint64
+	SuccessfulBeatsWrites  atomic.Uint64
+	SuccessfulRawWrites    atomic.Uint64
+	SuccessfulNotifyWrites atomic.Uint64
 }
 
 const (
-	MTRecvMsgs       string = "received_messages"
-	MTSentMsgs       string = "written_messages"
-	MTFileWritesSuc  string = "success_file_writes"
-	MTJrnlWritesSuc  string = "success_journal_writes"
-	MTBeatsWritesSuc string = "success_beats_writes"
-	MTRawWritesSuc   string = "success_beats_writes"
+	MTRecvMsgs        string = "received_messages"
+	MTSentMsgs        string = "written_messages"
+	MTFileWritesSuc   string = "success_file_writes"
+	MTJrnlWritesSuc   string = "success_journal_writes"
+	MTBeatsWritesSuc  string = "success_beats_writes"
+	MTRawWritesSuc    string = "success_raw_writes"
+	MTNotifyWritesSuc string = "success_notify_writes"
 )
 
 func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
@@ -29,7 +31,8 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	fileWrites := instance.Metrics.SuccessfulFileWrites.Swap(0)
 	jrnlWrites := instance.Metrics.SuccessfulJrnlWrites.Swap(0)
 	beatsWrites := instance.Metrics.SuccessfulBeatsWrites.Swap(0)
-	rawWrites := instance.Metrics.SuccessfulBeatsWrites.Swap(0)
+	rawWrites := instance.Metrics.SuccessfulRawWrites.Swap(0)
+	notifyWrites := instance.Metrics.SuccessfulNotifyWrites.Swap(0)
 
 	// Record read time
 	recordTime := time.Now()
@@ -89,6 +92,18 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      rawWrites,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        MTNotifyWritesSuc,
+			Description: "Total writes to dbus notify output",
+			Namespace:   instance.namespace,
+			Value: metrics.MetricValue{
+				Raw:      notifyWrites,
 				Unit:     "count",
 				Interval: interval,
 			},

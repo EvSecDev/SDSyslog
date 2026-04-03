@@ -16,7 +16,7 @@ import (
 )
 
 // Creates new file input module. Returns nil nil if no path.
-func NewInput(ctx context.Context, filePath string, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[protocol.Message]) (module *InModule, err error) {
+func NewInput(ctx context.Context, filePath string, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[*protocol.Message]) (module *InModule, err error) {
 	if filePath == "" {
 		return
 	}

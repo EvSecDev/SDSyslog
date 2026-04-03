@@ -17,7 +17,7 @@ import (
 )
 
 // Creates new journald listener module
-func NewInput(ctx context.Context, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[protocol.Message]) (new *InModule, err error) {
+func NewInput(ctx context.Context, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[*protocol.Message]) (new *InModule, err error) {
 	// Create unique state file for journal
 	stateFileDir := filepath.Dir(baseStateFile)
 	stateFileName := filepath.Base(baseStateFile)

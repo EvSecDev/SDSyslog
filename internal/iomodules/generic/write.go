@@ -5,7 +5,7 @@ import (
 	"sdsyslog/pkg/protocol"
 )
 
-func (mod *OutModule) Write(ctx context.Context, msg protocol.Payload) (entriesWritten int, err error) {
+func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (entriesWritten int, err error) {
 	if mod == nil {
 		return
 	}

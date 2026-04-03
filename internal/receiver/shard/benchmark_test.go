@@ -25,7 +25,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 		"ApplicationName": "test-app",
 	}
 
-	payloadTemplate := protocol.Payload{
+	payloadTemplate := &protocol.Payload{
 		HostID:        101,
 		MsgID:         202,
 		MessageSeq:    0,

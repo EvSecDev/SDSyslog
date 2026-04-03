@@ -13,7 +13,9 @@ import (
 )
 
 // Creates individual packet inner payload
-func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err error) {
+func ConstructPayload(request *Payload, sigID uint8) (proto *innerWireFormat, err error) {
+	proto = &innerWireFormat{}
+
 	// MessageHostID
 	if request.HostID == 0 {
 		err = fmt.Errorf("%w: host ID cannot be zero", ErrInvalidPayload)
@@ -179,7 +181,9 @@ func ConstructPayload(request Payload, sigID uint8) (proto innerWireFormat, err 
 }
 
 // Validates and extracts packet inner payload
-func DeconstructPayload(proto innerWireFormat) (validated Payload, err error) {
+func DeconstructPayload(proto *innerWireFormat) (validated *Payload, err error) {
+	validated = &Payload{}
+
 	// Validate HostID
 	if proto.HostID == 0 {
 		err = fmt.Errorf("%w: empty host ID", ErrInvalidPayload)
@@ -344,7 +348,7 @@ func SerializeSignature(hostname []byte, hostID uint32, timestamp uint64) (signa
 }
 
 // Calculates the total byte size of the protocol, both inner and outer
-func CalculateProtocolOverhead(suiteID uint8, primaryPayload Payload) (fixedOverhead int, err error) {
+func CalculateProtocolOverhead(suiteID uint8, primaryPayload *Payload) (fixedOverhead int, err error) {
 	cryptoInfo, validSuiteID := registry.GetSuiteInfo(suiteID)
 	if !validSuiteID {
 		err = fmt.Errorf("%w: ID %d", ErrUnknownSuite, suiteID)

@@ -182,7 +182,7 @@ func TestWriter(t *testing.T) {
 			var foundErrors []string
 			var writeCount int
 			for _, payload := range tt.inputs {
-				written, err := outMod.Write(ctx, payload)
+				written, err := outMod.Write(ctx, &payload)
 				writeCount += written
 				if err != nil {
 					foundErrors = append(foundErrors, err.Error())

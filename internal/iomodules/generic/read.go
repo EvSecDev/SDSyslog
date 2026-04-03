@@ -40,7 +40,7 @@ func (mod *InModule) read() {
 		// Do not allow newlines in data
 		line = bytes.ReplaceAll(line, []byte{'\n'}, []byte{})
 
-		msg := protocol.Message{
+		msg := &protocol.Message{
 			Hostname: mod.localHostname,
 			Fields: map[string]any{
 				iomodules.CtxKey:      logctx.NSoRaw,

@@ -71,7 +71,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	collection = []metrics.Metric{
 		{
 			Name:        MTValidPayloads,
-			Description: "Total validated (parsed) packets in the interval",
+			Description: "Total validated payloads in the interval",
 			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      valid,
@@ -83,7 +83,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		},
 		{
 			Name:        MTInvalidPayloads,
-			Description: "Total invalid packets in the interval",
+			Description: "Total invalid payloads in the interval",
 			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      invalid,
@@ -95,7 +95,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		},
 		{
 			Name:        MTSumWorkTime,
-			Description: "Total time spent processing packets in the interval",
+			Description: "Total time spent processing payloads in the interval",
 			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      sumNs,
@@ -107,7 +107,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		},
 		{
 			Name:        MTMaxWorkTime,
-			Description: "Maximum (seen) time spent processing packets in the interval",
+			Description: "Maximum (seen) time spent processing payloads in the interval",
 			Namespace:   namespace,
 			Value: metrics.MetricValue{
 				Raw:      maxNs,

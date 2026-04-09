@@ -17,7 +17,6 @@ type MetricStorage struct {
 
 const (
 	MTRecvMsgs        string = "received_messages"
-	MTSentMsgs        string = "written_messages"
 	MTFileWritesSuc   string = "success_file_writes"
 	MTJrnlWritesSuc   string = "success_journal_writes"
 	MTBeatsWritesSuc  string = "success_beats_writes"

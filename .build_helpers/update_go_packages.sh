@@ -6,14 +6,10 @@ command -v join >/dev/null
 command -v awk >/dev/null
 
 function update_go_packages {
-	local repoDir src
-	repoDir=$1
-	src=$2
-
-	cd "$repoDir/$src" || {
-		echo "[-] ERROR: Failed to move into source directory"
+	if [[ -z $repoRoot ]]; then
+		echo -e "${RED}[-] ERROR:${RESET} Missing environment variable repoRoot"
 		return 1
-	}
+	fi
 
 	# Require clean repo
 	if ! git diff --quiet || ! git diff --cached --quiet; then

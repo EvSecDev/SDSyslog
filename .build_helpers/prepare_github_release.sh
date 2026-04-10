@@ -2,15 +2,19 @@
 command -v git >/dev/null
 
 function create_release_notes() {
-	local repoDir localReleaseDir githubReleaseNotesFile lastReleaseCommitHash commitMsgsSinceLastRelease IFS commitMsg currentReleaseCommitHash
-	repoDir=$1
-	localReleaseDir=$2
+	local localReleaseDir githubReleaseNotesFile lastReleaseCommitHash commitMsgsSinceLastRelease IFS commitMsg currentReleaseCommitHash
+	localReleaseDir=$1
 	githubReleaseNotesFile="$localReleaseDir/release-notes.md"
+
+	if [[ -z $repoRoot ]]; then
+		echo -e "${RED}[-] ERROR:${RESET} Missing environment variable repoRoot"
+		return 1
+	fi
 
 	echo "[*] Retrieving all git commit messages since last release..."
 
 	# Get commit where last release was generated from
-	lastReleaseCommitHash=$(cat "$repoDir"/.last_release_commit)
+	lastReleaseCommitHash=$(cat "$repoRoot"/.last_release_commit)
 	if [[ -z $lastReleaseCommitHash ]]; then
 		echo -e "${RED}[-] ERROR${RESET}: Could not determine when last release was by commit, refusing to continue" >&2
 		exit 1
@@ -79,7 +83,7 @@ function create_release_notes() {
 
 	# Save commit that this release was made for to track file
 	currentReleaseCommitHash=$(git show HEAD --pretty=format:"%H" --no-patch)
-	echo "$currentReleaseCommitHash" >"$repoDir"/.last_release_commit
+	echo "$currentReleaseCommitHash" >"$repoRoot"/.last_release_commit
 
 	echo "====================================================================="
 	echo "RELEASE MESSAGE in $githubReleaseNotesFile - CHECK BEFORE PUBLISHING:"

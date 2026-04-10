@@ -71,114 +71,10 @@ function compile_program() {
 	GOARCH=$1
 	GOOS=$2
 	buildFull=$3
-	skipTests=$4
-	intenseTests=$5
 
 	# eBPF program
 	if type -t compile_ebpf_c &>/dev/null; then
 		compile_ebpf_c "$repoRoot/ebpf" "$SRCdir/ebpf/static-files"
-	fi
-
-	if [[ $skipTests != 'true' ]]; then
-		# Run tests (excludes unimportant info)
-		echo "[*] Running tests..."
-
-		testArgs=(
-			"-timeout=4m"
-		)
-
-		if [[ $intenseTests == 'true' ]]; then
-			testArgs+=(
-				"-race"
-				"-bench=."
-			)
-		fi
-
-		coverProfileOutPkg="$repoRoot/coverprofile_pkg.out"
-		coverProfileOutSrc="$repoRoot/coverprofile_src.out"
-
-		# shellcheck disable=SC2064
-		trap "rm -f $coverProfileOutPkg $coverProfileOutSrc" EXIT
-
-		set +e
-
-		go -C "$repoRoot/pkg" test "${testArgs[@]}" -coverprofile="$coverProfileOutPkg" ./... \
-			| grep -Ev "\[no test files\]|^PASS$|coverage: 0.0% of statements$|^coverage: "
-		pkgExitCode=${PIPESTATUS[0]}
-
-		if [[ $pkgExitCode != 0 ]]; then
-			echo -e "${RED}[-] FAILED TESTS${RESET}"
-			exit 1
-		fi
-
-		# shellcheck disable=SC2046
-		go -C "$repoRoot/$SRCdir" test "${testArgs[@]}" -coverprofile="$coverProfileOutSrc" \
-			$(go list ./... | grep -Ev "internal/tests/integration|pkg/") \
-			| grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: |coverage: 0.0% of statements$|^coverage: "
-		internalExitCode=${PIPESTATUS[0]}
-
-		if [[ $internalExitCode != 0 ]]; then
-			echo -e "${RED}[-] FAILED TESTS${RESET}"
-			exit 1
-		fi
-
-		echo -e "${GREEN}[+] DONE${RESET}"
-
-		echo "[*] Test Coverage Totals:"
-
-		coverPercent=$(go tool cover -func="$coverProfileOutPkg" | grep "^total:" | awk '{print $3}')
-		echo -e "   [*] Package Coverage: ${BOLD}$coverPercent${RESET}"
-		rm "$coverProfileOutPkg"
-
-		coverPercent=$(go tool cover -func="$coverProfileOutSrc" | grep "^total:" | awk '{print $3}')
-		echo -e "   [*] Internal Coverage: ${BOLD}$coverPercent${RESET}"
-		rm "$coverProfileOutSrc"
-
-		set -e
-
-		echo -e "${GREEN}[+] DONE${RESET}"
-
-		if [[ $intenseTests == 'true' ]]; then
-			# Running integ tests one by one for specific coverage calculations
-			integrationDir="$repoRoot/$SRCdir/tests/integration"
-			integrationTests=(
-				"TestSendReceivePipeline:sdsyslog/$SRCdir/receiver,sdsyslog/$SRCdir/sender"
-				"TestRecvConstantFlow:sdsyslog/$SRCdir/receiver"
-				"TestMultipleSenders:sdsyslog/$SRCdir/receiver,sdsyslog/$SRCdir/sender"
-			)
-
-			coverProfileInteg="$repoRoot/coverprofile_integ.out"
-			# shellcheck disable=SC2064
-			trap "rm -f $coverProfileInteg" EXIT
-
-			for testEntry in "${integrationTests[@]}"; do
-				IFS=":" read -r testFunc coverPkg <<<"$testEntry"
-
-				echo -e "[*] Running Integration Test ${BLUE}$testFunc${RESET}"
-				set +e
-				go -C "$repoRoot/$SRCdir" test -p 1 "${testArgs[@]}" \
-					-covermode=atomic \
-					-coverpkg="$coverPkg" \
-					-coverprofile="$coverProfileInteg" \
-					-run "^$testFunc$" \
-					"$integrationDir" \
-					| grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: |coverage: 0.0% of statements$|^coverage: "
-				exitCode=${PIPESTATUS[0]}
-
-				if [[ $exitCode != 0 ]]; then
-					echo -e "${RED}[-] FAILED TEST: $testFunc${RESET}"
-					exit 1
-				fi
-
-				coverPercent=$(go tool cover -func="$coverProfileInteg" | grep "^total:" | awk '{print $3}')
-				echo -e "   [*] Integ Coverage: ${BOLD}$coverPercent${RESET}"
-				rm -f "$coverProfileInteg"
-
-				set -e
-
-				echo -e "${GREEN}[+] DONE${RESET}"
-			done
-		fi
 	fi
 
 	echo "[*] Compiling program binary..."
@@ -189,7 +85,7 @@ function compile_program() {
 	export GOOS
 
 	# Build binary
-	go build -C "$repoRoot/cmd/sdsyslog" -trimpath -o "$repoRoot/$outputEXE" -a -ldflags '-s -w -buildid= -extldflags "-static"'
+	go build -trimpath -o "$repoRoot/" -a -ldflags '-s -w -buildid= -extldflags "-static"' "$repoRoot/cmd/..."
 
 	# Get help menu
 	helpMenu=$(./$outputEXE -h)
@@ -228,7 +124,7 @@ Options:
   -n           Skip tests
   -f           Run intense tests (-race -bench)
   -a <arch>    Architecture of compiled binary (amd64, arm64) [default: amd64]
-  -o <os>      Which operating system to build for (linux, windows) [default: linux]
+  -o <os>      Which operating system to build for (linux, freebsd) [default: linux]
   -u           Update go packages for program
   -D           Print dependency tree
   -p           Prepare release notes and attachments
@@ -285,22 +181,32 @@ while getopts 'a:o:P:bfuDnph' opt; do
 done
 
 if [[ $prepareRelease == true ]]; then
+	intenseTests=true
+	buildFull=true
+
 	compile_program_prechecks
 	check_package_licenses 'false'
-	compile_program "$architecture" "$os" 'true' 'false' 'true'
+	run_tests "$intenseTests"
+	compile_program "$architecture" "$os" "$buildFull"
+
 	tempReleaseDir=$(prepare_github_release_files "$fullNameProgramPrefix")
 	generate_third_party_licenses "$tempReleaseDir/THIRD_PARTY_LICENSES.txt"
-	create_release_notes "$repoRoot" "$tempReleaseDir"
+	create_release_notes "$tempReleaseDir"
 elif [[ -n $publishVersion ]]; then
 	create_github_release "$githubUser" "$githubRepoName" "$publishVersion"
 elif [[ $updatepackages == true ]]; then
-	update_go_packages "$repoRoot" "$SRCdir"
+	update_go_packages
 	check_package_licenses 'true'
 elif [[ $printDepTree == true ]]; then
 	print_dependency_tree
 elif [[ $buildmode == true ]]; then
+	buildFull=false
+
 	compile_program_prechecks
-	compile_program "$architecture" "$os" 'false' "$skipTests" "$intenseTests"
+	if [[ $skipTests == false ]]; then
+		run_tests "$intenseTests"
+	fi
+	compile_program "$architecture" "$os" "$buildFull"
 else
 	echo -e "${RED}ERROR${RESET}: Unknown option or combination of options" >&2
 	exit 1

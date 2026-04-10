@@ -43,6 +43,30 @@ func setupRegistryWithData(t *testing.T) (mockRegistry *Registry, mockedTimeSlic
 				Interval: interval,
 			},
 		},
+		{
+			Name:        "latency",
+			Description: "latency seconds",
+			Namespace:   []string{"Receiver", "HTTP"},
+			Type:        Gauge,
+			Timestamp:   ts1,
+			Value: MetricValue{
+				Raw:      5,
+				Unit:     "s",
+				Interval: interval,
+			},
+		},
+		{
+			Name:        "latency",
+			Description: "latency milliseconds",
+			Namespace:   []string{"Receiver", "Out"},
+			Type:        Gauge,
+			Timestamp:   ts1,
+			Value: MetricValue{
+				Raw:      5,
+				Unit:     "ms",
+				Interval: interval,
+			},
+		},
 		// Summary metric
 		{
 			Name:        "elapsed_time",
@@ -85,7 +109,6 @@ func setupRegistryWithData(t *testing.T) (mockRegistry *Registry, mockedTimeSlic
 				Interval: interval,
 			},
 		},
-		// Same metric, different unit (Discover test)
 		{
 			Name:        "elapsed_time",
 			Description: "processing time",
@@ -94,7 +117,31 @@ func setupRegistryWithData(t *testing.T) (mockRegistry *Registry, mockedTimeSlic
 			Timestamp:   ts2,
 			Value: MetricValue{
 				Raw:      "150", // string numeric
-				Unit:     "us",
+				Unit:     "ms",
+				Interval: interval,
+			},
+		},
+		{
+			Name:        "pop_count",
+			Description: "recv msgs from queue",
+			Namespace:   []string{"Receiver", "HTTP"},
+			Type:        Gauge,
+			Timestamp:   ts1,
+			Value: MetricValue{
+				Raw:      5,
+				Unit:     "count",
+				Interval: interval,
+			},
+		},
+		{
+			Name:        "pop_count",
+			Description: "recv msgs from queue",
+			Namespace:   []string{"Receiver", "Out"},
+			Type:        Gauge,
+			Timestamp:   ts1,
+			Value: MetricValue{
+				Raw:      5,
+				Unit:     "count",
 				Interval: interval,
 			},
 		},

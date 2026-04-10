@@ -384,6 +384,7 @@ func TestRouteFragment(t *testing.T) {
 			}
 			if bucket == nil {
 				t.Fatalf("unexpected shard bucket retrieval failure: retrieved bucket is nil")
+				return // Satisfy staticcheck SA5011
 			}
 
 			if bucket.lastProcessStartTime != tt.processStartTime {

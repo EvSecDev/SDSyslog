@@ -71,7 +71,6 @@ func (registry *Registry) Search(name string, namespacePrefix []string, start, e
 }
 
 // Finds and aggregates all data for a given metric for the aggregation type (global consts prefixed by Metric*).
-// Requires exact match for name and namespace.
 // Start/end time if not provided will default to past minute.
 func (registry *Registry) Aggregate(aggType string, name string, namespace []string, start, end time.Time) (result Metric, err error) {
 	if start.IsZero() && end.IsZero() {
@@ -89,10 +88,22 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 	}
 
 	// Iterate over the metrics and aggregate values based on the aggregation type
+	var allNamespaces [][]string
 	var aggregatedValue float64
 	var count int
+	var trackedValueUnit string
 	for idx, metric := range metricsResults {
 		count++
+
+		allNamespaces = append(allNamespaces, metric.Namespace)
+
+		// Disallow aggregation across different units
+		if trackedValueUnit != "" && trackedValueUnit != metric.Value.Unit {
+			err = fmt.Errorf("cannot aggregate metrics of different units: found unit %q and also unit %q",
+				trackedValueUnit, metric.Value.Unit)
+			return
+		}
+		trackedValueUnit = metric.Value.Unit
 
 		value, ok := toFloat64(metric.Value.Raw)
 		if !ok {
@@ -131,10 +142,12 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 		aggregatedValue /= float64(count)
 	}
 
+	aggNamespace := deepestCommonNamespace(allNamespaces)
+
 	result = Metric{
 		Name:        metricsResults[0].Name,
-		Description: metricsResults[0].Description,
-		Namespace:   metricsResults[0].Namespace,
+		Description: fmt.Sprintf("Aggregation (%s) of metric %q for namespace %q", aggType, name, strings.Join(namespace, "/")),
+		Namespace:   aggNamespace,
 		Type:        metricsResults[0].Type,
 		Timestamp:   time.Now(),
 		Value: MetricValue{
@@ -144,6 +157,31 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 		},
 	}
 	return
+}
+
+// Finds the deepest namespace that all inputs share
+func deepestCommonNamespace(input [][]string) (common []string) {
+	if len(input) == 0 {
+		return
+	}
+
+	for i := 0; ; i++ {
+		var val string
+		for j, slice := range input {
+			// Stop if any slice is too short
+			if i >= len(slice) {
+				return
+			}
+
+			if j == 0 {
+				val = slice[i]
+			} else if slice[i] != val {
+				return
+			}
+		}
+
+		common = append(common, val)
+	}
 }
 
 func toFloat64(v interface{}) (float64, bool) {

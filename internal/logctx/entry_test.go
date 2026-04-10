@@ -152,6 +152,7 @@ func TestGetFormattedLogLines_ChronologicalBatching(t *testing.T) {
 	l := GetLogger(ctx)
 	if l == nil {
 		t.Fatal("logger not found in context")
+		return // Satisfy staticcheck SA5011
 	}
 
 	base := time.Now()

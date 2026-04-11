@@ -97,11 +97,15 @@ func LookupPinnedSender(hostname string) (key []byte, present bool) {
 	if keyMap == nil {
 		return
 	}
-	pinnedKeys := keyMap.(map[string][]byte)
+	pinnedKeys, ok := keyMap.(map[string][]byte)
+	if !ok {
+		present = false
+		return
+	}
 	if len(pinnedKeys) == 0 {
 		return
 	}
-	key, ok := pinnedKeys[hostname]
+	key, ok = pinnedKeys[hostname]
 	if !ok {
 		present = false
 		return

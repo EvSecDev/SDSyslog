@@ -218,7 +218,12 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 				// Check for last pop on migrating queue (wake consumers)
 				if queue.draining.Load() {
 					if queue.head.Load() == queue.tail.Load() {
-						migrateSignal := container.migrateCh.Load().(chan struct{})
+						migrateSignal, ok := container.migrateCh.Load().(chan struct{})
+						if !ok {
+							logctx.LogStdErr(ctx,
+								"failed to type assert migration channel to struct{}\n")
+							return
+						}
 
 						select {
 						case migrateSignal <- struct{}{}:
@@ -236,7 +241,12 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 
 		// queue empty: wait for signal or context cancel
 		if seq < readySeq {
-			migrateSignal := container.migrateCh.Load().(chan struct{})
+			migrateSignal, ok := container.migrateCh.Load().(chan struct{})
+			if !ok {
+				logctx.LogStdErr(ctx,
+					"failed to type assert migration channel to struct{}\n")
+				return
+			}
 
 			select {
 			case <-ctx.Done():

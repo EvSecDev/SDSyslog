@@ -7,6 +7,7 @@ import (
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/listener"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -44,7 +45,12 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 		// Extract raw float64 values for this instance
 		vals := make([]float64, pastNIntervals)
 		for i, m := range metrics {
-			vals[i] = m.Value.Raw.(float64)
+			var ok bool
+			vals[i], ok = m.Value.Raw.(float64)
+			if !ok {
+				logctx.LogStdErr(ctx, "Failed to type assert metric %s (%s) to float64\n", m.Name, strings.Join(m.Namespace, "/"))
+				return
+			}
 		}
 
 		instValues = append(instValues, vals)

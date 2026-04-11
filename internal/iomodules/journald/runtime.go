@@ -24,7 +24,11 @@ func (mod *InModule) Start() (err error) {
 	<-mod.readerReady
 
 	// Assert to file to set a deadline
-	errFile := mod.err.(*os.File)
+	errFile, ok := mod.err.(*os.File)
+	if !ok {
+		err = fmt.Errorf("failed to type assert stderr from journalctl command to os.File")
+		return
+	}
 	defer func() {
 		lerr := errFile.Close()
 		if lerr != nil && err == nil {

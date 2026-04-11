@@ -6,6 +6,7 @@ import (
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/internal/sender/output"
+	"strings"
 	"time"
 )
 
@@ -31,7 +32,12 @@ func scaleOutput(ctx context.Context, metricStore *metrics.Registry, interval ti
 	// Extract values in order
 	values := make([]uint64, 0, len(metrics))
 	for _, m := range metrics {
-		values = append(values, m.Value.Raw.(uint64))
+		val, ok := m.Value.Raw.(uint64)
+		if !ok {
+			logctx.LogStdErr(ctx, "Failed to type assert metric %s (%s) to uint64\n", m.Name, strings.Join(m.Namespace, "/"))
+			return
+		}
+		values = append(values, val)
 	}
 
 	// Determine scaling direction

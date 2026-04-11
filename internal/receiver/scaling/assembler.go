@@ -7,6 +7,7 @@ import (
 	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/shard"
+	"strings"
 	"time"
 )
 
@@ -44,7 +45,12 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 		// Extract raw uint64 values for this instance
 		vals := make([]uint64, pastNIntervals)
 		for i, m := range metrics {
-			vals[i] = m.Value.Raw.(uint64)
+			var ok bool
+			vals[i], ok = m.Value.Raw.(uint64)
+			if !ok {
+				logctx.LogStdErr(ctx, "Failed to type assert metric %s (%s) to uint64\n", m.Name, strings.Join(m.Namespace, "/"))
+				return
+			}
 		}
 
 		instValues = append(instValues, vals)

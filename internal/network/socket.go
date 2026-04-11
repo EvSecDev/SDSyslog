@@ -65,7 +65,11 @@ func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
 		err = fmt.Errorf("failed to listen on new reused connection: %w", err)
 		return
 	}
-	conn = pc.(*net.UDPConn)
+	conn, ok := pc.(*net.UDPConn)
+	if !ok {
+		err = fmt.Errorf("failed to type assert packet connection to net.UDPConn")
+		return
+	}
 	return
 }
 

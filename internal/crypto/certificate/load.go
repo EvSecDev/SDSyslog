@@ -40,13 +40,13 @@ func parseCertificate(cert *x509.Certificate) (publicKey []byte, algoType x509.P
 		var ok bool
 		publicKey, ok = cert.PublicKey.(ed25519.PublicKey)
 		if !ok {
-			err = fmt.Errorf("certificate public key is not ed25519 public key")
+			err = fmt.Errorf("certificate public key is not ed25519 public key: value=%+v type=%T", cert.PublicKey, cert.PublicKey)
 			return
 		}
 	case *ecdsa.PublicKey:
 		pubKey, ok := cert.PublicKey.(*ecdsa.PublicKey)
 		if !ok {
-			err = fmt.Errorf("public key is not ECDSA")
+			err = fmt.Errorf("public key is not ECDSA: value=%+v type=%T", cert.PublicKey, cert.PublicKey)
 			return
 		}
 		publicKey, err = x509.MarshalPKIXPublicKey(pubKey)

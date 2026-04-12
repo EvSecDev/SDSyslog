@@ -64,7 +64,7 @@ func init() {
 			priv := ed25519.NewKeyFromSeed(newSeed)
 			pub, ok := priv.Public().(ed25519.PublicKey)
 			if !ok {
-				err = fmt.Errorf("failed to type assert public key generic to ed25519.PublicKey []byte")
+				err = fmt.Errorf("failed to type assert public key generic to ed25519.PublicKey []byte: value=%+v type=%T", priv.Public(), priv.Public())
 				return
 			}
 			privateKey = priv

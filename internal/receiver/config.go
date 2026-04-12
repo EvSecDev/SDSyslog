@@ -32,7 +32,8 @@ func LoadConfig(path string) (cfg JSONConfig, err error) {
 }
 
 // Parses JSON config into daemon config
-func (cfg JSONConfig) NewDaemonConf(originalConfigPath string) (config Config, err error) {
+func (cfg JSONConfig) NewDaemonConf(originalConfigPath string, dryRun bool) (config Config, err error) {
+	config.dryRunConfig = dryRun
 	config.path = originalConfigPath
 
 	// Network settings

@@ -21,7 +21,7 @@ func formatAsNotification(msg *protocol.Payload) (newNotification *notification,
 	if present {
 		appname, ok = rawAppname.(string)
 		if !ok {
-			err = fmt.Errorf("failed to type assert application name to string")
+			err = fmt.Errorf("failed to type assert application name to string: value=%+v type=%T", rawAppname, rawAppname)
 			return
 		}
 	} else {
@@ -31,7 +31,7 @@ func formatAsNotification(msg *protocol.Payload) (newNotification *notification,
 	if present {
 		severity, ok = rawSeverity.(string)
 		if !ok {
-			err = fmt.Errorf("failed to type assert severity to string")
+			err = fmt.Errorf("failed to type assert severity to string: value=%+v type=%T", rawSeverity, rawSeverity)
 			return
 		}
 	} else {
@@ -41,19 +41,20 @@ func formatAsNotification(msg *protocol.Payload) (newNotification *notification,
 	if present {
 		facility, ok = rawFacility.(string)
 		if !ok {
-			err = fmt.Errorf("failed to type assert facility to string")
+			err = fmt.Errorf("failed to type assert facility to string: value=%+v type=%T", rawFacility, rawFacility)
 			return
 		}
 	} else {
 		facility = iomodules.DefaultFacility
 	}
-	rawProdID, present := msg.CustomFields[iomodules.CFprocessid]
+	rawProcID, present := msg.CustomFields[iomodules.CFprocessid]
 	if present {
-		procID, ok = rawProdID.(string)
+		procIDnum, ok := rawProcID.(int64)
 		if !ok {
-			err = fmt.Errorf("failed to type assert process ID to string")
+			err = fmt.Errorf("failed to type assert process ID to int: value=%+v type=%T", rawProcID, rawProcID)
 			return
 		}
+		procID = strconv.Itoa(int(procIDnum))
 	} else {
 		procID = strconv.Itoa(os.Getpid())
 	}

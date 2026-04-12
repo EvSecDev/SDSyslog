@@ -14,12 +14,15 @@ import (
 
 func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, args []string) {
 	var configPath string
+	var testConfig bool
 	var addPinnedKey string
 	var delPinnedKey string
 
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	requestedLogLevel := SetGlobalArguments(commandFlags)
 	SetCommon(commandFlags, &configPath, commandname)
+	commandFlags.BoolVar(&testConfig, "t", false, "Test configuration and exit")
+	commandFlags.BoolVar(&testConfig, "test-config", false, "Test configuration and exit")
 	commandFlags.StringVar(&addPinnedKey, "trust-sender", "", "Add a pinned public key for a sender (format: <hostname>"+receiver.PinedKeysReqSeparator+"<base64 key|pem file>)")
 	commandFlags.StringVar(&delPinnedKey, "distrust-sender", "", "Remove a pinned public key for the given sender hostname")
 
@@ -84,7 +87,7 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 		os.Exit(1)
 	}
 
-	daemonConfig, err := jsonCfg.NewDaemonConf(configPath)
+	daemonConfig, err := jsonCfg.NewDaemonConf(configPath, testConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -95,6 +98,10 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting receiving daemon: %v\n", err)
 		os.Exit(1)
+	}
+
+	if testConfig {
+		return
 	}
 
 	recvDaemon.Run()

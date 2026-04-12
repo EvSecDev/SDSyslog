@@ -67,7 +67,7 @@ func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
 	}
 	conn, ok := pc.(*net.UDPConn)
 	if !ok {
-		err = fmt.Errorf("failed to type assert packet connection to net.UDPConn")
+		err = fmt.Errorf("failed to type assert packet connection to net.UDPConn: value=%+v type=%T", pc, pc)
 		return
 	}
 	return

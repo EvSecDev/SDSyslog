@@ -74,6 +74,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		}
 	}
 
+	if daemon.cfg.dryRunConfig {
+		logctx.LogStdInfo(daemon.ctx, "Configuration test successful, exiting.\n")
+		return
+	}
+
 	// Stage 3 - Output Manager
 	outMgrConf := &output.ManagerConfig{
 		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,

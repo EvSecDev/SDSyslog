@@ -22,7 +22,8 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 	// They can proceed directly to shutdown-replacement since inputs are stateful.
 	mode, ok := ctx.Value(global.CtxModeKey).(string)
 	if !ok {
-		err = fmt.Errorf("attempted retrieval and assertion of context mode key failed")
+		err = fmt.Errorf("attempted retrieval and assertion of context mode key failed: value=%+v type=%T",
+			ctx.Value(global.CtxModeKey), ctx.Value(global.CtxModeKey))
 		return
 	}
 	if mode == global.SendMode {

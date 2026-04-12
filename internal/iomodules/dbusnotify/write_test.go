@@ -7,7 +7,6 @@ import (
 	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -34,7 +33,7 @@ func TestWrite(t *testing.T) {
 		t.Fatalf("failed to create output module: %v", err)
 	}
 
-	selfPid := strconv.Itoa(os.Getpid())
+	selfPid := int64(os.Getpid())
 
 	testMsg := protocol.Payload{
 		Timestamp: time.Now(),

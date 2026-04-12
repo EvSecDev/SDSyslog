@@ -43,7 +43,7 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 		recvSignal, ok := sig.(unix.Signal)
 		if !ok {
 			logctx.LogStdErr(ctx,
-				"Failed to type assert received signal: %v\n", sig)
+				"Failed to type assert received signal: value=%+v type=%T\n", sig, sig)
 			continue
 		}
 

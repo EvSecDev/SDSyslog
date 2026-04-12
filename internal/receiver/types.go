@@ -49,7 +49,8 @@ type JSONConfig struct {
 }
 
 type Config struct {
-	path string // JSON config path
+	dryRunConfig bool
+	path         string // JSON config path
 
 	// Basic settings
 	ListenIP   string

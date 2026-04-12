@@ -58,6 +58,10 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		err = fmt.Errorf("invalid suite ID %d", daemon.cfg.transportCryptoSuiteID)
 		return
 	}
+	err = info.ValidateKey(serverPriv)
+	if err != nil {
+		return
+	}
 	serverPub, err := info.DerivePublicKey(serverPriv)
 	if err != nil {
 		return
@@ -80,6 +84,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	err = wrappers.SetupVerifySignature(daemon.cfg.PinnedSigningKeys)
 	if err != nil {
 		err = fmt.Errorf("failed to setup signature verification function: %w", err)
+		return
+	}
+
+	if daemon.cfg.dryRunConfig {
+		logctx.LogStdInfo(daemon.ctx, "Configuration test successful, exiting.\n")
 		return
 	}
 

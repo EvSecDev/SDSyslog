@@ -13,10 +13,13 @@ import (
 
 func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args []string) {
 	var configPath string
+	var testConfig bool
 	var writeSigningKey bool
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	requestedLogLevel := SetGlobalArguments(commandFlags)
 	SetCommon(commandFlags, &configPath, commandname)
+	commandFlags.BoolVar(&testConfig, "t", false, "Test configuration and exit")
+	commandFlags.BoolVar(&testConfig, "test-config", false, "Test configuration and exit")
 	commandFlags.BoolVar(&writeSigningKey, "write-signing-key", false, "Write new private signing key supplied via stdin to config")
 
 	commandFlags.Usage = func() {
@@ -59,7 +62,7 @@ func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args
 		os.Exit(1)
 	}
 
-	daemonConfig, err := jsonCfg.NewDaemonConf(configPath)
+	daemonConfig, err := jsonCfg.NewDaemonConf(configPath, testConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -70,6 +73,10 @@ func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting sending daemon: %v\n", err)
 		os.Exit(1)
+	}
+
+	if testConfig {
+		return
 	}
 
 	sendDaemon.Run()

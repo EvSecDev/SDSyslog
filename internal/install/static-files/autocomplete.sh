@@ -8,8 +8,8 @@ _sdsyslog() {
 		[root_opts]="-c --config -v --verbosity"
 
 		[configure_opts]="--create-keys --create-signing-keys --recv-config-template --send-config-template -c --config -v --verbosity --uninstall-sender --uninstall-receiver --install-sender --install-receiver"
-		[receive_opts]="__inherit__ --trust-sender --distrust-sender"
-		[send_opts]="__inherit__ --write-signing-key"
+		[receive_opts]="__inherit__ -t --test-config --trust-sender --distrust-sender"
+		[send_opts]="__inherit__ -t --test-config --write-signing-key"
 		[version_opts]="__inherit__"
 	)
 

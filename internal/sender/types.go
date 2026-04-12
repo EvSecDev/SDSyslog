@@ -51,7 +51,8 @@ type JSONInputs struct {
 }
 
 type Config struct {
-	path string // JSON config path
+	dryRunConfig bool
+	path         string // JSON config path
 
 	// Crypto
 	signingPrivateKey      []byte

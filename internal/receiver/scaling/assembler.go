@@ -48,7 +48,8 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 			var ok bool
 			vals[i], ok = m.Value.Raw.(uint64)
 			if !ok {
-				logctx.LogStdErr(ctx, "Failed to type assert metric %s (%s) to uint64\n", m.Name, strings.Join(m.Namespace, "/"))
+				logctx.LogStdErr(ctx, "Failed to type assert metric %s (%s) to uint64: value=%+v type=%T\n",
+					m.Name, strings.Join(m.Namespace, "/"), m.Value.Raw, m.Value.Raw)
 				return
 			}
 		}

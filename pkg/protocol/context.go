@@ -38,7 +38,7 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 		valType = ContextInt8
 		val, ok := value.(int8)
 		if !ok {
-			err = fmt.Errorf("failed to assert any value as int8")
+			err = fmt.Errorf("failed to assert any value as int8: value=%+v type=%T", value, value)
 			return
 		}
 		buf.WriteByte(byte(val))
@@ -46,7 +46,7 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 		valType = ContextInt16
 		val, ok := value.(int16)
 		if !ok {
-			err = fmt.Errorf("failed to assert any value as int16")
+			err = fmt.Errorf("failed to assert any value as int16: value=%+v type=%T", value, value)
 			return
 		}
 		err = binary.Write(&buf, binary.BigEndian, val)
@@ -57,7 +57,7 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 		valType = ContextInt32
 		val, ok := value.(int32)
 		if !ok {
-			err = fmt.Errorf("failed to assert any value as int32")
+			err = fmt.Errorf("failed to assert any value as int32: value=%+v type=%T", value, value)
 			return
 		}
 		err = binary.Write(&buf, binary.BigEndian, val)
@@ -85,7 +85,7 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 		valType = ContextFloat32
 		val, ok := value.(float32)
 		if !ok {
-			err = fmt.Errorf("failed to assert any value as float32")
+			err = fmt.Errorf("failed to assert any value as float32: value=%+v type=%T", value, value)
 			return
 		}
 		err = binary.Write(&buf, binary.BigEndian, math.Float32bits(val))
@@ -96,7 +96,7 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 		valType = ContextFloat64
 		val, ok := value.(float64)
 		if !ok {
-			err = fmt.Errorf("failed to assert any value as float64")
+			err = fmt.Errorf("failed to assert any value as float64: value=%+v type=%T", value, value)
 			return
 		}
 		err = binary.Write(&buf, binary.BigEndian, math.Float64bits(val))

@@ -7,7 +7,7 @@ import (
 )
 
 func GeneratePrivateKeys(suiteID uint8) (err error) {
-	info, validID := registry.GetSignatureInfo(suiteID)
+	info, validID := registry.GetSuiteInfo(suiteID)
 	if !validID {
 		err = fmt.Errorf("invalid suite ID: %d", suiteID)
 		return

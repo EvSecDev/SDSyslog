@@ -41,7 +41,7 @@ func getInterfaceForDestination(destination string) (iface *net.Interface, err e
 	// Get the interface for the local half of the connection
 	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
 	if !ok {
-		err = fmt.Errorf("failed to type assert connection local address as net.UDPAddr")
+		err = fmt.Errorf("failed to type assert connection local address as net.UDPAddr: value=%+v type=%T", conn.LocalAddr(), conn.LocalAddr())
 		return
 	}
 	iface, err = getInterfaceForAddress(localAddr.IP.String())

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/rand"
 	"net"
 	"runtime/debug"
 	"sdsyslog/internal/crypto/hash"
@@ -120,7 +121,7 @@ func TestMultipleSenders(t *testing.T) {
 		{
 			name:           "Fragmented Bulk",
 			inputText:      strings.Repeat(`{"example":true,"text":"y","values":["t","a","b"]}`, 100), // 5000 bytes
-			sendRepeatCtn:  20,
+			sendRepeatCtn:  100,
 			senderCount:    10,
 			readTimeout:    20 * time.Second,
 			packetDeadline: 500 * time.Millisecond,
@@ -173,6 +174,10 @@ func TestMultipleSenders(t *testing.T) {
 				}
 			}
 
+			rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+			// Base delay
+			base := time.Millisecond
+
 			// Setup writers to send all content at once to each sender daemon
 			var ready sync.WaitGroup
 			start := make(chan struct{})
@@ -193,6 +198,11 @@ func TestMultipleSenders(t *testing.T) {
 							writeErrors <- fmt.Errorf("expected no error writing to test input, but got '%v'", err)
 							return
 						}
+
+						// Small delay to simulate (local) network latency
+						jitter := time.Duration(rng.Int63n(int64(100*time.Microsecond))) - 50*time.Microsecond
+						sleepDuration := base + jitter
+						time.Sleep(sleepDuration)
 					}
 				}()
 			}

@@ -49,7 +49,7 @@ var logSeverity = LogSeverity{
 }
 
 // Initialize reverse lookup maps
-func InitBidiMaps() {
+func Init() {
 	facilityMu.Lock()
 	defer facilityMu.Unlock()
 

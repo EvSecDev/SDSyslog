@@ -6,7 +6,6 @@ import (
 	"os"
 	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/crypto/wrappers"
-	"sdsyslog/internal/iomodules/syslog"
 	"sdsyslog/pkg/protocol"
 	"strings"
 	"sync"
@@ -121,7 +120,6 @@ func mockPackets(numMessages int, rawMessage []byte, maxPayloadSize int, publicK
 	}
 
 	// Pre-startup
-	syslog.InitBidiMaps()
 	err = wrappers.SetupEncryptInnerPayload(publicKey)
 	if err != nil {
 		err = fmt.Errorf("failed setting up encryption function: %w", err)

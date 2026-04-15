@@ -9,7 +9,6 @@ import (
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/global"
-	"sdsyslog/internal/iomodules/syslog"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics/server"
@@ -51,7 +50,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
 
 	// Pre-startup
-	syslog.InitBidiMaps()
 	daemon.cfg.setDefaults()
 	info, validID := registry.GetSuiteInfo(daemon.cfg.transportCryptoSuiteID)
 	if !validID {

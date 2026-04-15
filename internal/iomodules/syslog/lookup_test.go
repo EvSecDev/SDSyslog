@@ -4,7 +4,7 @@ import "testing"
 
 func TestSeverityMappings(t *testing.T) {
 	// Ensure reverse maps are initialized
-	InitBidiMaps()
+	Init()
 
 	tests := []struct {
 		name      string
@@ -71,7 +71,7 @@ func TestSeverityMappings(t *testing.T) {
 
 func TestFacilityMappings(t *testing.T) {
 	// Ensure reverse maps are initialized
-	InitBidiMaps()
+	Init()
 
 	tests := []struct {
 		name      string

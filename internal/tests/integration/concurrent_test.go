@@ -174,10 +174,6 @@ func TestMultipleSenders(t *testing.T) {
 				}
 			}
 
-			rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-			// Base delay
-			base := time.Millisecond
-
 			// Setup writers to send all content at once to each sender daemon
 			var ready sync.WaitGroup
 			start := make(chan struct{})
@@ -190,6 +186,10 @@ func TestMultipleSenders(t *testing.T) {
 
 					// Wait for start signal
 					<-start
+
+					rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+					// Base delay
+					base := time.Millisecond
 
 					// Write
 					for range tt.sendRepeatCtn {

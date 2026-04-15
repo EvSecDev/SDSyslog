@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sdsyslog/internal/cli"
 	"sdsyslog/internal/global"
+	_ "sdsyslog/internal/iomodules/syslog" // For Severity/Facility map init
 	"sdsyslog/internal/logctx"
 	_ "sdsyslog/pkg/crypto/registry" // For Suite ID array init
 )

@@ -9,7 +9,6 @@ import (
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/global"
-	"sdsyslog/internal/iomodules/syslog"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics/server"
@@ -49,7 +48,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
 
 	// Pre-startup
-	syslog.InitBidiMaps()
 	daemon.cfg.setDefaults()
 	err = wrappers.SetupEncryptInnerPayload(serverPub)
 	if err != nil {

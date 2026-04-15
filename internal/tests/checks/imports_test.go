@@ -45,6 +45,7 @@ func TestImportRestrictions(t *testing.T) {
 				global.ProgBaseName + "/internal/sender",
 				global.ProgBaseName + "/tests/integration",
 				global.ProgBaseName + "/internal/install",
+				global.ProgBaseName + "/cmd/sdsyslog", // Specifically for import-only init call
 			},
 		},
 	}

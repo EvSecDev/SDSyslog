@@ -48,8 +48,8 @@ func (config *ManagerConfig) validate() (err error) {
 	if config.MinInstanceCount.Load() >= config.MaxInstanceCount.Load() {
 		err = fmt.Errorf("minimum instance count cannot be equal to or less than max instance count")
 	}
-	if config.Port == 0 {
-		err = fmt.Errorf("empty listen port")
+	if config.ListenSocket == nil {
+		err = fmt.Errorf("empty listen address")
 	}
 	if config.ReplayProtectionWindow == 0 {
 		err = fmt.Errorf("empty ReplayProtectionWindow")

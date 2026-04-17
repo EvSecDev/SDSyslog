@@ -31,7 +31,7 @@ var logFacility = LogFacility{
 		"local6":   22,
 		"local7":   23,
 	},
-	CodeToFacility: make(map[uint16]string),
+	CodeToFacility: nil,
 }
 var severityMu sync.RWMutex
 var logSeverity = LogSeverity{
@@ -45,15 +45,16 @@ var logSeverity = LogSeverity{
 		"info":    6,
 		"debug":   7,
 	},
-	CodeToSeverity: make(map[uint16]string),
+	CodeToSeverity: nil,
 }
 
 // Initialize reverse lookup maps
-func Init() {
+func init() {
 	facilityMu.Lock()
 	defer facilityMu.Unlock()
 
 	// Populate reverse lookup maps for facilities
+	logFacility.CodeToFacility = make(map[uint16]string)
 	for facility, code := range logFacility.FacilityToCode {
 		logFacility.CodeToFacility[code] = facility
 	}
@@ -62,6 +63,7 @@ func Init() {
 	defer severityMu.Unlock()
 
 	// Populate reverse lookup maps for severities
+	logSeverity.CodeToSeverity = make(map[uint16]string)
 	for severity, code := range logSeverity.SeverityToCode {
 		logSeverity.CodeToSeverity[code] = severity
 	}
@@ -96,6 +98,11 @@ func CodeToFacility(code uint16) (facility string, err error) {
 	facilityMu.Lock()
 	defer facilityMu.Unlock()
 
+	if logFacility.CodeToFacility == nil {
+		err = fmt.Errorf("syslog code to facility map was not initialized")
+		return
+	}
+
 	facility, exists := logFacility.CodeToFacility[code]
 	if !exists {
 		err = fmt.Errorf("unknown facility code: %d", code)
@@ -107,6 +114,11 @@ func CodeToFacility(code uint16) (facility string, err error) {
 func CodeToSeverity(code uint16) (severity string, err error) {
 	severityMu.Lock()
 	defer severityMu.Unlock()
+
+	if logSeverity.CodeToSeverity == nil {
+		err = fmt.Errorf("syslog code to severity map was not initialized")
+		return
+	}
 
 	severity, exists := logSeverity.CodeToSeverity[code]
 	if !exists {

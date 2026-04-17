@@ -17,6 +17,7 @@ type JSONConfig struct {
 	PublicKey      string `json:"publicKey"`
 	SigningKeyFile string `json:"signingKeyFile,omitempty"`
 	Network        struct {
+		SourceAddress  string `json:"sourceAddress,omitempty"`
 		Address        string `json:"address"`
 		Port           int    `json:"port"`
 		MaxPayloadSize int    `json:"maxPayloadSize,omitempty"`
@@ -60,6 +61,7 @@ type Config struct {
 	signatureSuiteID       uint8
 
 	// Destination
+	SourceIP               string
 	DestinationIP          string
 	DestinationPort        int
 	OverrideMaxPayloadSize int

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"os"
 	"sdsyslog/internal/iomodules"
-	"sdsyslog/internal/iomodules/syslog"
 	"sdsyslog/pkg/protocol"
 	"strconv"
 	"strings"
@@ -13,7 +12,6 @@ import (
 )
 
 func TestParseFields(t *testing.T) {
-	syslog.Init()
 	baseTimestampUs := int64(1_700_000_000_123_456)
 	expectedTime := time.Unix(
 		baseTimestampUs/1_000_000,

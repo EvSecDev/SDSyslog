@@ -14,8 +14,8 @@ type ManagerConfig struct {
 	MaxQueueCapacity global.MaxValue // Maximum queue size
 	MinInstanceCount atomic.Uint32   // Minimum number of instances at any one time
 	MaxInstanceCount atomic.Uint32   // Maximum number of instances at any one time
-	DestinationIP    string
-	DestinationPort  int
+	SourceAddress    *net.UDPAddr    // Source listen address
+	DestAddress      *net.UDPAddr
 }
 
 type Manager struct {

@@ -16,7 +16,12 @@ import (
 
 // Creates new udp connection object for a port that is already listening.
 // Attempts to set socket with hooks to ebpf program if available.
-func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
+func ReuseUDPPort(sourceSocket *net.UDPAddr) (conn *net.UDPConn, err error) {
+	if sourceSocket == nil {
+		err = fmt.Errorf("provided source socket is nil")
+		return
+	}
+
 	// Using x/sys/unix package for more up-to-date syscall numbers
 	cfg := net.ListenConfig{
 		Control: func(network, address string, c syscall.RawConn) error {
@@ -59,8 +64,7 @@ func ReuseUDPPort(port int) (conn *net.UDPConn, err error) {
 		},
 	}
 
-	addr := net.UDPAddr{Port: port}
-	pc, err := cfg.ListenPacket(context.Background(), "udp", addr.String())
+	pc, err := cfg.ListenPacket(context.Background(), "udp", sourceSocket.String())
 	if err != nil {
 		err = fmt.Errorf("failed to listen on new reused connection: %w", err)
 		return

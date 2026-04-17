@@ -4,6 +4,7 @@ package receiver
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/crypto/wrappers"
@@ -12,6 +13,7 @@ import (
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics/server"
+	"sdsyslog/internal/network"
 	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/listener"
@@ -22,6 +24,7 @@ import (
 	"sdsyslog/internal/receiver/shard/fiprrecv"
 	"sdsyslog/pkg/crypto/registry"
 	"slices"
+	"strconv"
 	"time"
 )
 
@@ -82,6 +85,11 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	err = wrappers.SetupVerifySignature(daemon.cfg.PinnedSigningKeys)
 	if err != nil {
 		err = fmt.Errorf("failed to setup signature verification function: %w", err)
+		return
+	}
+	sourceSocket, err := network.ParseUDPAddress(daemon.cfg.ListenIP, daemon.cfg.ListenPort)
+	if err != nil {
+		err = fmt.Errorf("invalid listen address: %w", err)
 		return
 	}
 
@@ -170,7 +178,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Stage 1 - Listener Manager
 	inMgrConf := &listener.ManagerConfig{
-		Port:                   daemon.cfg.ListenPort,
+		ListenSocket:           sourceSocket,
 		ReplayProtectionWindow: daemon.cfg.ReplayProtectionWindow,
 	}
 	inMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxListeners))
@@ -266,9 +274,12 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		return
 	}
 
+	parsedListenAddr := net.JoinHostPort(sourceSocket.IP.String(), strconv.Itoa(sourceSocket.Port))
+
 	startupElapsed := parsing.TrimDurationPrecision(time.Since(startupTime), 2)
-	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s). Listening for messages on %s:%d\n",
-		startupElapsed, global.ProgVersion, daemon.cfg.ListenIP, daemon.cfg.ListenPort)
+	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s)\n",
+		startupElapsed, global.ProgVersion)
+	logctx.LogStdInfo(daemon.ctx, "Listening for messages on %s\n", parsedListenAddr)
 	return
 }
 

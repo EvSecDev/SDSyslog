@@ -13,7 +13,7 @@ import (
 type ManagerConfig struct {
 	MinInstanceCount       atomic.Uint32 // Minimum number of instances at any one time
 	MaxInstanceCount       atomic.Uint32 // Maximum number of instances at any one time
-	Port                   int           // Network listen port
+	ListenSocket          *net.UDPAddr  // Source listen address
 	ReplayProtectionWindow time.Duration // +/- time duration from packet reception time where a duplicate public key will cause packet to be dropped
 	replayCleanInterval    time.Duration // Eviction check interval for seen public keys
 }

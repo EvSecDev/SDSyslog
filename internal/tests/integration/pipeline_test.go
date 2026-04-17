@@ -162,6 +162,7 @@ func TestSendReceivePipeline(t *testing.T) {
 	newSendJSONCfg := sender.JSONConfig{
 		PublicKey: base64.StdEncoding.EncodeToString(pub),
 		Network: struct {
+			SourceAddress  string "json:\"sourceAddress,omitempty\""
 			Address        string "json:\"address\""
 			Port           int    "json:\"port\""
 			MaxPayloadSize int    "json:\"maxPayloadSize,omitempty\""

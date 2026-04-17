@@ -4,6 +4,7 @@ package sender
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"runtime"
 	"sdsyslog/internal/atomics"
@@ -12,6 +13,7 @@ import (
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics/server"
+	"sdsyslog/internal/network"
 	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/sender/assembler"
 	"sdsyslog/internal/sender/ingest"
@@ -20,6 +22,7 @@ import (
 	"sdsyslog/internal/sender/scaling"
 	"sdsyslog/pkg/crypto/registry"
 	"slices"
+	"strconv"
 	"time"
 )
 
@@ -71,6 +74,25 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			return
 		}
 	}
+	destinationSocket, err := network.ParseUDPAddress(daemon.cfg.DestinationIP, daemon.cfg.DestinationPort)
+	if err != nil {
+		err = fmt.Errorf("invalid destination: %w", err)
+		return
+	}
+	var sourceSocket *net.UDPAddr
+	if daemon.cfg.SourceIP != "" {
+		sourceSocket, err = network.ParseUDPAddress(daemon.cfg.SourceIP, 0)
+		if err != nil {
+			err = fmt.Errorf("invalid source: %w", err)
+			return
+		}
+	} else {
+		sourceSocket, err = network.GetLocalIPForDestination(destinationSocket.IP)
+		if err != nil {
+			err = fmt.Errorf("failed to find local address for destination: %w", err)
+			return
+		}
+	}
 
 	if daemon.cfg.dryRunConfig {
 		logctx.LogStdInfo(daemon.ctx, "Configuration test successful, exiting.\n")
@@ -81,8 +103,8 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	outMgrConf := &output.ManagerConfig{
 		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,
 		MaxQueueCapacity: daemon.cfg.MaxOutputQueueSize,
-		DestinationIP:    daemon.cfg.DestinationIP,
-		DestinationPort:  daemon.cfg.DestinationPort,
+		SourceAddress:    sourceSocket,
+		DestAddress:      destinationSocket,
 	}
 	outMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinOutputs))
 	outMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxOutputs))
@@ -238,9 +260,14 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		return
 	}
 
+	sourceAddressParsed := net.JoinHostPort(sourceSocket.IP.String(), strconv.Itoa(sourceSocket.Port))
+	destAddressParsed := net.JoinHostPort(destinationSocket.IP.String(), strconv.Itoa(destinationSocket.Port))
+
 	startupElapsed := parsing.TrimDurationPrecision(time.Since(startupTime), 2)
-	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s). Sending messages to %s:%d\n",
-		startupElapsed, global.ProgVersion, daemon.cfg.DestinationIP, daemon.cfg.DestinationPort)
+	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s)\n",
+		startupElapsed, global.ProgVersion)
+	logctx.LogStdInfo(daemon.ctx, "Sending messages from %s to %s\n",
+		sourceAddressParsed, destAddressParsed)
 	return
 }
 

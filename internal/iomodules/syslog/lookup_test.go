@@ -3,9 +3,6 @@ package syslog
 import "testing"
 
 func TestSeverityMappings(t *testing.T) {
-	// Ensure reverse maps are initialized
-	Init()
-
 	tests := []struct {
 		name      string
 		severity  string
@@ -70,9 +67,6 @@ func TestSeverityMappings(t *testing.T) {
 }
 
 func TestFacilityMappings(t *testing.T) {
-	// Ensure reverse maps are initialized
-	Init()
-
 	tests := []struct {
 		name      string
 		facility  string

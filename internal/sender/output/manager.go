@@ -7,7 +7,6 @@ import (
 	"net"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/queue/mpmc"
-	"strconv"
 )
 
 // Creates new instance manager (and its own inbox)
@@ -23,13 +22,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context) (new *Manager, err 
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	// Setup destination network connection
-	destAddr, err := net.ResolveUDPAddr("udp", config.DestinationIP+":"+strconv.Itoa(config.DestinationPort))
-	if err != nil {
-		err = fmt.Errorf("failed to resolve destination: %w", err)
-		return
-	}
-
-	destinationConnection, err := net.DialUDP("udp", nil, destAddr)
+	destinationConnection, err := net.DialUDP("udp", config.SourceAddress, config.DestAddress)
 	if err != nil {
 		err = fmt.Errorf("failed to open udp socket: %w", err)
 		return
@@ -76,11 +69,11 @@ func (config *ManagerConfig) validate() (err error) {
 	if config.MinInstanceCount.Load() >= config.MaxInstanceCount.Load() {
 		err = fmt.Errorf("minimum instance count cannot be equal to or less than max instance count")
 	}
-	if config.DestinationIP == "" {
-		err = fmt.Errorf("empty destination ip")
+	if config.SourceAddress == nil {
+		err = fmt.Errorf("empty source address")
 	}
-	if config.DestinationPort == 0 {
-		err = fmt.Errorf("empty destination port")
+	if config.DestAddress == nil {
+		err = fmt.Errorf("empty destination address")
 	}
 	return
 }

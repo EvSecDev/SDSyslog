@@ -15,7 +15,7 @@ func (manager *Manager) AddInstance() (id int, err error) {
 		return
 	}
 
-	conn, err := network.ReuseUDPPort(manager.Config.Port)
+	conn, err := network.ReuseUDPPort(manager.Config.ListenSocket)
 	if err != nil {
 		err = fmt.Errorf("failed to reuse port: %w", err)
 		return

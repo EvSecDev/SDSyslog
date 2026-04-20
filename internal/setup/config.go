@@ -1,8 +1,9 @@
-package install
+package setup
 
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sdsyslog/internal/filtering"
@@ -16,44 +17,88 @@ import (
 	"sdsyslog/internal/sender/ingest"
 	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
+	"syscall"
 )
 
-func installConfig(mode string, suiteID uint8) (err error) {
-	var configFilePath string
-	switch mode {
-	case "send":
-		configFilePath = global.DefaultConfigSend
-	case "receive":
-		configFilePath = global.DefaultConfigRecv
+type InstallConfigStep struct {
+	configPath     string
+	dirCreated     bool
+	configCreated  bool
+	privKeyCreated bool
+}
+
+func (step *InstallConfigStep) Name() string {
+	return "Configuration Files"
+}
+
+func (step *InstallConfigStep) NeedsApply(ctx *context) (alreadyInstalled bool, err error) {
+	ctx.logger.Indent()
+	defer ctx.logger.Dedent()
+
+	switch ctx.mode {
+	case global.SendMode:
+		step.configPath = global.DefaultConfigSend
+	case global.RecvMode:
+		step.configPath = global.DefaultConfigRecv
 	default:
-		err = fmt.Errorf("unknown mode '%s'", mode)
+		err = fmt.Errorf("unknown mode '%s'", ctx.mode)
 		return
 	}
 
-	err = os.Mkdir(global.DefaultConfigDir, 0755)
-	if err != nil {
-		if os.IsExist(err) {
-			err = nil
-		} else {
+	_, err = os.Stat(global.DefaultConfigDir)
+	if err != nil && os.IsNotExist(err) {
+		ctx.logger.Verbose("Configuration directory does not exist '%s'", global.DefaultConfigDir)
+		alreadyInstalled = false
+		err = nil
+		return
+	} else if err != nil && !os.IsNotExist(err) {
+		err = fmt.Errorf("failed to check configuration directory: %w", err)
+		return
+	}
+
+	// Never overwrite
+	_, err = os.Stat(step.configPath)
+	if err == nil {
+		ctx.logger.Verbose("Configuration file '%s' present, refusing to overwrite", step.configPath)
+		alreadyInstalled = true
+		return
+	}
+
+	ctx.logger.Verbose("Configuration file '%s' not present", step.configPath)
+	return
+}
+
+func (step *InstallConfigStep) Apply(ctx *context) (err error) {
+	ctx.logger.Indent()
+	defer ctx.logger.Dedent()
+
+	ctx.logger.Verbose("Installing configuration file to '%s'", step.configPath)
+
+	_, err = os.Stat(global.DefaultConfigDir)
+	if err != nil && os.IsNotExist(err) {
+		step.dirCreated = true
+		err = os.Mkdir(global.DefaultConfigDir, 0755)
+		if err != nil {
 			err = fmt.Errorf("failed to create configuration directory: %w", err)
 			return
 		}
-	}
-
-	// Don't overwrite existing
-	_, err = os.Stat(configFilePath)
-	if err == nil {
-		fmt.Printf("Existing configuration file present, not overwriting\n")
+		ctx.logger.Verbose("Created configuration directory '%s'", global.DefaultConfigDir)
+	} else if err != nil && !os.IsNotExist(err) {
+		err = fmt.Errorf("failed to check configuration directory: %w", err)
 		return
 	}
 
-	switch mode {
-	case "send":
-		err = CreateSendTemplateConfig(configFilePath)
-	case "receive":
-		info, validID := registry.GetSuiteInfo(suiteID)
+	switch ctx.mode {
+	case global.SendMode:
+		err = CreateSendTemplateConfig(step.configPath)
+		if err != nil {
+			return
+		}
+		step.configCreated = true
+	case global.RecvMode:
+		info, validID := registry.GetSuiteInfo(ctx.suiteID)
 		if !validID {
-			err = fmt.Errorf("invalid suite ID %d", suiteID)
+			err = fmt.Errorf("invalid suite ID %d", ctx.suiteID)
 			return
 		}
 
@@ -78,42 +123,85 @@ func installConfig(mode string, suiteID uint8) (err error) {
 				return
 			}
 			defer func() {
-				lerr := privKeyFile.Close()
-				if err == nil && lerr != nil {
-					err = lerr
-				}
+				_ = privKeyFile.Close()
 			}()
+			step.privKeyCreated = true
 
 			_, err = privKeyFile.Write([]byte(base64.StdEncoding.EncodeToString(private)))
 			if err != nil {
 				err = fmt.Errorf("failed to write new private key: %w", err)
 				return
 			}
-			fmt.Printf("Successfully wrote new private key file to '%s'\n", encryptionPrivKeyPath)
-			fmt.Printf("  IMPORTANT: Public key (use this for all senders): %s\n", base64.StdEncoding.EncodeToString(public))
+			ctx.logger.Info("Successfully wrote new private key file to '%s'", encryptionPrivKeyPath)
+			ctx.logger.Info("  IMPORTANT: Public key (use this for all senders): %s", base64.StdEncoding.EncodeToString(public))
+		} else {
+			ctx.logger.Verbose("Private key file already exists at '%s'", encryptionPrivKeyPath)
 		}
 
-		err = CreateRecvTemplateConfig(configFilePath)
+		err = CreateRecvTemplateConfig(step.configPath)
+		if err != nil {
+			return
+		}
+		step.configCreated = true
 	default:
-		err = fmt.Errorf("unknown mode '%s'", mode)
-		return
-	}
-	if err != nil {
+		err = fmt.Errorf("unknown mode '%s'", ctx.mode)
 		return
 	}
 
-	fmt.Printf("Successfully wrote template configuration file to '%s'\n", configFilePath)
+	ctx.logger.Success("Successfully wrote template configuration file to '%s'", step.configPath)
 	return
 }
 
-func uninstallConfig(mode string) (err error) {
-	if mode == "receive" {
+func (step *InstallConfigStep) Rollback(ctx *context) {
+	ctx.logger.Indent()
+	defer ctx.logger.Dedent()
+
+	// Remove private key if created (recv mode only)
+	if step.privKeyCreated {
+		err := os.Remove(encryptionPrivKeyPath)
+		if err != nil && !os.IsNotExist(err) {
+			ctx.logger.Error("failed to remove private key file '%s': %v", encryptionPrivKeyPath, err)
+		} else {
+			ctx.logger.Verbose("Removed private key file '%s'", encryptionPrivKeyPath)
+		}
+	}
+
+	// Remove config file if we created it
+	if step.configCreated {
+		err := os.Remove(step.configPath)
+		if err != nil && !os.IsNotExist(err) {
+			ctx.logger.Error("failed to remove config file '%s': %v", step.configPath, err)
+		} else {
+			ctx.logger.Verbose("Removed configuration file '%s'", step.configPath)
+		}
+	}
+
+	// Remove directory only if we created it AND it's empty
+	if step.dirCreated {
+		err := os.Remove(global.DefaultConfigDir)
+		if err != nil && !os.IsNotExist(err) && !errors.Is(err, syscall.ENOTEMPTY) {
+			ctx.logger.Error("failed to remove config directory '%s': %v", global.DefaultConfigDir, err)
+		} else {
+			ctx.logger.Verbose("Removed configuration directory '%s'", global.DefaultConfigDir)
+		}
+	}
+}
+
+func (step *InstallConfigStep) PostApply(ctx *context) {
+	// No-op
+}
+
+func (step *InstallConfigStep) Uninstall(ctx *context) (err error) {
+	ctx.logger.Indent()
+	defer ctx.logger.Dedent()
+
+	if ctx.mode == global.RecvMode {
 		err = os.Remove(encryptionPrivKeyPath)
 		if err != nil && !os.IsNotExist(err) {
 			err = fmt.Errorf("failed to remove private key file: %w", err)
 			return
 		}
-		fmt.Printf("Successfully removed private key file '%s'\n", encryptionPrivKeyPath)
+		ctx.logger.Info("Successfully removed private key file '%s'", encryptionPrivKeyPath)
 	}
 
 	err = os.RemoveAll(global.DefaultConfigDir)
@@ -123,7 +211,7 @@ func uninstallConfig(mode string) (err error) {
 		err = nil
 	}
 
-	fmt.Printf("Successfully removed configuration directory '%s'\n", global.DefaultConfigDir)
+	ctx.logger.Success("Successfully removed configuration directory '%s'", global.DefaultConfigDir)
 	return
 }
 
@@ -148,14 +236,14 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 	newCfg.AutoScaling.MinAssemblers = 2
 	newCfg.AutoScaling.MaxOutputs = 16
 	newCfg.AutoScaling.MaxAssemblers = 16
-	newCfg.AutoScaling.MinAssemblerQueueSize = 1024
-	newCfg.AutoScaling.MaxAssemblerQueueSize = 4096
-	newCfg.AutoScaling.MinOutputQueueSize = 1024
-	newCfg.AutoScaling.MaxOutputQueueSize = 4096
+	newCfg.AutoScaling.MinAssemblerQueueSize = global.DefaultMinQueueSize
+	newCfg.AutoScaling.MaxAssemblerQueueSize = global.DefaultMaxQueueSize
+	newCfg.AutoScaling.MinOutputQueueSize = global.DefaultMinQueueSize
+	newCfg.AutoScaling.MaxOutputQueueSize = global.DefaultMaxQueueSize
 
 	newCfg.StateFile = global.DefaultStateFile
 
-	newCfg.Inputs.FilePaths = []string{"/var/log/dmesg", "/var/log/nginx/access.log"}
+	newCfg.Inputs.FilePaths = []string{"/var/log/nginx/kern.log"}
 	newCfg.Inputs.JournalEnabled = true
 	newCfg.Inputs.DropFilters = map[string][]protocol.MessageFilter{
 		ingest.FileSource: {
@@ -190,13 +278,13 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 		},
 	}
 
-	newCfg.PublicKey = "xxxxxxxxxxxxxxxx=="
+	newCfg.PublicKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
 
 	newCfg.Metrics.MaxAge = "72h"
 	newCfg.Metrics.Interval = "5s"
 	newCfg.Metrics.QueryServerPort = server.ListenPortSender
 
-	newCfg.Network.Address = "[::1]"
+	newCfg.Network.Address = "::1"
 	newCfg.Network.Port = global.DefaultReceiverPort
 	newCfg.Network.MaxPayloadSize = 1300
 
@@ -256,7 +344,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	newCfg.Metrics.Interval = "1s"
 	newCfg.Metrics.QueryServerPort = server.ListenPortReceiver
 
-	newCfg.Network.Address = "[::1]"
+	newCfg.Network.Address = "::1"
 	newCfg.Network.Port = global.DefaultReceiverPort
 
 	confBytes, err := json.MarshalIndent(newCfg, "", "  ")

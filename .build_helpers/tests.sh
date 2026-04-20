@@ -41,16 +41,22 @@ function run_tests() {
 		| grep -Ev "\[no test files\]|^PASS$|coverage: 0.0% of statements$|^coverage: "
 	pkgExitCode=${PIPESTATUS[0]}
 
+	set -e
+
 	if [[ $pkgExitCode != 0 ]]; then
 		echo -e "${RED}[-] FAILED TESTS${RESET}"
 		return 1
 	fi
+
+	set +e
 
 	# shellcheck disable=SC2046
 	go -C "$repoRoot/$SRCdir" test "${testArgs[@]}" -coverprofile="$coverProfileOutSrc" \
 		$(go list ./... | grep -Ev "internal/tests/integration|pkg/") \
 		| grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: |coverage: 0.0% of statements$|^coverage: "
 	internalExitCode=${PIPESTATUS[0]}
+
+	set -e
 
 	if [[ $internalExitCode != 0 ]]; then
 		echo -e "${RED}[-] FAILED TESTS${RESET}"
@@ -104,6 +110,8 @@ function run_tests() {
 				| grep -Ev "\[no test files\]|^PASS$|^goos: |^goarch: |^cpu: |coverage: 0.0% of statements$|^coverage: "
 			exitCode=${PIPESTATUS[0]}
 
+			set -e
+
 			if [[ $exitCode != 0 ]]; then
 				echo -e "${RED}[-] FAILED TEST: $testFunc${RESET}"
 				return 1
@@ -112,8 +120,6 @@ function run_tests() {
 			coverPercent=$(go tool cover -func="$coverProfileInteg" | grep "^total:" | awk '{print $3}')
 			echo -e "   [*] Integ Coverage: ${BOLD}$coverPercent${RESET}"
 			rm -f "$coverProfileInteg"
-
-			set -e
 
 			echo -e "${GREEN}[+] DONE${RESET}"
 		done

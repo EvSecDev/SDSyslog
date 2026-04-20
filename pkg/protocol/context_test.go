@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"sdsyslog/internal/tests/utils"
 	"testing"
 	"time"
 )
@@ -157,7 +158,7 @@ func TestDeserializeAnyValue(t *testing.T) {
 		inputType   uint8
 		inputValue  []byte
 		expectedOut any
-		expectedErr bool
+		expectedErr string
 	}{
 		{
 			name:      "[]byte",
@@ -240,30 +241,169 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:        "unsupported type",
 			inputType:   0xff,
 			inputValue:  []byte{0x00},
-			expectedErr: true,
+			expectedErr: "unsupported value type: 255",
 		},
 		{
 			name:        "short int16",
 			inputType:   ContextInt16,
 			inputValue:  []byte{0x01},
-			expectedErr: true,
+			expectedErr: "invalid int16 length: 1",
 		},
 		{
 			name:        "short int64",
 			inputType:   ContextInt64,
 			inputValue:  []byte{0x01, 0x02},
-			expectedErr: true,
+			expectedErr: "invalid int64 length: 2",
+		},
+		{
+			name:      "slice length mismatch (too short)",
+			inputType: ContextSliceBytes,
+			inputValue: []byte{
+				0x00, 0x00, 0x00, 0x05, // says 5
+				0x01, 0x02, // only 2 bytes
+			},
+			expectedErr: "invalid slice length",
+		},
+		{
+			name:      "slice length mismatch (too long)",
+			inputType: ContextSliceBytes,
+			inputValue: []byte{
+				0x00, 0x00, 0x00, 0x02, // says 2
+				0x01, 0x02, 0x03, // 3 bytes
+			},
+			expectedErr: "invalid slice length",
+		},
+		{
+			name:        "slice missing length prefix",
+			inputType:   ContextSliceBytes,
+			inputValue:  []byte{0x01, 0x02, 0x03},
+			expectedErr: "unexpected EOF",
+		},
+		{
+			name:      "slice empty",
+			inputType: ContextSliceBytes,
+			inputValue: []byte{
+				0x00, 0x00, 0x00, 0x00,
+			},
+			expectedOut: []byte{},
+		},
+		{
+			name:        "int32 with trailing bytes",
+			inputType:   ContextInt32,
+			inputValue:  []byte{0x00, 0x00, 0x00, 0x01, 0xff},
+			expectedErr: "invalid int32 length",
+		},
+		{
+			name:        "bool with trailing byte",
+			inputType:   ContextBool,
+			inputValue:  []byte{0x01, 0x00},
+			expectedErr: "invalid bool length",
+		},
+		{
+			name:        "bool invalid 0x02",
+			inputType:   ContextBool,
+			inputValue:  []byte{0x02},
+			expectedErr: "invalid bool value",
+		},
+		{
+			name:        "bool invalid 0xff",
+			inputType:   ContextBool,
+			inputValue:  []byte{0xff},
+			expectedErr: "invalid bool value",
+		},
+		{
+			name:      "float64 NaN",
+			inputType: ContextFloat64,
+			inputValue: func() []byte {
+				var b [8]byte
+				binary.BigEndian.PutUint64(b[:], math.Float64bits(math.NaN()))
+				return b[:]
+			}(),
+			expectedErr: "invalid float64 value",
+		},
+		{
+			name:      "float32 NaN",
+			inputType: ContextFloat32,
+			inputValue: func() []byte {
+				var b [4]byte
+				binary.BigEndian.PutUint32(b[:], math.Float32bits(float32(math.NaN())))
+				return b[:]
+			}(),
+			expectedErr: "invalid float32 value",
+		},
+		{
+			name:      "float64 +Inf",
+			inputType: ContextFloat64,
+			inputValue: func() []byte {
+				var b [8]byte
+				binary.BigEndian.PutUint64(b[:], math.Float64bits(math.Inf(1)))
+				return b[:]
+			}(),
+			expectedErr: "invalid float64 value",
+		},
+		{
+			name:      "float64 -Inf",
+			inputType: ContextFloat64,
+			inputValue: func() []byte {
+				var b [8]byte
+				binary.BigEndian.PutUint64(b[:], math.Float64bits(math.Inf(-1)))
+				return b[:]
+			}(),
+			expectedErr: "invalid float64 value",
+		},
+		{
+			name:      "float64 negative zero normalized",
+			inputType: ContextFloat64,
+			inputValue: func() []byte {
+				var b [8]byte
+				binary.BigEndian.PutUint64(b[:], 0x8000000000000000) // -0
+				return b[:]
+			}(),
+			expectedOut: float64(0),
+		},
+		{
+			name:        "int8 too long",
+			inputType:   ContextInt8,
+			inputValue:  []byte{0x01, 0x02},
+			expectedErr: "invalid int8 length",
+		},
+		{
+			name:        "float32 too short",
+			inputType:   ContextFloat32,
+			inputValue:  []byte{0x00, 0x00},
+			expectedErr: "invalid float32 length",
+		},
+		{
+			name:        "float64 too long",
+			inputType:   ContextFloat64,
+			inputValue:  append(make([]byte, 8), 0x00),
+			expectedErr: "invalid float64 length",
+		},
+		{
+			name:        "string invalid utf8",
+			inputType:   ContextString,
+			inputValue:  []byte{0xff, 0xff},
+			expectedErr: "invalid UTF-8 string",
+		},
+		{
+			name:      "int64 max",
+			inputType: ContextInt64,
+			inputValue: func() []byte {
+				var b [8]byte
+				binary.BigEndian.PutUint64(b[:], math.MaxInt64)
+				return b[:]
+			}(),
+			expectedOut: int64(math.MaxInt64),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			value, err := deserializeAnyValue(tt.inputType, tt.inputValue)
-			if err == nil && tt.expectedErr {
-				t.Errorf("expected error but got nil")
-			} else if !tt.expectedErr && err != nil {
-				t.Errorf("expected no error, but got '%v'", err)
-			} else if tt.expectedErr && err != nil {
+			matches, err := utils.MatchErrorString(err, tt.expectedErr)
+			if err != nil {
+				t.Fatalf("%v", err)
+			} else if matches {
 				return
 			}
 

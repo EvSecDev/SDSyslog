@@ -45,11 +45,11 @@ function check_for_dev_artifacts() {
 	set +e
 	# Disagree on including name in description comments
 	staticcheck -checks all ./... | grep -Ev "comment on exported method|package comment should be of the form|comment on exported type|comment on exported function"
+	set -e
 	go vet ./...
 	if [[ -x $(which golangci-lint) ]]; then
 		golangci-lint run ./...
 	fi
-	set -e
 
 	echo -e "${GREEN}[+] DONE${RESET}"
 }

@@ -34,7 +34,7 @@ func TestImportRestrictions(t *testing.T) {
 		},
 		// No internal logic should be calling the installation logic
 		{
-			targetPrefix:    global.ProgBaseName + "/internal/install",
+			targetPrefix:    global.ProgBaseName + "/internal/setup",
 			allowedToImport: []string{global.ProgBaseName + "/internal/cli"},
 		},
 		// IOModules are meant for pipeline and integ tests only
@@ -44,7 +44,7 @@ func TestImportRestrictions(t *testing.T) {
 				global.ProgBaseName + "/internal/receiver",
 				global.ProgBaseName + "/internal/sender",
 				global.ProgBaseName + "/tests/integration",
-				global.ProgBaseName + "/internal/install",
+				global.ProgBaseName + "/internal/setup",
 				global.ProgBaseName + "/cmd/sdsyslog", // Specifically for import-only init call
 			},
 		},

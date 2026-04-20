@@ -99,9 +99,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	}
 
 	// Listener socket helper - kernel-side of socket drain feature
-	err = ebpf.LoadProgram()
+	err = ebpf.LoadProgram(daemon.ctx)
 	if err != nil {
-		err = fmt.Errorf("failed to load listener helper: %w", err)
+		err = fmt.Errorf("failed to load listener eBPF draining program: %w", err)
 		return
 	}
 

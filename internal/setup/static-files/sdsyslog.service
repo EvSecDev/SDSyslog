@@ -1,10 +1,11 @@
 [Unit]
 Description=Secure Diode System Logger (SDSyslog) Receiver
 Documentation=https://github.com/EvSecDev/SDSyslog
-After=network.target systemd-journald.service
+After=network.target
 
 # Safety: Ensure bpf cap when in restricted environments (i.e. containers)
 AssertCapability=CAP_BPF
+AssertCapability=CAP_SYS_RESOURCE
 
 [Service]
 User=root
@@ -17,8 +18,8 @@ RestartSec=60
 Restart=on-abnormal
 
 # Socket draining eBPF program permissions
-AmbientCapabilities=CAP_BPF
-CapabilityBoundingSet=CAP_BPF
+AmbientCapabilities=CAP_BPF CAP_SYS_RESOURCE
+CapabilityBoundingSet=CAP_BPF CAP_SYS_RESOURCE
 
 [Install]
 WantedBy=multi-user.target

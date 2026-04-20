@@ -29,7 +29,7 @@ struct {
 SEC("sk_reuseport")
 static int reuseport_select(struct sk_reuseport_md *ctx) {
     // Use socket pointer as unique key
-    __u64 key = (__u64)(uintptr_t)ctx->sk;
+    __u64 key = bpf_get_socket_cookie(ctx->sk);
 
     // Get current socket status (draining/not draining)
     __u8 *draining = bpf_map_lookup_elem(&draining_sockets, &key);

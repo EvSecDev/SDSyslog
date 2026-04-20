@@ -1,4 +1,4 @@
-package install
+package setup
 
 import (
 	"encoding/base64"

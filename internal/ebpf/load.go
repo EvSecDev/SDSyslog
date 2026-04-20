@@ -2,12 +2,15 @@ package ebpf
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"errors"
 	"fmt"
 	"os"
 	"runtime"
+	"sdsyslog/internal/fsops"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/logctx"
 
 	"github.com/cilium/ebpf"
 	"golang.org/x/sys/unix"
@@ -18,23 +21,56 @@ var byteCodeFS embed.FS
 
 // Takes compiled eBPF bytecode and loads it into the kernel.
 // It pins the draining_sockets map and reference to the current program in sys bpffs path.
-func LoadProgram() (err error) {
+func LoadProgram(ctx context.Context) (err error) {
 	if runtime.GOOS != global.GOOSLinux {
+		logctx.LogStdWarn(ctx, "eBPF is not supported on platform %s\n", runtime.GOOS)
 		return
 	}
 
 	// Ensure kernel supports BTF
 	_, err = os.Stat("/sys/kernel/btf/vmlinux")
-	if os.IsNotExist(err) {
+	if err != nil && os.IsNotExist(err) {
 		// No-op when not supported
+		logctx.LogStdWarn(ctx, "eBPF is not supported on current kernel\n")
 		err = nil
+		return
+	} else if err != nil && !os.IsNotExist(err) {
+		err = fmt.Errorf("failed to check existence of BTF: %w", err)
 		return
 	}
 
-	// Must run as root
+	// Ensure binary file has proper capabilities set for non-root users
 	if os.Geteuid() != 0 {
-		// No-op
-		return
+		var selfExe string
+		selfExe, err = os.Executable()
+		if err != nil {
+			err = fmt.Errorf("failed to retrieve self executable file path: %w", err)
+			return
+		}
+		var mode fsops.CapMode
+		var caps []uint
+		mode, caps, err = fsops.GetCapabilities(selfExe)
+		if err != nil {
+			err = fmt.Errorf("failed to retrieve capabilities for self executable: %w", err)
+			return
+		}
+
+		var bpfCapSet, sysResourceCapSet bool
+		for _, cap := range caps {
+			if cap == fsops.CapBPF {
+				bpfCapSet = true
+			}
+			if cap == fsops.CapSYSResource {
+				sysResourceCapSet = true
+			}
+		}
+		modeIsCorrect := mode == fsops.CapEffective|fsops.CapInheritable|fsops.CapPermitted
+		if !bpfCapSet || !sysResourceCapSet || !modeIsCorrect {
+			// No-op (log for informative)
+			logctx.LogStdInfo(ctx, "Executable file is missing capability required to use eBPF socket draining program: CAP_SYS_RESOURCE,CAP_BPF=eip\n")
+			logctx.LogStdInfo(ctx, "eBPF socket draining will not be enabled (may cause dropped packets on scaling/upgrade events)\n")
+			return
+		}
 	}
 
 	ebpfByteCode, err := byteCodeFS.ReadFile("static-files/socket.o")

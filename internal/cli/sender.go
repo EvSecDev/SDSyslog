@@ -69,7 +69,12 @@ func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args
 	}
 
 	sendDaemon := sender.NewDaemon(daemonConfig)
-	err = sendDaemon.Start(ctx, publicKey)
+	err = sendDaemon.Init(ctx, publicKey)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing sending daemon: %v\n", err)
+		os.Exit(1)
+	}
+	err = sendDaemon.Start()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting sending daemon: %v\n", err)
 		os.Exit(1)

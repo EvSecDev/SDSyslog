@@ -3,6 +3,7 @@ package sender
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"sdsyslog/internal/global"
 	metricGlb "sdsyslog/internal/metrics"
@@ -102,7 +103,15 @@ type Config struct {
 }
 
 type Daemon struct {
-	cfg    Config
+	cfg Config
+
+	// Runtime
+	startTime    time.Time
+	initSuccess  bool // Tie init to start
+	startSuccess bool // Tie start to run(signal handler)
+	sourceSocket *net.UDPAddr
+	destSocket   *net.UDPAddr
+
 	ctx    context.Context
 	cancel context.CancelFunc
 

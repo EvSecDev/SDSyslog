@@ -80,7 +80,11 @@ func TestRecvConstantFlow(t *testing.T) {
 
 	// Launch receiver in background
 	daemon := receiver.NewDaemon(newCfg)
-	err = daemon.Start(globalCtx, priv)
+	err = daemon.Init(globalCtx, priv)
+	if err != nil {
+		t.Fatalf("expected no receiver init errors, got error '%v'", err)
+	}
+	err = daemon.Start()
 	if err != nil {
 		t.Fatalf("expected no receiver startup errors, got error '%v'", err)
 	}

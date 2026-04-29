@@ -78,7 +78,11 @@ func TestMultipleSenders(t *testing.T) {
 
 	// Launch receiver in background
 	daemon := receiver.NewDaemon(newRecvCfg)
-	err = daemon.Start(globalCtx, priv)
+	err = daemon.Init(globalCtx, priv)
+	if err != nil {
+		t.Fatalf("expected no receiver init errors, got error '%v'", err)
+	}
+	err = daemon.Start()
 	if err != nil {
 		t.Fatalf("expected no receiver startup errors, got error '%v'", err)
 	}
@@ -158,7 +162,11 @@ func TestMultipleSenders(t *testing.T) {
 					MetricMaxAge: 5 * time.Minute,
 				}
 				senderDaemon := sender.NewDaemon(newSendCfg)
-				err = senderDaemon.Start(sendCtx, pub)
+				err = senderDaemon.Init(sendCtx, pub)
+				if err != nil {
+					t.Fatalf("expected no sender init errors, got error '%v'", err)
+				}
+				err = senderDaemon.Start()
 				if err != nil {
 					t.Fatalf("expected no sender startup errors, got error '%v'", err)
 				}

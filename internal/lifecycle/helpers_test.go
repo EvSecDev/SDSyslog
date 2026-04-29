@@ -9,15 +9,23 @@ import (
 )
 
 type daemonFuncAdapter struct {
-	startFunc     func(ctx context.Context, key []byte) (err error)
+	initFunc      func(ctx context.Context, key []byte) (err error)
+	startFunc     func() (err error)
 	shutdownFunc  func()
 	startFIPRFunc func() error
 	stopFIPRFunc  func()
 }
 
-func (d daemonFuncAdapter) Start(ctx context.Context, key []byte) (err error) {
+func (d daemonFuncAdapter) Init(ctx context.Context, key []byte) (err error) {
+	if d.initFunc != nil {
+		err = d.initFunc(ctx, key)
+	}
+	return
+}
+
+func (d daemonFuncAdapter) Start() (err error) {
 	if d.startFunc != nil {
-		err = d.startFunc(ctx, key)
+		err = d.startFunc()
 	}
 	return
 }

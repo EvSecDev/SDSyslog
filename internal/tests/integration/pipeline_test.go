@@ -144,7 +144,11 @@ func TestSendReceivePipeline(t *testing.T) {
 
 	// Launch receiver in background
 	daemon := receiver.NewDaemon(newRecvCfg)
-	err = daemon.Start(globalCtx, key)
+	err = daemon.Init(globalCtx, key)
+	if err != nil {
+		t.Fatalf("expected no receiver init errors, got error '%v'", err)
+	}
+	err = daemon.Start()
 	if err != nil {
 		t.Fatalf("expected no receiver startup errors, got error '%v'", err)
 	}
@@ -225,7 +229,11 @@ func TestSendReceivePipeline(t *testing.T) {
 	}
 
 	senderDaemon := sender.NewDaemon(newSendCfg)
-	err = senderDaemon.Start(globalCtx, publicKey)
+	err = senderDaemon.Init(globalCtx, publicKey)
+	if err != nil {
+		t.Fatalf("expected no sender init errors, got error '%v'", err)
+	}
+	err = senderDaemon.Start()
 	if err != nil {
 		t.Fatalf("expected no sender startup errors, got error '%v'", err)
 	}

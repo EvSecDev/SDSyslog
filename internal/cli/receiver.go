@@ -94,7 +94,12 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 	}
 
 	recvDaemon := receiver.NewDaemon(daemonConfig)
-	err = recvDaemon.Start(ctx, key)
+	err = recvDaemon.Init(ctx, key)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing receiving daemon: %v\n", err)
+		os.Exit(1)
+	}
+	err = recvDaemon.Start()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting receiving daemon: %v\n", err)
 		os.Exit(1)

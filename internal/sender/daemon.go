@@ -36,9 +36,9 @@ func NewDaemon(cfg Config) (new *Daemon) {
 	return
 }
 
-// Starts pipeline worker threads in background - gracefully shuts down if startup error is encountered
-func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err error) {
-	startupTime := time.Now()
+// Sets up daemon prior to start
+func (daemon *Daemon) Init(globalCtx context.Context, serverPub []byte) (err error) {
+	daemon.startTime = time.Now()
 
 	// New context for the daemon
 	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
@@ -50,9 +50,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, logctx.NSSend)
 	}
 
-	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
-
-	// Pre-startup
 	daemon.cfg.setDefaults()
 	err = wrappers.SetupEncryptInnerPayload(serverPub)
 	if err != nil {
@@ -76,24 +73,33 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			return
 		}
 	}
-	destinationSocket, err := network.ParseUDPAddress(daemon.cfg.DestinationIP, daemon.cfg.DestinationPort)
+	daemon.destSocket, err = network.ParseUDPAddress(daemon.cfg.DestinationIP, daemon.cfg.DestinationPort)
 	if err != nil {
 		err = fmt.Errorf("invalid destination: %w", err)
 		return
 	}
-	var sourceSocket *net.UDPAddr
 	if daemon.cfg.SourceIP != "" {
-		sourceSocket, err = network.ParseUDPAddress(daemon.cfg.SourceIP, 0)
+		daemon.sourceSocket, err = network.ParseUDPAddress(daemon.cfg.SourceIP, 0)
 		if err != nil {
 			err = fmt.Errorf("invalid source: %w", err)
 			return
 		}
 	} else {
-		sourceSocket, err = network.GetLocalIPForDestination(destinationSocket.IP)
+		daemon.sourceSocket, err = network.GetLocalIPForDestination(daemon.destSocket.IP)
 		if err != nil {
 			err = fmt.Errorf("failed to find local address for destination: %w", err)
 			return
 		}
+	}
+	daemon.initSuccess = true
+	return
+}
+
+// Starts pipeline worker threads in background - gracefully shuts down if startup error is encountered
+func (daemon *Daemon) Start() (err error) {
+	if !daemon.initSuccess {
+		err = fmt.Errorf("daemon initialization was not called, refusing to start")
+		return
 	}
 
 	if daemon.cfg.dryRunConfig {
@@ -101,12 +107,14 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		return
 	}
 
+	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
+
 	// Stage 3 - Output Manager
 	outMgrConf := &output.ManagerConfig{
 		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,
 		MaxQueueCapacity: daemon.cfg.MaxOutputQueueSize,
-		SourceAddress:    sourceSocket,
-		DestAddress:      destinationSocket,
+		SourceAddress:    daemon.sourceSocket,
+		DestAddress:      daemon.destSocket,
 	}
 	outMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinOutputs))
 	outMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxOutputs))
@@ -271,14 +279,15 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		return
 	}
 
-	sourceAddressParsed := net.JoinHostPort(sourceSocket.IP.String(), strconv.Itoa(sourceSocket.Port))
-	destAddressParsed := net.JoinHostPort(destinationSocket.IP.String(), strconv.Itoa(destinationSocket.Port))
+	sourceAddressParsed := net.JoinHostPort(daemon.sourceSocket.IP.String(), strconv.Itoa(daemon.sourceSocket.Port))
+	destAddressParsed := net.JoinHostPort(daemon.destSocket.IP.String(), strconv.Itoa(daemon.destSocket.Port))
 
-	startupElapsed := parsing.TrimDurationPrecision(time.Since(startupTime), 2)
+	startupElapsed := parsing.TrimDurationPrecision(time.Since(daemon.startTime), 2)
 	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s)\n",
 		startupElapsed, global.ProgVersion)
 	logctx.LogStdInfo(daemon.ctx, "Sending messages from %s to %s\n",
 		sourceAddressParsed, destAddressParsed)
+	daemon.startSuccess = true
 	return
 }
 
@@ -293,6 +302,11 @@ func (daemon *Daemon) StopFIPR() {
 
 // Blocking daemon waiter
 func (daemon *Daemon) Run() {
+	if !daemon.startSuccess {
+		// No signal handler, just exit
+		return
+	}
+
 	// Block on signals only
 	lifecycle.SignalHandler(daemon.ctx, daemon)
 }

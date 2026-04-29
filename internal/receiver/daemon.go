@@ -38,9 +38,9 @@ func NewDaemon(cfg Config) (new *Daemon) {
 	return
 }
 
-// Starts pipeline worker threads in background - gracefully shuts down if startup error is encountered
-func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err error) {
-	startupTime := time.Now()
+// Sets up daemon prior to start
+func (daemon *Daemon) Init(globalCtx context.Context, serverPriv []byte) (err error) {
+	daemon.startTime = time.Now()
 
 	// New context for the daemon
 	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
@@ -54,7 +54,6 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
 
-	// Pre-startup
 	daemon.cfg.setDefaults()
 	info, validID := registry.GetSuiteInfo(daemon.cfg.transportCryptoSuiteID)
 	if !validID {
@@ -89,9 +88,19 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		err = fmt.Errorf("failed to setup signature verification function: %w", err)
 		return
 	}
-	sourceSocket, err := network.ParseUDPAddress(daemon.cfg.ListenIP, daemon.cfg.ListenPort)
+	daemon.sourceSocket, err = network.ParseUDPAddress(daemon.cfg.ListenIP, daemon.cfg.ListenPort)
 	if err != nil {
 		err = fmt.Errorf("invalid listen address: %w", err)
+		return
+	}
+	daemon.initSuccess = true
+	return
+}
+
+// Starts pipeline worker threads in background - gracefully shuts down if startup error is encountered
+func (daemon *Daemon) Start() (err error) {
+	if !daemon.initSuccess {
+		err = fmt.Errorf("daemon initialization was not called, refusing to start")
 		return
 	}
 
@@ -191,7 +200,7 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 
 	// Stage 1 - Listener Manager
 	inMgrConf := &listener.ManagerConfig{
-		ListenSocket:           sourceSocket,
+		ListenSocket:           daemon.sourceSocket,
 		ReplayProtectionWindow: daemon.cfg.ReplayProtectionWindow,
 	}
 	inMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxListeners))
@@ -281,12 +290,13 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		return
 	}
 
-	parsedListenAddr := net.JoinHostPort(sourceSocket.IP.String(), strconv.Itoa(sourceSocket.Port))
+	parsedListenAddr := net.JoinHostPort(daemon.sourceSocket.IP.String(), strconv.Itoa(daemon.sourceSocket.Port))
 
-	startupElapsed := parsing.TrimDurationPrecision(time.Since(startupTime), 2)
+	startupElapsed := parsing.TrimDurationPrecision(time.Since(daemon.startTime), 2)
 	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s)\n",
 		startupElapsed, global.ProgVersion)
 	logctx.LogStdInfo(daemon.ctx, "Listening for messages on %s\n", parsedListenAddr)
+	daemon.startSuccess = true
 	return
 }
 
@@ -331,6 +341,11 @@ func (daemon *Daemon) StopFIPR() {
 
 // Blocking daemon waiter
 func (daemon *Daemon) Run() {
+	if !daemon.startSuccess {
+		// No signal handler, just exit
+		return
+	}
+
 	// Block on signals only
 	lifecycle.SignalHandler(daemon.ctx, daemon)
 }

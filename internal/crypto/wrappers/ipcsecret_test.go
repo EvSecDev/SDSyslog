@@ -76,15 +76,24 @@ func TestSetupGetSharedSecret(t *testing.T) {
 					t.Fatalf("expected GetSharedSecret to be initialized")
 				}
 
-				secret1 := GetSharedSecret()
-				secret2 := GetSharedSecret()
+				secret1, err := GetSharedSecret()
+				if err != nil {
+					t.Fatalf("Failed to get shared secret1: %v", err)
+				}
+				secret2, err := GetSharedSecret()
+				if err != nil {
+					t.Fatalf("Failed to get shared secret2: %v", err)
+				}
 
 				if !bytes.Equal(secret1, secret2) {
 					t.Fatalf("expected repeated calls to return same secret bytes")
 				}
 
 				secret1[0] ^= 0xFF
-				secret3 := GetSharedSecret()
+				secret3, err := GetSharedSecret()
+				if err != nil {
+					t.Fatalf("Failed to get shared secret3: %v", err)
+				}
 				if secret1[0] == secret3[0] {
 					t.Fatalf("modifying returned secret should not mutate internal secret")
 				}

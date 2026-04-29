@@ -14,7 +14,8 @@ import (
 func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[*protocol.Payload]) (new *Manager, err error) {
 	// Double check queues - should never get past build
 	if outbox == nil {
-		panic("FATAL: Receiver Defrag manager received empty outbox queue variable")
+		err = fmt.Errorf("defrag manager received empty outbox queue variable")
+		return
 	}
 
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSmDefrag)

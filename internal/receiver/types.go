@@ -25,6 +25,7 @@ type JSONConfig struct {
 		JournaldURL  string `json:"journaldURL,omitempty"`
 		BeatsAddress string `json:"beatsAddress,omitempty"`
 		DBUSNotify   bool   `json:"desktopNotifications,omitempty"`
+		InternalLogs bool   `json:"internalLogs,omitempty"`
 	} `json:"outputs"`
 	Metrics struct {
 		Interval          string `json:"collectionInterval"`
@@ -91,11 +92,12 @@ type Config struct {
 	FutureValidityWindow   time.Duration // Time window where future timestamps are still accepted (relative to processing time)
 
 	// Outputs
-	OutputFilePath string
-	JournaldURL    string
-	BeatsEndpoint  string
-	RawWriter      io.WriteCloser
-	DBUSNotify     bool
+	OutputFilePath   string
+	JournaldURL      string
+	BeatsEndpoint    string
+	RawWriter        io.WriteCloser
+	DBUSNotify       bool
+	SendInternalLogs bool
 
 	// Metrics
 	MetricQueryServerEnabled bool

@@ -86,9 +86,7 @@ func TestQueueMigration(t *testing.T) {
 
 			// Consumers
 			for c := 0; c < tt.numConsumers; c++ {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					for {
 						select {
 						case <-ctx.Done():
@@ -101,7 +99,7 @@ func TestQueueMigration(t *testing.T) {
 							}
 						}
 					}
-				}()
+				})
 			}
 
 			// Trigger resize after some items have been pushed

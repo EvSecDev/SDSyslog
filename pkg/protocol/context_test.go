@@ -3,7 +3,6 @@ package protocol
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"math"
 	"reflect"
 	"sdsyslog/internal/tests/utils"
@@ -407,7 +406,7 @@ func TestDeserializeAnyValue(t *testing.T) {
 				return
 			}
 
-			assertEqualAnyPanic(t, tt.expectedOut, value)
+			assertEqualAny(t, tt.expectedOut, value)
 		})
 	}
 }
@@ -456,12 +455,12 @@ func TestAnyValueRoundTrip(t *testing.T) {
 			}
 
 			// Strict equality: same type, same value
-			assertEqualAnyPanic(t, tt.input, out)
+			assertEqualAny(t, tt.input, out)
 		})
 	}
 }
 
-func assertEqualAnyPanic(t *testing.T, a, b any) {
+func assertEqualAny(t *testing.T, a, b any) {
 	t.Helper()
 
 	defer func() {
@@ -472,25 +471,23 @@ func assertEqualAnyPanic(t *testing.T, a, b any) {
 
 	if a == nil || b == nil {
 		if a != b {
-			panic("one value is nil, the other is not")
+			t.Fatalf("one value is nil, the other is not")
 		}
 		return
 	}
 
 	ta, tb := reflect.TypeOf(a), reflect.TypeOf(b)
 	if ta != tb {
-		panic(fmt.Sprintf(
-			"type mismatch: %v vs %v",
+		t.Fatalf("type mismatch: %v vs %v",
 			ta, tb,
-		))
+		)
 	}
 
 	if ta.Comparable() {
 		if a != b {
-			panic(fmt.Sprintf(
-				"values not equal (type %v): %v vs %v",
+			t.Fatalf("values not equal (type %v): %v vs %v",
 				ta, a, b,
-			))
+			)
 		}
 		return
 	}
@@ -498,25 +495,23 @@ func assertEqualAnyPanic(t *testing.T, a, b any) {
 	switch va := a.(type) {
 	case []byte:
 		if !bytes.Equal(va, b.([]byte)) {
-			panic("[]byte values not equal")
+			t.Fatalf("[]byte values not equal")
 		}
 		return
 
 	case time.Time:
 		if !va.Equal(b.(time.Time)) {
-			panic(fmt.Sprintf(
-				"time.Time values not equal: %v vs %v",
+			t.Fatalf("time.Time values not equal: %v vs %v",
 				va, b,
-			))
+			)
 		}
 		return
 	}
 
 	if !reflect.DeepEqual(a, b) {
-		panic(fmt.Sprintf(
-			"values not deeply equal (type %v): %#v vs %#v",
+		t.Fatalf("values not deeply equal (type %v): %#v vs %#v",
 			ta, a, b,
-		))
+		)
 	}
 }
 

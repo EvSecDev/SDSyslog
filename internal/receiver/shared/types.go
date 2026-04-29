@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"sdsyslog/internal/iomodules/internallogger"
 	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/output"
@@ -10,9 +11,10 @@ import (
 
 // Pipeline component trackers (reverse order)
 type Managers struct {
-	Output    *output.Manager
-	Assembler *assembler.Manager
-	Proc      *processor.Manager
-	Input     *listener.Manager
-	FIPR      *fiprrecv.Instance
+	Output      *output.Manager
+	Assembler   *assembler.Manager
+	Proc        *processor.Manager
+	Input       *listener.Manager
+	FIPR        *fiprrecv.Instance
+	LogInjector *internallogger.ReceiverInjector
 }

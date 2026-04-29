@@ -24,6 +24,7 @@ func New(baseCtx context.Context, id string, logLevel int, done <-chan struct{})
 		ID:         id,
 		CreatedAt:  time.Now(),
 		queue:      make([]Event, 0),
+		dedup:      &dedupState{},
 		Done:       done,
 		PrintLevel: logLevel,
 		wg:         &sync.WaitGroup{},

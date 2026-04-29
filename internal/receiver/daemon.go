@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/iomodules/internallogger"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics/server"
@@ -130,6 +132,17 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"1 output instance started successfully\n")
 
+	// Swap internal logger to output if requested
+	if daemon.cfg.SendInternalLogs {
+		daemon.Mgrs.LogInjector, err = internallogger.NewReceiverInjector(daemon.ctx, daemon.Mgrs.Output.Inbox, 1)
+		if err != nil {
+			err = fmt.Errorf("failed creating internal logger pipeline injector: %w", err)
+			daemon.Shutdown()
+			return
+		}
+		daemon.Mgrs.LogInjector.Start()
+	}
+
 	// Stage 3 - Shard+Assembler Manager
 	dfrgMgrConf := &assembler.ManagerConfig{
 		FIPRSocketDirectory: daemon.cfg.SocketDirectoryPath,
@@ -207,11 +220,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 		daemon.cfg.MetricCollectionInterval,
 		daemon.cfg.MetricMaxAge)
 	workerCtx := daemon.ctx
-	daemon.wg.Add(1)
-	go func() {
-		defer daemon.wg.Done()
+	daemon.wg.Go(func() {
 		daemon.metricsCollector.Run(workerCtx)
-	}()
+	})
 	daemon.MetricDataSearcher = daemon.metricsCollector.Registry.Search
 	daemon.MetricDiscoverer = daemon.metricsCollector.Registry.Discover
 	daemon.MetricAggregator = daemon.metricsCollector.Registry.Aggregate
@@ -225,11 +236,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 			daemon.cfg.AutoscaleCheckInterval,
 			daemon.Mgrs)
 		workerCtx := daemon.ctx
-		daemon.wg.Add(1)
-		go func() {
-			defer daemon.wg.Done()
+		daemon.wg.Go(func() {
 			scaler.Run(workerCtx)
-		}()
+		})
 		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 			"Autoscaler instance started successfully\n")
 	}
@@ -252,11 +261,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 			return
 		}
 
-		daemon.wg.Add(1)
-		go func() {
-			defer daemon.wg.Done()
+		daemon.wg.Go(func() {
 			server.Start(serverCtx, daemon.MetricServer)
-		}()
+		})
 	}
 
 	// For update hot-swap/systemd
@@ -286,7 +293,10 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPriv []byte) (err e
 // Dedicated entry point for starting inter-process fragment routing
 // Accept fragments that ended up in other processes that are partial fragments for this process
 func (daemon *Daemon) StartFIPR() (err error) {
-	daemon.fipr = fiprrecv.New(daemon.ctx, daemon.cfg.SocketDirectoryPath, daemon.Mgrs.Assembler.RoutingView)
+	daemon.fipr, err = fiprrecv.New(daemon.ctx, daemon.cfg.SocketDirectoryPath, daemon.Mgrs.Assembler.RoutingView)
+	if err != nil {
+		return
+	}
 	daemon.Mgrs.FIPR = daemon.fipr
 	daemon.Mgrs.Assembler.FIPRRunning.Store(true)
 	err = daemon.fipr.Start()
@@ -391,6 +401,13 @@ func (daemon *Daemon) Shutdown() {
 
 	// Stop Fragment Inter-Process Routing
 	daemon.StopFIPR()
+
+	// Stop internal logs injector
+	if daemon.cfg.SendInternalLogs {
+		logger := logctx.GetLogger(daemon.ctx)
+		logger.SetFormattedOutput(os.Stdout) // Start writing to stdout again
+		daemon.Mgrs.LogInjector.Stop()       // Stop pipeline injector and unset raw logger output
+	}
 
 	// Stop output worker
 	if daemon.Mgrs.Output != nil {

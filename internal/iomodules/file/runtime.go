@@ -18,11 +18,11 @@ func (mod *InModule) Shutdown() (err error) {
 		mod.cancel()
 	}
 
+	mod.wg.Wait()
+
 	if mod.sink != nil {
 		err = mod.sink.Close()
 	}
-
-	mod.wg.Wait()
 	return
 }
 

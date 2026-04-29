@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/global"
+	"sdsyslog/internal/iomodules/internallogger"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics/server"
@@ -145,11 +147,26 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 		"%d assembler instance(s) started successfully\n", daemon.cfg.MinAssemblers)
 
+	// Swap internal logger to assembler if requested
+	if daemon.cfg.SendInternalLogs {
+		daemon.Mgrs.LogInjector, err = internallogger.NewSenderInjector(daemon.ctx, daemon.Mgrs.Assem.InQueue)
+		if err != nil {
+			err = fmt.Errorf("failed creating internal logger pipeline injector: %w", err)
+			daemon.Shutdown()
+			return
+		}
+		daemon.Mgrs.LogInjector.Start()
+	}
+
 	// Stage 1 - Listeners(Readers)
 	inMgrConf := ingest.ManagerConfig{
 		SourceDropFilters: daemon.cfg.Filters,
 	}
-	daemon.Mgrs.In = inMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Assem.InQueue)
+	daemon.Mgrs.In, err = inMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Assem.InQueue)
+	if err != nil {
+		err = fmt.Errorf("error creating new ingest instance manager: %w", err)
+		return
+	}
 	if len(daemon.cfg.FileSourcePaths) > 0 {
 		for _, filePath := range daemon.cfg.FileSourcePaths {
 			err = daemon.Mgrs.In.AddFileInstance(filePath, daemon.cfg.StateFilePath)
@@ -192,11 +209,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 		daemon.cfg.MetricCollectionInterval,
 		daemon.cfg.MetricMaxAge)
 	workerCtx := daemon.ctx
-	daemon.wg.Add(1)
-	go func() {
-		defer daemon.wg.Done()
+	daemon.wg.Go(func() {
 		daemon.metricsCollector.Run(workerCtx)
-	}()
+	})
 	daemon.MetricDataSearcher = daemon.metricsCollector.Registry.Search
 	daemon.MetricDiscoverer = daemon.metricsCollector.Registry.Discover
 	daemon.MetricAggregator = daemon.metricsCollector.Registry.Aggregate
@@ -211,11 +226,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			daemon.Mgrs,
 			runtime.NumCPU())
 		workerCtx := daemon.ctx
-		daemon.wg.Add(1)
-		go func() {
-			defer daemon.wg.Done()
+		daemon.wg.Go(func() {
 			scaler.Run(workerCtx)
-		}()
+		})
 		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 			"Autoscaler instance started successfully\n")
 	}
@@ -238,11 +251,9 @@ func (daemon *Daemon) Start(globalCtx context.Context, serverPub []byte) (err er
 			return
 		}
 
-		daemon.wg.Add(1)
-		go func() {
-			defer daemon.wg.Done()
+		daemon.wg.Go(func() {
 			server.Start(serverCtx, daemon.MetricServer)
-		}()
+		})
 	}
 
 	// For update hot-swap/systemd
@@ -356,6 +367,13 @@ func (daemon *Daemon) Shutdown() {
 			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 				"Successfully stopped assembler instance %d\n", removedID)
 		}
+	}
+
+	// Stop internal logs injector
+	if daemon.cfg.SendInternalLogs {
+		logger := logctx.GetLogger(daemon.ctx)
+		logger.SetFormattedOutput(os.Stdout) // Start writing to stdout again
+		daemon.Mgrs.LogInjector.Stop()       // Stop pipeline injector and unset raw logger output
 	}
 
 	// Stop output workers

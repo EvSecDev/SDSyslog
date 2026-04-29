@@ -28,18 +28,15 @@ func (manager *Manager) AddInstance() (instanceID string) {
 	instance.ctx = logctx.AppendCtxTag(workerCtx, logctx.NSAssm)
 	instance.cancel = cancelPair
 
-	instance.wg.Add(2)
-	go func() {
+	instance.wg.Go(func() {
 		// Run the deadline evaluator
-		defer instance.wg.Done()
 		workerCtx := logctx.OverwriteCtxTag(workerCtx, instance.Shard.Namespace)
 		instance.Shard.StartTimeoutWatcher(workerCtx)
-	}()
-	go func() {
+	})
+	instance.wg.Go(func() {
 		// Run the assembler
-		defer instance.wg.Done()
 		instance.run()
-	}()
+	})
 
 	// Update routing view
 	for {

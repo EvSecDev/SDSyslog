@@ -12,4 +12,7 @@ const (
 	CFseverity  string = "Severity"
 	CFprocessid string = "ProcessID"
 	CFappname   string = "ApplicationName"
+
+	// Optional - internal
+	CFnamespace string = "Namespace" // For internal logger namespace to custom field
 )

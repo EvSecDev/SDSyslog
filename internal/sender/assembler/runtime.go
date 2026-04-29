@@ -32,12 +32,10 @@ func (manager *Manager) AddInstance() (id int) {
 	// Create new context for worker
 	newWorker.ctx, newWorker.cancel = logctx.NewCancelWithValues(manager.ctx, strconv.Itoa(id), logctx.NSAssm)
 
-	newWorker.wg.Add(1)
-	go func() {
+	newWorker.wg.Go(func() {
 		// Run the assembler
-		defer newWorker.wg.Done()
 		newWorker.run()
-	}()
+	})
 	return
 }
 

@@ -41,11 +41,9 @@ func (manager *Manager) AddInstance() (id int, err error) {
 	// Create new context for worker
 	ingestInstance.ctx, ingestInstance.cancel = logctx.NewCancelWithValues(manager.ctx, logctx.NSListen, strconv.Itoa(id))
 
-	ingestInstance.wg.Add(1)
-	go func() {
-		defer ingestInstance.wg.Done()
+	ingestInstance.wg.Go(func() {
 		ingestInstance.run()
-	}()
+	})
 	return
 }
 

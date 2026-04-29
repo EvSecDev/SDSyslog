@@ -23,7 +23,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 		}
 
 		// Warm-up to stabilize caches, allocator, CPU frequency, ect
-		for i := 0; i < 1000; i++ {
+		for i := range 1000 {
 			err := queue.Push(i, 8)
 			if err != nil {
 				b.Fatalf("failed push: %v", err)

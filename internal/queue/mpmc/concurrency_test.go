@@ -143,7 +143,7 @@ func TestQueue_StressIntegrity(t *testing.T) {
 	// Helper function for producers
 	producer := func(id int) {
 		defer wg.Done()
-		for i := 0; i < N/numProducers; i++ {
+		for i := range N / numProducers {
 			for { // Push different range per producer
 				err := queue.Push(i+id*N/numProducers, 8)
 				if err == nil {
@@ -159,7 +159,7 @@ func TestQueue_StressIntegrity(t *testing.T) {
 	// Helper function for consumers
 	consumer := func() {
 		defer wg.Done()
-		for i := 0; i < N/numConsumers; i++ {
+		for i := range N / numConsumers {
 			// Randomize sleep interval to simulate varied workloads
 			time.Sleep(time.Duration(rand.Intn(50)) * time.Microsecond)
 
@@ -177,12 +177,12 @@ func TestQueue_StressIntegrity(t *testing.T) {
 	}
 
 	// Start multiple producers
-	for i := 0; i < numProducers; i++ {
+	for i := range numProducers {
 		go producer(i)
 	}
 
 	// Start multiple consumers
-	for i := 0; i < numConsumers; i++ {
+	for range numConsumers {
 		go consumer()
 	}
 
@@ -199,7 +199,7 @@ func TestQueue_StressIntegrity(t *testing.T) {
 
 	// Validate integrity after all the work is done
 	// Ensure all produced values were consumed
-	for i := 0; i < N; i++ {
+	for i := range N {
 		// Check if each produced value has been consumed
 		_, producedOk := produced.Load(i)
 		_, consumedOk := consumed.Load(i)

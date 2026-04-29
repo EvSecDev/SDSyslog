@@ -77,6 +77,7 @@ func (cfg JSONConfig) NewDaemonConf(originalConfigPath string, dryRun bool) (con
 	config.OutputFilePath = cfg.Outputs.FilePath
 	config.BeatsEndpoint = cfg.Outputs.BeatsAddress
 	config.DBUSNotify = cfg.Outputs.DBUSNotify
+	config.SendInternalLogs = cfg.Outputs.InternalLogs
 
 	// Scaling settings
 	config.AutoscaleEnabled = cfg.AutoScaling.Enabled

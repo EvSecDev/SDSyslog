@@ -15,6 +15,8 @@ import (
 )
 
 func TestSignalHandling(t *testing.T) {
+	const mockExePath string = "/fake/exe"
+
 	tests := []struct {
 		name                  string
 		signal                os.Signal
@@ -101,6 +103,7 @@ func TestSignalHandling(t *testing.T) {
 			defer cancel()
 			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, baseCtx.Done())
 			ctx = context.WithValue(ctx, global.CtxModeKey, global.RecvMode)
+			ctx = context.WithValue(ctx, global.CtxExePathKey, mockExePath)
 
 			// Setup real notify socket
 			socketPath, msgChan, cleanup := setupNotifySocket(t)
@@ -135,7 +138,7 @@ func TestSignalHandling(t *testing.T) {
 
 			origExe := osExecutable
 			osExecutable = func() (string, error) {
-				return "/fake/exe", nil
+				return mockExePath, nil
 			}
 			defer func() { osExecutable = origExe }()
 

@@ -1,5 +1,9 @@
 package logctx
 
+import (
+	"time"
+)
+
 const (
 	// Descriptive Names for available verbosity levels
 	VerbosityNone int = iota
@@ -27,6 +31,7 @@ const (
 	NSMetric          string = "Metrics"
 	NSMetricSrv       string = "Server"
 	NSTest            string = "Test"
+	NSLogger          string = "Logger"
 	NSCLI             string = "CLI"
 	NSRecv            string = "Receiver"
 	NSSend            string = "Sender"
@@ -47,4 +52,12 @@ const (
 	NSoStdIn          string = "Stdin"
 	NSoJrnl           string = "Journal"
 	NSoRaw            string = "Raw"
+
+	// Deduplication
+	dedupWindow      = 5 * time.Second
+	minRepeats       = 10
+	suppressCooldown = 1 * time.Minute
+
+	// Output
+	maxOutputWriteFailures int = 12 // Maximum times output write can fail before log event is dropped
 )

@@ -41,10 +41,19 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Cache our executable path
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get executable path: %v\n", err)
+		os.Exit(1)
+	}
+	ctx = context.WithValue(ctx, global.CtxExePathKey, exePath)
+
 	// Setting global logging
 	ctx = logctx.New(ctx, "global", *requestedLogLevel, ctx.Done())
 	logger := logctx.GetLogger(ctx)
-	logctx.StartWatcher(logger, os.Stdout)
+	logger.SetFormattedOutput(os.Stdout)
+	logctx.StartOutput(ctx)
 
 	// Process commands
 	switch command {

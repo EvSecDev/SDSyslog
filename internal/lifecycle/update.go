@@ -42,12 +42,14 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 		_ = readyW.Close()
 	}()
 
-	// Copy ourselves
-	exePath, err := osExecutable()
+	// Get path to exec
+	exePath, err := getExecutablePath(ctx)
 	if err != nil {
 		err = fmt.Errorf("failed to get executable path: %w", err)
 		return
 	}
+
+	// Copy self attributes
 	args := os.Args
 	workingDir, err := os.Getwd()
 	if err != nil {
@@ -87,6 +89,62 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 
 	logctx.LogStdInfo(ctx, "Temporary Child Process is ready, proceeding with update\n")
 	childProc = cmd
+	return
+}
+
+// Retrieves executable path for self. Attempts several possible sources and ensures path exists.
+func getExecutablePath(ctx context.Context) (selfExePath string, err error) {
+	// Retrieve all available paths
+	currentExePath, err := os.Executable()
+	if err != nil {
+		return
+	}
+	originalExePath, ok := ctx.Value(global.CtxExePathKey).(string)
+	if !ok {
+		err = fmt.Errorf("attempted retrieval and assertion of context original executable path key failed: value=%+v type=%T",
+			ctx.Value(global.CtxExePathKey), ctx.Value(global.CtxExePathKey))
+		return
+	}
+	calledExePath := os.Args[0]
+
+	// Using current exe, then falling back to cached, then calling path
+	exePriorityList := []string{currentExePath, originalExePath, calledExePath}
+
+	for _, exePath := range exePriorityList {
+		if exePath == "" {
+			continue
+		}
+
+		var info os.FileInfo
+		info, err = os.Stat(exePath)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			err = fmt.Errorf("failed to check potential executable path file: %w", err)
+			return
+		}
+
+		// Missing file
+		if err != nil && errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+
+		// Somehow a directory??
+		if info.IsDir() {
+			continue
+		}
+
+		// Require executable permissions
+		if info.Mode()&0111 == 0 {
+			continue
+		}
+
+		// Path exists and executable, use it
+		selfExePath = exePath
+		return
+
+	}
+
+	// No path was present/exists
+	err = fmt.Errorf("could not determine valid executable path: no executable exists in options list %v", exePriorityList)
 	return
 }
 

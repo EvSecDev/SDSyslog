@@ -4,10 +4,11 @@ package global
 import "time"
 
 const (
-	ProgVersion string  = "v0.25.0"
-	SendMode    string  = "send"
-	RecvMode    string  = "receive"
-	CtxModeKey  CtxMode = "mode" // Identifying if program is in sender or receiver mode
+	ProgVersion   string             = "v0.26.0"
+	SendMode      string             = "send"
+	RecvMode      string             = "receive"
+	CtxModeKey    CtxMode            = "mode"                   // Identifying if program is in sender or receiver mode
+	CtxExePathKey CtxOriginalExePath = "originalExecutablePath" // Cached value from initial program startup via os.Executable
 
 	GOOSLinux   string = "linux"
 	GOOSDarwin  string = "darwin"

@@ -38,6 +38,11 @@ function check_for_dev_artifacts() {
 		echo -e "   ${YELLOW}[?] WARNING${RESET}: Found function variables that do not have an actualy function set."
 	fi
 
+	# Check for panic usage
+	if grep -ER "\s+panic\(" "$repoDir"/; then
+		echo -e "   ${YELLOW}[?] WARNING${RESET}: Found panic use. Remember to actually handle the error eventually."
+	fi
+
 	echo -e "${GREEN}[+] DONE${RESET}"
 	echo "[*] Running static analysis..."
 

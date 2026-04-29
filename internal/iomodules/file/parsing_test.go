@@ -61,7 +61,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`[origin software="rsyslogd" swVersion="8.2302.0" x-pid="4765" x-info="https://www.rsyslog.com"] start`),
 				Hostname:  "Host1",
-				Timestamp: timeParse1Panic("Jul  9 18:05:33"),
+				Timestamp: timeParse1(t, "Jul  9 18:05:33"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "rsyslogd",
 					iomodules.CFprocessid: testPid,
@@ -76,7 +76,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`Linux version 6.1.0-27-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0, GNU ld (2024-11-01)`),
 				Hostname:  "Host1",
-				Timestamp: timeParse1Panic("Nov 17 09:52:41"),
+				Timestamp: timeParse1(t, "Nov 17 09:52:41"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "kernel",
 					iomodules.CFprocessid: testPid,
@@ -91,7 +91,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`type=BPF msg=audit(1731874680.879:116): prog-id=17 op=UNLOAD`),
 				Hostname:  "Host1",
-				Timestamp: timeParse1Panic("Nov 17 12:18:00"),
+				Timestamp: timeParse1(t, "Nov 17 12:18:00"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "audisp-syslog",
 					iomodules.CFprocessid: 1135,
@@ -106,7 +106,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`using inherited sockets from "5;6;"`),
 				Hostname:  localHostname,
-				Timestamp: timeParse2Panic("2025/03/15 10:47:59"),
+				Timestamp: timeParse2(t, "2025/03/15 10:47:59"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "-",
 					iomodules.CFprocessid: 33709,
@@ -121,7 +121,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`status triggers-pending libc-bin:amd64 2.41-12`),
 				Hostname:  localHostname,
-				Timestamp: timeParse3Panic("2025-12-03 17:46:26"),
+				Timestamp: timeParse3(t, "2025-12-03 17:46:26"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "-",
 					iomodules.CFprocessid: testPid,
@@ -136,7 +136,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`10.10.10.10 - - [28/Jul/2024:03:58:35 -0700] "GET / HTTP/1.1" 444 0 "-" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"`),
 				Hostname:  localHostname,
-				Timestamp: timeParse5Panic("28/Jul/2024:03:58:35 -0700"),
+				Timestamp: timeParse5(t, "28/Jul/2024:03:58:35 -0700"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "-",
 					iomodules.CFprocessid: testPid,
@@ -151,7 +151,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`Terminating ...`),
 				Hostname:  localHostname,
-				Timestamp: timeParse4Panic("19-Sep-2023 16:52:51"),
+				Timestamp: timeParse4(t, "19-Sep-2023 16:52:51"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "-",
 					iomodules.CFprocessid: testPid,
@@ -166,7 +166,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`Starting phpsessionclean.service - Clean php session files...`),
 				Hostname:  "Host1",
-				Timestamp: timeParse6Panic("2025-12-21T18:39:01.211585-08:00"),
+				Timestamp: timeParse6(t, "2025-12-21T18:39:01.211585-08:00"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "systemd",
 					iomodules.CFprocessid: 1,
@@ -181,7 +181,7 @@ func TestParseLine(t *testing.T) {
 			expectedOutput: protocol.Message{
 				Data:      []byte(`php_invoke mbstring: already enabled for PHP 8.4 cgi sapi`),
 				Hostname:  "Host1",
-				Timestamp: timeParse6Panic("2025-12-21T19:08:28.506905-08:00"),
+				Timestamp: timeParse6(t, "2025-12-21T19:08:28.506905-08:00"),
 				Fields: map[string]any{
 					iomodules.CFappname:   "php8.4-cgi",
 					iomodules.CFprocessid: testPid,
@@ -250,46 +250,52 @@ func TestParseLine(t *testing.T) {
 }
 
 // Parse no year timestamp log prefix
-func timeParse1Panic(val string) (res time.Time) {
+func timeParse1(t *testing.T, val string) (res time.Time) {
+	t.Helper()
 	res, err := time.Parse("Jan _2 15:04:05", val)
 	if err != nil {
-		panic(err)
+		t.Fatalf("%v", err)
 	}
 	res = withCurrentYear(res)
 	return
 }
-func timeParse2Panic(val string) (res time.Time) {
+func timeParse2(t *testing.T, val string) (res time.Time) {
+	t.Helper()
 	res, err := time.Parse("2006/01/02 15:04:05", val)
 	if err != nil {
-		panic(err)
+		t.Fatalf("%v", err)
 	}
 	return
 }
-func timeParse3Panic(val string) (res time.Time) {
+func timeParse3(t *testing.T, val string) (res time.Time) {
+	t.Helper()
 	res, err := time.Parse("2006-01-02 15:04:05", val)
 	if err != nil {
-		panic(err)
+		t.Fatalf("%v", err)
 	}
 	return
 }
-func timeParse4Panic(val string) (res time.Time) {
+func timeParse4(t *testing.T, val string) (res time.Time) {
+	t.Helper()
 	res, err := time.Parse("02-Jan-2006 15:04:05", val)
 	if err != nil {
-		panic(err)
+		t.Fatalf("%v", err)
 	}
 	return
 }
-func timeParse5Panic(val string) (res time.Time) {
+func timeParse5(t *testing.T, val string) (res time.Time) {
+	t.Helper()
 	res, err := time.Parse("02/Jan/2006:15:04:05 -0700", val)
 	if err != nil {
-		panic(err)
+		t.Fatalf("%v", err)
 	}
 	return
 }
-func timeParse6Panic(val string) (res time.Time) {
+func timeParse6(t *testing.T, val string) (res time.Time) {
+	t.Helper()
 	res, err := time.Parse("2006-01-02T15:04:05.999999-07:00", val)
 	if err != nil {
-		panic(err)
+		t.Fatalf("%v", err)
 	}
 	return
 }

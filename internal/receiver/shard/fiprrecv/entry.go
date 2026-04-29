@@ -15,16 +15,20 @@ import (
 )
 
 // Creates new fragment inter-process routing receiver instance
-func New(ctx context.Context, socketDirectoryPath string, localRouterView shard.RoutingView) (instance *Instance) {
+func New(ctx context.Context, socketDirectoryPath string, localRouterView shard.RoutingView) (instance *Instance, err error) {
 	fileName := fipr.SocketFileNamePrefix + strconv.Itoa(os.Getpid()) + fipr.SocketFileNameSuffix
 	path := filepath.Join(socketDirectoryPath, fileName)
 
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSmFIPR)
 
+	secret, err := wrappers.GetSharedSecret()
+	if err != nil {
+		return
+	}
 	instance = &Instance{
 		Namespace:        logctx.GetTagList(ctx),
 		socketPath:       path,
-		hmacSecret:       wrappers.GetSharedSecret(),
+		hmacSecret:       secret,
 		localRoutingView: localRouterView,
 		Metrics:          MetricStorage{},
 		ctx:              ctx,
@@ -69,12 +73,10 @@ func (instance *Instance) Start() (err error) {
 	instance.cancel = cancel
 	workerCtx = context.WithValue(workerCtx, logctx.LoggerKey, logctx.GetLogger(instance.ctx))
 
-	instance.wg.Add(1)
-	go func() {
-		defer instance.wg.Done()
+	instance.wg.Go(func() {
 		ingestCtx := logctx.OverwriteCtxTag(workerCtx, logctx.GetTagList(instance.ctx))
 		instance.Run(ingestCtx)
-	}()
+	})
 
 	return
 }

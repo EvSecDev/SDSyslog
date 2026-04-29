@@ -40,12 +40,10 @@ func (manager *Manager) AddWorkers() (err error) {
 	}
 
 	// Start worker
-	manager.wg.Add(1)
-	go func() {
-		defer manager.wg.Done()
+	manager.wg.Go(func() {
 		workerCtx := logctx.OverwriteCtxTag(workerCtx, manager.Instance.namespace)
 		manager.Instance.run(workerCtx)
-	}()
+	})
 	return
 }
 

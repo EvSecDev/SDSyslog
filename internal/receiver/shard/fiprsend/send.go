@@ -34,7 +34,11 @@ func RouteFragment(socketPath string, messageID string, remoteAddress netip.Addr
 	}()
 
 	// New fipr session
-	session, err := fipr.New(conn, wrappers.GetSharedSecret())
+	secret, err := wrappers.GetSharedSecret()
+	if err != nil {
+		return
+	}
+	session, err := fipr.New(conn, secret)
 	if err != nil {
 		err = fmt.Errorf("session creation failed: %w", err)
 		return

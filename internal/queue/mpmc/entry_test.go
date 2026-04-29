@@ -159,7 +159,7 @@ func TestNotEmptyChannel(t *testing.T) {
 
 	// Test that the notEmpty channel works correctly
 	go func() {
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			err := queue.Push(i, 8)
 			if err != nil {
 				t.Errorf("Push failed for value %d: %v", i, err)
@@ -184,14 +184,14 @@ func TestQueueThroughput(t *testing.T) {
 	}
 
 	// Simulate high throughput
-	for i := 0; i < 10000000; i++ {
+	for i := range 10000000 {
 		err := queue.Push(i, 8)
 		if err != nil {
 			t.Fatalf("Push failed for value %d: %v", i, err)
 		}
 	}
 
-	for i := 0; i < 10000000; i++ {
+	for i := range 10000000 {
 		_, success := queue.Pop(context.Background())
 		if !success {
 			t.Fatalf("Pop failed for index %d", i)

@@ -4,7 +4,7 @@ package logctx
 import (
 	"context"
 	"fmt"
-	"sort"
+	"io"
 	"strings"
 )
 
@@ -50,42 +50,44 @@ func LogEvent(ctx context.Context, eventLevel int, severity string, message stri
 	}
 }
 
-func (logger *Logger) GetFormattedLogLines() (formatted []string) {
-	// Copy under lock to avoid holding mutex while sorting/formatting
-	logger.mutex.Lock()
-	events := make([]Event, len(logger.queue))
-	copy(events, logger.queue)
-	logger.mutex.Unlock()
+// Set an output on logger that will receive formatted text logs from the watcher
+func (logger *Logger) SetFormattedOutput(sink io.Writer) {
+	logger.outMutex.Lock()
+	logger.formattedOutput = sink
+	logger.outMutex.Unlock()
+}
 
-	// Stable sort: oldest to newest
-	sort.SliceStable(events, func(i, j int) bool {
-		ti := events[i].Timestamp
-		tj := events[j].Timestamp
+// Removes formatted output from logger
+func (logger *Logger) UnsetFormattedOutput() {
+	logger.outMutex.Lock()
+	logger.formattedOutput = nil
+	logger.outMutex.Unlock()
+}
 
-		// Zero timestamps sort last
-		if ti.IsZero() && tj.IsZero() {
-			return false
-		}
-		if ti.IsZero() {
-			return false
-		}
-		if tj.IsZero() {
-			return true
-		}
-		return ti.Before(tj)
-	})
-
-	formatted = make([]string, 0, len(events))
-	for _, event := range events {
-		msg := event.Format()
-
-		// Append newlines if not present
-		if !strings.HasSuffix(msg, "\n") {
-			msg += "\n"
-		}
-
-		// Final string
-		formatted = append(formatted, msg)
-	}
+// Set output on logger that provides a channel containing streaming raw Events
+func (logger *Logger) SetRawOutput() (eventStream <-chan Event) {
+	logger.outMutex.Lock()
+	logger.rawOutput = make(chan Event, 64)
+	eventStream = logger.rawOutput // Only returning receive only channel
+	logger.outMutex.Unlock()
 	return
+}
+
+// Removes raw output on logger (raw Event channel)
+func (logger *Logger) UnsetRawOutput() {
+	logger.outMutex.Lock()
+	logger.rawOutput = nil
+	logger.outMutex.Unlock()
+}
+
+// Hold main thread exit until logger is finished its work
+func (logger *Logger) Wait() {
+	logger.wg.Wait()
+}
+
+// Wake signals/broadcasts to any goroutines waiting on the condition variable
+func (logger *Logger) Wake() {
+	logger.mutex.Lock()
+	defer logger.mutex.Unlock()
+	logger.cond.Broadcast()
 }

@@ -22,9 +22,10 @@ type JSONConfig struct {
 		Port           int    `json:"port"`
 		MaxPayloadSize int    `json:"maxPayloadSize,omitempty"`
 	} `json:"network"`
-	StateFile string     `json:"stateFile"`
-	Inputs    JSONInputs `json:"inputs"`
-	Metrics   struct {
+	StateFile        string     `json:"stateFile"`
+	Inputs           JSONInputs `json:"inputs"`
+	SendInternalLogs bool       `json:"sendInternalLogs,omitempty"`
+	Metrics          struct {
 		Interval          string `json:"collectionInterval"`
 		MaxAge            string `json:"maximumRetention,omitempty"`
 		EnableQueryServer bool   `json:"enableHTTPQueryServer"`
@@ -78,6 +79,7 @@ type Config struct {
 	SyslogSourceListenIP   string
 	SyslogSourceListenPort int
 	RawInput               io.ReadCloser
+	SendInternalLogs       bool
 
 	// Worker scaling boundaries
 	MinOutputs    global.MinValue

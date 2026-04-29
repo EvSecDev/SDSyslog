@@ -9,11 +9,12 @@ import (
 
 // Retrieves shared secret for whole program use (and inter-process communication).
 // Secret is derived using known private key through a key derivation function at program startup.
-var GetSharedSecret func() (programSecret []byte) = getSharedSecretSafeFail
+var GetSharedSecret func() (programSecret []byte, err error) = getSharedSecretSafeFail
 
 // Ensure uninitialized function produces panic when called
-func getSharedSecretSafeFail() (programSecret []byte) {
-	panic("function GetSharedSecret was not initialized")
+func getSharedSecretSafeFail() (programSecret []byte, err error) {
+	err = fmt.Errorf("function GetSharedSecret was not initialized")
+	return
 }
 
 // Sets up shared secret getter function injecting the derived secret from the private key to the local scope.
@@ -40,7 +41,7 @@ func SetupGetSharedSecret(serverPriv []byte) (err error) {
 		return
 	}
 
-	GetSharedSecret = func() (secret []byte) {
+	GetSharedSecret = func() (secret []byte, err error) {
 		secret = make([]byte, len(newSecret))
 		copy(secret, newSecret)
 		return

@@ -1,7 +1,9 @@
 package global
 
 type (
-	CtxMode string
+	// Context keys
+	CtxMode            string
+	CtxOriginalExePath string
 
 	// Prevent mixing when moving through function signatures
 	MinValue int // Number representing the minimum value for any use case

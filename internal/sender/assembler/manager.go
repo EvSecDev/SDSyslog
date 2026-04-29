@@ -15,7 +15,8 @@ import (
 func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[[]byte]) (new *Manager, err error) {
 	// Double check queue - should never get past build
 	if outbox == nil {
-		panic("FATAL: Sender Packaging manager received empty outbox queue variable")
+		err = fmt.Errorf("assembler manager received empty outbox queue variable")
+		return
 	}
 
 	// Add log context

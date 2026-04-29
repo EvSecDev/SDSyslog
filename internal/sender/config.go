@@ -66,6 +66,7 @@ func (cfg JSONConfig) NewDaemonConf(originalConfigPath string, dryRun bool) (con
 	config.StateFilePath = cfg.StateFile
 	config.FileSourcePaths = cfg.Inputs.FilePaths
 	config.JournalSourceEnabled = cfg.Inputs.JournalEnabled
+	config.SendInternalLogs = cfg.SendInternalLogs
 
 	// Scaling settings
 	config.AutoscaleCheckInterval, err = time.ParseDuration(cfg.AutoScaling.PollInterval)

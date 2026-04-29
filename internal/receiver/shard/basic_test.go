@@ -162,14 +162,14 @@ func TestPushPop_Parallel(t *testing.T) {
 	fragsPerProducer := 5
 	var wg sync.WaitGroup
 
-	for p := 0; p < numProducers; p++ {
+	for p := range numProducers {
 		wg.Add(1)
 		go func(pid int) {
 			defer wg.Done()
 
 			uniqueID, _ := random.FourByte()
 
-			for i := 0; i < fragsPerProducer; i++ {
+			for i := range fragsPerProducer {
 				frag := &protocol.Payload{
 					HostID:        pid,
 					MessageSeq:    i,

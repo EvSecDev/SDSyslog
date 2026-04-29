@@ -31,11 +31,9 @@ func (manager *Manager) AddInstance() (id int) {
 	// Create new context for worker
 	processor.ctx, processor.cancel = logctx.NewCancelWithValues(manager.ctx, logctx.NSWorker, strconv.Itoa(id))
 
-	processor.wg.Add(1)
-	go func() {
-		defer processor.wg.Done()
+	processor.wg.Go(func() {
 		processor.run()
-	}()
+	})
 	return
 }
 

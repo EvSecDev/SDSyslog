@@ -125,6 +125,7 @@ Options:
   -f           Run intense tests (-race -bench)
   -a <arch>    Architecture of compiled binary (amd64, arm64) [default: amd64]
   -o <os>      Which operating system to build for (linux, freebsd) [default: linux]
+  -C           Pre-commit mode - enables final preparations before a commit
   -u           Update go packages for program
   -D           Print dependency tree
   -p           Prepare release notes and attachments
@@ -138,9 +139,10 @@ architecture="amd64"
 os="linux"
 skipTests='false'
 intenseTests='false'
+preCommitMode='false'
 
 # Argument parsing
-while getopts 'a:o:P:bfuDnph' opt; do
+while getopts 'a:o:P:bfuCDnph' opt; do
 	case "$opt" in
 		'a')
 			architecture="$OPTARG"
@@ -156,6 +158,9 @@ while getopts 'a:o:P:bfuDnph' opt; do
 			;;
 		'o')
 			os="$OPTARG"
+			;;
+		'C')
+			preCommitMode='true'
 			;;
 		'u')
 			updatepackages='true'
@@ -186,7 +191,7 @@ if [[ $prepareRelease == true ]]; then
 
 	compile_program_prechecks
 	check_package_licenses 'false'
-	run_tests "$intenseTests"
+	run_tests "$intenseTests" "$preCommitMode"
 	compile_program "$architecture" "$os" "$buildFull"
 
 	tempReleaseDir=$(prepare_github_release_files "$fullNameProgramPrefix")
@@ -204,7 +209,7 @@ elif [[ $buildmode == true ]]; then
 
 	compile_program_prechecks
 	if [[ $skipTests == false ]]; then
-		run_tests "$intenseTests"
+		run_tests "$intenseTests" "$preCommitMode"
 	fi
 	compile_program "$architecture" "$os" "$buildFull"
 else

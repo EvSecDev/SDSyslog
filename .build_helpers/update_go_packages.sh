@@ -54,7 +54,7 @@ function update_go_packages {
 		echo "    $oldVer -> $newVer"
 
 		local baseTmp moduleSafe oldShort newShort
-		baseTmp="$HOME/.local/tmp/gomoddiff"
+		baseTmp="$HOME/.local/tmp/gomoddiff-$$"
 		mkdir -p "$baseTmp"
 
 		moduleSafe=$(sanitize_module_name "$module")
@@ -105,6 +105,8 @@ function update_go_packages {
 
 		local diffOutput diffLines
 
+		set +e
+
 		diffOutput=$(git -c color.ui=always diff --no-index \
 			"$tmpOld/filtered" "$tmpNew/filtered")
 
@@ -120,6 +122,7 @@ function update_go_packages {
 		chmod -R u+w "$tmpOld" "$tmpNew" 2>/dev/null
 
 		rm -rf "$tmpOld" "$tmpNew"
+		set -e
 	done <<<"$changes"
 
 	echo "==========================================="
@@ -131,6 +134,8 @@ function update_go_packages {
 		git reset --hard HEAD
 		return 1
 	fi
+
+	rm -r "$baseTmp"
 
 	echo "[+] DONE"
 }

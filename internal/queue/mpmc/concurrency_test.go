@@ -212,3 +212,59 @@ func TestQueue_StressIntegrity(t *testing.T) {
 		}
 	}
 }
+
+func TestQueue_LowLoadEfficiency(t *testing.T) {
+	// Metric regression test to ensure attempts are matching successes under low load conditions
+
+	queue, err := New[int]([]string{logctx.NSTest}, 1024, 2, global.DefaultMaxQueueSize)
+	if err != nil {
+		t.Fatalf("expected no error creating queue: %v", err)
+	}
+
+	ctx := context.Background()
+
+	const ops = 2000
+
+	// single producer
+	go func() {
+		for i := range ops {
+			time.Sleep(1 * time.Microsecond) // Huge delay timing to reproduce the bug reliably
+
+			for queue.Push(i*10, 8) != nil {
+				runtime.Gosched()
+			}
+
+			runtime.Gosched()
+		}
+	}()
+
+	// single consumer, steady blocking
+	for i := range ops {
+		_, ok := queue.Pop(ctx)
+		if !ok {
+			t.Fatalf("pop failed at %d", i)
+		}
+	}
+
+	// Check metrics
+	attempts := queue.ActiveWrite.Load().Metrics.PopAttempts.Load()
+	success := queue.ActiveWrite.Load().Metrics.PopSuccess.Load()
+
+	if success == 0 {
+		t.Fatalf("no successful pops recorded")
+	}
+
+	// ratio = attempts per success
+	ratio := float64(attempts) / float64(success)
+
+	// Under correct behavior this should be ~1.0–1.2
+	// Under ideal conditions, bug will cause it to be ~2.0
+
+	t.Logf("PopAttempts=%d PopSuccess=%d ratio=%.2f",
+		attempts, success, ratio)
+
+	// Hard assertion: detect wasteful wake/loop behavior
+	if ratio > 1.3 {
+		t.Fatalf("inefficient pop loop detected: ratio=%.2f (expected ~1.0-1.2)", ratio)
+	}
+}

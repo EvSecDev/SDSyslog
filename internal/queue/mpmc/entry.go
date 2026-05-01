@@ -162,9 +162,11 @@ func (container *Queue[T]) Push(value T, size uint64) (err error) {
 			}
 			queue.Metrics.PushCASRetries.Add(1)
 		} else if seq < pos {
+			queue.Metrics.PushSeqBehindTail.Add(1)
 			err = fmt.Errorf("queue is full (size %d)", queue.Size)
 			return
 		} else {
+			queue.Metrics.PushStaleRetries.Add(1)
 			runtime.Gosched() // yield then retry
 		}
 	}
@@ -191,7 +193,6 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 
 	for {
 		queue := container.ActiveRead.Load()
-		queue.Metrics.PopAttempts.Add(1)
 
 		pos = queue.head.Load()
 		cell = &queue.buf[pos&queue.mask.Load()]
@@ -199,6 +200,7 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 		readySeq := pos + 1
 
 		if seq == readySeq {
+			queue.Metrics.PopAttempts.Add(1)
 			if queue.head.CompareAndSwap(pos, pos+1) {
 				out = cell.data
 				cell.seq.Store(pos + queue.mask.Load() + 1)
@@ -241,6 +243,7 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 
 		// queue empty: wait for signal or context cancel
 		if seq < readySeq {
+			queue.Metrics.PopEmptySeqBehind.Add(1)
 			migrateSignal, ok := container.migrateCh.Load().(chan struct{})
 			if !ok {
 				logctx.LogStdErr(ctx,
@@ -263,6 +266,7 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 		}
 
 		// seq > readySeq, another consumer ahead, retry
+		queue.Metrics.PopStaleRetries.Add(1)
 		runtime.Gosched()
 	}
 }

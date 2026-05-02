@@ -7,7 +7,7 @@ This program prioritizes unidirectional networking and data confidentiality/inte
 For technical details about the protocol used (D3P), see `docs/Protocol.md`.
 For technical details about this program's architecture, see `docs/Architecture.md`.
 
-Warning: This program is early in its development and *does* contain bugs.
+Warning: This program is still in development and *may* contain bugs.
 
 ## Features
 

@@ -64,6 +64,8 @@ Deadline definition can be found in `Protocol.md`.
 
 ### Processing Pipeline
 
+![diagram](pipeline.png "Pipeline Diagram")
+
 Stage 1 - Listeners
 
 - Reads packets from network (scaled horizontally via port reuse)

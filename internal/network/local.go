@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 )
 
 // Retrieves the network interface corresponding to a specific address
@@ -53,39 +54,76 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 	// If destination is loopback, allow loopback
 	allowLoopback := destAddress.IsLoopback()
 
+	// Short circuit loopback (no auto select)
+	if allowLoopback {
+		sourceSocket, err = ParseUDPAddress("localhost", 0)
+		return
+	}
+
 	raddr := &net.UDPAddr{
 		IP:   destAddress,
 		Port: 9, // discard port, arbitrary
 	}
 
-	conn, err := net.DialUDP(network, nil, raddr)
-	if err != nil {
-		err = fmt.Errorf("dial failed: %w", err)
-		return
-	}
-	defer func() {
+	var selectedSourceAddr net.IP
+	var gotValidSource bool
+
+	// Early startup can race network interface/route setup, retry until ready with 2 limiters
+	waitDuration := 500 * time.Microsecond
+	maxWaitDuration := 10 * time.Second
+	maxRetries := 30
+	startTime := time.Now()
+	maxTotalRetryDuration := 1 * time.Minute
+	deadline := startTime.Add(maxTotalRetryDuration)
+
+	var retryCount int
+	for retryCount = range maxRetries {
+		// Stop after deadline
+		if time.Now().After(deadline) {
+			break
+		}
+
+		// Dial UDP (no actual network traffic generated) to see what route table selects as source
+		var conn *net.UDPConn
+		conn, err = net.DialUDP(network, nil, raddr)
+		if err != nil {
+			err = fmt.Errorf("dial failed: %w", err)
+			return
+		}
+		localAddr := conn.LocalAddr()
 		_ = conn.Close()
-	}()
 
-	localAddr := conn.LocalAddr()
-	udpAddr, ok := localAddr.(*net.UDPAddr)
-	if !ok {
-		err = fmt.Errorf("unexpected local addr type: %T", localAddr)
+		udpAddr, ok := localAddr.(*net.UDPAddr)
+		if !ok {
+			err = fmt.Errorf("unexpected local addr type: %T", localAddr)
+			return
+		}
+
+		selectedSourceAddr = udpAddr.IP
+		if selectedSourceAddr == nil {
+			err = fmt.Errorf("no local IP selected")
+			return
+		}
+
+		// Got valid source
+		if !selectedSourceAddr.IsLoopback() {
+			gotValidSource = true
+			break
+		}
+
+		// Selected loopback, wait and retry for real address
+		time.Sleep(waitDuration)
+		waitDuration = waitDuration * 2
+		if waitDuration >= maxWaitDuration {
+			waitDuration = maxWaitDuration
+		}
+	}
+	if !gotValidSource {
+		err = fmt.Errorf("kernel selected loopback source (%s) for non-loopback destination (%s) after retrying %d time(s) over %s",
+			selectedSourceAddr, destAddress, retryCount+1, maxTotalRetryDuration.String())
 		return
 	}
 
-	sourceAddress := udpAddr.IP
-	if sourceAddress == nil {
-		err = fmt.Errorf("no local IP selected")
-		return
-	}
-
-	// No loopback unless dst is loopback
-	if sourceAddress.IsLoopback() && !allowLoopback {
-		err = fmt.Errorf("kernel selected loopback source (%s) for non-loopback destination (%s)", sourceAddress, destAddress)
-		return
-	}
-
-	sourceSocket, err = ParseUDPAddress(sourceAddress.String(), 0)
+	sourceSocket, err = ParseUDPAddress(selectedSourceAddr.String(), 0)
 	return
 }

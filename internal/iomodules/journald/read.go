@@ -2,6 +2,7 @@ package journald
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"os"
 	"runtime/debug"
@@ -53,6 +54,10 @@ func (mod *InModule) reader() {
 			fields, err := extractEntry(reader)
 			if err != nil {
 				if err.Error() == "encountered empty entry" && ctx.Err() != nil {
+					// Shutdown
+					return
+				}
+				if errors.Is(err, os.ErrClosed) && ctx.Err() != nil {
 					// Shutdown
 					return
 				}

@@ -1,3 +1,4 @@
+// Implementation of the Fragment Inter-process router (Sending side only)
 package fiprsend
 
 import (

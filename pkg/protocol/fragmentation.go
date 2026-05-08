@@ -148,23 +148,24 @@ func allFieldsEqual(payloads []*Payload) (valid bool) {
 	return
 }
 
-// Checks if reference payload is equal to payload.
-func (reference *Payload) EqualTo(payload *Payload) (equal bool) {
+// Checks if payload is equal to compared payload.
+func (payload *Payload) EqualTo(comparePayload *Payload) (equal bool) {
 	// Check custom fields equality
-	if len(reference.CustomFields) != len(payload.CustomFields) {
+	if len(payload.CustomFields) != len(comparePayload.CustomFields) {
 		equal = false
 		return
 	}
-	for refIndex, customField := range reference.CustomFields {
-		if payload.CustomFields[refIndex] != customField {
+
+	for refIndex, customField := range payload.CustomFields {
+		if comparePayload.CustomFields[refIndex] != customField {
 			equal = false
 			return
 		}
 	}
 
-	if payload.RemoteIP != reference.RemoteIP || payload.HostID != reference.HostID ||
-		payload.MsgID != reference.MsgID || !payload.Timestamp.Equal(reference.Timestamp) ||
-		payload.Hostname != reference.Hostname {
+	if comparePayload.RemoteIP != payload.RemoteIP || comparePayload.HostID != payload.HostID ||
+		comparePayload.MsgID != payload.MsgID || !comparePayload.Timestamp.Equal(payload.Timestamp) ||
+		comparePayload.Hostname != payload.Hostname {
 
 		equal = false
 		return

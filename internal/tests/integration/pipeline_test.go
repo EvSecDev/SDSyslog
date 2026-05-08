@@ -37,7 +37,7 @@ func TestSendReceivePipeline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get network interface list for local system: %v", err)
 	}
-	testIp := findLocalTestIP(ifaces)
+	testIP := findLocalTestIP(ifaces)
 
 	// Mock persistent keys
 	var cryptoSuite uint8 = 1
@@ -77,7 +77,7 @@ func TestSendReceivePipeline(t *testing.T) {
 			Address string "json:\"address\""
 			Port    int    "json:\"port\""
 		}{
-			Address: testIp,
+			Address: testIP,
 			Port:    global.DefaultReceiverPort,
 		},
 		Metrics: struct {
@@ -120,19 +120,19 @@ func TestSendReceivePipeline(t *testing.T) {
 		t.Fatalf("failed to create test recv daemon config file: %v", err)
 	}
 
-	recvJsonCfg, err := receiver.LoadConfig(recvJSONConfFile)
+	recvJSONCfg, err := receiver.LoadConfig(recvJSONConfFile)
 	if err != nil {
 		t.Fatalf("failed to load test recv daemon config file: %v", err)
 	}
 
-	newRecvCfg, err := recvJsonCfg.NewDaemonConf(recvJSONConfFile, false)
+	newRecvCfg, err := recvJSONCfg.NewDaemonConf(recvJSONConfFile, false)
 	if err != nil {
 		t.Fatalf("failed to parse loaded test recv daemon config file: %v", err)
 	}
 
 	newRecvCfg.RawWriter = recvOutput // For testing only
 
-	privateKey, err := os.ReadFile(recvJsonCfg.PrivateKeyFile)
+	privateKey, err := os.ReadFile(recvJSONCfg.PrivateKeyFile)
 	if err != nil {
 		t.Fatalf("failed to read receiver private key file: %v", err)
 	}
@@ -171,7 +171,7 @@ func TestSendReceivePipeline(t *testing.T) {
 			Port           int    "json:\"port\""
 			MaxPayloadSize int    "json:\"maxPayloadSize,omitempty\""
 		}{
-			Address: testIp,
+			Address: testIP,
 			Port:    global.DefaultReceiverPort,
 		},
 		Metrics: struct {
@@ -211,19 +211,19 @@ func TestSendReceivePipeline(t *testing.T) {
 		t.Fatalf("failed to create test send daemon config file: %v", err)
 	}
 
-	sendJsonCfg, err := sender.LoadConfig(sendJSONConfFile)
+	sendJSONCfg, err := sender.LoadConfig(sendJSONConfFile)
 	if err != nil {
 		t.Fatalf("failed to load test send daemon config file: %v", err)
 	}
 
-	newSendCfg, err := sendJsonCfg.NewDaemonConf(sendJSONConfFile, false)
+	newSendCfg, err := sendJSONCfg.NewDaemonConf(sendJSONConfFile, false)
 	if err != nil {
 		t.Fatalf("failed to parse loaded test send daemon config file: %v", err)
 	}
 
 	newSendCfg.RawInput = sendInput // For testing only
 
-	publicKey, err := base64.StdEncoding.DecodeString(sendJsonCfg.PublicKey)
+	publicKey, err := base64.StdEncoding.DecodeString(sendJSONCfg.PublicKey)
 	if err != nil {
 		t.Fatalf("failed to decode sender public key: %v", err)
 	}

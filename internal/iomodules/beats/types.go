@@ -1,3 +1,4 @@
+// IO Module for the beats logging protocol (lumberjack)
 package beats
 
 import (

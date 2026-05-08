@@ -8,11 +8,11 @@ import (
 )
 
 // Shard deadline watcher - ensures buckets that exceed deadline are marked filled
-func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
+func (queue *Instance) StartTimeoutWatcher(ctx context.Context) {
 	ctx = logctx.AppendCtxTag(ctx, logctx.NSWatcher)
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
-	deadlinePtr := shard.packetDeadline
+	deadlinePtr := queue.packetDeadline
 
 	for {
 		select {
@@ -39,9 +39,9 @@ func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
 
 			// Check all buckets in each shard for timeout
 			keysToSend := []string{}
-			shard.Mu.Lock()
+			queue.Mu.Lock()
 
-			for bucketKey, bucket := range shard.Buckets {
+			for bucketKey, bucket := range queue.Buckets {
 				if bucket.filled {
 					continue
 				}
@@ -50,7 +50,7 @@ func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
 					// If the bucket has timed out, process it
 					bucket.filled = true
 					keysToSend = append(keysToSend, bucketKey)
-					shard.Metrics.TimedOutBuckets.Add(1)
+					queue.Metrics.TimedOutBuckets.Add(1)
 
 					var haveSeq []int
 					for _, fragment := range bucket.Fragments {
@@ -60,12 +60,12 @@ func (shard *Instance) StartTimeoutWatcher(ctx context.Context) {
 						bucketKey, bucket.maxSeq+1, packetDeadline.String(), haveSeq)
 				}
 			}
-			shard.Mu.Unlock()
+			queue.Mu.Unlock()
 
 			for _, bucketKey := range keysToSend {
 				select {
-				case shard.keyQueue <- bucketKey:
-					shard.Metrics.WaitingBuckets.Add(1)
+				case queue.keyQueue <- bucketKey:
+					queue.Metrics.WaitingBuckets.Add(1)
 				case <-ctx.Done():
 					return
 				}

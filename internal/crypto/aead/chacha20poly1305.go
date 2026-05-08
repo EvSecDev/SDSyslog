@@ -1,3 +1,4 @@
+// Centralized package for all AEAD (Authenticated Encryption with Associated Data) encryption algorithms
 package aead
 
 import (

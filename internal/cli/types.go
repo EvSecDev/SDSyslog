@@ -1,3 +1,4 @@
+// Central package for all command line interface parsing, branching, and setup
 package cli
 
 type CommandSet struct {

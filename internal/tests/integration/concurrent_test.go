@@ -34,7 +34,7 @@ func TestMultipleSenders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get network interface list for local system: %v", err)
 	}
-	testIp := findLocalTestIP(ifaces)
+	testIP := findLocalTestIP(ifaces)
 
 	// Mock persistent keys
 	var cryptoSuite uint8 = 1
@@ -57,7 +57,7 @@ func TestMultipleSenders(t *testing.T) {
 
 	// Daemon config (large queues - not testing queue failures here)
 	newRecvCfg := receiver.Config{
-		ListenIP:               testIp,
+		ListenIP:               testIP,
 		ListenPort:             global.DefaultReceiverPort,
 		AutoscaleEnabled:       true,
 		AutoscaleCheckInterval: 200 * time.Millisecond,
@@ -148,7 +148,7 @@ func TestMultipleSenders(t *testing.T) {
 
 				// Startup sending daemons
 				newSendCfg := sender.Config{
-					DestinationIP:         testIp,
+					DestinationIP:         testIP,
 					DestinationPort:       global.DefaultReceiverPort,
 					AutoscaleEnabled:      true,
 					RawInput:              sendInput,

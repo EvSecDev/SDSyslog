@@ -1,3 +1,4 @@
+// Commons for the sender daemon to get around import cycle
 package shared
 
 import (

@@ -1,3 +1,4 @@
+// Implementation of the Fragment Inter-process router (Receiving side only)
 package fiprrecv
 
 import (

@@ -1,3 +1,4 @@
+// IOModule for the systemd journald read/writes
 package journald
 
 import (

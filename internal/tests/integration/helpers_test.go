@@ -19,7 +19,7 @@ import (
 )
 
 // Chose non-loopback interface for testing (smaller mtu than loopback)
-func findLocalTestIP(ifaces []net.Interface) (testIp string) {
+func findLocalTestIP(ifaces []net.Interface) (testIP string) {
 	for _, iface := range ifaces {
 		// Skip loopback and down interfaces
 		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
@@ -44,7 +44,7 @@ func findLocalTestIP(ifaces []net.Interface) (testIp string) {
 
 			// Pick the first valid IPv4
 			if ip != nil && ip.To4() != nil {
-				testIp = ip.String()
+				testIP = ip.String()
 				found = true
 				break
 			}

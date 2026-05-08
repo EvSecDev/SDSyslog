@@ -31,9 +31,9 @@ func TestRecvConstantFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get network interface list for local system: %v", err)
 	}
-	testIp := findLocalTestIP(ifaces)
+	testIP := findLocalTestIP(ifaces)
 
-	maxPayloadSize, err := network.FindSendingMaxUDPPayload(testIp)
+	maxPayloadSize, err := network.FindSendingMaxUDPPayload(testIP)
 	if err != nil {
 		t.Fatalf("failed to find max payload size: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestRecvConstantFlow(t *testing.T) {
 
 	// Daemon config
 	newCfg := receiver.Config{
-		ListenIP:               testIp,
+		ListenIP:               testIP,
 		ListenPort:             global.DefaultReceiverPort,
 		AutoscaleEnabled:       true,
 		AutoscaleCheckInterval: 2 * global.DefaultMinPacketDeadline,
@@ -98,7 +98,7 @@ func TestRecvConstantFlow(t *testing.T) {
 		t.Fatalf("expected no start-up errors in receive pipeline, but found: %v\n", errorList)
 	}
 
-	destAddr, err := net.ResolveUDPAddr("udp", testIp+":"+strconv.Itoa(global.DefaultReceiverPort))
+	destAddr, err := net.ResolveUDPAddr("udp", testIP+":"+strconv.Itoa(global.DefaultReceiverPort))
 	if err != nil {
 		t.Fatalf("failed to resolve destination: %v", err)
 	}

@@ -1,3 +1,4 @@
+// Commons for the receiver daemon to get around import cycle
 package shared
 
 import (

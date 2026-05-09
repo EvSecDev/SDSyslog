@@ -1,0 +1,23 @@
+{
+    "binaryShortName": "sdsyslog",
+    "binaryLongNamePrefix": "sdsyslog_v",
+    "readmeHelpMenuStartDelimiter": "### SDSyslog Help Menu",
+    "remoteGitRepo": "SDSyslog",
+    "remoteGitUsername": "EvSecDev",
+    "licenses": {
+        "permitted": [
+            "MIT",
+            "BSD",
+            "BSD-2-Clause",
+            "BSD-3-Clause",
+            "Apache-2.0",
+            "ISC"
+        ],
+        "disallowed": [
+            "GPL",
+            "AGPL",
+            "LGPL",
+            "MPL"
+        ]
+    }
+}

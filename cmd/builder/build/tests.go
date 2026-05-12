@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"math"
 	"os"
 	"os/exec"
@@ -25,6 +27,18 @@ type testCoverageTracker struct {
 }
 
 func runTests(ctx *context) (err error) {
+	hasTests := false
+	_ = filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		if strings.HasSuffix(path, "_test.go") {
+			hasTests = true
+			return io.EOF
+		}
+		return nil
+	})
+	if !hasTests {
+		return
+	}
+
 	testArgs := []string{
 		"-timeout=4m",
 	}

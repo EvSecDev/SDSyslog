@@ -12,6 +12,22 @@ import (
 )
 
 func preBuildChecks(ctx *context) (err error) {
+	err = checkVersioning(ctx)
+	if err != nil {
+		return
+	}
+	err = checkDevArtifacts(ctx)
+	if err != nil {
+		return
+	}
+	err = runStaticAnalysis(ctx)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func checkVersioning(ctx *context) (err error) {
 	printInfo(0, "Checking versioning...")
 
 	// Get head commit hash
@@ -35,8 +51,14 @@ func preBuildChecks(ctx *context) (err error) {
 	cmd = exec.Command("git", "show", lastReleaseCommitHash+":"+globalConstsFile)
 	out, err = cmd.CombinedOutput()
 	if err != nil {
-		err = fmt.Errorf("git show: %w: %s", err, string(out))
-		return
+		if strings.Contains(string(out), "exists on disk, but not in") {
+			err = nil
+			printSuccess(0, "Done")
+			return
+		} else {
+			err = fmt.Errorf("git show: %w: %s", err, string(out))
+			return
+		}
 	}
 	lastReleaseVersionNumber, err := helpers.GetProgVersion(out, versionVariableName)
 	if err != nil {
@@ -62,6 +84,10 @@ func preBuildChecks(ctx *context) (err error) {
 	}
 
 	printSuccess(0, "Done")
+	return
+}
+
+func checkDevArtifacts(ctx *context) (err error) {
 	printInfo(0, "Checking for development artifacts in source code...")
 
 	// Check for any left over debug prints
@@ -154,11 +180,15 @@ func preBuildChecks(ctx *context) (err error) {
 	}
 
 	printSuccess(0, "Done")
+	return
+}
+
+func runStaticAnalysis(ctx *context) (err error) {
 	printInfo(0, "Running static analysis...")
 
 	// Lint 1
-	cmd = exec.Command("staticcheck", "-checks", "all", "./...")
-	out, err = cmd.CombinedOutput()
+	cmd := exec.Command("staticcheck", "-checks", "all", "./...")
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		// Filter out unneeded lines
 		lines := bytes.Split(out, []byte("\n"))

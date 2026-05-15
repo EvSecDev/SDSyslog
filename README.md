@@ -101,6 +101,8 @@ When the daemon is started, a limited HTTP server will also be started on localh
 
 To get started with this API, grab the HTML docs by querying the root path `curl http://localhost:18514/` for the sender or `curl http://localhost:28514/` for the receiver.
 
+If you happen to run Zabbix, there is a Receiver daemon monitoring template in `resources/zabbix_sdsyslog_receiver_template.yaml`.
+
 ## Host Identity Enforcement
 
 An optional additional security feature is the per-host signatures.

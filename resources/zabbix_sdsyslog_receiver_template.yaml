@@ -1,0 +1,2357 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: e17f5c0cb9924ef0bb06762d1a22b33a
+      template: 'SDSyslog Receiver'
+      name: 'SDSyslog Receiver'
+      description: |
+        Metric collection and alerting template for SDSyslog Receiver daemon.
+        Requires zabbix server be running on the same server as the receiver daemon (Metric server is listening on localhost)
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: 792f9f768d924fa99499d5c4e13612b8
+          name: 'SDSyslog - Bulk Defrag Metrics'
+          type: HTTP_AGENT
+          key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          history: 4h
+          value_type: TEXT
+          description: 'Raw worker metrics for all defragmentation instances'
+          url: 'http://localhost:28514/bulk/'
+          follow_redirects: 'NO'
+          post_type: JSON
+          posts: |
+            {
+              "filters":[
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "processed_buckets",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "packet_deadline",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "elapsed_time_sum_ns",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "elapsed_time_max_ns",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "instance_count",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "total_bytes",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "total_buckets",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "waiting_buckets",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "timed_out_buckets",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "sum_time_between_fragments",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_ctn",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_ctn",
+                  "namespace": "Receiver/Defrag",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                }
+              ]
+            }
+          request_method: POST
+          output_format: JSON
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 183c0e0316bf473fab8a224d8048d2e9
+          name: 'SDSyslog - Bulk Ingest Metrics'
+          type: HTTP_AGENT
+          key: 'sdsyslog.recv.metrics.bulk[ingest/listener]'
+          history: 4h
+          value_type: TEXT
+          description: 'Raw worker metrics for all listener ingest instances'
+          url: 'http://localhost:28514/bulk/'
+          follow_redirects: 'NO'
+          post_type: JSON
+          posts: |
+            {
+              "filters":[
+                {
+                  "type": "aggregation",
+                  "aggregationType": "average",
+                  "name": "busy_time_percent",
+                  "namespace": "Receiver/Ingest/Listener",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "valid_packets_total",
+                  "namespace": "Receiver/Ingest/Listener",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "invalid_packets_total",
+                  "namespace": "Receiver/Ingest/Listener",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "elapsed_time_sum_ns",
+                  "namespace": "Receiver/Ingest/Listener",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "elapsed_time_max_ns",
+                  "namespace": "Receiver/Ingest/Listener",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "instance_count",
+                  "namespace": "Receiver/Ingest",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                }
+              ]
+            }
+          request_method: POST
+          output_format: JSON
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest
+        - uuid: 0a417d86dedc4bb58c38ba9b76805405
+          name: 'SDSyslog - Bulk Output Metrics'
+          type: HTTP_AGENT
+          key: 'sdsyslog.recv.metrics.bulk[output]'
+          history: 4h
+          value_type: TEXT
+          description: 'Raw worker metrics for output instance'
+          url: 'http://localhost:28514/bulk/'
+          follow_redirects: 'NO'
+          post_type: JSON
+          posts: |
+            {
+              "filters":[
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "received_messages",
+                  "namespace": "Receiver/Out/Worker",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "capacity",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "average",
+                  "name": "depth",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "total_bytes",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_attempts",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_success",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_cas_retries",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_attempts",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_success",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_cas_retries",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_seq_behind_tail",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_stale_retries",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_empty_seq_behind",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_stale_retries",
+                  "namespace": "Receiver/Out/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                }
+              ]
+            }
+          request_method: POST
+          output_format: JSON
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: bd3b16713c8143a6b1ad38cd2e0ba4af
+          name: 'SDSyslog - Bulk Processor Metrics'
+          type: HTTP_AGENT
+          key: 'sdsyslog.recv.metrics.bulk[processor]'
+          history: 4h
+          value_type: TEXT
+          description: 'Raw worker metrics for all processor instances'
+          url: 'http://localhost:28514/bulk/'
+          follow_redirects: 'NO'
+          post_type: JSON
+          posts: |
+            {
+              "filters":[
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "valid_payloads_total",
+                  "namespace": "Receiver/Processor/Worker",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "invalid_payloads_total",
+                  "namespace": "Receiver/Processor/Worker",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "elapsed_time_sum_ns",
+                  "namespace": "Receiver/Processor/Worker",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "elapsed_time_max_ns",
+                  "namespace": "Receiver/Processor/Worker",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "instance_count",
+                  "namespace": "Receiver/Processor",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "max",
+                  "name": "capacity",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "average",
+                  "name": "depth",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "total_bytes",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_attempts",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_success",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_cas_retries",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_attempts",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_success",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_cas_retries",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_seq_behind_tail",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "push_stale_retries",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_empty_seq_behind",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                },
+                {
+                  "type": "aggregation",
+                  "aggregationType": "sum",
+                  "name": "pop_stale_retries",
+                  "namespace": "Receiver/Processor/Queue",
+                  "startTime": "-1m",
+                  "endTime": "now"
+                }
+              ]
+            }
+          request_method: POST
+          output_format: JSON
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 90672b41bd1148f0a3ab1ec92ec26ae5
+          name: 'SDSyslog - Defrag Busy Time Percentage'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[defrag/busy_time_percent]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: '%'
+          params: '(last(//sdsyslog.recv.metrics.raw[defrag/elapsed_time_sum_ns])/60)*100'
+          description: 'Percentage of time spent doing anything in the interval'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 7c1c38357f03464197a36dfb1ceb75f9
+          name: 'SDSyslog - Defrag Incomplete Message Rate'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[defrag/incomplete_message_pct]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: '%'
+          params: 'last(//sdsyslog.recv.metrics.raw[defrag/queue/timed_out_buckets])/last(//sdsyslog.recv.metrics.raw[defrag/queue/total_buckets])*100'
+          description: 'Percentage of messages that failed reconstruction (missing fragments)'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+          triggers:
+            - uuid: edf482a30ede4cafb030579e50aefdee
+              expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[defrag/incomplete_message_pct])>=1'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[defrag/incomplete_message_pct])=0'
+              name: 'Defrag Incomplete Message Rate Too High'
+              opdata: 'Current Incomplete Rate: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Defrag incomplete message count has risen above 1% of total messages'
+              tags:
+                - tag: namespace
+                  value: Receiver/Defrag
+        - uuid: 8d5197bac04f480fae9131d242b30a46
+          name: 'SDSyslog - Defrag Assembled Messages Per Second Change'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.derived[defrag/processed_buckets_change]'
+          value_type: FLOAT
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          master_item:
+            key: 'sdsyslog.recv.metrics.raw[defrag/processed_buckets]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 1a16b6f7da0e4cb391fe0bfd6e72c78f
+          name: 'SDSyslog - Listener Invalid Packet Rate'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[ingest/listener/invalid_packet_pct]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: '%'
+          params: 'last(//sdsyslog.recv.metrics.raw[ingest/listener/invalid_packets_total])/(last(//sdsyslog.recv.metrics.raw[ingest/listener/valid_packets_total])+last(//sdsyslog.recv.metrics.raw[ingest/listener/invalid_packets_total]))*100'
+          description: 'Percentage of total received packets that were invalid'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest/Listener
+          triggers:
+            - uuid: fafb1ca575ec4d60a989ec9580c87dda
+              expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[ingest/listener/invalid_packet_pct])>=1'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[ingest/listener/invalid_packet_pct])=0'
+              name: 'Listener Invalid Packet Rate Too High'
+              opdata: 'Current Invalid Rate: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Listener invalid packet count has risen above 1% of total received packets'
+              tags:
+                - tag: namespace
+                  value: Receiver/Ingest/Listener
+        - uuid: cee69714f1db4ff7bef4940ecfdbb0ae
+          name: 'SDSyslog - Listener Valid Packets Per Second Change'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.derived[ingest/listener/valid_packets_change]'
+          value_type: FLOAT
+          description: 'Numeric change in incoming packets per second'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          master_item:
+            key: 'sdsyslog.recv.metrics.raw[ingest/listener/valid_packets_total]'
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest/Listener
+        - uuid: 1158ea1788ea487d88c3266756f1c883
+          name: 'SDSyslog - Defrag-to-Output Queue Filled Percentage'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[out/queue/fill_pct]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: '%'
+          params: 'last(//sdsyslog.recv.metrics.raw[out/queue/depth])/last(//sdsyslog.recv.metrics.raw[out/queue/capacity])*100'
+          description: 'Queue Usage Percentage'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+          triggers:
+            - uuid: 02e5f9331c89475d83b52d35b71c5736
+              expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[out/queue/fill_pct])>=70'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[out/queue/fill_pct])<=10'
+              name: 'Output Queue Usage Too High'
+              opdata: 'Current Usage Percent: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Output queue usage percentage has risen to very high levels'
+              tags:
+                - tag: namespace
+                  value: Receiver/Out/Queue
+        - uuid: c1c79565175a45f7aca75df895cf8e94
+          name: 'SDSyslog - Defrag-to-Output Queue Pop Success Ratio'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[out/queue/pop_success_ratio]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          params: 'last(//sdsyslog.recv.metrics.raw[out/queue/pop_success])/last(//sdsyslog.recv.metrics.raw[out/queue/pop_attempts])'
+          description: |
+            Ratio of the pop success counts to the pop attempt counts.
+            Ideal value is 1.
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: febd7b2bcefe465da66145f70129f24b
+          name: 'SDSyslog - Defrag-to-Output Queue Push Success Ratio'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[out/queue/push_success_ratio]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          params: 'last(//sdsyslog.recv.metrics.raw[out/queue/push_success])/last(//sdsyslog.recv.metrics.raw[out/queue/push_attempts])'
+          description: |
+            Ratio of the push success counts to the push attempt counts.
+            Ideal value is 1.
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 680bd1424fb74ec4b2729a5fc6f1f775
+          name: 'SDSyslog - Processor Busy Time Percentage'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[processor/busy_time_percent]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: '%'
+          params: '(last(//sdsyslog.recv.metrics.raw[processor/worker/elapsed_time_sum_ns])/60)*100'
+          description: 'Percentage of time spent doing anything in the interval'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: fcb27df2adfe48569aab80e6872e45ad
+          name: 'SDSyslog - Listener-to-Processor Queue Filled Percentage'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[processor/queue/fill_pct]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: '%'
+          params: 'last(//sdsyslog.recv.metrics.raw[processor/queue/depth])/last(//sdsyslog.recv.metrics.raw[processor/queue/capacity])*100'
+          description: 'Queue Usage Percentage'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+          triggers:
+            - uuid: 0e0bcfb1c03742d2b1e115a80b1a0933
+              expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[processor/queue/fill_pct])>=70'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[processor/queue/fill_pct])<=10'
+              name: 'Processor Queue Usage Too High'
+              opdata: 'Current Usage Percent: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Processor queue usage percentage has risen to very high levels'
+              tags:
+                - tag: namespace
+                  value: Receiver/Processor/Queue
+        - uuid: eb589d7ca88c43f7be44a234eeaf95fe
+          name: 'SDSyslog - Listener-to-Processor Queue Pop Success Ratio'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[processor/queue/pop_success_ratio]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          params: 'last(//sdsyslog.recv.metrics.raw[processor/queue/pop_success])/last(//sdsyslog.recv.metrics.raw[processor/queue/pop_attempts])'
+          description: |
+            Ratio of the pop success counts to the pop attempt counts.
+            Ideal value is 1.
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: e8acebdcded34ab2a0387c9bbc5463f3
+          name: 'SDSyslog - Listener-to-Processor Queue Push Success Ratio'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[processor/queue/push_success_ratio]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          params: 'last(//sdsyslog.recv.metrics.raw[processor/queue/push_success])/last(//sdsyslog.recv.metrics.raw[processor/queue/push_attempts])'
+          description: |
+            Ratio of the push success counts to the push attempt counts.
+            Ideal value is 1.
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 4b42edeb4f6845e8aee23a39a0774290
+          name: 'SDSyslog - Processor Invalid Payload Rate'
+          type: CALCULATED
+          key: 'sdsyslog.recv.metrics.derived[processor/worker/invalid_payload_pct]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: '%'
+          params: 'last(//sdsyslog.recv.metrics.raw[processor/worker/invalid_payloads_total])/(last(//sdsyslog.recv.metrics.raw[processor/worker/valid_payloads_total])+last(//sdsyslog.recv.metrics.raw[processor/worker/invalid_payloads_total]))*100'
+          description: 'Percentage of total received payloads that were invalid'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '0'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor/Worker
+          triggers:
+            - uuid: 4a1a1a0f92594705a6a58e42a3e04505
+              expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[processor/worker/invalid_payload_pct])>=1'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.derived[processor/worker/invalid_payload_pct])=0'
+              name: 'Processor Invalid Payload Rate Too High'
+              opdata: 'Current Invalid Rate: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Processor invalid payload count has risen above 1% of total received payloads'
+              tags:
+                - tag: namespace
+                  value: Receiver/Processor/Worker
+        - uuid: 1e57a8c27f7d486fa890ffb96ced628e
+          name: 'SDSyslog - Processor Valid Payloads Per Second Change'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.derived[processor/worker/valid_payloads_change]'
+          value_type: FLOAT
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          master_item:
+            key: 'sdsyslog.recv.metrics.raw[processor/worker/valid_payloads_total]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor/Worker
+        - uuid: 800e9b0f563c4249a015955986f58d34
+          name: 'SDSyslog - Defrag Max Seen Work Time'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/elapsed_time_max_ns]'
+          history: 365d
+          trends: 900d
+          units: s
+          description: 'Maximum (seen) time spent assembling fragments in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[3][0].value.raw'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var ns = parseFloat(value);
+                  return ns / 1e9;
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 272c29c389104d489a406259b00f9b5f
+          name: 'SDSyslog - Defrag Total Work Time'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/elapsed_time_sum_ns]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: s
+          description: 'Total time spent assembling fragments in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[2][0].value.raw'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var ns = parseFloat(value);
+                  return ns / 1e9;
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: a54e0e3cb9de4ba48a20dceffc52deef
+          name: 'SDSyslog - Defrag Assembler Count'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/instance_count]'
+          history: 90d
+          description: 'Max number of running instances seen in the metric collection interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[4][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: cd4cf65ec48448fc98af8d19aa70b68e
+          name: 'SDSyslog - Defrag Packet Deadline'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/packet_deadline]'
+          history: 90d
+          value_type: FLOAT
+          units: s
+          description: 'Packet deadline (maximum time between fragments) at the time of metric collection'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[1][0].value.raw'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var ns = parseFloat(value);
+                  return ns / 1e9;
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: bf1c3f3aa15f43aca25f9955cc5afd75
+          name: 'SDSyslog - Defrag Assembled Messages'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/processed_buckets]'
+          history: 365d
+          trends: 900d
+          description: 'Total messages (fragment buckets) that were successfully reassembled'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[0][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 76b7e806cd2e472ab8e5825cc9b5e4cd
+          name: 'SDSyslog - Processor-to-Defrag Queue Byte Total'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/queue/bytes]'
+          history: 365d
+          trends: 900d
+          units: b
+          description: 'Sum of all the byte sizes seen during the metric interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[5][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 609687ec734f47908e14e236f6106c17
+          name: 'SDSyslog - Processor-to-Defrag Wait Queue Pop Count'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/queue/pop_ctn]'
+          history: 365d
+          trends: 900d
+          description: 'Total buckets received from the wait queue in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[11][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 00d3b040d85e4ea994d59bb8da235770
+          name: 'SDSyslog - Processor-to-Defrag Wait Queue Push Count'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/queue/push_ctn]'
+          history: 365d
+          trends: 900d
+          description: 'Total buckets sent into the wait queue in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[10][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 7b3b2b96d4be404cbb4e9d8f1012bf24
+          name: 'SDSyslog - Defrag Sum of time between message fragments'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/queue/sum_time_between_fragments]'
+          history: 365d
+          trends: 900d
+          units: s
+          description: 'Sum of time to arrival between fragments in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[9][0].value.raw'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var ns = parseFloat(value);
+                  return ns / 1e9;
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: d7c5a54af53e40c198a722d2b2f09d99
+          name: 'SDSyslog - Defrag Total Messages Missing Fragments'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/queue/timed_out_buckets]'
+          history: 365d
+          trends: 900d
+          description: 'Total messages that did not receive all fragments within the packet deadline in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[8][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 0bde8b413d964bdaa66b8ccf62b6fccc
+          name: 'SDSyslog - Processor-to-Defrag Queued Messages'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/queue/total_buckets]'
+          history: 365d
+          trends: 900d
+          description: 'Total number of messages in the queue in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[6][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 13e530f05b714d1cbf84b4d9582785ba
+          name: 'SDSyslog - Processor-to-Defrag Queued Messages Awaiting Reassembly'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[defrag/queue/waiting_buckets]'
+          history: 365d
+          trends: 900d
+          description: 'Total number of messages awaiting assembly in the queue in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[7][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[defrag]'
+          tags:
+            - tag: namespace
+              value: Receiver/Defrag
+        - uuid: 33c73718940441aebc312d278476e96e
+          name: 'SDSyslog - Listener Count'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[ingest/instance_count]'
+          history: 90d
+          description: 'Max number of running instances seen in the metric collection interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[5][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[ingest/listener]'
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest
+        - uuid: 3aac3cc3be394b7caa84204ce7ad4862
+          name: 'SDSyslog - Listener Busy Time Percent'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[ingest/listener/busy_time_percent]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: '%'
+          description: 'Average time spent doing anything in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[0][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[ingest/listener]'
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest/Listener
+          triggers:
+            - uuid: a69f692411f3411693371cc3104e8840
+              expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.raw[ingest/listener/busy_time_percent])>=65'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/SDSyslog Receiver/sdsyslog.recv.metrics.raw[ingest/listener/busy_time_percent])<=15'
+              name: 'Listener workers too busy'
+              opdata: 'Current Busy Time Percent: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Listener percentage of total time spent doing anything has risen to very high levels'
+              tags:
+                - tag: namespace
+                  value: Receiver/Ingest/Listener
+        - uuid: 80264509ad7e4dbd9edd37e9373ba885
+          name: 'SDSyslog - Listener Max Seen Work Time'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[ingest/listener/elapsed_time_max_ns]'
+          history: 365d
+          trends: 900d
+          units: s
+          description: 'Maximum (seen) time spent validating packets in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[4][0].value.raw'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var ns = parseFloat(value);
+                  return ns / 1e9;
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[ingest/listener]'
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest/Listener
+        - uuid: 9ce8bae0e87348fabf132570aa486761
+          name: 'SDSyslog - Listener Total Work Time'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[ingest/listener/elapsed_time_sum_ns]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: s
+          description: 'Total time spent validating packets in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[3][0].value.raw'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var ns = parseFloat(value);
+                  return ns / 1e9;
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[ingest/listener]'
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest/Listener
+        - uuid: cd56936328e74dd8b5a37362113f7de4
+          name: 'SDSyslog - Listener Invalid Packets'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[ingest/listener/invalid_packets_total]'
+          history: 365d
+          trends: 900d
+          description: 'Total packets that failed basic validation in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[2][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[ingest/listener]'
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest/Listener
+        - uuid: 020498e095a24498885b80906cd92563
+          name: 'SDSyslog - Listener Valid Packets'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[ingest/listener/valid_packets_total]'
+          history: 365d
+          trends: 900d
+          description: 'Total packets that passed basic validation in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[1][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[ingest/listener]'
+          tags:
+            - tag: namespace
+              value: Receiver/Ingest/Listener
+        - uuid: 056a8ab5f6224764a2c69ec9d80af231
+          name: 'SDSyslog - Defrag-to-Output Queue Byte Total'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/bytes]'
+          history: 365d
+          trends: 900d
+          units: b
+          description: 'Sum of all the byte sizes seen during the metric interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[3][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: fd9bd95d03bf4fcf915ac1d5ee153e38
+          name: 'SDSyslog - Defrag-to-Output Queue Capacity'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/capacity]'
+          history: 365d
+          trends: 900d
+          description: 'Current active queue max capacity (total allocated entries) at time of metric collection'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[1][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 91aa46eafb4f42d29026917c0769a7a2
+          name: 'SDSyslog - Defrag-to-Output Queue Depth'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/depth]'
+          history: 365d
+          trends: 900d
+          description: 'Average number of items in the queue in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[2][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 806aa5f0d7dc4f0dab4a748e7bc037f7
+          name: 'SDSyslog - Defrag-to-Output Queue Pop Attempts'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/pop_attempts]'
+          history: 365d
+          trends: 900d
+          description: 'Total pop attempts in the interval. Includes retries after waiting for work (blocking pop).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[7][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 9564dae89f754a4b93dd657de673939b
+          name: 'SDSyslog - Defrag-to-Output Queue Pop Retries'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/pop_cas_retries]'
+          history: 365d
+          trends: 900d
+          description: 'Sum of retries to pop in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[9][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 1f65e6bde4974b168acd52849a9ebe89
+          name: 'SDSyslog - Defrag-to-Output Queue Pop Not Availables'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/pop_empty_seq_behind]'
+          history: 365d
+          trends: 900d
+          description: |
+            Pop observed sequence behind expected read position (seq < readySeq), indicating the slot is not yet visible/ready for consumption (read-before-write or visibility lag).
+            Under low load, this value should equal the pop attempts.
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[12][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 49083653db64434e87afda4949c8dd46
+          name: 'SDSyslog - Defrag-to-Output Queue Pop Stale Retries'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/pop_stale_retries]'
+          history: 365d
+          trends: 900d
+          description: 'Pop observed sequence ahead of expected head position (seq > readySeq), indicating another consumer advanced the head; retry due to stale local view of ring state.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[13][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 0876bca8d1d548cf85abd5deae6696e4
+          name: 'SDSyslog - Defrag-to-Output Queue Pop Success'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/pop_success]'
+          history: 365d
+          trends: 900d
+          description: 'Total pop attempts that succeeded in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[8][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: d2d835e24a354a7fbaa2ec373e24e723
+          name: 'SDSyslog - Defrag-to-Output Queue Push Attempts'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/push_attempts]'
+          history: 365d
+          trends: 900d
+          description: 'Total push attempts in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[4][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 9d3881adc69542c7a37e507b1dd11d25
+          name: 'SDSyslog - Defrag-to-Output Queue Push Retries'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/push_cas_retries]'
+          history: 365d
+          trends: 900d
+          description: 'Sum of retries to push in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[6][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 9da0899f89ab4e978332e46c22154260
+          name: 'SDSyslog - Defrag-to-Output Queue Push Not Availables'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/push_seq_behind_tail]'
+          history: 365d
+          trends: 900d
+          description: 'Push observed a sequence value behind the expected tail position, indicating the slot is not yet available for writing (writer ahead)'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[10][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 09833838f65d4b999e9be65563df0a03
+          name: 'SDSyslog - Defrag-to-Output Queue Push Stale Retries'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/push_stale_retries]'
+          history: 365d
+          trends: 900d
+          description: 'Push observed sequence ahead of local position (seq > pos), indicating another writer advanced the tail; retry due to stale local view of ring state.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[11][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 6913a1353d454af889a7fc7a36893a1a
+          name: 'SDSyslog - Defrag-to-Output Queue Push Success'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/queue/push_success]'
+          history: 365d
+          trends: 900d
+          description: 'Total push attempts that succeeded in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[5][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: 7f3436c066424b418a8014ca6b52543d
+          name: 'SDSyslog - Output Received Messages'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[out/received_messages]'
+          history: 365d
+          trends: 900d
+          description: 'Total messages received'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[0][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[output]'
+          tags:
+            - tag: namespace
+              value: Receiver/Out
+        - uuid: a7c7cc50d8084d3e8fec9ef8e064faed
+          name: 'SDSyslog - Processor Count'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/instance_count]'
+          history: 90d
+          description: 'Max number of running instances seen in the metric collection interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[4][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 915777fd1a3b4f8d9402991cf360d416
+          name: 'SDSyslog - Listener-to-Processor Queue Byte Total'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/bytes]'
+          history: 365d
+          trends: 900d
+          units: b
+          description: 'Sum of all the byte sizes seen during the metric interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[7][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: d3bf453763d34484af8d466157b32a8e
+          name: 'SDSyslog - Listener-to-Processor Queue Capacity'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/capacity]'
+          history: 365d
+          trends: 900d
+          description: 'Current active queue max capacity (total allocated entries) at time of metric collection'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[5][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 66a279a90e0d4988a82e1ee485393fe4
+          name: 'SDSyslog - Listener-to-Processor Queue Depth'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/depth]'
+          history: 365d
+          trends: 900d
+          description: 'Average number of items in the queue in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[6][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: fbac91b143da4d42b6846781786b803b
+          name: 'SDSyslog - Listener-to-Processor Queue Pop Attempts'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/pop_attempts]'
+          history: 365d
+          trends: 900d
+          description: 'Total pop attempts in the interval. Includes retries after waiting for work (blocking pop).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[11][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: a92042e4347d40ebbd8e1c479711dc85
+          name: 'SDSyslog - Listener-to-Processor Queue Pop Retries'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/pop_cas_retries]'
+          history: 365d
+          trends: 900d
+          description: 'Sum of retries to pop in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[13][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: a6279ae5d76a485d8aae4174ab2c4968
+          name: 'SDSyslog - Listener-to-Processor Queue Pop Not Availables'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/pop_empty_seq_behind]'
+          history: 365d
+          trends: 900d
+          description: |
+            Pop observed sequence behind expected read position (seq < readySeq), indicating the slot is not yet visible/ready for consumption (read-before-write or visibility lag).
+            Under low load, this value should equal the pop attempts.
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[16][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 52b4bb4cd75942968e86aefa4b203723
+          name: 'SDSyslog - Listener-to-Processor Queue Pop Stale Retries'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/pop_stale_retries]'
+          history: 365d
+          trends: 900d
+          description: 'Pop observed sequence ahead of expected head position (seq > readySeq), indicating another consumer advanced the head; retry due to stale local view of ring state.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[17][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 2274c3dcebd944d39b5a9df4041b7a4c
+          name: 'SDSyslog - Listener-to-Processor Queue Pop Success'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/pop_success]'
+          history: 365d
+          trends: 900d
+          description: 'Total pop attempts that succeeded in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[12][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 34b80818709948ba8f3dcf5d9a3ff92e
+          name: 'SDSyslog - Listener-to-Processor Queue Push Attempts'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/push_attempts]'
+          history: 365d
+          trends: 900d
+          description: 'Total push attempts in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[8][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 2d467decf3a64bb59b7996b18d5741e3
+          name: 'SDSyslog - Listener-to-Processor Queue Push Retries'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/push_cas_retries]'
+          history: 365d
+          trends: 900d
+          description: 'Sum of retries to push in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[10][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: cc31e3487ac142c1b64d70c3a59ecd0a
+          name: 'SDSyslog - Listener-to-Processor Queue Push Not Availables'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/push_seq_behind_tail]'
+          history: 365d
+          trends: 900d
+          description: 'Push observed a sequence value behind the expected tail position, indicating the slot is not yet available for writing (writer ahead)'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[14][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: cb240f25535848a8b3c512a9f764afc1
+          name: 'SDSyslog - Listener-to-Processor Queue Push Stale Entries'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/push_stale_retries]'
+          history: 365d
+          trends: 900d
+          description: 'Push observed sequence ahead of local position (seq > pos), indicating another writer advanced the tail; retry due to stale local view of ring state'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[15][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 4308bf79d8104a1897c8f4d48caa10aa
+          name: 'SDSyslog - Listener-to-Processor Queue Push Success'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/queue/push_success]'
+          history: 365d
+          trends: 900d
+          description: 'Total push attempts that succeeded in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[9][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor
+        - uuid: 18d823558b7e4822ab26e5c133fff8ef
+          name: 'SDSyslog - Processor Max Seen Work Time'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/worker/elapsed_time_max_ns]'
+          history: 365d
+          trends: 900d
+          units: s
+          description: 'Maximum (seen) time spent validating payloads in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[3][0].value.raw'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var ns = parseFloat(value);
+                  return ns / 1e9;
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor/Worker
+        - uuid: d9cd1310f0d041dcae60f6a1634651fa
+          name: 'SDSyslog - Processor Total Work Time'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/worker/elapsed_time_sum_ns]'
+          history: 365d
+          value_type: FLOAT
+          trends: 900d
+          units: s
+          description: 'Total time spent validating payloads in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[2][0].value.raw'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var ns = parseFloat(value);
+                  return ns / 1e9;
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor/Worker
+        - uuid: eee57f7bac5e436c8ab175125e06cdfc
+          name: 'SDSyslog - Processor Invalid Payloads'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/worker/invalid_payloads_total]'
+          history: 365d
+          trends: 900d
+          description: 'Total payloads that failed deserialization or validation in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[1][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor/Worker
+        - uuid: 1f1cdc22d13e42979ffe7c98110389e9
+          name: 'SDSyslog - Processor Valid Payloads'
+          type: DEPENDENT
+          key: 'sdsyslog.recv.metrics.raw[processor/worker/valid_payloads_total]'
+          history: 365d
+          trends: 900d
+          description: 'Total payloads that passed deserialization and validation in the interval'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.body[0][0].value.raw'
+          master_item:
+            key: 'sdsyslog.recv.metrics.bulk[processor]'
+          tags:
+            - tag: namespace
+              value: Receiver/Processor/Worker
+      tags:
+        - tag: type
+          value: custom
+      dashboards:
+        - uuid: 98248ccc6bec4731ab0141c31c524926
+          name: 'SDSyslog Receiver Daemon'
+          display_period: '60'
+          pages:
+            - widgets:
+                - type: svggraph
+                  name: 'Throughput Counts'
+                  width: '34'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'SDSyslog - Listener Valid Packets'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'SDSyslog - Processor Valid Payloads'
+                    - type: STRING
+                      name: ds.2.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'SDSyslog - Defrag Assembled Messages'
+                    - type: STRING
+                      name: ds.3.color
+                      value: 524BBC
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: 'SDSyslog - Output Received Messages'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: WAUBI
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'Listener Busy Time'
+                  'y': '6'
+                  width: '17'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '3'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.raw[ingest/listener/busy_time_percent]'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '20'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '50'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                - type: svggraph
+                  name: 'Listener Busy Time'
+                  'y': '10'
+                  width: '17'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'SDSyslog - Listener Busy Time Percent'
+                    - type: STRING
+                      name: lefty_min
+                      value: '0'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: MKARU
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'Processor Busy Time'
+                  x: '17'
+                  'y': '6'
+                  width: '17'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '3'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.derived[processor/busy_time_percent]'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '20'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '50'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                - type: svggraph
+                  name: 'Processor Busy Time'
+                  x: '17'
+                  'y': '10'
+                  width: '17'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'SDSyslog - Processor Busy Time Percentage'
+                    - type: STRING
+                      name: lefty_min
+                      value: '0'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: RPVLB
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: 'Max Time Between Packets'
+                  x: '34'
+                  width: '17'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.raw[defrag/packet_deadline]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                - type: svggraph
+                  name: 'Error Rates'
+                  x: '34'
+                  'y': '2'
+                  width: '17'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: D32F2F
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'SDSyslog - Listener Invalid Packet Rate'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FDD835
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'SDSyslog - Processor Invalid Payload Rate'
+                    - type: STRING
+                      name: ds.2.color
+                      value: FF8A65
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'SDSyslog - Defrag Incomplete Message Rate'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: ASZAQ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'Defrag Busy Time'
+                  x: '34'
+                  'y': '6'
+                  width: '17'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '3'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.derived[defrag/busy_time_percent]'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '20'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '50'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                - type: svggraph
+                  name: 'Defrag Busy Time'
+                  x: '34'
+                  'y': '10'
+                  width: '17'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'SDSyslog - Defrag Busy Time Percentage'
+                    - type: STRING
+                      name: lefty_min
+                      value: '0'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: WAVHD
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'Listener-to-Processor Queue Usage %'
+                  x: '54'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'Pending Processing'
+                    - type: INTEGER
+                      name: desc_size
+                      value: '12'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.derived[processor/queue/fill_pct]'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '20'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '40'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                - type: gauge
+                  name: 'Defrag-to-Output Queue Usage %'
+                  x: '54'
+                  'y': '3'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'Pending Output'
+                    - type: INTEGER
+                      name: desc_size
+                      value: '12'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.derived[out/queue/fill_pct]'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '20'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '40'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                - type: gauge
+                  name: 'Processor Queue Push Success'
+                  x: '54'
+                  'y': '6'
+                  width: '9'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.derived[processor/queue/push_success_ratio]'
+                    - type: STRING
+                      name: max
+                      value: '1'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: scale_decimal_places
+                      value: '1'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '0.8'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '0.9'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 00FF00
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                - type: gauge
+                  name: 'Output Queue Push Success'
+                  x: '54'
+                  'y': '9'
+                  width: '9'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.derived[out/queue/push_success_ratio]'
+                    - type: STRING
+                      name: max
+                      value: '1'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: scale_decimal_places
+                      value: '1'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '0.8'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '0.9'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 00FF00
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                - type: svggraph
+                  name: 'Worker Counts'
+                  x: '54'
+                  'y': '12'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'SDSyslog - Defrag Assembler Count'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'SDSyslog - Listener Count'
+                    - type: STRING
+                      name: ds.0.items.2
+                      value: 'SDSyslog - Processor Count'
+                    - type: STRING
+                      name: reference
+                      value: XVIPT
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'Processor Queue Pop Success'
+                  x: '63'
+                  'y': '6'
+                  width: '9'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.derived[processor/queue/push_success_ratio]'
+                    - type: STRING
+                      name: max
+                      value: '1'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: scale_decimal_places
+                      value: '1'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '0.8'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '0.9'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 00FF00
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                - type: gauge
+                  name: 'Output Queue Pop Success'
+                  x: '63'
+                  'y': '9'
+                  width: '9'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SDSyslog Receiver'
+                        key: 'sdsyslog.recv.metrics.derived[out/queue/pop_success_ratio]'
+                    - type: STRING
+                      name: max
+                      value: '1'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: scale_decimal_places
+                      value: '1'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '0.8'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '0.9'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 00FF00
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'

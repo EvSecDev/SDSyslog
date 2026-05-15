@@ -2,10 +2,15 @@ package beats
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"sdsyslog/internal/global"
 	"sdsyslog/pkg/protocol"
 	"strings"
+	"syscall"
+
+	lumberjack "github.com/elastic/go-lumber/client/v2"
 )
 
 // Writes log message and associated metadata to configured beats server
@@ -51,6 +56,18 @@ func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (logsSen
 
 	logsSent, err = mod.sink.Send(events)
 	if err != nil {
+		if errors.Is(err, syscall.EPIPE) || errors.Is(err, os.ErrDeadlineExceeded) {
+			// Re-open connection
+			_ = mod.sink.Close()
+			mod.sink, err = lumberjack.SyncDial(mod.endpoint, mod.compression, mod.timeout)
+			if err != nil {
+				err = fmt.Errorf("failed re-connection to beats server after remote ended the connection: %w", err)
+				return
+			}
+
+			// Try one more time to get the message through
+			logsSent, err = mod.sink.Send(events)
+		}
 		return
 	}
 	return

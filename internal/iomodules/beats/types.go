@@ -7,4 +7,9 @@ import (
 
 type OutModule struct {
 	sink *lumberjack.SyncClient
+
+	// Config
+	endpoint    string
+	compression lumberjack.Option
+	timeout     lumberjack.Option
 }

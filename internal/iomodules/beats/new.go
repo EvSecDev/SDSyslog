@@ -13,18 +13,19 @@ func NewOutput(endpoint string) (module *OutModule, err error) {
 		return
 	}
 
-	compression := lumberjack.CompressionLevel(0)
-	timeout := lumberjack.Timeout(3 * time.Second)
+	module = &OutModule{
+		endpoint: endpoint,
+	}
 
-	ljClient, err := lumberjack.SyncDial(endpoint, compression, timeout)
+	module.compression = lumberjack.CompressionLevel(0)
+	module.timeout = lumberjack.Timeout(3 * time.Second)
+
+	module.sink, err = lumberjack.SyncDial(endpoint, module.compression, module.timeout)
 	if err != nil {
 		err = fmt.Errorf("failed connection to beats server: %w", err)
 		return
 	}
 
-	module = &OutModule{
-		sink: ljClient,
-	}
 	return
 }
 

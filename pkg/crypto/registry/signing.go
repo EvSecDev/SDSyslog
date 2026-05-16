@@ -11,7 +11,7 @@ var signatureSuites [256]*SigInfo
 
 func init() {
 	signatureSuites[0] = &SigInfo{
-		Name:               "NoSignature",
+		Name:               NoSigName,
 		MinSignatureLength: 0,
 		MaxSignatureLength: 0,
 		ValidateKey: func(key []byte) (err error) {
@@ -82,5 +82,20 @@ func GetSignatureInfo(id uint8) (info SigInfo, valid bool) {
 	}
 	info = *sig
 	valid = true
+	return
+}
+
+// Signature Name to Suite ID
+func SignatureNameToID(name string) (id uint8, valid bool) {
+	for suiteID, suiteInfo := range signatureSuites {
+		if suiteInfo == nil {
+			continue
+		}
+		if suiteInfo.Name == name {
+			id = uint8(suiteID)
+			valid = true
+			return
+		}
+	}
 	return
 }

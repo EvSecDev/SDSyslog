@@ -3,10 +3,14 @@ package integration
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sdsyslog/internal/crypto/hash"
 	"sdsyslog/internal/iomodules/generic"
@@ -17,6 +21,94 @@ import (
 	"strings"
 	"time"
 )
+
+// Takes receiver json config and sets up the daemon (including init) - only have to call daemon start afterwards
+func setupRecvDaemon(ctx context.Context, newJSONCfg receiver.JSONOptions, testTempDir string, privKeyRaw []byte, testRawWriter io.WriteCloser) (daemon *receiver.Daemon, err error) {
+	recvJSONConfFile := filepath.Join(testTempDir, fmt.Sprintf("sdsyslog%x.json", privKeyRaw[:4]))
+	newJSONCfg.PrivateKeyFile = filepath.Join(testTempDir, fmt.Sprintf("priv%x.key", privKeyRaw[:4]))
+
+	err = os.WriteFile(newJSONCfg.PrivateKeyFile, []byte(base64.StdEncoding.EncodeToString(privKeyRaw)), 0600)
+	if err != nil {
+		err = fmt.Errorf("failed to write private key file: %w", err)
+		return
+	}
+
+	rawJSONCfg, err := json.MarshalIndent(newJSONCfg, "", "  ")
+	if err != nil {
+		err = fmt.Errorf("failed to parse test recv daemon config: %w", err)
+		return
+	}
+	err = os.WriteFile(recvJSONConfFile, rawJSONCfg, 0600)
+	if err != nil {
+		err = fmt.Errorf("failed to create test recv daemon config file: %w", err)
+		return
+	}
+
+	daemon = receiver.NewDaemon(ctx, false)
+	err = daemon.LoadConfig(recvJSONConfFile)
+	if err != nil {
+		err = fmt.Errorf("failed to load test recv daemon config file: %w", err)
+		return
+	}
+
+	if testRawWriter != nil {
+		daemon.RawWriter = testRawWriter // For testing only
+	}
+
+	key, err := daemon.LoadKey()
+	if err != nil {
+		err = fmt.Errorf("failed to read receiver private key file: %w", err)
+		return
+	}
+
+	err = daemon.Init(key)
+	if err != nil {
+		err = fmt.Errorf("expected no receiver init errors, got error '%w'", err)
+		return
+	}
+	return
+}
+
+// Takes sender json config and sets up the daemon (including init) - only have to call daemon start afterwards
+func setupSendDaemon(ctx context.Context, newJSONCfg sender.JSONOptions, testTempDir string, pubKeyRaw []byte, testRawInput io.ReadCloser) (daemon *sender.Daemon, err error) {
+	sendJSONConfFile := filepath.Join(testTempDir, fmt.Sprintf("sdsyslog-sender%x.json", pubKeyRaw[:4]))
+	newJSONCfg.PublicKey = base64.StdEncoding.EncodeToString(pubKeyRaw)
+
+	rawJSONCfg, err := json.MarshalIndent(newJSONCfg, "", "  ")
+	if err != nil {
+		err = fmt.Errorf("failed to parse test send daemon config: %w", err)
+		return
+	}
+	err = os.WriteFile(sendJSONConfFile, rawJSONCfg, 0600)
+	if err != nil {
+		err = fmt.Errorf("failed to create test send daemon config file: %w", err)
+		return
+	}
+
+	daemon = sender.NewDaemon(ctx, false)
+	err = daemon.LoadConfig(sendJSONConfFile)
+	if err != nil {
+		err = fmt.Errorf("failed to load test send daemon config file: %w", err)
+		return
+	}
+
+	if testRawInput != nil {
+		daemon.RawInput = testRawInput // For testing only
+	}
+
+	key, err := daemon.LoadPubKey()
+	if err != nil {
+		err = fmt.Errorf("failed to read sender public key: %w", err)
+		return
+	}
+
+	err = daemon.Init(key)
+	if err != nil {
+		err = fmt.Errorf("expected no sender init errors, got error '%w'", err)
+		return
+	}
+	return
+}
 
 // Chose non-loopback interface for testing (smaller mtu than loopback)
 func findLocalTestIP(ifaces []net.Interface) (testIP string) {

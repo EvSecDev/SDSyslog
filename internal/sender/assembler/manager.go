@@ -8,6 +8,7 @@ import (
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
 	"sdsyslog/internal/queue/mpmc"
+	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
 )
 
@@ -60,6 +61,20 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 		outQueue: outbox,
 		ctx:      ctx,
 	}
+
+	var validName bool
+	new.Config.cryptoSuiteID, validName = registry.SuiteNameToID(config.CryptoSuiteName)
+	if !validName {
+		err = fmt.Errorf("invalid crypto suite name %s", config.CryptoSuiteName)
+		return
+	}
+
+	new.Config.sigSuiteID, validName = registry.SignatureNameToID(config.SigSuiteName)
+	if !validName {
+		err = fmt.Errorf("invalid signature suite name %s", config.SigSuiteName)
+		return
+	}
+
 	new.Instances.Store(&startInstances)
 	return
 }
@@ -93,8 +108,11 @@ func (config *ManagerConfig) validate() (err error) {
 	if config.MaxPayloadSize == 0 {
 		err = fmt.Errorf("empty max payload size")
 	}
-	if config.CryptoSuiteID == 0 {
-		err = fmt.Errorf("uninitialized crypto suite ID")
+	if config.CryptoSuiteName == "" {
+		err = fmt.Errorf("uninitialized crypto suite name")
+	}
+	if config.SigSuiteName == "" {
+		err = fmt.Errorf("uninitialized signature suite name")
 	}
 
 	return

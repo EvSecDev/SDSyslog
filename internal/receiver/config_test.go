@@ -144,7 +144,7 @@ func TestReloadSigningKeys(t *testing.T) {
 			wrappers.NewPinnedSenders(mockDaemon.cfg.PinnedSigningKeys)
 
 			testDir := t.TempDir()
-			mockDaemon.cfg.path = filepath.Join(testDir, "main.json")
+			mockDaemon.configPath = filepath.Join(testDir, "main.json")
 
 			var pinnedKeyPath string
 			if tt.pinnedKeyFile != "" {
@@ -155,15 +155,14 @@ func TestReloadSigningKeys(t *testing.T) {
 				}
 			}
 
-			var mockDaemonConfig JSONConfig
+			var mockDaemonConfig JSONOptions
 			mockDaemonConfig.PinnedSigningKeysPath = pinnedKeyPath
-			mockDaemon.cfg.PinnedSigningKeysFile = pinnedKeyPath
 
 			cfg, err := json.Marshal(&mockDaemonConfig)
 			if err != nil {
 				t.Fatalf("failed to marshal mock daemon JSON: %v", err)
 			}
-			err = os.WriteFile(mockDaemon.cfg.path, cfg, 0644)
+			err = os.WriteFile(mockDaemon.configPath, cfg, 0644)
 			if err != nil {
 				t.Fatalf("failed to write mock daemon JSON: %v", err)
 			}

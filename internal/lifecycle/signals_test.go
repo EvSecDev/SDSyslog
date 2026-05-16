@@ -180,7 +180,7 @@ func TestSignalHandling(t *testing.T) {
 				shutdownFunc: func() {
 					shutdownCalled = true
 				},
-				initFunc: func(context.Context, []byte) error {
+				initFunc: func([]byte) error {
 					restartCalled = true
 					return tt.fail.restartErr
 				},

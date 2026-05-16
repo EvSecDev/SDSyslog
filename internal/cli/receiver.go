@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"os"
@@ -69,32 +68,19 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 		return
 	}
 
-	jsonCfg, err := receiver.LoadConfig(configPath)
+	recvDaemon := receiver.NewDaemon(ctx, testConfig)
+	err = recvDaemon.LoadConfig(configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	key, err := recvDaemon.LoadKey()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	privateKey, err := os.ReadFile(jsonCfg.PrivateKeyFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading private key file: %v\n", err)
-		os.Exit(1)
-	}
-
-	key, err := base64.StdEncoding.DecodeString(string(privateKey))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error decoding private key: %v\n", err)
-		os.Exit(1)
-	}
-
-	daemonConfig, err := jsonCfg.NewDaemonConf(configPath, testConfig)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
-	recvDaemon := receiver.NewDaemon(daemonConfig)
-	err = recvDaemon.Init(ctx, key)
+	err = recvDaemon.Init(key)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing receiving daemon: %v\n", err)
 		os.Exit(1)

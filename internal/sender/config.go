@@ -22,14 +22,15 @@ import (
 )
 
 // Loads JSON config from file
-func LoadConfig(path string) (cfg JSONConfig, err error) {
+func (daemon *Daemon) LoadConfig(path string) (err error) {
 	configFile, err := os.ReadFile(path)
 	if err != nil {
 		err = fmt.Errorf("failed to read config file: %w", err)
 		return
 	}
+	daemon.configPath = path
 
-	err = json.Unmarshal(configFile, &cfg)
+	err = json.Unmarshal(configFile, &daemon.opts)
 	if err != nil {
 		err = fmt.Errorf("invalid config syntax in '%s': %w", path, err)
 		return
@@ -38,68 +39,11 @@ func LoadConfig(path string) (cfg JSONConfig, err error) {
 	return
 }
 
-// Parses JSON config into daemon config
-func (cfg JSONConfig) NewDaemonConf(originalConfigPath string, dryRun bool) (config Config, err error) {
-	config.dryRunConfig = dryRun
-	config.path = originalConfigPath
-
-	// Signatures
-	if cfg.SigningKeyFile != "" {
-		config.signingPrivateKey, err = loadSigningKey(cfg.SigningKeyFile)
-		if err != nil {
-			err = fmt.Errorf("failed to decode signing key: %w", err)
-			return
-		}
-	}
-
-	// Network settings
-	config.DestinationIP = cfg.Network.Address
-	config.DestinationPort = cfg.Network.Port
-	config.OverrideMaxPayloadSize = cfg.Network.MaxPayloadSize
-
-	// Input settings
-	err = cfg.loadInputs() // Pull from file(s)
+// Retrieves private key from disk from configured path
+func (daemon *Daemon) LoadPubKey() (key []byte, err error) {
+	key, err = base64.StdEncoding.DecodeString(daemon.opts.PublicKey)
 	if err != nil {
-		return
-	}
-	config.Filters = cfg.Inputs.DropFilters
-	config.StateFilePath = cfg.StateFile
-	config.FileSourcePaths = cfg.Inputs.FilePaths
-	config.JournalSourceEnabled = cfg.Inputs.JournalEnabled
-	config.SendInternalLogs = cfg.SendInternalLogs
-
-	// Scaling settings
-	config.AutoscaleCheckInterval, err = time.ParseDuration(cfg.AutoScaling.PollInterval)
-	if err != nil {
-		err = fmt.Errorf("failed to parse autoscale check interval time: %w", err)
-		return
-	}
-	config.AutoscaleEnabled = cfg.AutoScaling.Enabled
-	config.MinAssemblers = cfg.AutoScaling.MinAssemblers
-	config.MaxAssemblers = cfg.AutoScaling.MaxAssemblers
-	config.MinOutputs = cfg.AutoScaling.MinOutputs
-	config.MaxOutputs = cfg.AutoScaling.MaxOutputs
-	config.MinAssemblerQueueSize = cfg.AutoScaling.MinAssemblerQueueSize
-	config.MaxAssemblerQueueSize = cfg.AutoScaling.MaxAssemblerQueueSize
-	config.MinOutputQueueSize = cfg.AutoScaling.MinOutputQueueSize
-	config.MaxOutputQueueSize = cfg.AutoScaling.MaxOutputQueueSize
-
-	// Metric settings
-	config.MetricQueryServerEnabled = cfg.Metrics.EnableQueryServer
-	config.MetricQueryServerPort = cfg.Metrics.QueryServerPort
-	config.MetricMaxAge, err = time.ParseDuration(cfg.Metrics.MaxAge)
-	if err != nil {
-		err = fmt.Errorf("failed to parse metric max age time: %w", err)
-		return
-	}
-	config.MetricCollectionInterval, err = time.ParseDuration(cfg.Metrics.Interval)
-	if err != nil {
-		err = fmt.Errorf("failed to parse collection interval time: %w", err)
-		return
-	}
-	err = parsing.VerifyWholeDuration(config.MetricCollectionInterval)
-	if err != nil {
-		err = fmt.Errorf("metric collection interval is not supported: %w", err)
+		err = fmt.Errorf("failed decoding public key: %w", err)
 		return
 	}
 	return
@@ -107,13 +51,13 @@ func (cfg JSONConfig) NewDaemonConf(originalConfigPath string, dryRun bool) (con
 
 // Loads all input configurations.
 // Checks for input include directive and loads associated files
-func (cfg *JSONConfig) loadInputs() (err error) {
-	if cfg.Inputs.Include == "" {
+func (opts *JSONOptions) loadInputs() (err error) {
+	if opts.Inputs.Include == "" {
 		// No-op
 		return
 	}
 
-	info, err := os.Stat(cfg.Inputs.Include)
+	info, err := os.Stat(opts.Inputs.Include)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// No-op
@@ -125,24 +69,24 @@ func (cfg *JSONConfig) loadInputs() (err error) {
 
 	switch mode := info.Mode(); {
 	case mode.IsRegular():
-		name := filepath.Base(cfg.Inputs.Include)
+		name := filepath.Base(opts.Inputs.Include)
 		if strings.HasPrefix(name, ".") {
-			err = fmt.Errorf("input include file %q is hidden and will not be loaded", cfg.Inputs.Include)
+			err = fmt.Errorf("input include file %q is hidden and will not be loaded", opts.Inputs.Include)
 			return
 		}
 		if filepath.Ext(name) != ".json" {
-			err = fmt.Errorf("input include file %q does not have .json extension and will not be loaded", cfg.Inputs.Include)
+			err = fmt.Errorf("input include file %q does not have .json extension and will not be loaded", opts.Inputs.Include)
 			return
 		}
 
-		err = cfg.Inputs.mergeConfigInputs(cfg.Inputs.Include)
+		err = opts.Inputs.mergeConfigInputs(opts.Inputs.Include)
 		if err != nil {
-			err = fmt.Errorf("failed loading input include %q: %w", cfg.Inputs.Include, err)
+			err = fmt.Errorf("failed loading input include %q: %w", opts.Inputs.Include, err)
 			return
 		}
 	case mode.IsDir():
 		var entries []os.DirEntry
-		entries, err = os.ReadDir(cfg.Inputs.Include)
+		entries, err = os.ReadDir(opts.Inputs.Include)
 		if err != nil {
 			err = fmt.Errorf("failed to read directory: %w", err)
 			return
@@ -169,8 +113,8 @@ func (cfg *JSONConfig) loadInputs() (err error) {
 				continue
 			}
 
-			fullPath := filepath.Join(cfg.Inputs.Include, name)
-			err = cfg.Inputs.mergeConfigInputs(fullPath)
+			fullPath := filepath.Join(opts.Inputs.Include, name)
+			err = opts.Inputs.mergeConfigInputs(fullPath)
 			if err != nil {
 				err = fmt.Errorf("failed loading input include %q: %w", fullPath, err)
 				return
@@ -184,7 +128,7 @@ func (cfg *JSONConfig) loadInputs() (err error) {
 }
 
 // Takes file, loads, and then merges with existing config
-func (cfg *JSONInputs) mergeConfigInputs(fullPath string) (err error) {
+func (opts *JSONInputs) mergeConfigInputs(fullPath string) (err error) {
 	data, err := os.ReadFile(fullPath)
 	if err != nil {
 		return
@@ -206,33 +150,33 @@ func (cfg *JSONInputs) mergeConfigInputs(fullPath string) (err error) {
 	// Override base config with include config
 
 	if newCfg.JournalEnabled {
-		cfg.JournalEnabled = newCfg.JournalEnabled
+		opts.JournalEnabled = newCfg.JournalEnabled
 	}
 
 	for _, newPath := range newCfg.FilePaths {
-		if slices.Contains(cfg.FilePaths, newPath) {
+		if slices.Contains(opts.FilePaths, newPath) {
 			continue
 		}
-		cfg.FilePaths = append(cfg.FilePaths, newPath)
+		opts.FilePaths = append(opts.FilePaths, newPath)
 	}
 
-	if cfg.DropFilters == nil && newCfg.DropFilters == nil {
+	if opts.DropFilters == nil && newCfg.DropFilters == nil {
 		return
 	}
-	if cfg.DropFilters == nil && len(newCfg.DropFilters) > 0 {
-		cfg.DropFilters = make(map[string][]protocol.MessageFilter)
+	if opts.DropFilters == nil && len(newCfg.DropFilters) > 0 {
+		opts.DropFilters = make(map[string][]protocol.MessageFilter)
 	}
 	for key, newFilters := range newCfg.DropFilters {
-		_, ok := cfg.DropFilters[key]
+		_, ok := opts.DropFilters[key]
 		if !ok {
 			// Key not present, just append to map
-			cfg.DropFilters[key] = append([]protocol.MessageFilter{}, newFilters...)
+			opts.DropFilters[key] = append([]protocol.MessageFilter{}, newFilters...)
 			continue
 		}
 
-		seen := make(map[string]struct{}, len(cfg.DropFilters[key]))
+		seen := make(map[string]struct{}, len(opts.DropFilters[key]))
 
-		for _, existingFilters := range cfg.DropFilters[key] {
+		for _, existingFilters := range opts.DropFilters[key] {
 			var existingFilterText []byte
 			existingFilterText, err = json.Marshal(existingFilters)
 			if err != nil {
@@ -256,7 +200,7 @@ func (cfg *JSONInputs) mergeConfigInputs(fullPath string) (err error) {
 				continue
 			}
 
-			cfg.DropFilters[key] = append(cfg.DropFilters[key], newFilter)
+			opts.DropFilters[key] = append(opts.DropFilters[key], newFilter)
 			seen[string(newFilterText)] = struct{}{}
 		}
 	}
@@ -265,79 +209,93 @@ func (cfg *JSONInputs) mergeConfigInputs(fullPath string) (err error) {
 }
 
 // Sets defaults for any missing/invalid values
-func (cfg *Config) setDefaults() {
+func (opts *JSONOptions) setDefaults() {
 	// Crypto
-	cfg.transportCryptoSuiteID = 1
-	if len(cfg.signingPrivateKey) > 0 {
-		cfg.signatureSuiteID = 1 // Only supported algorithm
-	} else {
-		cfg.signatureSuiteID = 0 // No key to use
+	if opts.Crypto.TransportSuite == "" {
+		// Default to only algo to use
+		suiteInfo, valid := registry.GetSuiteInfo(1)
+		if valid {
+			opts.Crypto.TransportSuite = suiteInfo.Name
+		}
+	}
+	if opts.Crypto.SignatureSuite == "" && opts.SigningKeyFile == "" {
+		// Default to no signatures with no signer
+		sigInfo, valid := registry.GetSignatureInfo(0)
+		if valid {
+			opts.Crypto.SignatureSuite = sigInfo.Name
+		}
+	} else if opts.Crypto.SignatureSuite == "" && opts.SigningKeyFile != "" {
+		// Default to base signature with signing key
+		sigInfo, valid := registry.GetSignatureInfo(1)
+		if valid {
+			opts.Crypto.SignatureSuite = sigInfo.Name
+		}
 	}
 
 	// Scaling
-	if cfg.AutoscaleCheckInterval < 1*time.Second {
-		cfg.AutoscaleCheckInterval = 100 * time.Millisecond // Enforced minimum
+	if time.Duration(opts.AutoScaling.PollInterval) < 1*time.Second {
+		opts.AutoScaling.PollInterval = parsing.Duration(100 * time.Millisecond) // Enforced minimum
 	}
-	if cfg.AutoscaleCheckInterval > 1*time.Minute {
+	if time.Duration(opts.AutoScaling.PollInterval) > 1*time.Minute {
 		// Longer times are not useful
-		cfg.AutoscaleCheckInterval = 1 * time.Minute
+		opts.AutoScaling.PollInterval = parsing.Duration(1 * time.Minute)
 	}
 
 	// Maximums
 	logicalCPUCount := runtime.NumCPU()
 	maxCPU := global.MaxValue(logicalCPUCount)
 	minCPU := global.MinValue(logicalCPUCount)
-	if cfg.MaxAssemblers == 0 {
-		cfg.MaxAssemblers = maxCPU
+	if opts.AutoScaling.MaxAssemblers == 0 {
+		opts.AutoScaling.MaxAssemblers = maxCPU
 	}
-	if cfg.MaxOutputs == 0 {
-		cfg.MaxOutputs = maxCPU
+	if opts.AutoScaling.MaxOutputs == 0 {
+		opts.AutoScaling.MaxOutputs = maxCPU
 	}
-	if cfg.MaxOutputQueueSize == 0 {
-		cfg.MaxOutputQueueSize = global.DefaultMaxQueueSize
+	if opts.AutoScaling.MaxOutputQueueSize == 0 {
+		opts.AutoScaling.MaxOutputQueueSize = global.DefaultMaxQueueSize
 	}
-	if cfg.MaxAssemblerQueueSize == 0 {
-		cfg.MaxAssemblerQueueSize = global.DefaultMaxQueueSize
+	if opts.AutoScaling.MaxAssemblerQueueSize == 0 {
+		opts.AutoScaling.MaxAssemblerQueueSize = global.DefaultMaxQueueSize
 	}
 
 	// Minimums
-	if cfg.MinAssemblers == 0 {
-		cfg.MinAssemblers = 1
+	if opts.AutoScaling.MinAssemblers == 0 {
+		opts.AutoScaling.MinAssemblers = 1
 	}
-	if cfg.MinAssemblers > minCPU {
-		cfg.MinAssemblers = minCPU
+	if opts.AutoScaling.MinAssemblers > minCPU {
+		opts.AutoScaling.MinAssemblers = minCPU
 	}
-	if cfg.MinOutputs == 0 {
-		cfg.MinOutputs = 1
+	if opts.AutoScaling.MinOutputs == 0 {
+		opts.AutoScaling.MinOutputs = 1
 	}
-	if cfg.MinOutputs > minCPU {
-		cfg.MinOutputs = minCPU
+	if opts.AutoScaling.MinOutputs > minCPU {
+		opts.AutoScaling.MinOutputs = minCPU
 	}
-	if cfg.MinAssemblerQueueSize == 0 {
-		cfg.MinAssemblerQueueSize = global.DefaultMinQueueSize
+	if opts.AutoScaling.MinAssemblerQueueSize == 0 {
+		opts.AutoScaling.MinAssemblerQueueSize = global.DefaultMinQueueSize
 	}
-	if cfg.MinOutputQueueSize == 0 {
-		cfg.MinOutputQueueSize = global.DefaultMinQueueSize
+	if opts.AutoScaling.MinOutputQueueSize == 0 {
+		opts.AutoScaling.MinOutputQueueSize = global.DefaultMinQueueSize
 	}
 
-	if cfg.StateFilePath == "" {
-		cfg.StateFilePath = global.DefaultStateFile
+	if opts.State.BaseFile == "" {
+		opts.State.BaseFile = global.DefaultStateFile
 	}
 
 	// Network
-	if cfg.DestinationPort == 0 {
-		cfg.DestinationPort = global.DefaultReceiverPort
+	if opts.Network.Port == 0 {
+		opts.Network.Port = global.DefaultReceiverPort
 	}
 
 	// Metrics
-	if cfg.MetricMaxAge == 0 {
-		cfg.MetricMaxAge = 1 * time.Hour
+	if opts.Metrics.MaxAge == 0 {
+		opts.Metrics.MaxAge = parsing.Duration(1 * time.Hour)
 	}
-	if cfg.MetricQueryServerPort == 0 {
-		cfg.MetricQueryServerPort = server.ListenPortSender
+	if opts.Metrics.QueryServerPort == 0 {
+		opts.Metrics.QueryServerPort = server.ListenPortSender
 	}
-	if cfg.MetricCollectionInterval == 0 {
-		cfg.MetricCollectionInterval = time.Duration(15 * time.Second)
+	if opts.Metrics.Interval == 0 {
+		opts.Metrics.Interval = parsing.Duration(15 * time.Second)
 	}
 }
 
@@ -363,26 +321,35 @@ func loadSigningKey(keyPath string) (key []byte, err error) {
 
 // Reloads running sender daemon with new private signing key (all new outbound packets immediately start using it)
 func (daemon *Daemon) ReloadSigningKeys() (diffCount int, err error) {
-	cfg, err := LoadConfig(daemon.cfg.path)
+	oldCfg := daemon.opts
+	err = daemon.LoadConfig(daemon.configPath)
 	if err != nil {
 		err = fmt.Errorf("failed to re-read daemon configuration file: %w", err)
 		return
 	}
-	if cfg.SigningKeyFile == "" {
+	newCfg := daemon.opts
+	daemon.opts = oldCfg
+
+	if newCfg.SigningKeyFile == "" {
 		// No-op
 		return
 	}
 	// Write new key to daemon
-	daemon.cfg.signingPrivateKey, err = loadSigningKey(cfg.SigningKeyFile)
+	daemon.cfg.signingPrivateKey, err = loadSigningKey(newCfg.SigningKeyFile)
 	if err != nil {
 		return
 	}
 
 	// Update signing function
 	if len(daemon.cfg.signingPrivateKey) > 0 {
-		info, validID := registry.GetSignatureInfo(daemon.cfg.signatureSuiteID)
+		signatureSuiteID, validName := registry.SignatureNameToID(daemon.opts.Crypto.SignatureSuite)
+		if !validName {
+			err = fmt.Errorf("invalid signature suite name %s", daemon.opts.Crypto.SignatureSuite)
+			return
+		}
+		info, validID := registry.GetSignatureInfo(signatureSuiteID)
 		if !validID {
-			err = fmt.Errorf("invalid signature suite ID: %d", daemon.cfg.signatureSuiteID)
+			err = fmt.Errorf("invalid signature suite ID: %d", signatureSuiteID)
 			return
 		}
 		err = info.ValidateKey(daemon.cfg.signingPrivateKey)

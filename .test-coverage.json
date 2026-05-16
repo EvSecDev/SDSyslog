@@ -1,24 +1,24 @@
 {
   "tests": {
     "ConcurrentSenders": {
-      "lastCommitPct": 32.9,
-      "lastBuildPct": 32.9
+      "lastCommitPct": 37.8,
+      "lastBuildPct": 37.8
     },
     "Internal": {
-      "lastCommitPct": 33.8,
-      "lastBuildPct": 33.8
+      "lastCommitPct": 33.7,
+      "lastBuildPct": 33.7
     },
     "Package": {
-      "lastCommitPct": 75.6,
-      "lastBuildPct": 75.6
+      "lastCommitPct": 74.8,
+      "lastBuildPct": 74.8
     },
     "ReceivePipeline": {
-      "lastCommitPct": 34.2,
-      "lastBuildPct": 34.2
+      "lastCommitPct": 39.4,
+      "lastBuildPct": 39.4
     },
     "SendReceivePipeline": {
-      "lastCommitPct": 41.4,
-      "lastBuildPct": 41.4
+      "lastCommitPct": 37.9,
+      "lastBuildPct": 37.9
     }
   }
 }

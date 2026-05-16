@@ -10,6 +10,7 @@ import (
 	"sdsyslog/internal/crypto/hash"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
 	"sdsyslog/pkg/crypto/registry"
@@ -55,40 +56,66 @@ func TestMultipleSenders(t *testing.T) {
 	// Mock in/out buffer
 	recvOutput := NewPipeBuffer(2 * 1024 * 1024) // 2MB buffer
 
+	// Mocking real config files
+	testDir := t.TempDir()
+
 	// Daemon config (large queues - not testing queue failures here)
-	newRecvCfg := receiver.Config{
-		ListenIP:               testIP,
-		ListenPort:             global.DefaultReceiverPort,
-		AutoscaleEnabled:       true,
-		AutoscaleCheckInterval: 200 * time.Millisecond,
-		MinListeners:           2,
-		MinProcessors:          2,
-		MinDefrags:             2,
-		MinOutputQueueSize:     16 * global.DefaultMinQueueSize,
-		MaxOutputQueueSize:     16 * global.DefaultMaxQueueSize,
-		ShardBufferSize:        8192,
-		MinProcessorQueueSize:  16 * global.DefaultMinQueueSize,
-		MaxProcessorQueueSize:  16 * global.DefaultMaxQueueSize,
-		RawWriter:              recvOutput,
-		MetricCollectionInterval: time.Duration(
-			100 * time.Millisecond, // Setting super fast just for test data collection
-		),
-		MetricMaxAge: 5 * time.Minute,
+	newRecvJSONCfg := receiver.JSONOptions{
+		Network: struct {
+			Address string "json:\"address\""
+			Port    int    "json:\"port\""
+		}{
+			Address: testIP,
+			Port:    global.DefaultReceiverPort,
+		},
+		Metrics: struct {
+			Interval          parsing.Duration "json:\"collectionInterval\""
+			MaxAge            parsing.Duration "json:\"maximumRetention,omitempty\""
+			EnableQueryServer bool             "json:\"enableHTTPQueryServer\""
+			QueryServerPort   int              "json:\"HTTPQueryServerPort\""
+		}{
+			Interval:          parsing.Duration(100 * time.Millisecond), // Setting super fast just for test data collection
+			MaxAge:            parsing.Duration(5 * time.Minute),
+			EnableQueryServer: false,
+		},
+		AutoScaling: struct {
+			Enabled          bool             "json:\"enabled\""
+			PollInterval     parsing.Duration "json:\"pollInterval\""
+			MinListeners     global.MinValue  "json:\"minListeners,omitempty\""
+			MaxListeners     global.MaxValue  "json:\"maxListeners,omitempty\""
+			MinProcessors    global.MinValue  "json:\"minProcessors,omitempty\""
+			MaxProcessors    global.MaxValue  "json:\"maxProcessors,omitempty\""
+			MinProcQueueSize global.MinValue  "json:\"minProcQueueSize,omitempty\""
+			MaxProcQueueSize global.MaxValue  "json:\"maxProcQueueSize,omitempty\""
+			MinDefrags       global.MinValue  "json:\"minAssemblers,omitempty\""
+			MaxDefrags       global.MaxValue  "json:\"maxAssemblers,omitempty\""
+			MinOutQueueSize  global.MinValue  "json:\"minOutQueueSize,omitempty\""
+			MaxOutQueueSize  global.MaxValue  "json:\"maxOutQueueSize,omitempty\""
+		}{
+			Enabled:          true,
+			PollInterval:     parsing.Duration(2 * global.DefaultMinPacketDeadline),
+			MinListeners:     2,
+			MinProcessors:    2,
+			MinDefrags:       2,
+			MinOutQueueSize:  16 * global.DefaultMinQueueSize,
+			MaxOutQueueSize:  16 * global.DefaultMaxQueueSize,
+			MinProcQueueSize: 16 * global.DefaultMinQueueSize,
+			MaxProcQueueSize: 16 * global.DefaultMaxQueueSize,
+		},
+	}
+	daemon, err := setupRecvDaemon(globalCtx, newRecvJSONCfg, testDir, priv, recvOutput)
+	if err != nil {
+		t.Fatalf("%v", err)
 	}
 
 	// Launch receiver in background
-	daemon := receiver.NewDaemon(newRecvCfg)
-	err = daemon.Init(globalCtx, priv)
-	if err != nil {
-		t.Fatalf("expected no receiver init errors, got error '%v'", err)
-	}
 	err = daemon.Start()
 	if err != nil {
 		t.Fatalf("expected no receiver startup errors, got error '%v'", err)
 	}
 
 	// Wait for startup
-	time.Sleep(2 * newRecvCfg.MetricCollectionInterval)
+	time.Sleep(2 * time.Duration(newRecvJSONCfg.Metrics.Interval))
 
 	// Check for any errors in the log buffer
 	errorList, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
@@ -147,25 +174,46 @@ func TestMultipleSenders(t *testing.T) {
 				sendInputs = append(sendInputs, sendInput)
 
 				// Startup sending daemons
-				newSendCfg := sender.Config{
-					DestinationIP:         testIP,
-					DestinationPort:       global.DefaultReceiverPort,
-					AutoscaleEnabled:      true,
-					RawInput:              sendInput,
-					MinOutputQueueSize:    global.DefaultMinQueueSize,
-					MaxOutputQueueSize:    global.DefaultMaxQueueSize,
-					MinAssemblerQueueSize: global.DefaultMinQueueSize,
-					MaxAssemblerQueueSize: global.DefaultMaxQueueSize,
-					MetricCollectionInterval: time.Duration(
-						100 * time.Millisecond, // Setting super fast just for test data collection
-					),
-					MetricMaxAge: 5 * time.Minute,
+				newSendJSONCfg := sender.JSONOptions{
+					Network: struct {
+						SourceAddress          string "json:\"sourceAddress,omitempty\""
+						SourcePort             int    "json:\"sourcePort,omitempty\""
+						Address                string "json:\"address\""
+						Port                   int    "json:\"port\""
+						OverrideMaxPayloadSize int    "json:\"maxPayloadSize,omitempty\""
+					}{
+						Address: testIP,
+					},
+					Metrics: struct {
+						Interval          parsing.Duration "json:\"collectionInterval\""
+						MaxAge            parsing.Duration "json:\"maximumRetention,omitempty\""
+						EnableQueryServer bool             "json:\"enableHTTPQueryServer\""
+						QueryServerPort   int              "json:\"HTTPQueryServerPort\""
+					}{
+						Interval: parsing.Duration(100 * time.Millisecond),
+						MaxAge:   parsing.Duration(5 * time.Minute),
+					},
+					AutoScaling: struct {
+						Enabled               bool             "json:\"enabled\""
+						PollInterval          parsing.Duration "json:\"pollInterval\""
+						MinOutputs            global.MinValue  "json:\"minOutputs,omitempty\""
+						MaxOutputs            global.MaxValue  "json:\"maxOutputs,omitempty\""
+						MinAssemblers         global.MinValue  "json:\"minAssemblers,omitempty\""
+						MaxAssemblers         global.MaxValue  "json:\"maxAssemblers,omitempty\""
+						MinOutputQueueSize    global.MinValue  "json:\"minOutputQueueSize,omitempty\""
+						MaxOutputQueueSize    global.MaxValue  "json:\"maxOutputQueueSize,omitempty\""
+						MinAssemblerQueueSize global.MinValue  "json:\"minAssemblerQueueSize,omitempty\""
+						MaxAssemblerQueueSize global.MaxValue  "json:\"maxAssemblerQueueSize,omitempty\""
+					}{
+						Enabled:      true,
+						PollInterval: parsing.Duration(200 * time.Millisecond),
+					},
 				}
-				senderDaemon := sender.NewDaemon(newSendCfg)
-				err = senderDaemon.Init(sendCtx, pub)
+				senderDaemon, err := setupSendDaemon(sendCtx, newSendJSONCfg, testDir, pub, sendInput)
 				if err != nil {
-					t.Fatalf("expected no sender init errors, got error '%v'", err)
+					t.Fatalf("%v", err)
 				}
+
 				err = senderDaemon.Start()
 				if err != nil {
 					t.Fatalf("expected no sender startup errors, got error '%v'", err)
@@ -173,7 +221,7 @@ func TestMultipleSenders(t *testing.T) {
 				sendDaemons = append(sendDaemons, senderDaemon)
 
 				// Wait for startup
-				time.Sleep(2 * newSendCfg.MetricCollectionInterval)
+				time.Sleep(2 * time.Duration(newSendJSONCfg.Metrics.Interval))
 
 				// Check for any errors in the log buffer
 				errorList, errorsFound = filterLogBuffer(sendCtx, "", "", logctx.ErrorLog)

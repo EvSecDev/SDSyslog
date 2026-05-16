@@ -10,7 +10,7 @@ import (
 )
 
 type DaemonLike interface {
-	Init(context.Context, []byte) (err error)
+	Init([]byte) (err error)
 	Start() (err error)
 	Shutdown()
 	StartFIPR() (err error)
@@ -109,7 +109,7 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 				// Start daemon back up
 				logctx.LogStdInfo(ctx,
 					"Restarting daemon after self update failure\n")
-				lerr = daemonManager.Init(ctx, []byte{}) // No private key since it was already initialized
+				lerr = daemonManager.Init([]byte{}) // No private key since it was already initialized
 				if lerr != nil {
 					logctx.LogEvent(ctx, logctx.VerbosityStandard, logctx.FatalLog,
 						"Failed to init daemon after update failure: %w (original error: %w)\n", lerr, err)

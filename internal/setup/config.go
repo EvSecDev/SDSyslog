@@ -12,12 +12,14 @@ import (
 	"sdsyslog/internal/iomodules/beats"
 	"sdsyslog/internal/iomodules/journald"
 	"sdsyslog/internal/metrics/server"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
 	"sdsyslog/internal/sender/ingest"
 	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
 	"syscall"
+	"time"
 )
 
 type InstallConfigStep struct {
@@ -229,9 +231,9 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 		_ = newConfFile.Close()
 	}()
 
-	var newCfg sender.JSONConfig
+	var newCfg sender.JSONOptions
 	newCfg.AutoScaling.Enabled = true
-	newCfg.AutoScaling.PollInterval = "5s"
+	newCfg.AutoScaling.PollInterval = parsing.Duration(5 * time.Second)
 	newCfg.AutoScaling.MinOutputs = 2
 	newCfg.AutoScaling.MinAssemblers = 2
 	newCfg.AutoScaling.MaxOutputs = 16
@@ -241,10 +243,12 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 	newCfg.AutoScaling.MinOutputQueueSize = global.DefaultMinQueueSize
 	newCfg.AutoScaling.MaxOutputQueueSize = global.DefaultMaxQueueSize
 
-	newCfg.StateFile = global.DefaultStateFile
+	newCfg.State.BaseFile = global.DefaultStateFile
 
+	newCfg.Inputs.Include = global.DefaultConfigDir + "/input-sender-extras.json"
 	newCfg.Inputs.FilePaths = []string{"/var/log/nginx/kern.log"}
 	newCfg.Inputs.JournalEnabled = true
+	newCfg.Inputs.SendInternalLogs = true
 	newCfg.Inputs.DropFilters = map[string][]protocol.MessageFilter{
 		ingest.FileSource: {
 			protocol.MessageFilter{
@@ -275,18 +279,50 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 					},
 				},
 			},
+			protocol.MessageFilter{
+				FieldsKey: &filtering.Filter{
+					Exact: iomodules.CFseverity,
+				},
+				FieldsValue: &filtering.Filter{
+					Contains: iomodules.DefaultSeverity,
+				},
+				UseAnd: true,
+			},
+			protocol.MessageFilter{
+				FieldsKey: &filtering.Filter{
+					Exact: iomodules.CFseverity,
+				},
+				FieldsValue: &filtering.Filter{
+					Contains: "debug",
+				},
+				UseAnd: true,
+			},
+			protocol.MessageFilter{
+				FieldsKey: &filtering.Filter{
+					Exact: iomodules.CFseverity,
+				},
+				FieldsValue: &filtering.Filter{
+					Contains: "notice",
+				},
+				UseAnd: true,
+			},
 		},
 	}
 
 	newCfg.PublicKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
 
-	newCfg.Metrics.MaxAge = "72h"
-	newCfg.Metrics.Interval = "5s"
+	newCfg.Crypto.SignatureSuite = registry.NoSigName
+	newCfg.Crypto.TransportSuite = registry.DefaultCryptoName
+
+	newCfg.Metrics.MaxAge = parsing.Duration(72 * time.Hour)
+	newCfg.Metrics.Interval = parsing.Duration(5 * time.Second)
 	newCfg.Metrics.QueryServerPort = server.ListenPortSender
 
+	newCfg.Network.SourceAddress = "::1"
+	newCfg.Network.SourcePort = 54321
 	newCfg.Network.Address = "::1"
 	newCfg.Network.Port = global.DefaultReceiverPort
-	newCfg.Network.MaxPayloadSize = 1300
+	newCfg.Network.OverrideMaxPayloadSize = 1300
 
 	confBytes, err := json.MarshalIndent(newCfg, "", "  ")
 	if err != nil {
@@ -317,9 +353,9 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 		_ = newConfFile.Close()
 	}()
 
-	var newCfg receiver.JSONConfig
+	var newCfg receiver.JSONOptions
 	newCfg.AutoScaling.Enabled = true
-	newCfg.AutoScaling.PollInterval = "5s"
+	newCfg.AutoScaling.PollInterval = parsing.Duration(5 * time.Second)
 	newCfg.AutoScaling.MinListeners = 2
 	newCfg.AutoScaling.MinProcessors = 2
 	newCfg.AutoScaling.MinDefrags = 2
@@ -340,8 +376,17 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 
 	newCfg.PrivateKeyFile = encryptionPrivKeyPath
 
-	newCfg.Metrics.MaxAge = "72h"
-	newCfg.Metrics.Interval = "1s"
+	newCfg.Crypto.SignatureSuite = registry.NoSigName
+	newCfg.Crypto.TransportSuite = registry.DefaultCryptoName
+
+	newCfg.ReplayProtection.ProtectionWindow = parsing.Duration(receiver.DefaultReplayWindow)
+	newCfg.ReplayProtection.PastValidityWindow = parsing.Duration(receiver.DefaultPastValidityWindow)
+	newCfg.ReplayProtection.FutureValidityWindow = parsing.Duration(receiver.DefaultFutureValidityWindow)
+
+	newCfg.State.IPCSocketDirectory = receiver.DefaultSocketDir
+
+	newCfg.Metrics.MaxAge = parsing.Duration(72 * time.Hour)
+	newCfg.Metrics.Interval = parsing.Duration(1 * time.Second)
 	newCfg.Metrics.QueryServerPort = server.ListenPortReceiver
 
 	newCfg.Network.Address = "::1"

@@ -12,10 +12,22 @@ import (
 )
 
 // Overwrites JSON config signing key and writes back to config file
-func WriteNewSigningKey(configPath string, jsonCfg JSONConfig) (err error) {
-	if jsonCfg.SigningKeyFile != "" {
+func WriteNewSigningKey(configPath string) (err error) {
+	configFile, err := os.ReadFile(configPath)
+	if err != nil {
+		err = fmt.Errorf("failed to read config file: %w", err)
+		return
+	}
+	var opts JSONOptions
+	err = json.Unmarshal(configFile, &opts)
+	if err != nil {
+		err = fmt.Errorf("invalid config syntax in '%s': %w", configPath, err)
+		return
+	}
+
+	if opts.SigningKeyFile != "" {
 		// No-op when existing key is present
-		fmt.Printf("Existing signing key already defined in %q: not overwriting\n", jsonCfg.SigningKeyFile)
+		fmt.Printf("Existing signing key already defined in %q: not overwriting\n", opts.SigningKeyFile)
 		return
 	}
 
@@ -33,15 +45,15 @@ func WriteNewSigningKey(configPath string, jsonCfg JSONConfig) (err error) {
 		return
 	}
 
-	jsonCfg.SigningKeyFile = global.DefaultSendSigningKey
+	opts.SigningKeyFile = global.DefaultSendSigningKey
 
-	_, err = os.Stat(jsonCfg.SigningKeyFile)
+	_, err = os.Stat(opts.SigningKeyFile)
 	if err != nil && !os.IsNotExist(err) {
 		err = fmt.Errorf("unable to check existence of existing signing key file: %w", err)
 		return
 	}
 	if err == nil {
-		fmt.Printf("Existing signing key file already present at %q: not overwriting\n", jsonCfg.SigningKeyFile)
+		fmt.Printf("Existing signing key file already present at %q: not overwriting\n", opts.SigningKeyFile)
 		return
 	}
 
@@ -49,14 +61,14 @@ func WriteNewSigningKey(configPath string, jsonCfg JSONConfig) (err error) {
 	encodedSigningKey := base64.StdEncoding.EncodeToString(newSigningKey)
 
 	// Signing private key resides in dedicated file
-	err = os.WriteFile(jsonCfg.SigningKeyFile, []byte(encodedSigningKey), 0600)
+	err = os.WriteFile(opts.SigningKeyFile, []byte(encodedSigningKey), 0600)
 	if err != nil {
 		err = fmt.Errorf("failed to write new signing key file: %w", err)
 		return
 	}
 
 	// Update main config to point to signing key file
-	newConfig, err := json.MarshalIndent(jsonCfg, "", "  ")
+	newConfig, err := json.MarshalIndent(opts, "", "  ")
 	if err != nil {
 		err = fmt.Errorf("failed to marshal updated main config: %w", err)
 		return

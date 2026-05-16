@@ -2,20 +2,17 @@
 package receiver
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"sdsyslog/internal/atomics"
-	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/ebpf"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/iomodules/internallogger"
 	"sdsyslog/internal/lifecycle"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/metrics/server"
-	"sdsyslog/internal/network"
 	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver/assembler"
 	"sdsyslog/internal/receiver/listener"
@@ -24,78 +21,9 @@ import (
 	"sdsyslog/internal/receiver/processor"
 	"sdsyslog/internal/receiver/scaling"
 	"sdsyslog/internal/receiver/shard/fiprrecv"
-	"sdsyslog/pkg/crypto/registry"
-	"slices"
 	"strconv"
 	"time"
 )
-
-// Create new receiver daemon instance
-func NewDaemon(cfg Config) (new *Daemon) {
-	new = &Daemon{
-		cfg: cfg,
-	}
-	return
-}
-
-// Sets up daemon prior to start
-func (daemon *Daemon) Init(globalCtx context.Context, serverPriv []byte) (err error) {
-	daemon.startTime = time.Now()
-
-	// New context for the daemon
-	daemon.ctx, daemon.cancel = context.WithCancel(globalCtx)
-	daemon.ctx = context.WithValue(daemon.ctx, global.CtxModeKey, globalCtx.Value(global.CtxModeKey))
-
-	// Top level tag for daemon logs (avoid duplicates)
-	currentTags := logctx.GetTagList(daemon.ctx)
-	if !slices.Equal(currentTags, []string{logctx.NSRecv}) {
-		daemon.ctx = logctx.AppendCtxTag(daemon.ctx, logctx.NSRecv)
-	}
-
-	logctx.LogStdInfo(daemon.ctx, "Starting new daemon (%s)...\n", global.ProgVersion)
-
-	daemon.cfg.setDefaults()
-	info, validID := registry.GetSuiteInfo(daemon.cfg.transportCryptoSuiteID)
-	if !validID {
-		err = fmt.Errorf("invalid suite ID %d", daemon.cfg.transportCryptoSuiteID)
-		return
-	}
-	err = info.ValidateKey(serverPriv)
-	if err != nil {
-		return
-	}
-	serverPub, err := info.DerivePublicKey(serverPriv)
-	if err != nil {
-		return
-	}
-	err = wrappers.SetupEncryptInnerPayload(serverPub) // Specifically for shard FIPR
-	if err != nil {
-		err = fmt.Errorf("failed to setup encryption function: %w", err)
-		return
-	}
-	err = wrappers.SetupDecryptInnerPayload(serverPriv)
-	if err != nil {
-		err = fmt.Errorf("failed to setup decryption function: %w", err)
-		return
-	}
-	err = wrappers.SetupGetSharedSecret(serverPriv)
-	if err != nil {
-		err = fmt.Errorf("failed to setup shared secret function: %w", err)
-		return
-	}
-	err = wrappers.SetupVerifySignature(daemon.cfg.PinnedSigningKeys)
-	if err != nil {
-		err = fmt.Errorf("failed to setup signature verification function: %w", err)
-		return
-	}
-	daemon.sourceSocket, err = network.ParseUDPAddress(daemon.cfg.ListenIP, daemon.cfg.ListenPort)
-	if err != nil {
-		err = fmt.Errorf("invalid listen address: %w", err)
-		return
-	}
-	daemon.initSuccess = true
-	return
-}
 
 // Starts pipeline worker threads in background - gracefully shuts down if startup error is encountered
 func (daemon *Daemon) Start() (err error) {
@@ -104,7 +32,7 @@ func (daemon *Daemon) Start() (err error) {
 		return
 	}
 
-	if daemon.cfg.dryRunConfig {
+	if daemon.dryRun {
 		logctx.LogStdInfo(daemon.ctx, "Configuration test successful, exiting.\n")
 		return
 	}
@@ -118,13 +46,13 @@ func (daemon *Daemon) Start() (err error) {
 
 	// Stage 4 - Output Manager
 	outMgrConf := &output.ManagerConfig{
-		FilePath:         daemon.cfg.OutputFilePath,
-		JournaldURL:      daemon.cfg.JournaldURL,
-		BeatsAddress:     daemon.cfg.BeatsEndpoint,
-		RawWriter:        daemon.cfg.RawWriter,
-		EnableDBUSNotify: daemon.cfg.DBUSNotify,
-		MinQueueCapacity: daemon.cfg.MinOutputQueueSize,
-		MaxQueueCapacity: daemon.cfg.MaxOutputQueueSize,
+		FilePath:         daemon.opts.Outputs.FilePath,
+		JournaldURL:      daemon.opts.Outputs.JournaldURL,
+		BeatsAddress:     daemon.opts.Outputs.BeatsAddress,
+		RawWriter:        daemon.RawWriter,
+		EnableDBUSNotify: daemon.opts.Outputs.DBUSNotify,
+		MinQueueCapacity: daemon.opts.AutoScaling.MinOutQueueSize,
+		MaxQueueCapacity: daemon.opts.AutoScaling.MaxOutQueueSize,
 	}
 	daemon.Mgrs.Output, err = outMgrConf.NewManager(daemon.ctx)
 	if err != nil {
@@ -142,7 +70,7 @@ func (daemon *Daemon) Start() (err error) {
 		"1 output instance started successfully\n")
 
 	// Swap internal logger to output if requested
-	if daemon.cfg.SendInternalLogs {
+	if daemon.opts.Outputs.InternalLogs {
 		daemon.Mgrs.LogInjector, err = internallogger.NewReceiverInjector(daemon.ctx, daemon.Mgrs.Output.Inbox, 1)
 		if err != nil {
 			err = fmt.Errorf("failed creating internal logger pipeline injector: %w", err)
@@ -154,10 +82,10 @@ func (daemon *Daemon) Start() (err error) {
 
 	// Stage 3 - Shard+Assembler Manager
 	dfrgMgrConf := &assembler.ManagerConfig{
-		FIPRSocketDirectory: daemon.cfg.SocketDirectoryPath,
+		FIPRSocketDirectory: daemon.opts.State.IPCSocketDirectory,
 	}
-	dfrgMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinDefrags))
-	dfrgMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxDefrags))
+	dfrgMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinDefrags))
+	dfrgMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxDefrags))
 	daemon.Mgrs.Assembler, err = dfrgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Output.Inbox)
 	if err != nil {
 		err = fmt.Errorf("failed creating defrag manager: %w", err)
@@ -166,24 +94,24 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Stage 3 - Shard+Assembler Instances
-	for i := 0; i < int(daemon.cfg.MinDefrags); i++ {
+	for i := 0; i < int(daemon.opts.AutoScaling.MinDefrags); i++ {
 		_ = daemon.Mgrs.Assembler.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
-		"%d defrag instance(s) started successfully\n", daemon.cfg.MinDefrags)
+		"%d defrag instance(s) started successfully\n", daemon.opts.AutoScaling.MinDefrags)
 
 	// Stage 2.9 - FIPR receiver (optional - only started under temp process during updates)
 	lifecycle.TempChildActions(daemon.ctx, daemon)
 
 	// Stage 2 - Processor Manager
 	procMgrConf := &processor.ManagerConfig{
-		MinQueueCapacity: daemon.cfg.MinProcessorQueueSize,
-		MaxQueueCapacity: daemon.cfg.MaxProcessorQueueSize,
-		PastMsgCutoff:    daemon.cfg.PastValidityWindow,
-		FutureMsgCutoff:  daemon.cfg.FutureValidityWindow,
+		MinQueueCapacity: daemon.opts.AutoScaling.MinProcQueueSize,
+		MaxQueueCapacity: daemon.opts.AutoScaling.MaxProcQueueSize,
+		PastMsgCutoff:    time.Duration(daemon.opts.ReplayProtection.PastValidityWindow),
+		FutureMsgCutoff:  time.Duration(daemon.opts.ReplayProtection.FutureValidityWindow),
 	}
-	procMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinProcessors))
-	procMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxProcessors))
+	procMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinProcessors))
+	procMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxProcessors))
 	daemon.Mgrs.Proc, err = procMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Assembler.RoutingView)
 	if err != nil {
 		err = fmt.Errorf("failed creating processor manager: %w", err)
@@ -192,19 +120,19 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Stage 2 - Processor Instances
-	for i := 0; i < int(daemon.cfg.MinProcessors); i++ {
+	for i := 0; i < int(daemon.opts.AutoScaling.MinProcessors); i++ {
 		daemon.Mgrs.Proc.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
-		"%d processor instance(s) started successfully\n", daemon.cfg.MinProcessors)
+		"%d processor instance(s) started successfully\n", daemon.opts.AutoScaling.MinProcessors)
 
 	// Stage 1 - Listener Manager
 	inMgrConf := &listener.ManagerConfig{
-		ListenSocket:           daemon.sourceSocket,
-		ReplayProtectionWindow: daemon.cfg.ReplayProtectionWindow,
+		ListenSocket:           daemon.cfg.sourceSocket,
+		ReplayProtectionWindow: time.Duration(daemon.opts.ReplayProtection.ProtectionWindow),
 	}
-	inMgrConf.MaxInstanceCount.Store(uint32(daemon.cfg.MaxListeners))
-	inMgrConf.MinInstanceCount.Store(uint32(daemon.cfg.MinListeners))
+	inMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxListeners))
+	inMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinListeners))
 	daemon.Mgrs.Input, err = inMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Proc.Inbox)
 	if err != nil {
 		err = fmt.Errorf("failed creating listener manager: %w", err)
@@ -213,7 +141,7 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Stage 1 - Listener Instances
-	for i := 0; i < int(daemon.cfg.MinListeners); i++ {
+	for i := 0; i < int(daemon.opts.AutoScaling.MinListeners); i++ {
 		_, err = daemon.Mgrs.Input.AddInstance()
 		if err != nil {
 			err = fmt.Errorf("failed adding new listener instance: %w", err)
@@ -222,12 +150,12 @@ func (daemon *Daemon) Start() (err error) {
 		}
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
-		"%d listener instance(s) started successfully\n", daemon.cfg.MinProcessors)
+		"%d listener instance(s) started successfully\n", daemon.opts.AutoScaling.MinProcessors)
 
 	// Metrics Collector
 	daemon.metricsCollector = metrics.New(daemon.Mgrs,
-		daemon.cfg.MetricCollectionInterval,
-		daemon.cfg.MetricMaxAge)
+		time.Duration(daemon.opts.Metrics.Interval),
+		time.Duration(daemon.opts.Metrics.MaxAge))
 	workerCtx := daemon.ctx
 	daemon.wg.Go(func() {
 		daemon.metricsCollector.Run(workerCtx)
@@ -240,9 +168,9 @@ func (daemon *Daemon) Start() (err error) {
 		"Metric collection instance started successfully\n")
 
 	// Autoscaler
-	if daemon.cfg.AutoscaleEnabled {
+	if daemon.opts.AutoScaling.Enabled {
 		scaler := scaling.New(daemon.metricsCollector.Registry,
-			daemon.cfg.AutoscaleCheckInterval,
+			time.Duration(daemon.opts.AutoScaling.PollInterval),
 			daemon.Mgrs)
 		workerCtx := daemon.ctx
 		daemon.wg.Go(func() {
@@ -253,14 +181,14 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Metric Server
-	if daemon.cfg.MetricQueryServerEnabled {
+	if daemon.opts.Metrics.EnableQueryServer {
 		// Top level tag for metric server logs (copy so return doesn't strip ns tags)
 		serverCtx := daemon.ctx
 		serverCtx = logctx.AppendCtxTag(serverCtx, logctx.NSMetric)
 		serverCtx = logctx.AppendCtxTag(serverCtx, logctx.NSMetricSrv)
 
 		daemon.MetricServer, err = server.SetupListener(serverCtx,
-			daemon.cfg.MetricQueryServerPort,
+			daemon.opts.Metrics.QueryServerPort,
 			daemon.MetricDataSearcher,
 			daemon.MetricDiscoverer,
 			daemon.MetricAggregator)
@@ -290,7 +218,7 @@ func (daemon *Daemon) Start() (err error) {
 		return
 	}
 
-	parsedListenAddr := net.JoinHostPort(daemon.sourceSocket.IP.String(), strconv.Itoa(daemon.sourceSocket.Port))
+	parsedListenAddr := net.JoinHostPort(daemon.cfg.sourceSocket.IP.String(), strconv.Itoa(daemon.cfg.sourceSocket.Port))
 
 	startupElapsed := parsing.TrimDurationPrecision(time.Since(daemon.startTime), 2)
 	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s)\n",
@@ -303,7 +231,7 @@ func (daemon *Daemon) Start() (err error) {
 // Dedicated entry point for starting inter-process fragment routing
 // Accept fragments that ended up in other processes that are partial fragments for this process
 func (daemon *Daemon) StartFIPR() (err error) {
-	daemon.fipr, err = fiprrecv.New(daemon.ctx, daemon.cfg.SocketDirectoryPath, daemon.Mgrs.Assembler.RoutingView)
+	daemon.fipr, err = fiprrecv.New(daemon.ctx, daemon.opts.State.IPCSocketDirectory, daemon.Mgrs.Assembler.RoutingView)
 	if err != nil {
 		return
 	}
@@ -356,7 +284,7 @@ func (daemon *Daemon) Shutdown() {
 	logctx.LogStdInfo(daemon.ctx, "Daemon shutdown started (%s)...\n", global.ProgVersion)
 
 	// Stop metric server
-	if daemon.cfg.MetricQueryServerEnabled && daemon.MetricServer != nil {
+	if daemon.opts.Metrics.EnableQueryServer && daemon.MetricServer != nil {
 		err := daemon.MetricServer.Shutdown(daemon.ctx)
 		if err != nil && err != http.ErrServerClosed {
 			logctx.LogStdWarn(daemon.ctx, "metric HTTP server did not shutdown gracefully: %w\n", err)
@@ -418,7 +346,7 @@ func (daemon *Daemon) Shutdown() {
 	daemon.StopFIPR()
 
 	// Stop internal logs injector
-	if daemon.cfg.SendInternalLogs {
+	if daemon.opts.Outputs.InternalLogs {
 		logger := logctx.GetLogger(daemon.ctx)
 		logger.SetFormattedOutput(os.Stdout) // Start writing to stdout again
 		daemon.Mgrs.LogInjector.Stop()       // Stop pipeline injector and unset raw logger output

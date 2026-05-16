@@ -26,9 +26,16 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 		err = fmt.Errorf("receiver configuration file must be specified to add a pinned sender key")
 		return
 	}
-	cfg, err := LoadConfig(confPath)
+
+	configFile, err := os.ReadFile(confPath)
 	if err != nil {
-		err = fmt.Errorf("failed to load main config file: %w", err)
+		err = fmt.Errorf("failed to read config file: %w", err)
+		return
+	}
+	var opts JSONOptions
+	err = json.Unmarshal(configFile, &opts)
+	if err != nil {
+		err = fmt.Errorf("invalid config syntax in '%s': %w", confPath, err)
 		return
 	}
 
@@ -55,10 +62,10 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 	}
 
 	var pinKeyFileMissing bool
-	if cfg.PinnedSigningKeysPath == "" {
+	if opts.PinnedSigningKeysPath == "" {
 		pinKeyFileMissing = true
 	} else {
-		_, lerr := os.Stat(cfg.PinnedSigningKeysPath)
+		_, lerr := os.Stat(opts.PinnedSigningKeysPath)
 		if lerr != nil && os.IsNotExist(lerr) {
 			pinKeyFileMissing = true
 		}
@@ -68,7 +75,7 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 
 	if !pinKeyFileMissing {
 		// Read in existing map
-		pinKeyFile, lerr := os.ReadFile(cfg.PinnedSigningKeysPath)
+		pinKeyFile, lerr := os.ReadFile(opts.PinnedSigningKeysPath)
 		if lerr != nil {
 			err = fmt.Errorf("failed reading pinned key JSON file: %w", lerr)
 			return
@@ -88,7 +95,7 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 
 		confDir := filepath.Dir(confPath)
 		defaultKeyFile := filepath.Base(global.DefaultConfigPinKeys)
-		cfg.PinnedSigningKeysPath = filepath.Join(confDir, defaultKeyFile)
+		opts.PinnedSigningKeysPath = filepath.Join(confDir, defaultKeyFile)
 	}
 
 	// Write updated map back to pinned keys config
@@ -97,7 +104,7 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 		err = fmt.Errorf("failed to marshal new pinned key map: %w", err)
 		return
 	}
-	err = os.WriteFile(cfg.PinnedSigningKeysPath, newPinKeyFile, 0600)
+	err = os.WriteFile(opts.PinnedSigningKeysPath, newPinKeyFile, 0600)
 	if err != nil {
 		err = fmt.Errorf("failed to write new pinned keys: %w", err)
 		return
@@ -105,7 +112,7 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 	// When missing from main config, update main config
 	if pinKeyFileMissing {
 		var newConfFile []byte
-		newConfFile, err = json.MarshalIndent(cfg, "", "  ")
+		newConfFile, err = json.MarshalIndent(opts, "", "  ")
 		if err != nil {
 			err = fmt.Errorf("failed to marshal updated config: %w", err)
 			return
@@ -167,16 +174,24 @@ func RemovePinnedKey(confPath, removeHostname string) (err error) {
 		err = fmt.Errorf("receiver configuration file must be specified to remove a pinned sender key")
 		return
 	}
-	cfg, err := LoadConfig(confPath)
+
+	configFile, err := os.ReadFile(confPath)
 	if err != nil {
-		err = fmt.Errorf("failed loading main config: %w", err)
+		err = fmt.Errorf("failed to read config file: %w", err)
 		return
 	}
-	if cfg.PinnedSigningKeysPath == "" {
+	var opts JSONOptions
+	err = json.Unmarshal(configFile, &opts)
+	if err != nil {
+		err = fmt.Errorf("invalid config syntax in '%s': %w", confPath, err)
+		return
+	}
+
+	if opts.PinnedSigningKeysPath == "" {
 		// No-op
 		return
 	}
-	pinKeyFile, err := os.ReadFile(cfg.PinnedSigningKeysPath)
+	pinKeyFile, err := os.ReadFile(opts.PinnedSigningKeysPath)
 	if err != nil && !os.IsNotExist(err) {
 		err = fmt.Errorf("failed reading pinned key JSON file: %w", err)
 		return
@@ -211,7 +226,7 @@ func RemovePinnedKey(confPath, removeHostname string) (err error) {
 		err = fmt.Errorf("failed to marshal new pinned key map: %w", err)
 		return
 	}
-	err = os.WriteFile(cfg.PinnedSigningKeysPath, newPinKeyFile, 0600)
+	err = os.WriteFile(opts.PinnedSigningKeysPath, newPinKeyFile, 0600)
 	if err != nil {
 		err = fmt.Errorf("failed to write new pinned keys: %w", err)
 		return

@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"os"
@@ -41,14 +40,8 @@ func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args
 	// Embed mode name in context
 	ctx = context.WithValue(ctx, global.CtxModeKey, commandname)
 
-	jsonCfg, err := sender.LoadConfig(configPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
 	if writeSigningKey {
-		err := sender.WriteNewSigningKey(configPath, jsonCfg)
+		err := sender.WriteNewSigningKey(configPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
@@ -56,20 +49,20 @@ func SendMode(ctx context.Context, cliOpts *CommandSet, commandname string, args
 		return
 	}
 
-	publicKey, err := base64.StdEncoding.DecodeString(jsonCfg.PublicKey)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error decoding public key: %v\n", err)
-		os.Exit(1)
-	}
-
-	daemonConfig, err := jsonCfg.NewDaemonConf(configPath, testConfig)
+	sendDaemon := sender.NewDaemon(ctx, testConfig)
+	err = sendDaemon.LoadConfig(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	sendDaemon := sender.NewDaemon(daemonConfig)
-	err = sendDaemon.Init(ctx, publicKey)
+	publicKey, err := sendDaemon.LoadPubKey()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = sendDaemon.Init(publicKey)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing sending daemon: %v\n", err)
 		os.Exit(1)

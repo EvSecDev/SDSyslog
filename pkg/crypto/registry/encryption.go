@@ -61,7 +61,7 @@ func init() {
 		},
 	}
 	cryptoSuites[1] = &SuiteInfo{
-		Name:           "x25519-hkdf-chacha20poly1305",
+		Name:           DefaultCryptoName,
 		KeySize:        curve25519.ScalarSize, // Outer payload (ephemeral key size)
 		NonceSize:      chacha20poly1305.NonceSize,
 		CipherOverhead: chacha20poly1305.Overhead,
@@ -157,5 +157,20 @@ func GetSuiteInfo(id uint8) (info SuiteInfo, valid bool) {
 	}
 	info = *suite
 	valid = true
+	return
+}
+
+// Suite Name to Suite ID
+func SuiteNameToID(name string) (id uint8, valid bool) {
+	for suiteID, suiteInfo := range cryptoSuites {
+		if suiteInfo == nil {
+			continue
+		}
+		if suiteInfo.Name == name {
+			id = uint8(suiteID)
+			valid = true
+			return
+		}
+	}
 	return
 }

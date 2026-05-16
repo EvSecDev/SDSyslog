@@ -157,21 +157,22 @@ Use `sdsyslog configure -c example.json --send-config-template` to generate an e
 
 ## Notes
 
+- Maximum individual log message size is 4GB
 - Journal output requires the installation of `systemd-journal-remote` and uses the HTTP configuration of the socket.
   - Logs are written to their own journal file (separate from the main system journal), usually located under `/var/log/journal/remote/`.
 - Beats output adds custom fields that are similar, but not the same, as other beats clients (like filebeat).
   - Added fields can be found in the source at `internal/externalio/beats/write.go`
-  - Most of these fields will end up prefixed by `beat_` in third party log analysis software.
-    - For example, code like below will end up as the field: `beat_log_id`
+  - Most of these fields will end up prefixed by `filebeat_` in third party log analysis software.
+    - For example, code like below will end up as the field: `filebeat_log_id`
 
       ```go
       "log": map[string]interface{}{
         "id": msg.LogID,
+      }
       ```
 
-- Maximum individual log message size is 4GB
-- Due to address/port reuse across the program, during in-place upgrades or shutdowns, there is a slight chance of data loss between when packets are received by the system and when the program reads the data.
+- Due to address/port reuse across the Receiver daemon, during scaling and in-place upgrades or shutdowns, there is a slight chance of data loss between when packets are received by the system and when the program reads the data. This is *not* an issue when running the Receiver daemon on a system that supports eBPF.
   - Essentially the program has no way of safely "draining" a go routines associated kernel-level socket buffer before it shuts down (for scaling down and hot swapping).
-  - On non-Linux systems (or older non-eBPF Linux kernels), there is no guarantee that this program can make to *not* drop data during these events.
-  - For *BSD systems, during shutdown, the program will attempt to time when the socket is empty to close a listener.
-    - On listener shutdowns, there will be a warning log message when the OS buffer still has bytes left (byte value may or may not be accurate to the total amount left in the buffer).
+  - On older non-eBPF Linux kernels, there is no guarantee that this program can make to *not* drop data during these events.
+  - During shutdown, the program will attempt to time when the socket is empty to close a listener.
+    - On shutdowns, there will be a warning log message when the OS buffer still has bytes left (byte value may or may not be accurate to the total amount left in the buffer).

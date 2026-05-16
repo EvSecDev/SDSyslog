@@ -4,16 +4,13 @@ package integration
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net"
-	"os"
-	"path/filepath"
 	"runtime/debug"
 	"sdsyslog/internal/crypto/hash"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/sender"
 	"sdsyslog/pkg/crypto/registry"
@@ -61,18 +58,9 @@ func TestSendReceivePipeline(t *testing.T) {
 
 	// Mocking real config files
 	testDir := t.TempDir()
-	recvJSONConfFile := filepath.Join(testDir, "sdsyslog.json")
-	sendJSONConfFile := filepath.Join(testDir, "sdsyslog-sender.json")
-	privKeyFile := filepath.Join(testDir, "private-key")
-
-	err = os.WriteFile(privKeyFile, []byte(base64.StdEncoding.EncodeToString(priv)), 0600)
-	if err != nil {
-		t.Fatalf("failed to write private key file: %v", err)
-	}
 
 	// Daemon config
-	newRecvJSONCfg := receiver.JSONConfig{
-		PrivateKeyFile: privKeyFile,
+	newRecvJSONCfg := receiver.JSONOptions{
 		Network: struct {
 			Address string "json:\"address\""
 			Port    int    "json:\"port\""
@@ -81,80 +69,49 @@ func TestSendReceivePipeline(t *testing.T) {
 			Port:    global.DefaultReceiverPort,
 		},
 		Metrics: struct {
-			Interval          string "json:\"collectionInterval\""
-			MaxAge            string "json:\"maximumRetention,omitempty\""
-			EnableQueryServer bool   "json:\"enableHTTPQueryServer\""
-			QueryServerPort   int    "json:\"HTTPQueryServerPort\""
+			Interval          parsing.Duration "json:\"collectionInterval\""
+			MaxAge            parsing.Duration "json:\"maximumRetention,omitempty\""
+			EnableQueryServer bool             "json:\"enableHTTPQueryServer\""
+			QueryServerPort   int              "json:\"HTTPQueryServerPort\""
 		}{
-			Interval:          "100ms", // Setting super fast just for test data collection
-			MaxAge:            "5m",
+			Interval:          parsing.Duration(100 * time.Millisecond), // Setting super fast just for test data collection
+			MaxAge:            parsing.Duration(5 * time.Minute),
 			EnableQueryServer: false,
 		},
 		AutoScaling: struct {
-			Enabled          bool            "json:\"enabled\""
-			PollInterval     string          "json:\"pollInterval\""
-			MinListeners     global.MinValue "json:\"minListeners,omitempty\""
-			MaxListeners     global.MaxValue "json:\"maxListeners,omitempty\""
-			MinProcessors    global.MinValue "json:\"minProcessors,omitempty\""
-			MaxProcessors    global.MaxValue "json:\"maxProcessors,omitempty\""
-			MinProcQueueSize global.MinValue "json:\"minProcQueueSize,omitempty\""
-			MaxProcQueueSize global.MaxValue "json:\"maxProcQueueSize,omitempty\""
-			MinDefrags       global.MinValue "json:\"minAssemblers,omitempty\""
-			MaxDefrags       global.MaxValue "json:\"maxAssemblers,omitempty\""
-			MinOutQueueSize  global.MinValue "json:\"minOutQueueSize,omitempty\""
-			MaxOutQueueSize  global.MaxValue "json:\"maxOutQueueSize,omitempty\""
+			Enabled          bool             "json:\"enabled\""
+			PollInterval     parsing.Duration "json:\"pollInterval\""
+			MinListeners     global.MinValue  "json:\"minListeners,omitempty\""
+			MaxListeners     global.MaxValue  "json:\"maxListeners,omitempty\""
+			MinProcessors    global.MinValue  "json:\"minProcessors,omitempty\""
+			MaxProcessors    global.MaxValue  "json:\"maxProcessors,omitempty\""
+			MinProcQueueSize global.MinValue  "json:\"minProcQueueSize,omitempty\""
+			MaxProcQueueSize global.MaxValue  "json:\"maxProcQueueSize,omitempty\""
+			MinDefrags       global.MinValue  "json:\"minAssemblers,omitempty\""
+			MaxDefrags       global.MaxValue  "json:\"maxAssemblers,omitempty\""
+			MinOutQueueSize  global.MinValue  "json:\"minOutQueueSize,omitempty\""
+			MaxOutQueueSize  global.MaxValue  "json:\"maxOutQueueSize,omitempty\""
 		}{
 			Enabled:       true,
-			PollInterval:  "200ms",
+			PollInterval:  parsing.Duration(200 * time.Millisecond),
 			MinListeners:  1,
 			MinProcessors: 1,
 			MinDefrags:    1,
 		},
 	}
-	rawJSONCfg, err := json.MarshalIndent(newRecvJSONCfg, "", "  ")
+	daemon, err := setupRecvDaemon(globalCtx, newRecvJSONCfg, testDir, priv, recvOutput)
 	if err != nil {
-		t.Fatalf("failed to parse test recv daemon config: %v", err)
-	}
-	err = os.WriteFile(recvJSONConfFile, rawJSONCfg, 0600)
-	if err != nil {
-		t.Fatalf("failed to create test recv daemon config file: %v", err)
-	}
-
-	recvJSONCfg, err := receiver.LoadConfig(recvJSONConfFile)
-	if err != nil {
-		t.Fatalf("failed to load test recv daemon config file: %v", err)
-	}
-
-	newRecvCfg, err := recvJSONCfg.NewDaemonConf(recvJSONConfFile, false)
-	if err != nil {
-		t.Fatalf("failed to parse loaded test recv daemon config file: %v", err)
-	}
-
-	newRecvCfg.RawWriter = recvOutput // For testing only
-
-	privateKey, err := os.ReadFile(recvJSONCfg.PrivateKeyFile)
-	if err != nil {
-		t.Fatalf("failed to read receiver private key file: %v", err)
-	}
-
-	key, err := base64.StdEncoding.DecodeString(string(privateKey))
-	if err != nil {
-		t.Fatalf("failed to decode receiver private key: %v", err)
+		t.Fatalf("%v", err)
 	}
 
 	// Launch receiver in background
-	daemon := receiver.NewDaemon(newRecvCfg)
-	err = daemon.Init(globalCtx, key)
-	if err != nil {
-		t.Fatalf("expected no receiver init errors, got error '%v'", err)
-	}
 	err = daemon.Start()
 	if err != nil {
 		t.Fatalf("expected no receiver startup errors, got error '%v'", err)
 	}
 
 	// Wait for startup
-	time.Sleep(2 * newRecvCfg.MetricCollectionInterval)
+	time.Sleep(2 * time.Duration(newRecvJSONCfg.Metrics.Interval))
 
 	// Check for any errors in the log buffer
 	errorList, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
@@ -163,83 +120,57 @@ func TestSendReceivePipeline(t *testing.T) {
 	}
 
 	// Startup sending daemon
-	newSendJSONCfg := sender.JSONConfig{
-		PublicKey: base64.StdEncoding.EncodeToString(pub),
+	newSendJSONCfg := sender.JSONOptions{
 		Network: struct {
-			SourceAddress  string "json:\"sourceAddress,omitempty\""
-			Address        string "json:\"address\""
-			Port           int    "json:\"port\""
-			MaxPayloadSize int    "json:\"maxPayloadSize,omitempty\""
+			SourceAddress          string "json:\"sourceAddress,omitempty\""
+			SourcePort             int    "json:\"sourcePort,omitempty\""
+			Address                string "json:\"address\""
+			Port                   int    "json:\"port\""
+			OverrideMaxPayloadSize int    "json:\"maxPayloadSize,omitempty\""
 		}{
 			Address: testIP,
 			Port:    global.DefaultReceiverPort,
 		},
 		Metrics: struct {
-			Interval          string "json:\"collectionInterval\""
-			MaxAge            string "json:\"maximumRetention,omitempty\""
-			EnableQueryServer bool   "json:\"enableHTTPQueryServer\""
-			QueryServerPort   int    "json:\"HTTPQueryServerPort\""
+			Interval          parsing.Duration "json:\"collectionInterval\""
+			MaxAge            parsing.Duration "json:\"maximumRetention,omitempty\""
+			EnableQueryServer bool             "json:\"enableHTTPQueryServer\""
+			QueryServerPort   int              "json:\"HTTPQueryServerPort\""
 		}{
-			Interval:          "100ms",
-			MaxAge:            "5m",
+			Interval:          parsing.Duration(100 * time.Millisecond),
+			MaxAge:            parsing.Duration(5 * time.Minute),
 			EnableQueryServer: false,
 		},
 		AutoScaling: struct {
-			Enabled               bool            "json:\"enabled\""
-			PollInterval          string          "json:\"pollInterval\""
-			MinOutputs            global.MinValue "json:\"minOutputs,omitempty\""
-			MaxOutputs            global.MaxValue "json:\"maxOutputs,omitempty\""
-			MinAssemblers         global.MinValue "json:\"minAssemblers,omitempty\""
-			MaxAssemblers         global.MaxValue "json:\"maxAssemblers,omitempty\""
-			MinOutputQueueSize    global.MinValue "json:\"minOutputQueueSize,omitempty\""
-			MaxOutputQueueSize    global.MaxValue "json:\"maxOutputQueueSize,omitempty\""
-			MinAssemblerQueueSize global.MinValue "json:\"minAssemblerQueueSize,omitempty\""
-			MaxAssemblerQueueSize global.MaxValue "json:\"maxAssemblerQueueSize,omitempty\""
+			Enabled               bool             "json:\"enabled\""
+			PollInterval          parsing.Duration "json:\"pollInterval\""
+			MinOutputs            global.MinValue  "json:\"minOutputs,omitempty\""
+			MaxOutputs            global.MaxValue  "json:\"maxOutputs,omitempty\""
+			MinAssemblers         global.MinValue  "json:\"minAssemblers,omitempty\""
+			MaxAssemblers         global.MaxValue  "json:\"maxAssemblers,omitempty\""
+			MinOutputQueueSize    global.MinValue  "json:\"minOutputQueueSize,omitempty\""
+			MaxOutputQueueSize    global.MaxValue  "json:\"maxOutputQueueSize,omitempty\""
+			MinAssemblerQueueSize global.MinValue  "json:\"minAssemblerQueueSize,omitempty\""
+			MaxAssemblerQueueSize global.MaxValue  "json:\"maxAssemblerQueueSize,omitempty\""
 		}{
 			Enabled:       true,
-			PollInterval:  "200ms",
+			PollInterval:  parsing.Duration(200 * time.Millisecond),
 			MinOutputs:    2,
 			MinAssemblers: 2,
 		},
 	}
-	rawJSONCfg, err = json.MarshalIndent(newSendJSONCfg, "", "  ")
+	senderDaemon, err := setupSendDaemon(globalCtx, newSendJSONCfg, testDir, pub, sendInput)
 	if err != nil {
-		t.Fatalf("failed to parse test send daemon config: %v", err)
-	}
-	err = os.WriteFile(sendJSONConfFile, rawJSONCfg, 0600)
-	if err != nil {
-		t.Fatalf("failed to create test send daemon config file: %v", err)
+		t.Fatalf("%v", err)
 	}
 
-	sendJSONCfg, err := sender.LoadConfig(sendJSONConfFile)
-	if err != nil {
-		t.Fatalf("failed to load test send daemon config file: %v", err)
-	}
-
-	newSendCfg, err := sendJSONCfg.NewDaemonConf(sendJSONConfFile, false)
-	if err != nil {
-		t.Fatalf("failed to parse loaded test send daemon config file: %v", err)
-	}
-
-	newSendCfg.RawInput = sendInput // For testing only
-
-	publicKey, err := base64.StdEncoding.DecodeString(sendJSONCfg.PublicKey)
-	if err != nil {
-		t.Fatalf("failed to decode sender public key: %v", err)
-	}
-
-	senderDaemon := sender.NewDaemon(newSendCfg)
-	err = senderDaemon.Init(globalCtx, publicKey)
-	if err != nil {
-		t.Fatalf("expected no sender init errors, got error '%v'", err)
-	}
 	err = senderDaemon.Start()
 	if err != nil {
 		t.Fatalf("expected no sender startup errors, got error '%v'", err)
 	}
 
 	// Wait for startup
-	time.Sleep(2 * newSendCfg.MetricCollectionInterval)
+	time.Sleep(2 * time.Duration(newSendJSONCfg.Metrics.Interval))
 
 	// Check for any errors in the log buffer
 	errorList, errorsFound = filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)
@@ -289,7 +220,7 @@ func TestSendReceivePipeline(t *testing.T) {
 
 	// For metric check
 	var totalSent int
-	testsStartTime := time.Now().Truncate(newSendCfg.MetricCollectionInterval)
+	testsStartTime := time.Now().Truncate(time.Duration(newSendJSONCfg.Metrics.Interval))
 
 	// Run test cases
 	for _, tt := range testCases {
@@ -355,7 +286,7 @@ func TestSendReceivePipeline(t *testing.T) {
 	// Check metrics at in/out pipeline boundaries for expected counts
 	// Checks during test can be unreliable due to timing and metric bucket slices
 	// Check once after tests are done for total expected count
-	err = checkPipelineCounts(totalSent, testsStartTime, senderDaemon, daemon, newSendCfg.MetricCollectionInterval)
+	err = checkPipelineCounts(totalSent, testsStartTime, senderDaemon, daemon, time.Duration(newSendJSONCfg.Metrics.Interval))
 	if err != nil {
 		t.Errorf("Metric test error: %v", err)
 	}

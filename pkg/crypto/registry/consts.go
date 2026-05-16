@@ -2,4 +2,7 @@ package registry
 
 const (
 	SuiteIDLen int = 1 // Byte length for ID (crypto and signature) in blobs
+
+	NoSigName string = "NoSignature"
+	DefaultCryptoName string = "x25519-hkdf-chacha20poly1305"
 )

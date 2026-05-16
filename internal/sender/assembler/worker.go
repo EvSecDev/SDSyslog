@@ -18,8 +18,8 @@ func (manager *Manager) newWorker() (new *Instance) {
 		Metrics:        MetricStorage{},
 		hostID:         manager.Config.HostID,
 		maxPayloadSize: manager.Config.MaxPayloadSize,
-		cryptoSuiteID:  manager.Config.CryptoSuiteID,
-		sigSuiteID:     manager.Config.SigSuiteID,
+		cryptoSuiteID:  manager.Config.cryptoSuiteID,
+		sigSuiteID:     manager.Config.sigSuiteID,
 	}
 	return
 }

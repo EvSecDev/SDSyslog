@@ -18,8 +18,10 @@ type ManagerConfig struct {
 	DestinationIP          string          // Destination address for output
 	OverrideMaxPayloadSize int             // Use supplied maximum payload size
 	MaxPayloadSize         int             // Maximum payload size for configured destination
-	CryptoSuiteID          uint8
-	SigSuiteID             uint8
+	CryptoSuiteName        string
+	SigSuiteName           string
+	cryptoSuiteID          uint8
+	sigSuiteID             uint8
 }
 
 type Manager struct {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sdsyslog/internal/global"
 	metricGlb "sdsyslog/internal/metrics"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/sender/metrics"
 	"sdsyslog/internal/sender/shared"
 	"sdsyslog/pkg/protocol"
@@ -14,103 +15,75 @@ import (
 	"time"
 )
 
-type JSONConfig struct {
+// User supplied options
+type JSONOptions struct {
 	PublicKey      string `json:"publicKey"`
 	SigningKeyFile string `json:"signingKeyFile,omitempty"`
-	Network        struct {
-		SourceAddress  string `json:"sourceAddress,omitempty"`
-		Address        string `json:"address"`
-		Port           int    `json:"port"`
-		MaxPayloadSize int    `json:"maxPayloadSize,omitempty"`
+	Crypto         struct {
+		TransportSuite string `json:"transportSuite,omitempty"`
+		SignatureSuite string `json:"signatureSuite,omitempty"`
+	} `json:"crypto,omitempty"`
+	State struct {
+		BaseFile string `json:"baseStateFile,omitempty"`
+	} `json:"state,omitempty"`
+	Network struct {
+		SourceAddress          string `json:"sourceAddress,omitempty"`
+		SourcePort             int    `json:"sourcePort,omitempty"`
+		Address                string `json:"address"`
+		Port                   int    `json:"port"`
+		OverrideMaxPayloadSize int    `json:"maxPayloadSize,omitempty"`
 	} `json:"network"`
-	StateFile        string     `json:"stateFile"`
-	Inputs           JSONInputs `json:"inputs"`
-	SendInternalLogs bool       `json:"sendInternalLogs,omitempty"`
-	Metrics          struct {
-		Interval          string `json:"collectionInterval"`
-		MaxAge            string `json:"maximumRetention,omitempty"`
-		EnableQueryServer bool   `json:"enableHTTPQueryServer"`
-		QueryServerPort   int    `json:"HTTPQueryServerPort"`
+	Inputs  JSONInputs `json:"inputs"`
+	Metrics struct {
+		Interval          parsing.Duration `json:"collectionInterval"`
+		MaxAge            parsing.Duration `json:"maximumRetention,omitempty"`
+		EnableQueryServer bool             `json:"enableHTTPQueryServer"`
+		QueryServerPort   int              `json:"HTTPQueryServerPort"`
 	} `json:"metrics"`
 	AutoScaling struct {
-		Enabled               bool            `json:"enabled"`
-		PollInterval          string          `json:"pollInterval"`
-		MinOutputs            global.MinValue `json:"minOutputs,omitempty"`
-		MaxOutputs            global.MaxValue `json:"maxOutputs,omitempty"`
-		MinAssemblers         global.MinValue `json:"minAssemblers,omitempty"`
-		MaxAssemblers         global.MaxValue `json:"maxAssemblers,omitempty"`
-		MinOutputQueueSize    global.MinValue `json:"minOutputQueueSize,omitempty"`
-		MaxOutputQueueSize    global.MaxValue `json:"maxOutputQueueSize,omitempty"`
-		MinAssemblerQueueSize global.MinValue `json:"minAssemblerQueueSize,omitempty"`
-		MaxAssemblerQueueSize global.MaxValue `json:"maxAssemblerQueueSize,omitempty"`
+		Enabled               bool             `json:"enabled"`
+		PollInterval          parsing.Duration `json:"pollInterval"`
+		MinOutputs            global.MinValue  `json:"minOutputs,omitempty"`
+		MaxOutputs            global.MaxValue  `json:"maxOutputs,omitempty"`
+		MinAssemblers         global.MinValue  `json:"minAssemblers,omitempty"`
+		MaxAssemblers         global.MaxValue  `json:"maxAssemblers,omitempty"`
+		MinOutputQueueSize    global.MinValue  `json:"minOutputQueueSize,omitempty"`
+		MaxOutputQueueSize    global.MaxValue  `json:"maxOutputQueueSize,omitempty"`
+		MinAssemblerQueueSize global.MinValue  `json:"minAssemblerQueueSize,omitempty"`
+		MaxAssemblerQueueSize global.MaxValue  `json:"maxAssemblerQueueSize,omitempty"`
 	} `json:"autoscaling"`
 }
 
 type JSONInputs struct {
-	Include        string                              `json:"include,omitempty"`
-	DropFilters    map[string][]protocol.MessageFilter `json:"dropFilters,omitempty"`
-	FilePaths      []string                            `json:"filePaths,omitempty"`
-	JournalEnabled bool                                `json:"journalEnabled,omitempty"`
+	Include          string                              `json:"include,omitempty"`
+	DropFilters      map[string][]protocol.MessageFilter `json:"dropFilters,omitempty"`
+	FilePaths        []string                            `json:"filePaths,omitempty"`
+	JournalEnabled   bool                                `json:"journalEnabled,omitempty"`
+	SendInternalLogs bool                                `json:"sendInternalLogs,omitempty"`
 }
 
 type Config struct {
-	dryRunConfig bool
-	path         string // JSON config path
-
 	// Crypto
-	signingPrivateKey      []byte
-	transportCryptoSuiteID uint8
-	signatureSuiteID       uint8
+	signingPrivateKey []byte
 
-	// Destination
-	SourceIP               string
-	DestinationIP          string
-	DestinationPort        int
-	OverrideMaxPayloadSize int
-
-	// Scaling settings
-	AutoscaleEnabled       bool
-	AutoscaleCheckInterval time.Duration
-
-	// Source settings
-	Filters                map[string][]protocol.MessageFilter
-	JournalSourceEnabled   bool
-	StateFilePath          string
-	FileSourcePaths        []string
-	SyslogSourceListenIP   string
-	SyslogSourceListenPort int
-	RawInput               io.ReadCloser
-	SendInternalLogs       bool
-
-	// Worker scaling boundaries
-	MinOutputs    global.MinValue
-	MinAssemblers global.MinValue
-	MaxOutputs    global.MaxValue
-	MaxAssemblers global.MaxValue
-
-	// Queue boundaries
-	MinOutputQueueSize global.MinValue
-	MaxOutputQueueSize global.MaxValue
-
-	MinAssemblerQueueSize global.MinValue
-	MaxAssemblerQueueSize global.MaxValue
-
-	// Metrics
-	MetricQueryServerEnabled bool
-	MetricQueryServerPort    int
-	MetricCollectionInterval time.Duration
-	MetricMaxAge             time.Duration
+	// Parsed network
+	sourceSocket *net.UDPAddr
+	destSocket   *net.UDPAddr
 }
 
 type Daemon struct {
-	cfg Config
+	configPath string
+	cfg        Config      // Runtime
+	opts       JSONOptions // User options
 
 	// Runtime
+	dryRun       bool
 	startTime    time.Time
 	initSuccess  bool // Tie init to start
 	startSuccess bool // Tie start to run(signal handler)
-	sourceSocket *net.UDPAddr
-	destSocket   *net.UDPAddr
+
+	// Internal-Only Outputs
+	RawInput io.ReadCloser
 
 	ctx    context.Context
 	cancel context.CancelFunc

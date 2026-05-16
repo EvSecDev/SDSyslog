@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sdsyslog/internal/global"
 	metricGlb "sdsyslog/internal/metrics"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver/metrics"
 	"sdsyslog/internal/receiver/shard/fiprrecv"
 	"sdsyslog/internal/receiver/shared"
@@ -14,10 +15,23 @@ import (
 	"time"
 )
 
-type JSONConfig struct {
+// User supplied options
+type JSONOptions struct {
 	PrivateKeyFile        string `json:"privateKeyFile"`
 	PinnedSigningKeysPath string `json:"senderSigningKeysFile,omitempty"`
-	Network               struct {
+	Crypto                struct {
+		TransportSuite string `json:"transportSuite,omitempty"`
+		SignatureSuite string `json:"signatureSuite,omitempty"`
+	} `json:"crypto,omitempty"`
+	ReplayProtection struct {
+		ProtectionWindow     parsing.Duration `json:"shortTermWindow,omitempty"`      // Short term replay protection window size (For Listener)
+		PastValidityWindow   parsing.Duration `json:"longTermPastWindow,omitempty"`   // Time window where old timestamps are still accepted (relative to processing time)
+		FutureValidityWindow parsing.Duration `json:"longTermFutureWindow,omitempty"` // Time window where future timestamps are still accepted (relative to processing time)
+	} `json:"replayProtection,omitempty"`
+	State struct {
+		IPCSocketDirectory string `json:"ipcSocketDirectory,omitempty"`
+	} `json:"state,omitempty"`
+	Network struct {
 		Address string `json:"address"`
 		Port    int    `json:"port"`
 	} `json:"network"`
@@ -29,92 +43,49 @@ type JSONConfig struct {
 		InternalLogs bool   `json:"internalLogs,omitempty"`
 	} `json:"outputs"`
 	Metrics struct {
-		Interval          string `json:"collectionInterval"`
-		MaxAge            string `json:"maximumRetention,omitempty"`
-		EnableQueryServer bool   `json:"enableHTTPQueryServer"`
-		QueryServerPort   int    `json:"HTTPQueryServerPort"`
+		Interval          parsing.Duration `json:"collectionInterval"`
+		MaxAge            parsing.Duration `json:"maximumRetention,omitempty"`
+		EnableQueryServer bool             `json:"enableHTTPQueryServer"`
+		QueryServerPort   int              `json:"HTTPQueryServerPort"`
 	} `json:"metrics"`
 	AutoScaling struct {
-		Enabled          bool            `json:"enabled"`
-		PollInterval     string          `json:"pollInterval"`
-		MinListeners     global.MinValue `json:"minListeners,omitempty"`
-		MaxListeners     global.MaxValue `json:"maxListeners,omitempty"`
-		MinProcessors    global.MinValue `json:"minProcessors,omitempty"`
-		MaxProcessors    global.MaxValue `json:"maxProcessors,omitempty"`
-		MinProcQueueSize global.MinValue `json:"minProcQueueSize,omitempty"`
-		MaxProcQueueSize global.MaxValue `json:"maxProcQueueSize,omitempty"`
-		MinDefrags       global.MinValue `json:"minAssemblers,omitempty"`
-		MaxDefrags       global.MaxValue `json:"maxAssemblers,omitempty"`
-		MinOutQueueSize  global.MinValue `json:"minOutQueueSize,omitempty"`
-		MaxOutQueueSize  global.MaxValue `json:"maxOutQueueSize,omitempty"`
+		Enabled          bool             `json:"enabled"`
+		PollInterval     parsing.Duration `json:"pollInterval"`
+		MinListeners     global.MinValue  `json:"minListeners,omitempty"`
+		MaxListeners     global.MaxValue  `json:"maxListeners,omitempty"`
+		MinProcessors    global.MinValue  `json:"minProcessors,omitempty"`
+		MaxProcessors    global.MaxValue  `json:"maxProcessors,omitempty"`
+		MinProcQueueSize global.MinValue  `json:"minProcQueueSize,omitempty"`
+		MaxProcQueueSize global.MaxValue  `json:"maxProcQueueSize,omitempty"`
+		MinDefrags       global.MinValue  `json:"minAssemblers,omitempty"`
+		MaxDefrags       global.MaxValue  `json:"maxAssemblers,omitempty"`
+		MinOutQueueSize  global.MinValue  `json:"minOutQueueSize,omitempty"`
+		MaxOutQueueSize  global.MaxValue  `json:"maxOutQueueSize,omitempty"`
 	} `json:"autoscaling"`
 }
 
+// Runtime Config
 type Config struct {
-	dryRunConfig bool
-	path         string // JSON config path
-
-	// Basic settings
-	ListenIP   string
-	ListenPort int
-
-	// Crypto
-	transportCryptoSuiteID uint8
-
 	// Signature Verification
-	PinnedSigningKeysFile string
-	PinnedSigningKeys     map[string][]byte
+	PinnedSigningKeys map[string][]byte
 
-	// Paths
-	SocketDirectoryPath string
-
-	// Scaling settings
-	AutoscaleEnabled       bool
-	AutoscaleCheckInterval time.Duration
-
-	// Worker scaling boundaries
-	MinListeners  global.MinValue
-	MaxListeners  global.MaxValue
-	MinProcessors global.MinValue
-	MaxProcessors global.MaxValue
-	MinDefrags    global.MinValue
-	MaxDefrags    global.MaxValue
-
-	// Queue boundaries
-	MinOutputQueueSize    global.MinValue
-	MaxOutputQueueSize    global.MaxValue
-	ShardBufferSize       int
-	MinProcessorQueueSize global.MinValue
-	MaxProcessorQueueSize global.MaxValue
-
-	// Message validity
-	ReplayProtectionWindow time.Duration // Short term replay protection window size (For Listener)
-	PastValidityWindow     time.Duration // Time window where old timestamps are still accepted (relative to processing time)
-	FutureValidityWindow   time.Duration // Time window where future timestamps are still accepted (relative to processing time)
-
-	// Outputs
-	OutputFilePath   string
-	JournaldURL      string
-	BeatsEndpoint    string
-	RawWriter        io.WriteCloser
-	DBUSNotify       bool
-	SendInternalLogs bool
-
-	// Metrics
-	MetricQueryServerEnabled bool
-	MetricQueryServerPort    int
-	MetricCollectionInterval time.Duration
-	MetricMaxAge             time.Duration
+	// Parsed Input
+	sourceSocket *net.UDPAddr
 }
 
 type Daemon struct {
-	cfg Config
+	configPath string
+	cfg        Config      // Runtime
+	opts       JSONOptions // User options
 
 	// Runtime
+	dryRun       bool
 	startTime    time.Time
 	initSuccess  bool // Tie init to start
 	startSuccess bool // Tie start to run(signal handler)
-	sourceSocket *net.UDPAddr
+
+	// Internal-Only Outputs
+	RawWriter io.WriteCloser
 
 	ctx    context.Context
 	cancel context.CancelFunc

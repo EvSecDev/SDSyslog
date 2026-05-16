@@ -10,19 +10,21 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/metrics/server"
 	"sdsyslog/internal/parsing"
+	"sdsyslog/pkg/crypto/registry"
 	"slices"
 	"time"
 )
 
 // Loads JSON config from file
-func LoadConfig(path string) (cfg JSONConfig, err error) {
+func (daemon *Daemon) LoadConfig(path string) (err error) {
 	configFile, err := os.ReadFile(path)
 	if err != nil {
 		err = fmt.Errorf("failed to read config file: %w", err)
 		return
 	}
+	daemon.configPath = path
 
-	err = json.Unmarshal(configFile, &cfg)
+	err = json.Unmarshal(configFile, &daemon.opts)
 	if err != nil {
 		err = fmt.Errorf("invalid config syntax in '%s': %w", path, err)
 		return
@@ -31,208 +33,156 @@ func LoadConfig(path string) (cfg JSONConfig, err error) {
 	return
 }
 
-// Parses JSON config into daemon config
-func (cfg JSONConfig) NewDaemonConf(originalConfigPath string, dryRun bool) (config Config, err error) {
-	config.dryRunConfig = dryRun
-	config.path = originalConfigPath
-
-	// Network settings
-	config.ListenIP = cfg.Network.Address
-	config.ListenPort = cfg.Network.Port
-
-	// Load pinned keys
-	if cfg.PinnedSigningKeysPath != "" {
-		var data []byte
-		data, err = os.ReadFile(cfg.PinnedSigningKeysPath)
-		if err != nil {
-			err = fmt.Errorf("failed to read pinned signing keys file: %w", err)
-			return
-		}
-
-		var raw map[string]string
-		err = json.Unmarshal(data, &raw)
-		if err != nil {
-			err = fmt.Errorf("invalid pinned signing keys file format: %w", err)
-			return
-		}
-
-		config.PinnedSigningKeysFile = cfg.PinnedSigningKeysPath
-
-		config.PinnedSigningKeys = make(map[string][]byte, len(raw))
-		for host, b64 := range raw {
-			var key []byte
-			key, err = base64.StdEncoding.DecodeString(b64)
-			if err != nil {
-				err = fmt.Errorf("invalid key for sender hostname %s (must be base64): %w", host, err)
-				return
-			}
-			config.PinnedSigningKeys[host] = key
-		}
-	} else {
-		config.PinnedSigningKeys = make(map[string][]byte)
-	}
-
-	// Output settings
-	config.JournaldURL = cfg.Outputs.JournaldURL
-	config.OutputFilePath = cfg.Outputs.FilePath
-	config.BeatsEndpoint = cfg.Outputs.BeatsAddress
-	config.DBUSNotify = cfg.Outputs.DBUSNotify
-	config.SendInternalLogs = cfg.Outputs.InternalLogs
-
-	// Scaling settings
-	config.AutoscaleEnabled = cfg.AutoScaling.Enabled
-	config.AutoscaleCheckInterval, err = time.ParseDuration(cfg.AutoScaling.PollInterval)
+// Retrieves private key from disk from configured path
+func (daemon *Daemon) LoadKey() (key []byte, err error) {
+	privateKey, err := os.ReadFile(daemon.opts.PrivateKeyFile)
 	if err != nil {
-		err = fmt.Errorf("failed to parse autoscale check interval time: %w", err)
+		err = fmt.Errorf("failed reading private key file: %w", err)
 		return
 	}
-	config.MinListeners = cfg.AutoScaling.MinListeners
-	config.MinProcessors = cfg.AutoScaling.MinProcessors
-	config.MinDefrags = cfg.AutoScaling.MinDefrags
-	config.MaxListeners = cfg.AutoScaling.MaxListeners
-	config.MaxProcessors = cfg.AutoScaling.MaxProcessors
-	config.MaxDefrags = cfg.AutoScaling.MaxDefrags
 
-	// Queues
-	config.MinProcessorQueueSize = cfg.AutoScaling.MinProcQueueSize
-	config.MaxProcessorQueueSize = cfg.AutoScaling.MaxProcQueueSize
-	config.MinOutputQueueSize = cfg.AutoScaling.MinOutQueueSize
-	config.MaxOutputQueueSize = cfg.AutoScaling.MaxOutQueueSize
-
-	// Metric settings
-	config.MetricQueryServerEnabled = cfg.Metrics.EnableQueryServer
-	config.MetricQueryServerPort = cfg.Metrics.QueryServerPort
-	config.MetricMaxAge, err = time.ParseDuration(cfg.Metrics.MaxAge)
+	key, err = base64.StdEncoding.DecodeString(string(privateKey))
 	if err != nil {
-		err = fmt.Errorf("failed to parse metric max age time: %w", err)
-		return
-	}
-	config.MetricCollectionInterval, err = time.ParseDuration(cfg.Metrics.Interval)
-	if err != nil {
-		err = fmt.Errorf("failed to parse metric collection interval time: %w", err)
-		return
-	}
-	err = parsing.VerifyWholeDuration(config.MetricCollectionInterval)
-	if err != nil {
-		err = fmt.Errorf("metric collection interval is not supported: %w", err)
+		err = fmt.Errorf("failed decoding private key file: %w", err)
 		return
 	}
 	return
 }
 
 // Sets defaults for any missing/invalid values
-func (cfg *Config) setDefaults() {
-	// Default - only algo to use
-	cfg.transportCryptoSuiteID = 1
+func (opts *JSONOptions) setDefaults() {
+	if opts.Crypto.TransportSuite == "" {
+		// Default to only algo to use
+		suiteInfo, valid := registry.GetSuiteInfo(1)
+		if valid {
+			opts.Crypto.TransportSuite = suiteInfo.Name
+		}
+	}
+	if opts.Crypto.SignatureSuite == "" && opts.PinnedSigningKeysPath == "" {
+		// Default to no signatures with no signer public keys
+		sigInfo, valid := registry.GetSignatureInfo(0)
+		if valid {
+			opts.Crypto.SignatureSuite = sigInfo.Name
+		}
+	} else if opts.Crypto.SignatureSuite == "" && opts.PinnedSigningKeysPath != "" {
+		// Default to base signature with signing key map
+		sigInfo, valid := registry.GetSignatureInfo(1)
+		if valid {
+			opts.Crypto.SignatureSuite = sigInfo.Name
+		}
+	}
 
 	// Scaling
-	if cfg.AutoscaleCheckInterval == 0 {
-		cfg.AutoscaleCheckInterval = 5 * time.Second
+	if opts.AutoScaling.PollInterval == 0 {
+		opts.AutoScaling.PollInterval = parsing.Duration(5 * time.Second)
 	}
 	// Maximums
 	logicalCPUCount := runtime.NumCPU()
 	maxCPU := global.MaxValue(logicalCPUCount)
 	minCPU := global.MinValue(logicalCPUCount)
-	if cfg.MaxListeners == 0 {
-		cfg.MaxListeners = maxCPU
+	if opts.AutoScaling.MaxListeners == 0 {
+		opts.AutoScaling.MaxListeners = maxCPU
 	}
-	if cfg.MaxProcessors == 0 {
-		cfg.MaxProcessors = maxCPU
+	if opts.AutoScaling.MaxProcessors == 0 {
+		opts.AutoScaling.MaxProcessors = maxCPU
 	}
-	if cfg.MaxDefrags == 0 {
-		cfg.MaxDefrags = maxCPU
+	if opts.AutoScaling.MaxDefrags == 0 {
+		opts.AutoScaling.MaxDefrags = maxCPU
 	}
-	if cfg.MaxProcessorQueueSize == 0 {
-		cfg.MaxProcessorQueueSize = global.DefaultMaxQueueSize
+	if opts.AutoScaling.MaxProcQueueSize == 0 {
+		opts.AutoScaling.MaxProcQueueSize = global.DefaultMaxQueueSize
 	}
-	if cfg.MaxOutputQueueSize == 0 {
-		cfg.MaxOutputQueueSize = global.DefaultMaxQueueSize
+	if opts.AutoScaling.MaxOutQueueSize == 0 {
+		opts.AutoScaling.MaxOutQueueSize = global.DefaultMaxQueueSize
 	}
 
 	// Minimums
-	if cfg.MinDefrags == 0 {
-		cfg.MinDefrags = 1
+	if opts.AutoScaling.MinDefrags == 0 {
+		opts.AutoScaling.MinDefrags = 1
 	}
-	if cfg.MinDefrags > minCPU {
-		cfg.MinDefrags = minCPU
+	if opts.AutoScaling.MinDefrags > minCPU {
+		opts.AutoScaling.MinDefrags = minCPU
 	}
-	if cfg.MinListeners == 0 {
-		cfg.MinListeners = 1
+	if opts.AutoScaling.MinListeners == 0 {
+		opts.AutoScaling.MinListeners = 1
 	}
-	if cfg.MinListeners > minCPU {
-		cfg.MinListeners = minCPU
+	if opts.AutoScaling.MinListeners > minCPU {
+		opts.AutoScaling.MinListeners = minCPU
 	}
-	if cfg.MinProcessors == 0 {
-		cfg.MinProcessors = 1
+	if opts.AutoScaling.MinProcessors == 0 {
+		opts.AutoScaling.MinProcessors = 1
 	}
-	if cfg.MinProcessors > minCPU {
-		cfg.MinProcessors = minCPU
+	if opts.AutoScaling.MinProcessors > minCPU {
+		opts.AutoScaling.MinProcessors = minCPU
 	}
-	if cfg.MinProcessorQueueSize == 0 {
-		cfg.MinProcessorQueueSize = global.DefaultMinQueueSize
+	if opts.AutoScaling.MinProcQueueSize == 0 {
+		opts.AutoScaling.MinProcQueueSize = global.DefaultMinQueueSize
 	}
-	if cfg.MinOutputQueueSize == 0 {
-		cfg.MinOutputQueueSize = global.DefaultMinQueueSize
+	if opts.AutoScaling.MinOutQueueSize == 0 {
+		opts.AutoScaling.MinOutQueueSize = global.DefaultMinQueueSize
 	}
 
 	// Message validity
-	if cfg.ReplayProtectionWindow == 0 {
-		cfg.ReplayProtectionWindow = DefaultReplayWindow
+	if opts.ReplayProtection.ProtectionWindow == 0 {
+		opts.ReplayProtection.ProtectionWindow = parsing.Duration(DefaultReplayWindow)
 	}
-	if cfg.PastValidityWindow == 0 {
-		cfg.PastValidityWindow = DefaultPastValidityWindow
+	if opts.ReplayProtection.PastValidityWindow == 0 {
+		opts.ReplayProtection.PastValidityWindow = parsing.Duration(DefaultPastValidityWindow)
 	}
-	if cfg.FutureValidityWindow == 0 {
-		cfg.FutureValidityWindow = DefaultFutureValidityWindow
+	if opts.ReplayProtection.FutureValidityWindow == 0 {
+		opts.ReplayProtection.FutureValidityWindow = parsing.Duration(DefaultFutureValidityWindow)
 	}
 
 	// Paths
-	if cfg.SocketDirectoryPath == "" {
-		cfg.SocketDirectoryPath = DefaultSocketDir
+	if opts.State.IPCSocketDirectory == "" {
+		opts.State.IPCSocketDirectory = DefaultSocketDir
 	}
 
 	// Network
-	if cfg.ListenIP == "" {
-		cfg.ListenIP = "::"
+	if opts.Network.Address == "" {
+		opts.Network.Address = "::"
 	}
-	if cfg.ListenPort == 0 {
-		cfg.ListenPort = global.DefaultReceiverPort
+	if opts.Network.Port == 0 {
+		opts.Network.Port = global.DefaultReceiverPort
 	}
 
 	// Metrics
-	if cfg.MetricMaxAge == 0 {
-		cfg.MetricMaxAge = 1 * time.Hour
+	if opts.Metrics.MaxAge == 0 {
+		opts.Metrics.MaxAge = parsing.Duration(1 * time.Hour)
 	}
-	if cfg.MetricQueryServerPort == 0 {
-		cfg.MetricQueryServerPort = server.ListenPortReceiver
+	if opts.Metrics.QueryServerPort == 0 {
+		opts.Metrics.QueryServerPort = server.ListenPortReceiver
 	}
-	if cfg.MetricCollectionInterval == 0 {
-		cfg.MetricCollectionInterval = time.Duration(15 * time.Second)
+	if opts.Metrics.Interval == 0 {
+		opts.Metrics.Interval = parsing.Duration(15 * time.Second)
 	}
 
 	// Scaler
-	if cfg.AutoscaleCheckInterval < 1*time.Second {
+	if time.Duration(opts.AutoScaling.PollInterval) < 1*time.Second {
 		// Protect routing algorithm from multi-step scaling within packet deadline
-		cfg.AutoscaleCheckInterval = 2 * global.DefaultMaxPacketDeadline
+		opts.AutoScaling.PollInterval = parsing.Duration(2 * global.DefaultMaxPacketDeadline)
 	}
-	if cfg.AutoscaleCheckInterval > 1*time.Minute {
+	if time.Duration(opts.AutoScaling.PollInterval) > 1*time.Minute {
 		// Longer times are not useful
-		cfg.AutoscaleCheckInterval = 1 * time.Minute
+		opts.AutoScaling.PollInterval = parsing.Duration(1 * time.Minute)
 	}
 }
 
 // Loads newest config from disk and pulls newest pinned keys map.
 func (daemon *Daemon) ReloadSigningKeys() (diffCount int, err error) {
-	cfg, err := LoadConfig(daemon.cfg.path)
+	oldCfg := daemon.opts
+	err = daemon.LoadConfig(daemon.configPath)
 	if err != nil {
 		err = fmt.Errorf("failed to re-read daemon configuration file: %w", err)
 		return
 	}
-	if cfg.PinnedSigningKeysPath == "" {
+	newCfg := daemon.opts
+	daemon.opts = oldCfg
+	if newCfg.PinnedSigningKeysPath == "" {
 		// No-op
 		return
 	}
-	pinnedKeysFile, err := os.ReadFile(cfg.PinnedSigningKeysPath)
+	pinnedKeysFile, err := os.ReadFile(newCfg.PinnedSigningKeysPath)
 	if err != nil && !os.IsNotExist(err) {
 		err = fmt.Errorf("failed reading pinned keys file: %w", err)
 		return

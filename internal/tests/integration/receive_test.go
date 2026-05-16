@@ -8,6 +8,7 @@ import (
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver"
 	"sdsyslog/pkg/crypto/registry"
 	"strconv"
@@ -57,40 +58,62 @@ func TestRecvConstantFlow(t *testing.T) {
 	globalCtx, globalCancel := context.WithCancel(context.Background())
 	globalCtx = logctx.New(globalCtx, "global", logVerbosity, globalCtx.Done())
 
+	// Mocking real config files
+	testDir := t.TempDir()
+
 	// Daemon config
-	newCfg := receiver.Config{
-		ListenIP:               testIP,
-		ListenPort:             global.DefaultReceiverPort,
-		AutoscaleEnabled:       true,
-		AutoscaleCheckInterval: 2 * global.DefaultMinPacketDeadline,
-		MinDefrags:             2,
-		MinListeners:           2,
-		MinProcessors:          2,
-		MinOutputQueueSize:     global.DefaultMinQueueSize,
-		MaxOutputQueueSize:     global.DefaultMaxQueueSize,
-		ShardBufferSize:        1024,
-		MinProcessorQueueSize:  global.DefaultMinQueueSize,
-		MaxProcessorQueueSize:  global.DefaultMaxQueueSize,
-		RawWriter:              recvOutput,
-		MetricCollectionInterval: time.Duration(
-			100 * time.Millisecond, // Setting super fast just for test data collection
-		),
-		MetricMaxAge: 5 * time.Minute,
+	newRecvJSONCfg := receiver.JSONOptions{
+		Network: struct {
+			Address string "json:\"address\""
+			Port    int    "json:\"port\""
+		}{
+			Address: testIP,
+			Port:    global.DefaultReceiverPort,
+		},
+		Metrics: struct {
+			Interval          parsing.Duration "json:\"collectionInterval\""
+			MaxAge            parsing.Duration "json:\"maximumRetention,omitempty\""
+			EnableQueryServer bool             "json:\"enableHTTPQueryServer\""
+			QueryServerPort   int              "json:\"HTTPQueryServerPort\""
+		}{
+			Interval:          parsing.Duration(100 * time.Millisecond), // Setting super fast just for test data collection
+			MaxAge:            parsing.Duration(5 * time.Minute),
+			EnableQueryServer: false,
+		},
+		AutoScaling: struct {
+			Enabled          bool             "json:\"enabled\""
+			PollInterval     parsing.Duration "json:\"pollInterval\""
+			MinListeners     global.MinValue  "json:\"minListeners,omitempty\""
+			MaxListeners     global.MaxValue  "json:\"maxListeners,omitempty\""
+			MinProcessors    global.MinValue  "json:\"minProcessors,omitempty\""
+			MaxProcessors    global.MaxValue  "json:\"maxProcessors,omitempty\""
+			MinProcQueueSize global.MinValue  "json:\"minProcQueueSize,omitempty\""
+			MaxProcQueueSize global.MaxValue  "json:\"maxProcQueueSize,omitempty\""
+			MinDefrags       global.MinValue  "json:\"minAssemblers,omitempty\""
+			MaxDefrags       global.MaxValue  "json:\"maxAssemblers,omitempty\""
+			MinOutQueueSize  global.MinValue  "json:\"minOutQueueSize,omitempty\""
+			MaxOutQueueSize  global.MaxValue  "json:\"maxOutQueueSize,omitempty\""
+		}{
+			Enabled:       true,
+			PollInterval:  parsing.Duration(2 * global.DefaultMinPacketDeadline),
+			MinListeners:  2,
+			MinProcessors: 2,
+			MinDefrags:    2,
+		},
+	}
+	daemon, err := setupRecvDaemon(globalCtx, newRecvJSONCfg, testDir, priv, recvOutput)
+	if err != nil {
+		t.Fatalf("%v", err)
 	}
 
 	// Launch receiver in background
-	daemon := receiver.NewDaemon(newCfg)
-	err = daemon.Init(globalCtx, priv)
-	if err != nil {
-		t.Fatalf("expected no receiver init errors, got error '%v'", err)
-	}
 	err = daemon.Start()
 	if err != nil {
 		t.Fatalf("expected no receiver startup errors, got error '%v'", err)
 	}
 
 	// Wait for startup
-	time.Sleep(2 * newCfg.MetricCollectionInterval)
+	time.Sleep(2 * time.Duration(newRecvJSONCfg.Metrics.Interval))
 
 	// Check for any errors in the log buffer
 	errorList, errorsFound := filterLogBuffer(globalCtx, "", "", logctx.ErrorLog)

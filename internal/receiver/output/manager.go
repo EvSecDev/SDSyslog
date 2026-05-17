@@ -56,5 +56,8 @@ func (config *ManagerConfig) validate() (err error) {
 		err = fmt.Errorf("no outputs enabled/configured")
 		return
 	}
+	if config.ConsecutiveFailureShutdownInterval == 0 {
+		err = fmt.Errorf("empty ConsecutiveFailureShutdownInterval")
+	}
 	return
 }

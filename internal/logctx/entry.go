@@ -23,6 +23,11 @@ func LogStdErr(ctx context.Context, message string, vars ...any) {
 	LogEvent(ctx, VerbosityStandard, ErrorLog, message, vars...)
 }
 
+// Wrapper - log event as Standard verbosity and Fatal severity
+func LogStdFatal(ctx context.Context, message string, vars ...any) {
+	LogEvent(ctx, VerbosityStandard, FatalLog, message, vars...)
+}
+
 // Entry for logging events.
 // If event level is above the current set logger level, message will not be recorded.
 // If severity is an error, event level is not considered and message is recorded.

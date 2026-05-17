@@ -146,6 +146,10 @@ func (opts *JSONOptions) setDefaults() {
 		opts.Network.Port = global.DefaultReceiverPort
 	}
 
+	if opts.Outputs.MaxConsecutiveFailures == 0 {
+		opts.Outputs.MaxConsecutiveFailures = parsing.Duration(DefaultOutputFailureDuration)
+	}
+
 	// Metrics
 	if opts.Metrics.MaxAge == 0 {
 		opts.Metrics.MaxAge = parsing.Duration(1 * time.Hour)

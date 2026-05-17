@@ -17,6 +17,7 @@ type MetricStorage struct {
 
 const (
 	MTRecvMsgs        string = "received_messages"
+	MTWrittenMsgs     string = "written_messages"
 	MTFileWritesSuc   string = "success_file_writes"
 	MTJrnlWritesSuc   string = "success_journal_writes"
 	MTBeatsWritesSuc  string = "success_beats_writes"
@@ -33,16 +34,30 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	rawWrites := instance.Metrics.SuccessfulRawWrites.Swap(0)
 	notifyWrites := instance.Metrics.SuccessfulNotifyWrites.Swap(0)
 
+	totalWrites := fileWrites + jrnlWrites + beatsWrites + rawWrites + notifyWrites
+
 	// Record read time
 	recordTime := time.Now()
 
 	collection = []metrics.Metric{
 		{
 			Name:        MTRecvMsgs,
-			Description: "Total messages received",
+			Description: "Total messages received from assemblers",
 			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      recvMsgs,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        MTWrittenMsgs,
+			Description: "Sum of messages successfully written to all outputs",
+			Namespace:   instance.namespace,
+			Value: metrics.MetricValue{
+				Raw:      totalWrites,
 				Unit:     "count",
 				Interval: interval,
 			},

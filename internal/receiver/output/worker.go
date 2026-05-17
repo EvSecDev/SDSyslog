@@ -2,10 +2,12 @@ package output
 
 import (
 	"context"
+	"os"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
+	"syscall"
 	"time"
 )
 
@@ -15,6 +17,9 @@ func (manager *Manager) newWorker() (new *Instance) {
 		namespace: append(logctx.GetTagList(manager.ctx), logctx.NSWorker),
 		inbox:     manager.Inbox,
 		Metrics:   MetricStorage{},
+		failures: failureTracker{
+			maximumDuration: manager.Config.ConsecutiveFailureShutdownInterval,
+		},
 	}
 	return
 }
@@ -84,40 +89,70 @@ func (instance *Instance) run(ctx context.Context) {
 				instance.Metrics.ReceivedMessages.Add(1)
 
 				// Write message to all outputs
-				n, err := instance.fileMod.Write(ctx, msg)
+				n1, err := instance.fileMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to file output: %w\n", err)
 				}
-				instance.Metrics.SuccessfulFileWrites.Add(uint64(n))
+				instance.Metrics.SuccessfulFileWrites.Add(uint64(n1))
 
-				n, err = instance.jrnlMod.Write(ctx, msg)
+				n2, err := instance.jrnlMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to journald output: %w\n", err)
 				}
-				instance.Metrics.SuccessfulJrnlWrites.Add(uint64(n))
+				instance.Metrics.SuccessfulJrnlWrites.Add(uint64(n2))
 
-				n, err = instance.beatsMod.Write(ctx, msg)
+				n3, err := instance.beatsMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to beats output: %w\n", err)
 				}
-				instance.Metrics.SuccessfulBeatsWrites.Add(uint64(n))
+				instance.Metrics.SuccessfulBeatsWrites.Add(uint64(n3))
 
-				n, err = instance.rawMod.Write(ctx, msg)
+				n4, err := instance.rawMod.Write(ctx, msg)
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to raw output: %w\n", err)
 				}
-				instance.Metrics.SuccessfulRawWrites.Add(uint64(n))
+				instance.Metrics.SuccessfulRawWrites.Add(uint64(n4))
 
-				n, err = instance.DBUSnotify.Write(ctx, msg)
+				n5, err := instance.DBUSnotify.Write(ctx, msg)
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"Failed to write message(s) to DBUS notify output: %w\n", err)
 				}
-				instance.Metrics.SuccessfulNotifyWrites.Add(uint64(n))
+				instance.Metrics.SuccessfulNotifyWrites.Add(uint64(n5))
+
+				// Record consecutive total failures
+				totalWritten := n1 + n2 + n3 + n4 + n5
+				if totalWritten == 0 {
+					// Initialize deadline
+					if instance.failures.consecutiveCount == 0 {
+						instance.failures.deadline = time.Now().Add(instance.failures.maximumDuration)
+					}
+
+					// Increment total counter
+					instance.failures.consecutiveCount++
+				} else if instance.failures.consecutiveCount > 0 {
+					// Reset consecutive fails
+					instance.failures.consecutiveCount = 0
+				}
+
+				if instance.failures.consecutiveCount > 0 && time.Now().After(instance.failures.deadline) {
+					logctx.LogStdFatal(ctx, "All outputs have failed writes a total of %d times over %s. Program will shutdown now.\n",
+						instance.failures.consecutiveCount, instance.failures.maximumDuration.String())
+
+					// Long term output failures means our own logs about output failures would go unnoticed
+					// Stop entire program for better visibility into fatal conditions like this
+					// Using OS signals to conduct the graceful shutdown through the signal handler in lifecycle
+					err = syscall.Kill(os.Getpid(), syscall.SIGTERM)
+					if err != nil {
+						logctx.LogStdFatal(ctx, "Failed to issue SIGTERM to self process after fatal amount of output write failures.\n")
+					}
+
+					// Continue trying outputs, either signal handler gracefully shuts the daemon down, or we continue trying for eternity
+				}
 			}()
 		}
 	}

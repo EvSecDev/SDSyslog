@@ -373,6 +373,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 	newCfg.Outputs.JournaldURL = journald.DefaultURL
 	newCfg.Outputs.BeatsAddress = beats.DefaultAddress
 	newCfg.Outputs.DBUSNotify = false
+	newCfg.Outputs.MaxConsecutiveFailures = parsing.Duration(receiver.DefaultOutputFailureDuration)
 
 	newCfg.PrivateKeyFile = encryptionPrivKeyPath
 

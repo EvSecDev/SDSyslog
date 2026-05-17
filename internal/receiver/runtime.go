@@ -46,13 +46,14 @@ func (daemon *Daemon) Start() (err error) {
 
 	// Stage 4 - Output Manager
 	outMgrConf := &output.ManagerConfig{
-		FilePath:         daemon.opts.Outputs.FilePath,
-		JournaldURL:      daemon.opts.Outputs.JournaldURL,
-		BeatsAddress:     daemon.opts.Outputs.BeatsAddress,
-		RawWriter:        daemon.RawWriter,
-		EnableDBUSNotify: daemon.opts.Outputs.DBUSNotify,
-		MinQueueCapacity: daemon.opts.AutoScaling.MinOutQueueSize,
-		MaxQueueCapacity: daemon.opts.AutoScaling.MaxOutQueueSize,
+		FilePath:                           daemon.opts.Outputs.FilePath,
+		JournaldURL:                        daemon.opts.Outputs.JournaldURL,
+		BeatsAddress:                       daemon.opts.Outputs.BeatsAddress,
+		RawWriter:                          daemon.RawWriter,
+		EnableDBUSNotify:                   daemon.opts.Outputs.DBUSNotify,
+		ConsecutiveFailureShutdownInterval: time.Duration(daemon.opts.Outputs.MaxConsecutiveFailures),
+		MinQueueCapacity:                   daemon.opts.AutoScaling.MinOutQueueSize,
+		MaxQueueCapacity:                   daemon.opts.AutoScaling.MaxOutQueueSize,
 	}
 	daemon.Mgrs.Output, err = outMgrConf.NewManager(daemon.ctx)
 	if err != nil {

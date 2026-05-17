@@ -12,5 +12,7 @@ const (
 	DefaultSocketDir            string        = global.DefaultStateDir + "/ipc"
 	ShutdownTimeout             time.Duration = 20 * time.Second
 
+	DefaultOutputFailureDuration time.Duration = 10 * time.Minute // Span of time where consecutive and total output failures are considered fatal and program exits
+
 	PinedKeysReqSeparator string = "|"
 )

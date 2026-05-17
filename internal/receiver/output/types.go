@@ -8,6 +8,7 @@ import (
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 	"sync"
+	"time"
 )
 
 type ManagerConfig struct {
@@ -16,6 +17,8 @@ type ManagerConfig struct {
 	BeatsAddress     string
 	RawWriter        io.WriteCloser
 	EnableDBUSNotify bool
+
+	ConsecutiveFailureShutdownInterval time.Duration
 
 	MinQueueCapacity global.MinValue // Minimum queue size (also starting size)
 	MaxQueueCapacity global.MaxValue // Maximum queue size
@@ -40,6 +43,14 @@ type Instance struct {
 	rawMod     iomodules.Output
 	DBUSnotify iomodules.Output
 
+	failures failureTracker
+
 	inbox   *mpmc.Queue[*protocol.Payload]
 	Metrics MetricStorage
+}
+
+type failureTracker struct {
+	consecutiveCount int
+	deadline         time.Time
+	maximumDuration  time.Duration
 }

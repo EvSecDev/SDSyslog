@@ -13,6 +13,7 @@ type MetricStorage struct {
 	SuccessfulBeatsWrites  atomic.Uint64
 	SuccessfulRawWrites    atomic.Uint64
 	SuccessfulNotifyWrites atomic.Uint64
+	Dropped                atomic.Uint64
 }
 
 const (
@@ -33,6 +34,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	beatsWrites := instance.Metrics.SuccessfulBeatsWrites.Swap(0)
 	rawWrites := instance.Metrics.SuccessfulRawWrites.Swap(0)
 	notifyWrites := instance.Metrics.SuccessfulNotifyWrites.Swap(0)
+	dropped := instance.Metrics.Dropped.Swap(0)
 
 	totalWrites := fileWrites + jrnlWrites + beatsWrites + rawWrites + notifyWrites
 
@@ -118,6 +120,18 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 			Namespace:   instance.namespace,
 			Value: metrics.MetricValue{
 				Raw:      notifyWrites,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        metrics.MTDropped,
+			Description: metrics.DescDropped,
+			Namespace:   instance.namespace,
+			Value: metrics.MetricValue{
+				Raw:      dropped,
 				Unit:     "count",
 				Interval: interval,
 			},

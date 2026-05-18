@@ -7,6 +7,7 @@ import (
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/metrics"
 	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/shard"
 	"sdsyslog/internal/tests/utils"
@@ -254,10 +255,10 @@ func TestProcessor_Basic(t *testing.T) {
 			}
 
 			// We hold the pointer from before removal, so we can collect metrics after worker is fully shutdown
-			metrics := instance.CollectMetrics(1 * time.Second)
+			gotMetrics := instance.CollectMetrics(1 * time.Second)
 
 			// Validate metrics from the collection func point of view
-			for _, metric := range metrics {
+			for _, metric := range gotMetrics {
 				value := metric.Value.Raw.(uint64)
 				if metric.Name == MTValidPayloads && value != tt.expectedValidCount {
 					t.Errorf("expected metric valid payloads count to be %d, but got %d", tt.expectedValidCount, value)
@@ -267,6 +268,9 @@ func TestProcessor_Basic(t *testing.T) {
 				}
 				if metric.Name == MTSumWorkTime && value <= 0 {
 					t.Errorf("expected metric elapsed sum work time to be greater than zero, but got %d", value)
+				}
+				if metric.Name == metrics.MTDropped && value > 0 {
+					t.Errorf("expected metric dropped count to be zero, but got %d", value)
 				}
 			}
 

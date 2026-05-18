@@ -123,7 +123,12 @@ func (instance *Instance) run() {
 
 			instance.Metrics.ValidPayloads.Add(1)
 
-			shard.RouteFragment(ctx, instance.routingView, queueEntry.Meta.RemoteIP, msg, processingStartTime)
+			success := shard.RouteFragment(ctx, instance.routingView, queueEntry.Meta.RemoteIP, msg, processingStartTime)
+			if !success {
+				logctx.LogStdErr(ctx, "Failed to route fragment for message from %s (msgID: %d), dropping\n",
+					msg.RemoteIP.String(), msg.MsgID)
+				instance.Metrics.Dropped.Add(1)
+			}
 		}()
 	}
 }

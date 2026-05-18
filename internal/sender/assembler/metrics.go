@@ -13,6 +13,7 @@ type MetricStorage struct {
 	MaxMsgSizeBytes   atomic.Uint64 // Maximum seen message text size
 	TotalFragmentCtn  atomic.Uint64 // Total of all fragments produced
 	MaxFragmentCtn    atomic.Uint64 // Maximum seen fragment count for a given message
+	Dropped           atomic.Uint64
 }
 
 // Metric Names
@@ -39,6 +40,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	maxMsgSizeB := instance.Metrics.MaxMsgSizeBytes.Swap(0)
 	sumFragCtn := instance.Metrics.TotalFragmentCtn.Swap(0)
 	maxFragCtn := instance.Metrics.MaxFragmentCtn.Swap(0)
+	dropped := instance.Metrics.Dropped.Swap(0)
 
 	// Record read time
 	recordTime := time.Now()
@@ -102,6 +104,18 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 				Interval: interval,
 			},
 			Type:      metrics.Gauge,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        metrics.MTDropped,
+			Description: metrics.DescDropped,
+			Namespace:   namespace,
+			Value: metrics.MetricValue{
+				Raw:      dropped,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
 			Timestamp: recordTime,
 		},
 	}

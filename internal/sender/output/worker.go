@@ -54,6 +54,7 @@ func (instance *Instance) run() {
 			if err != nil {
 				logctx.LogStdErr(ctx,
 					"Failed to send fragment: %w\n", err)
+				instance.Metrics.Dropped.Add(1)
 				return
 			}
 

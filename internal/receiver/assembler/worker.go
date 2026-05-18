@@ -62,7 +62,7 @@ func (instance *Instance) run() {
 
 			finalMsg, err := protocol.Defragment(fragSlice)
 			if err != nil {
-				logctx.LogStdErr(ctx, "Failed assembler: %w\n", err)
+				logctx.LogStdErr(ctx, "Failed assembly: %w\n", err)
 				return
 			}
 
@@ -87,6 +87,7 @@ func (instance *Instance) run() {
 				logctx.LogStdErr(ctx,
 					"Failed to push message to output queue: host id %d, message id %d, hostname %s: %w\n",
 					finalMsg.HostID, finalMsg.MsgID, finalMsg.Hostname, err)
+				instance.Metrics.Dropped.Add(1)
 				return
 			}
 

@@ -85,6 +85,7 @@ func (instance *Instance) run() {
 				instance.sigSuiteID)
 			if err != nil {
 				logctx.LogStdErr(ctx, "failed serialization: %w\n", err)
+				instance.Metrics.Dropped.Add(1)
 				return
 			}
 
@@ -101,6 +102,7 @@ func (instance *Instance) run() {
 				err := instance.outbox.PushWithRetry(packet, uint64(len(packet)), 4)
 				if err != nil {
 					logctx.LogStdErr(ctx, "failed to push fragment to output queue: %w\n", err)
+					instance.Metrics.Dropped.Add(1)
 					continue
 				}
 			}

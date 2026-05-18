@@ -11,6 +11,7 @@ type MetricStorage struct {
 	TotalPackets   atomic.Uint64
 	SumPacketBytes atomic.Uint64
 	MaxPacketBytes atomic.Uint64
+	Dropped        atomic.Uint64
 }
 
 // Metric Names
@@ -31,6 +32,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	totalPkts := instance.Metrics.TotalPackets.Swap(0)
 	sumPktSizeB := instance.Metrics.SumPacketBytes.Swap(0)
 	maxPktSizeB := instance.Metrics.MaxPacketBytes.Swap(0)
+	dropped := instance.Metrics.Dropped.Swap(0)
 
 	// Record read time
 	recordTime := time.Now()
@@ -70,6 +72,18 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 				Interval: interval,
 			},
 			Type:      metrics.Gauge,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        metrics.MTDropped,
+			Description: metrics.DescDropped,
+			Namespace:   namespace,
+			Value: metrics.MetricValue{
+				Raw:      dropped,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
 			Timestamp: recordTime,
 		},
 	}

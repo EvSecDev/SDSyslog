@@ -12,6 +12,7 @@ type MetricStorage struct {
 	InvalidPayloads atomic.Uint64 // number of received payloads that failed validation
 	SumNs           atomic.Uint64 // sum of elapsed ns for all ops
 	MaxNs           atomic.Uint64 // max observed op duration
+	Dropped         atomic.Uint64
 }
 
 // Metric Names
@@ -64,6 +65,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	invalid := instance.Metrics.InvalidPayloads.Swap(0)
 	sumNs := instance.Metrics.SumNs.Swap(0)
 	maxNs := instance.Metrics.MaxNs.Swap(0)
+	dropped := instance.Metrics.Dropped.Swap(0)
 
 	// Record read time
 	recordTime := time.Now()
@@ -115,6 +117,18 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 				Interval: interval,
 			},
 			Type:      metrics.Summary,
+			Timestamp: recordTime,
+		},
+		{
+			Name:        metrics.MTDropped,
+			Description: metrics.DescDropped,
+			Namespace:   namespace,
+			Value: metrics.MetricValue{
+				Raw:      dropped,
+				Unit:     "count",
+				Interval: interval,
+			},
+			Type:      metrics.Counter,
 			Timestamp: recordTime,
 		},
 	}

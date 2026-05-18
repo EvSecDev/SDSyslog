@@ -25,6 +25,8 @@ func (manager *Manager) newWorker(conn *net.UDPConn) (new *Instance) {
 	return
 }
 
+const netipAddrSize = 24
+
 func (instance *Instance) run() {
 	if instance == nil {
 		return
@@ -116,13 +118,13 @@ func (instance *Instance) run() {
 				}
 			}
 
-			const netipAddrSize = 24
 			size := len(newQueueEntry.Data) + netipAddrSize
 
 			err = instance.outbox.PushWithRetry(newQueueEntry, uint64(size), 4)
 			if err != nil {
 				logctx.LogStdWarn(ctx, "failed to push packet from %q to processor queue: %w\n",
 					remoteAddr.String(), err)
+				instance.Metrics.Dropped.Add(1)
 				return
 			}
 			instance.Metrics.ValidPackets.Add(1) // increment pkt count after push (success or not)

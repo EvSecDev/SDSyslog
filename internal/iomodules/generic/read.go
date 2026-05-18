@@ -56,12 +56,7 @@ func (mod *InModule) read() {
 		mod.metrics.CompleteReads.Add(1)
 
 		totalSize := msg.Size()
-		err = mod.outbox.PushWithRetry(msg, uint64(totalSize), 4)
-		if err != nil {
-			logctx.LogStdErr(mod.ctx, "failed to push raw sink data to queue: %w\n", err)
-			continue
-		}
-
+		mod.outbox.PushBlocking(mod.ctx, msg, totalSize)
 		mod.metrics.Success.Add(1)
 	}
 }

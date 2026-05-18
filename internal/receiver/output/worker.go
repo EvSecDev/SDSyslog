@@ -127,6 +127,8 @@ func (instance *Instance) run(ctx context.Context) {
 				// Record consecutive total failures
 				totalWritten := n1 + n2 + n3 + n4 + n5
 				if totalWritten == 0 {
+					instance.Metrics.Dropped.Add(1)
+
 					// Initialize deadline
 					if instance.failures.consecutiveCount == 0 {
 						instance.failures.deadline = time.Now().Add(instance.failures.maximumDuration)

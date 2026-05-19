@@ -61,9 +61,9 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 	// Record time spacing between fragments
 	var elapsed int64
 	if bucket.lastProcessStartTime.UnixNano() <= 0 {
-		elapsed = time.Since(processingStartTime).Nanoseconds()
+		elapsed = 0
 	} else {
-		elapsed = time.Since(bucket.lastProcessStartTime).Nanoseconds()
+		elapsed = processingStartTime.Sub(bucket.lastProcessStartTime).Nanoseconds()
 	}
 	if elapsed > 0 {
 		queue.Metrics.SumFragmentTimeSpacing.Add(uint64(elapsed))

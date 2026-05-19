@@ -46,9 +46,9 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 	}
 
 	// Determine network type
-	network := "udp4"
+	destIPVersion := "udp4"
 	if destAddress.To4() == nil {
-		network = "udp6"
+		destIPVersion = "udp6"
 	}
 
 	// If destination is loopback, allow loopback
@@ -56,7 +56,15 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 
 	// Short circuit loopback (no auto select)
 	if allowLoopback {
-		sourceSocket, err = ParseUDPAddress("localhost", 0)
+		// Manually decide IP version since localhost could resolve incorrectly
+		var sourceAddr string
+		switch destIPVersion {
+		case "udp4":
+			sourceAddr = "127.0.0.1"
+		case "udp6":
+			sourceAddr = "::1"
+		}
+		sourceSocket, err = ParseUDPAddress(sourceAddr, 0)
 		return
 	}
 
@@ -85,7 +93,7 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 
 		// Dial UDP (no actual network traffic generated) to see what route table selects as source
 		var conn *net.UDPConn
-		conn, err = net.DialUDP(network, nil, raddr)
+		conn, err = net.DialUDP(destIPVersion, nil, raddr)
 		if err != nil {
 			err = fmt.Errorf("dial failed: %w", err)
 			return

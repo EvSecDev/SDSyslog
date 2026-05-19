@@ -56,8 +56,13 @@ func (queue *Instance) StartTimeoutWatcher(ctx context.Context) {
 					for _, fragment := range bucket.Fragments {
 						haveSeq = append(haveSeq, fragment.MessageSeq)
 					}
-					logctx.LogStdWarn(ctx, "Bucket %s timed out (expected %d packets within %s, only received sequences %v)\n",
-						bucketKey, bucket.maxSeq+1, packetDeadline.String(), haveSeq)
+					if len(haveSeq) < 100 {
+						logctx.LogStdWarn(ctx, "Bucket %s timed out (expected %d packets within %s, only received %d sequences %v)\n",
+							bucketKey, bucket.maxSeq+1, packetDeadline.String(), len(haveSeq), haveSeq)
+					} else {
+						logctx.LogStdWarn(ctx, "Bucket %s timed out (expected %d packets within %s, only received %d sequences)\n",
+							bucketKey, bucket.maxSeq+1, packetDeadline.String(), len(haveSeq))
+					}
 				}
 			}
 			queue.Mu.Unlock()

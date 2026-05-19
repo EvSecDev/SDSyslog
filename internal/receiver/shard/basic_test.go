@@ -23,6 +23,7 @@ func TestPushPop_Basic(t *testing.T) {
 		fragments              []*protocol.Payload
 		pushDelay              time.Duration // Time between fragment push-to-queue
 		expectedTimeOutBuckets int
+		expectFragmentElapsed  bool // Whether time between fragments should be 0 or any non-zero value
 		expectedBytes          uint64
 	}{
 		{
@@ -30,7 +31,8 @@ func TestPushPop_Basic(t *testing.T) {
 			fragments: []*protocol.Payload{
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 			},
-			expectedBytes: 1,
+			expectFragmentElapsed: false,
+			expectedBytes:         1,
 		},
 		{
 			name: "multi-fragment fills bucket in order",
@@ -38,7 +40,8 @@ func TestPushPop_Basic(t *testing.T) {
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
 				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("B")},
 			},
-			expectedBytes: 2,
+			expectFragmentElapsed: true,
+			expectedBytes:         2,
 		},
 		{
 			name: "out-of-order fragments",
@@ -46,7 +49,8 @@ func TestPushPop_Basic(t *testing.T) {
 				{HostID: 1, MessageSeq: 1, MessageSeqMax: 1, Data: []byte("B")},
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 1, Data: []byte("A")},
 			},
-			expectedBytes: 2,
+			expectFragmentElapsed: true,
+			expectedBytes:         2,
 		},
 		{
 			name: "duplicate fragments ignored",
@@ -54,7 +58,8 @@ func TestPushPop_Basic(t *testing.T) {
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 0, Data: []byte("A")},
 			},
-			expectedBytes: 1,
+			expectFragmentElapsed: false,
+			expectedBytes:         1,
 		},
 		{
 			name: "timeout triggers bucket fill",
@@ -62,6 +67,7 @@ func TestPushPop_Basic(t *testing.T) {
 				{HostID: 1, MessageSeq: 0, MessageSeqMax: 2, Data: []byte("A")},
 			},
 			expectedTimeOutBuckets: 1,
+			expectFragmentElapsed:  false,
 			expectedBytes:          1,
 		},
 		{
@@ -72,6 +78,7 @@ func TestPushPop_Basic(t *testing.T) {
 			},
 			pushDelay:              time.Duration(mockDeadline.Load()) + 10*time.Millisecond,
 			expectedTimeOutBuckets: 1,
+			expectFragmentElapsed:  true,
 			expectedBytes:          1,
 		},
 	}
@@ -140,8 +147,12 @@ func TestPushPop_Basic(t *testing.T) {
 						t.Errorf("expected metric timed out buckets value to be %d, but got %d", tt.expectedTimeOutBuckets, value)
 					}
 				}
-				if metric.Name == MTTimeBtwFragments && value == 0 {
-					t.Errorf("expected metric time between fragments to be above 0")
+				if metric.Name == MTTimeBtwFragments {
+					if tt.expectFragmentElapsed && value == 0 {
+						t.Errorf("expected metric time between fragments to be above 0")
+					} else if !tt.expectFragmentElapsed && value != 0 {
+						t.Errorf("expected metric time between fragments to be 0, but got %d", value)
+					}
 				}
 				if metric.Name == MTBytes && value != 0 {
 					t.Errorf("expected metric total bytes to be 0 after tests, but got %d bytes", value)

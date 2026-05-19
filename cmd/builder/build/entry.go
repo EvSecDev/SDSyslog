@@ -102,7 +102,7 @@ func (opts *Options) RunBuilder() (exitCode int) {
 			printErr(0, "Failed License Check: %w", err)
 			return 1
 		}
-		err = updateGoPackages(ctx)
+		err = updateGoPackages()
 		if err != nil {
 			printErr(0, "Update Aborted: %w", err)
 			return 1

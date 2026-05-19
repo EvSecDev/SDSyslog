@@ -13,7 +13,12 @@ import (
 	"strings"
 )
 
-func updateGoPackages(ctx *context) (err error) {
+type versionDiff struct {
+	old string
+	new string
+}
+
+func updateGoPackages() (err error) {
 	// Require Clean Repo
 	cmd := exec.Command("git", "diff", "--quiet")
 	_, err = cmd.CombinedOutput()
@@ -88,10 +93,7 @@ func updateGoPackages(ctx *context) (err error) {
 	afterModules := helpers.DualFieldsIntoMap(afterModuleList)
 
 	// Extract changed modules (old vs new version)
-	type versionDiff struct {
-		old string
-		new string
-	}
+
 	changedModules := make(map[string]versionDiff)
 	for module, afterVersion := range afterModules {
 		beforeVersion, ok := beforeModules[module]
@@ -118,182 +120,8 @@ func updateGoPackages(ctx *context) (err error) {
 	printInfo(0, "\n=========== MODULE SOURCE DIFFS ===========")
 
 	for moduleName, versionDifference := range changedModules {
-		printInfo(0, "\n%s", moduleName)
-		printInfo(4, "%s -> %s", versionDifference.old, versionDifference.new)
-
-		moduleSafe := strings.ReplaceAll(moduleName, "/", "_")
-
-		oldShort := helpers.ShortVersion(versionDifference.old)
-		newShort := helpers.ShortVersion(versionDifference.new)
-
-		tmpOld := filepath.Join(tmpDir, moduleSafe+"@"+oldShort, "old")
-		tmpNew := filepath.Join(tmpDir, moduleSafe+"@"+newShort, "new")
-
-		// Ensure nothing is present at created path
-		err = os.RemoveAll(tmpOld)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			err = fmt.Errorf("failed to remove potentially conflicting source code audit directory '%s': %w", tmpOld, err)
-			return
-		}
-		err = os.RemoveAll(tmpNew)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			err = fmt.Errorf("failed to remove potentially conflicting source code audit directory '%s': %w", tmpNew, err)
-			return
-		}
-
-		oldSrc := filepath.Join(tmpOld, "src")
-		newSrc := filepath.Join(tmpNew, "src")
-
-		err = os.MkdirAll(oldSrc, 0700)
+		err = diffModuleSource(moduleName, versionDifference, tmpDir)
 		if err != nil {
-			err = fmt.Errorf("failed to create temp source directory for old module: %w", err)
-			return
-		}
-		err = os.MkdirAll(newSrc, 0700)
-		if err != nil {
-			err = fmt.Errorf("failed to create temp source directory for new module: %w", err)
-			return
-		}
-
-		printInfo(4, "Downloading old version...")
-
-		cmd = exec.Command("go", "mod", "download", "-json", moduleName+"@"+versionDifference.old)
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("failed to download module %s version %s: %w: %s",
-				moduleName, versionDifference.old, err, string(out))
-			return
-		}
-		var oldDownloadInfo goDownloadJSON
-		err = json.Unmarshal(out, &oldDownloadInfo)
-		if err != nil {
-			err = fmt.Errorf("failed parsing go mod download JSON output: %w", err)
-			return
-		}
-		cmd = exec.Command("cp", "-a", oldDownloadInfo.Dir, oldSrc+"/")
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("failed to copy old module %s version %s: %w: %s",
-				moduleName, versionDifference.old, err, string(out))
-			return
-		}
-
-		// Limit total size so diff isn't excessively large
-		cmd = exec.Command("du", "-sm", oldSrc)
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("failed to get size of old module %s version %s: %w: %s",
-				moduleName, versionDifference.old, err, string(out))
-			return
-		}
-		sizeFields := bytes.Fields(out)
-		if len(sizeFields) >= 2 {
-			var megabyteSize int
-			megabyteSize, err = strconv.Atoi(string(sizeFields[0]))
-			if err != nil {
-				err = fmt.Errorf("failed to parse size of source directory: %w", err)
-				return
-			}
-
-			maxSize := 100
-			if megabyteSize > maxSize {
-				printWarn(4, "Skipping large module directory %s (%s): directory larger than %dMB", moduleName, versionDifference.old, maxSize)
-				continue
-			}
-		}
-
-		printInfo(4, "Downloading new version...")
-
-		cmd = exec.Command("go", "mod", "download", "-json", moduleName+"@"+versionDifference.new)
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("failed to download module %s version %s: %w: %s",
-				moduleName, versionDifference.new, err, string(out))
-			return
-		}
-		var newDownloadInfo goDownloadJSON
-		err = json.Unmarshal(out, &newDownloadInfo)
-		if err != nil {
-			err = fmt.Errorf("failed parsing go mod download JSON output: %w", err)
-			return
-		}
-		cmd = exec.Command("cp", "-a", newDownloadInfo.Dir, newSrc+"/")
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("failed to copy new module %s version %s: %w: %s",
-				moduleName, versionDifference.new, err, string(out))
-			return
-		}
-
-		err = os.MkdirAll(filepath.Join(tmpOld, "filtered"), 0700)
-		if err != nil {
-			err = fmt.Errorf("failed to create temp filtering directory for old module: %w", err)
-			return
-		}
-		err = os.MkdirAll(filepath.Join(tmpNew, "filtered"), 0700)
-		if err != nil {
-			err = fmt.Errorf("failed to create temp filtering directory for new module: %w", err)
-			return
-		}
-
-		printInfo(4, "Preparing filtered trees...")
-
-		cmd = exec.Command("rsync", "--delete", "--exclude='*_test.go'", "--exclude='testdata/'", oldSrc+"/", tmpOld+"/filtered/")
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("failed to copy old source to temp dir for module %s version %s: %w: %s",
-				moduleName, versionDifference.old, err, string(out))
-			return
-		}
-		cmd = exec.Command("rsync", "--delete", "--exclude='*_test.go'", "--exclude='testdata/'", newSrc+"/", tmpNew+"/filtered/")
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("failed to copy old source to temp dir for module %s version %s: %w: %s",
-				moduleName, versionDifference.old, err, string(out))
-			return
-		}
-
-		printInfo(4, "Diff (excluding tests)...")
-
-		cmd = exec.Command("git", "-c", "color.ui=always", "diff", "--no-index", tmpOld+"/filtered", tmpNew+"/filtered")
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("failed to copy old source to temp dir for module %s version %s: %w: %s",
-				moduleName, versionDifference.old, err, string(out))
-			return
-		}
-		diff := out
-
-		diffLines := bytes.Split(diff, []byte("\n"))
-		if len(diffLines) <= 20 {
-			fmt.Printf("%s\n", string(diff))
-		} else {
-			cmd := exec.Command("less", "-R")
-
-			// Sending entire diff to less
-			cmd.Stdin = bytes.NewReader(diff)
-
-			// attach to terminal
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-
-			err = cmd.Run()
-			if err != nil {
-				err = fmt.Errorf("failed to run less on version diff for module %s: %w: %s",
-					moduleName, err, string(out))
-				return
-			}
-		}
-
-		// Cleanup
-		err = os.RemoveAll(tmpOld)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			err = fmt.Errorf("failed to cleanup old source code audit directory: %w", err)
-			return
-		}
-		err = os.RemoveAll(tmpNew)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			err = fmt.Errorf("failed to cleanup new source code audit directory: %w", err)
 			return
 		}
 	}
@@ -322,5 +150,174 @@ func updateGoPackages(ctx *context) (err error) {
 	}
 
 	printSuccess(0, "Done")
+	return
+}
+
+func diffModuleSource(moduleName string, versionDifference versionDiff, tmpDir string) (err error) {
+	printInfo(0, "\n%s", moduleName)
+	printInfo(4, "%s -> %s", versionDifference.old, versionDifference.new)
+
+	moduleSafe := strings.ReplaceAll(moduleName, "/", "_")
+
+	oldShort := helpers.ShortVersion(versionDifference.old)
+	newShort := helpers.ShortVersion(versionDifference.new)
+
+	tmpOld := filepath.Join(tmpDir, moduleSafe+"@"+oldShort, "old")
+	tmpNew := filepath.Join(tmpDir, moduleSafe+"@"+newShort, "new")
+
+	// Ensure nothing is present at created path
+	err = os.RemoveAll(tmpOld)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		err = fmt.Errorf("failed to remove potentially conflicting source code audit directory '%s': %w", tmpOld, err)
+		return
+	}
+	err = os.RemoveAll(tmpNew)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		err = fmt.Errorf("failed to remove potentially conflicting source code audit directory '%s': %w", tmpNew, err)
+		return
+	}
+
+	oldSrc := filepath.Join(tmpOld, "src")
+	newSrc := filepath.Join(tmpNew, "src")
+
+	err = os.MkdirAll(oldSrc, 0700)
+	if err != nil {
+		err = fmt.Errorf("failed to create temp source directory for old module: %w", err)
+		return
+	}
+	err = os.MkdirAll(newSrc, 0700)
+	if err != nil {
+		err = fmt.Errorf("failed to create temp source directory for new module: %w", err)
+		return
+	}
+
+	printInfo(4, "Downloading old version...")
+
+	cmd := exec.Command("go", "mod", "download", "-json", moduleName+"@"+versionDifference.old)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("failed to download module %s version %s: %w: %s",
+			moduleName, versionDifference.old, err, string(out))
+		return
+	}
+	var oldDownloadInfo goDownloadJSON
+	err = json.Unmarshal(out, &oldDownloadInfo)
+	if err != nil {
+		err = fmt.Errorf("failed parsing go mod download JSON output: %w", err)
+		return
+	}
+	var totalByteSize int64
+	totalByteSize, err = helpers.CopyDirRecursive(oldDownloadInfo.Dir, oldSrc)
+	if err != nil {
+		err = fmt.Errorf("failed to copy old module %s version %s: %w",
+			moduleName, versionDifference.old, err)
+		return
+	}
+
+	// Limit total size so diff isn't excessively large
+	maxSize := 100
+	megabyteSize := int(totalByteSize / 1_000_000)
+	if megabyteSize > maxSize {
+		printWarn(4, "Skipping large module directory %s (%s): directory larger than %dMB", moduleName, versionDifference.old, maxSize)
+		return
+	}
+
+	printInfo(4, "Downloading new version...")
+
+	cmd = exec.Command("go", "mod", "download", "-json", moduleName+"@"+versionDifference.new)
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("failed to download module %s version %s: %w: %s",
+			moduleName, versionDifference.new, err, string(out))
+		return
+	}
+	var newDownloadInfo goDownloadJSON
+	err = json.Unmarshal(out, &newDownloadInfo)
+	if err != nil {
+		err = fmt.Errorf("failed parsing go mod download JSON output: %w", err)
+		return
+	}
+
+	_, err = helpers.CopyDirRecursive(newDownloadInfo.Dir, newSrc)
+	if err != nil {
+		err = fmt.Errorf("failed to copy new module %s version %s: %w",
+			moduleName, versionDifference.new, err)
+		return
+	}
+
+	err = os.MkdirAll(filepath.Join(tmpOld, "filtered"), 0700)
+	if err != nil {
+		err = fmt.Errorf("failed to create temp filtering directory for old module: %w", err)
+		return
+	}
+	err = os.MkdirAll(filepath.Join(tmpNew, "filtered"), 0700)
+	if err != nil {
+		err = fmt.Errorf("failed to create temp filtering directory for new module: %w", err)
+		return
+	}
+
+	printInfo(4, "Preparing filtered trees...")
+
+	_, err = helpers.CopyDirRecursiveWithExclude(oldSrc, tmpOld+"/filtered", []string{"_test.go", "testdata/"})
+	if err != nil {
+		err = fmt.Errorf("failed to copy old source to temp dir for module %s version %s: %w",
+			moduleName, versionDifference.old, err)
+		return
+	}
+	_, err = helpers.CopyDirRecursiveWithExclude(newSrc, tmpNew+"/filtered", []string{"_test.go", "testdata/"})
+	if err != nil {
+		err = fmt.Errorf("failed to copy new source to temp dir for module %s version %s: %w",
+			moduleName, versionDifference.old, err)
+		return
+	}
+
+	printInfo(4, "Diff (excluding tests)...")
+
+	cmd = exec.Command("git", "-c", "color.ui=always", "diff", "--no-index", tmpOld+"/filtered", tmpNew+"/filtered")
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		exitErr, ok := err.(*exec.ExitError)
+		if ok {
+			if exitErr.ExitCode() > 1 {
+				err = fmt.Errorf("failed to generate source diff for module %s version %s: %w: %s",
+					moduleName, versionDifference.old, err, string(out))
+				return
+			}
+		}
+	}
+	diff := out
+
+	diffLines := bytes.Split(diff, []byte("\n"))
+	if len(diffLines) <= 20 {
+		fmt.Printf("%s\n", string(diff))
+	} else {
+		cmd := exec.Command("less", "-R")
+
+		// Sending entire diff to less
+		cmd.Stdin = bytes.NewReader(diff)
+
+		// attach to terminal
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		err = cmd.Run()
+		if err != nil {
+			err = fmt.Errorf("failed to run less on version diff for module %s: %w: %s",
+				moduleName, err, string(out))
+			return
+		}
+	}
+
+	// Cleanup
+	err = os.RemoveAll(tmpOld)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		err = fmt.Errorf("failed to cleanup old source code audit directory: %w", err)
+		return
+	}
+	err = os.RemoveAll(tmpNew)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		err = fmt.Errorf("failed to cleanup new source code audit directory: %w", err)
+		return
+	}
 	return
 }

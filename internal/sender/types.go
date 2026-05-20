@@ -52,6 +52,11 @@ type JSONOptions struct {
 		MinAssemblerQueueSize global.MinValue  `json:"minAssemblerQueueSize,omitempty"`
 		MaxAssemblerQueueSize global.MaxValue  `json:"maxAssemblerQueueSize,omitempty"`
 	} `json:"autoscaling"`
+	Throttling struct {
+		Enabled              bool             `json:"enabled"`
+		MinFragmentThreshold int              `json:"minimumFragmentThreshold"`
+		PerFragmentDelay     parsing.Duration `json:"perFragmentDelay"`
+	} `json:"throttling"`
 }
 
 type JSONInputs struct {

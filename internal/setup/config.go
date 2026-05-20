@@ -314,6 +314,10 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 	newCfg.Crypto.SignatureSuite = registry.NoSigName
 	newCfg.Crypto.TransportSuite = registry.DefaultCryptoName
 
+	newCfg.Throttling.Enabled = true
+	newCfg.Throttling.MinFragmentThreshold = sender.DefaultOutputThrottlingThreshold
+	newCfg.Throttling.PerFragmentDelay = parsing.Duration(sender.DefaultOutputThrottlingTime)
+
 	newCfg.Metrics.MaxAge = parsing.Duration(72 * time.Hour)
 	newCfg.Metrics.Interval = parsing.Duration(5 * time.Second)
 	newCfg.Metrics.QueryServerPort = server.ListenPortSender

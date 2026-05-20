@@ -158,6 +158,13 @@ func TestSendReceivePipeline(t *testing.T) {
 			MinOutputs:    2,
 			MinAssemblers: 2,
 		},
+		Throttling: struct {
+			Enabled              bool             "json:\"enabled\""
+			MinFragmentThreshold int              "json:\"minimumFragmentThreshold\""
+			PerFragmentDelay     parsing.Duration "json:\"perFragmentDelay\""
+		}{
+			Enabled: true,
+		},
 	}
 	senderDaemon, err := setupSendDaemon(globalCtx, newSendJSONCfg, testDir, pub, sendInput)
 	if err != nil {
@@ -212,9 +219,14 @@ func TestSendReceivePipeline(t *testing.T) {
 			sendRepeatCtn: 1000,
 		},
 		{
-			name:          "Excessive Message Size",
+			name:          "Large Message Size",
 			inputText:     strings.Repeat(`{"example":true,"text":"y","values":["t","a","b"]}`, 1000), // 50000 bytes
 			sendRepeatCtn: 100,
+		},
+		{
+			name:          "Excessive Message Size",
+			inputText:     strings.Repeat(`{"example":true,"text":"y","values":["t","a","b"]}`, 10000), // 500000 bytes
+			sendRepeatCtn: 10,
 		},
 	}
 

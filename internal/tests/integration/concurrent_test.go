@@ -150,12 +150,20 @@ func TestMultipleSenders(t *testing.T) {
 			packetDeadline: 100 * time.Millisecond,
 		},
 		{
-			name:           "Fragmented Bulk",
+			name:           "Fragmented Small Count",
 			inputText:      strings.Repeat(`{"example":true,"text":"y","values":["t","a","b"]}`, 100), // 5000 bytes
 			sendRepeatCtn:  100,
 			senderCount:    10,
 			readTimeout:    20 * time.Second,
-			packetDeadline: 500 * time.Millisecond,
+			packetDeadline: 200 * time.Millisecond,
+		},
+		{
+			name:           "Fragmented Bulk Count",
+			inputText:      strings.Repeat(`{"example":true,"text":"y","values":["t","a","b"]}`, 1000), // 50000 bytes
+			sendRepeatCtn:  100,
+			senderCount:    10,
+			readTimeout:    20 * time.Second,
+			packetDeadline: 200 * time.Millisecond,
 		},
 	}
 
@@ -207,6 +215,13 @@ func TestMultipleSenders(t *testing.T) {
 					}{
 						Enabled:      true,
 						PollInterval: parsing.Duration(200 * time.Millisecond),
+					},
+					Throttling: struct {
+						Enabled              bool             "json:\"enabled\""
+						MinFragmentThreshold int              "json:\"minimumFragmentThreshold\""
+						PerFragmentDelay     parsing.Duration "json:\"perFragmentDelay\""
+					}{
+						Enabled: true,
 					},
 				}
 				senderDaemon, err := setupSendDaemon(sendCtx, newSendJSONCfg, testDir, pub, sendInput)

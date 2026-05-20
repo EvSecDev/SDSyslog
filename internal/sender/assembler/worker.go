@@ -5,6 +5,7 @@ import (
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
+	"time"
 )
 
 func (manager *Manager) newWorker() (new *Instance) {
@@ -13,13 +14,16 @@ func (manager *Manager) newWorker() (new *Instance) {
 	}
 
 	new = &Instance{
-		inbox:          manager.InQueue,
-		outbox:         manager.outQueue,
-		Metrics:        MetricStorage{},
-		hostID:         manager.Config.HostID,
-		maxPayloadSize: manager.Config.MaxPayloadSize,
-		cryptoSuiteID:  manager.Config.cryptoSuiteID,
-		sigSuiteID:     manager.Config.sigSuiteID,
+		inbox:                     manager.InQueue,
+		outbox:                    manager.outQueue,
+		Metrics:                   MetricStorage{},
+		hostID:                    manager.Config.HostID,
+		maxPayloadSize:            manager.Config.MaxPayloadSize,
+		cryptoSuiteID:             manager.Config.cryptoSuiteID,
+		sigSuiteID:                manager.Config.sigSuiteID,
+		throttlingEnabled:         manager.Config.ThrottlingEnabled,
+		outputThrottlingThreshold: manager.Config.OutputThrottlingThreshold,
+		outputThrottlingTime:      manager.Config.OutputThrottlingTime,
 	}
 	return
 }
@@ -98,12 +102,19 @@ func (instance *Instance) run() {
 				instance.Metrics.MaxFragmentCtn.CompareAndSwap(maxSeenFragmentCount, fragmentCount)
 			}
 
+			totalPackets := len(packets)
+
 			for _, packet := range packets {
 				err := instance.outbox.PushWithRetry(packet, uint64(len(packet)), 4)
 				if err != nil {
 					logctx.LogStdErr(ctx, "failed to push fragment to output queue: %w\n", err)
 					instance.Metrics.Dropped.Add(1)
 					continue
+				}
+
+				// Throttle output rate with highly fragmented message
+				if instance.throttlingEnabled && totalPackets > instance.outputThrottlingThreshold {
+					time.Sleep(instance.outputThrottlingTime)
 				}
 			}
 		}()

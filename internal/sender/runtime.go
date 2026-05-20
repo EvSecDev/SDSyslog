@@ -59,12 +59,15 @@ func (daemon *Daemon) Start() (err error) {
 
 	// Stage 2 - Assembler Manager
 	pkgMgrConf := &assembler.ManagerConfig{
-		MinQueueCapacity:       daemon.opts.AutoScaling.MinAssemblerQueueSize,
-		MaxQueueCapacity:       daemon.opts.AutoScaling.MaxAssemblerQueueSize,
-		OverrideMaxPayloadSize: daemon.opts.Network.OverrideMaxPayloadSize,
-		DestinationIP:          daemon.cfg.destSocket.IP.String(),
-		CryptoSuiteName:        daemon.opts.Crypto.TransportSuite,
-		SigSuiteName:           daemon.opts.Crypto.SignatureSuite,
+		MinQueueCapacity:          daemon.opts.AutoScaling.MinAssemblerQueueSize,
+		MaxQueueCapacity:          daemon.opts.AutoScaling.MaxAssemblerQueueSize,
+		OverrideMaxPayloadSize:    daemon.opts.Network.OverrideMaxPayloadSize,
+		DestinationIP:             daemon.cfg.destSocket.IP.String(),
+		CryptoSuiteName:           daemon.opts.Crypto.TransportSuite,
+		SigSuiteName:              daemon.opts.Crypto.SignatureSuite,
+		ThrottlingEnabled:         daemon.opts.Throttling.Enabled,
+		OutputThrottlingThreshold: daemon.opts.Throttling.MinFragmentThreshold,
+		OutputThrottlingTime:      time.Duration(daemon.opts.Throttling.PerFragmentDelay),
 	}
 	pkgMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinAssemblers))
 	pkgMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxAssemblers))

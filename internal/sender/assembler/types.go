@@ -7,21 +7,25 @@ import (
 	"sdsyslog/pkg/protocol"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type ManagerConfig struct {
-	MinQueueCapacity       global.MinValue // Minimum queue size (also starting size)
-	MaxQueueCapacity       global.MaxValue // Maximum queue size
-	MinInstanceCount       atomic.Uint32   // Minimum number of instances at any one time
-	MaxInstanceCount       atomic.Uint32   // Maximum number of instances at any one time
-	HostID                 int             // ID for all sent messages
-	DestinationIP          string          // Destination address for output
-	OverrideMaxPayloadSize int             // Use supplied maximum payload size
-	MaxPayloadSize         int             // Maximum payload size for configured destination
-	CryptoSuiteName        string
-	SigSuiteName           string
-	cryptoSuiteID          uint8
-	sigSuiteID             uint8
+	MinQueueCapacity          global.MinValue // Minimum queue size (also starting size)
+	MaxQueueCapacity          global.MaxValue // Maximum queue size
+	MinInstanceCount          atomic.Uint32   // Minimum number of instances at any one time
+	MaxInstanceCount          atomic.Uint32   // Maximum number of instances at any one time
+	HostID                    int             // ID for all sent messages
+	DestinationIP             string          // Destination address for output
+	OverrideMaxPayloadSize    int             // Use supplied maximum payload size
+	MaxPayloadSize            int             // Maximum payload size for configured destination
+	CryptoSuiteName           string
+	SigSuiteName              string
+	cryptoSuiteID             uint8
+	sigSuiteID                uint8
+	ThrottlingEnabled         bool
+	OutputThrottlingThreshold int           // Minimum number of fragments for a message to start throttling
+	OutputThrottlingTime      time.Duration // Sleep between each fragment (packet) when throttling
 }
 
 type Manager struct {
@@ -41,6 +45,10 @@ type Instance struct {
 	sigSuiteID     uint8
 	hostID         int // ID for all sent messages
 	maxPayloadSize int // maximum payload size for configured destination
+
+	throttlingEnabled         bool
+	outputThrottlingThreshold int
+	outputThrottlingTime      time.Duration
 
 	ctx    context.Context
 	wg     sync.WaitGroup     // Waiter for instance

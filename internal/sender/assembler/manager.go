@@ -114,6 +114,14 @@ func (config *ManagerConfig) validate() (err error) {
 	if config.SigSuiteName == "" {
 		err = fmt.Errorf("uninitialized signature suite name")
 	}
+	if config.ThrottlingEnabled {
+		if config.OutputThrottlingThreshold == 0 {
+			err = fmt.Errorf("uninitialized output throttling threshold")
+		}
+		if config.OutputThrottlingTime == 0 {
+			err = fmt.Errorf("uninitialized output throttling time")
+		}
+	}
 
 	return
 }

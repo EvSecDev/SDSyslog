@@ -297,6 +297,13 @@ func (opts *JSONOptions) setDefaults() {
 	if opts.Metrics.Interval == 0 {
 		opts.Metrics.Interval = parsing.Duration(15 * time.Second)
 	}
+
+	if opts.Throttling.MinFragmentThreshold == 0 {
+		opts.Throttling.MinFragmentThreshold = DefaultOutputThrottlingThreshold
+	}
+	if opts.Throttling.PerFragmentDelay == 0 {
+		opts.Throttling.PerFragmentDelay = parsing.Duration(DefaultOutputThrottlingTime)
+	}
 }
 
 // Reads in signing private key from dedicated file

@@ -70,11 +70,8 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 
 	raddr := &net.UDPAddr{
 		IP:   destAddress,
-		Port: 9, // discard port, arbitrary
+		Port: 9, // discard port, arbitrary (but 9 is a good sentinel)
 	}
-
-	var selectedSourceAddr net.IP
-	var gotValidSource bool
 
 	// Early startup can race network interface/route setup, retry until ready with 2 limiters
 	waitDuration := 500 * time.Microsecond
@@ -84,11 +81,23 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 	maxTotalRetryDuration := 1 * time.Minute
 	deadline := startTime.Add(maxTotalRetryDuration)
 
+	var selectedSourceAddr net.IP
+	var gotValidSource bool
+
 	var retryCount int
 	for retryCount = range maxRetries {
 		// Stop after deadline
 		if time.Now().After(deadline) {
 			break
+		}
+		// Increasing delay after initial failure
+		if retryCount > 1 {
+			time.Sleep(waitDuration)
+			waitDuration = waitDuration * 2
+
+			if waitDuration >= maxWaitDuration {
+				waitDuration = maxWaitDuration
+			}
 		}
 
 		// Dial UDP (no actual network traffic generated) to see what route table selects as source
@@ -96,7 +105,7 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 		conn, err = net.DialUDP(destIPVersion, nil, raddr)
 		if err != nil {
 			err = fmt.Errorf("dial failed: %w", err)
-			return
+			continue
 		}
 		localAddr := conn.LocalAddr()
 		_ = conn.Close()
@@ -106,29 +115,27 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 			err = fmt.Errorf("unexpected local addr type: %T", localAddr)
 			return
 		}
-
-		selectedSourceAddr = udpAddr.IP
-		if selectedSourceAddr == nil {
-			err = fmt.Errorf("no local IP selected")
+		if udpAddr == nil || udpAddr.IP == nil {
+			err = fmt.Errorf("dial connection did not contain source address IP")
 			return
 		}
 
-		// Got valid source
-		if !selectedSourceAddr.IsLoopback() {
-			gotValidSource = true
-			break
+		if udpAddr.IP.IsLoopback() {
+			// Selected loopback, retry for real address
+			err = fmt.Errorf("kernel selected loopback source (%s) for non-loopback destination (%s)",
+				selectedSourceAddr, destAddress)
+			continue
 		}
 
-		// Selected loopback, wait and retry for real address
-		time.Sleep(waitDuration)
-		waitDuration = waitDuration * 2
-		if waitDuration >= maxWaitDuration {
-			waitDuration = maxWaitDuration
-		}
+		// Got valid source
+		selectedSourceAddr = udpAddr.IP
+		gotValidSource = true
+		break
 	}
 	if !gotValidSource {
-		err = fmt.Errorf("kernel selected loopback source (%s) for non-loopback destination (%s) after retrying %d time(s) over %s",
-			selectedSourceAddr, destAddress, retryCount+1, maxTotalRetryDuration.String())
+		// Wrap whichever error was set last during the retry loop
+		err = fmt.Errorf("failed to select source address after retrying %d time(s) over %s: %w",
+			retryCount+1, maxTotalRetryDuration.String(), err)
 		return
 	}
 

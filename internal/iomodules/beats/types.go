@@ -9,7 +9,8 @@ type OutModule struct {
 	sink *lumberjack.SyncClient
 
 	// Config
-	endpoint    string
-	compression lumberjack.Option
-	timeout     lumberjack.Option
+	endpoint       string
+	compression    lumberjack.Option
+	timeout        lumberjack.Option
+	maxSendRetries int
 }

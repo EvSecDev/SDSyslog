@@ -8,13 +8,14 @@ import (
 )
 
 // Creates new beats (lumberjack) output module. Returns nil nil if no path.
-func NewOutput(endpoint string) (module *OutModule, err error) {
+func NewOutput(endpoint string, maxSendAttempts int) (module *OutModule, err error) {
 	if endpoint == "" {
 		return
 	}
 
 	module = &OutModule{
-		endpoint: endpoint,
+		endpoint:       endpoint,
+		maxSendRetries: maxSendAttempts,
 	}
 
 	module.compression = lumberjack.CompressionLevel(0)

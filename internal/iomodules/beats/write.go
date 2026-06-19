@@ -19,25 +19,25 @@ func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (logsSen
 		return
 	}
 
-	customFields := make(map[string]interface{})
+	customFields := make(map[string]any)
 	for key, value := range msg.CustomFields {
 		key = strings.TrimPrefix(key, "_") // Remove journal internal fields prefix
 		customFields[key] = value
 	}
 
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		// Minimum required fields
 		"@timestamp": msg.Timestamp,
 		"message":    string(msg.Data),
 
 		// Common fields
-		"host": map[string]interface{}{
+		"host": map[string]any{
 			"name":     msg.Hostname,
 			"hostname": msg.Hostname,
 			"id":       msg.HostID,
 			"ip":       msg.RemoteIP,
 		},
-		"agent": map[string]interface{}{
+		"agent": map[string]any{
 			"name": msg.Hostname, // Treated as remote host name for some parsers
 			// Meta fields identifying sdsyslog daemon itself
 			"program": global.ProgBaseName,
@@ -47,28 +47,34 @@ func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (logsSen
 		},
 
 		// Custom fields written to syslog namespace
-		"log": map[string]interface{}{
+		"log": map[string]any{
 			"id":     msg.MsgID,
 			"syslog": customFields,
 		},
 	}
-	events := []interface{}{fields}
+	events := []any{fields}
 
-	logsSent, err = mod.sink.Send(events)
-	if err != nil {
-		if errors.Is(err, syscall.EPIPE) || errors.Is(err, os.ErrDeadlineExceeded) {
-			// Re-open connection
-			_ = mod.sink.Close()
-			mod.sink, err = lumberjack.SyncDial(mod.endpoint, mod.compression, mod.timeout)
-			if err != nil {
-				err = fmt.Errorf("failed re-connection to beats server after remote ended the connection: %w", err)
+	for range mod.maxSendRetries {
+		logsSent, err = mod.sink.Send(events)
+		if err != nil {
+			// Retryable errors
+			if errors.Is(err, syscall.EPIPE) ||
+				errors.Is(err, os.ErrDeadlineExceeded) {
+				// Re-open connection
+				_ = mod.sink.Close()
+				mod.sink, err = lumberjack.SyncDial(mod.endpoint, mod.compression, mod.timeout)
+				if err != nil {
+					err = fmt.Errorf("failed re-connection to beats server after remote ended the connection: %w", err)
+					return
+				}
+				continue
+			} else {
+				// Fatal Error
 				return
 			}
-
-			// Try one more time to get the message through
-			logsSent, err = mod.sink.Send(events)
+		} else {
+			break
 		}
-		return
 	}
 	return
 }

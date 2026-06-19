@@ -29,7 +29,7 @@ func (manager *Manager) AddWorkers() (err error) {
 	if err != nil {
 		return
 	}
-	manager.Instance.beatsMod, err = beats.NewOutput(manager.Config.BeatsAddress)
+	manager.Instance.beatsMod, err = beats.NewOutput(manager.Config.BeatsAddress, 6)
 	if err != nil {
 		return
 	}

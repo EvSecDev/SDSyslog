@@ -54,6 +54,9 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 	// If destination is loopback, allow loopback
 	allowLoopback := destAddress.IsLoopback()
 
+	// If destination is link local, allow source link local
+	allowLinkLocal := destAddress.IsLinkLocalMulticast() || destAddress.IsLinkLocalUnicast()
+
 	// Short circuit loopback (no auto select)
 	if allowLoopback {
 		// Manually decide IP version since localhost could resolve incorrectly
@@ -123,8 +126,17 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 		if udpAddr.IP.IsLoopback() {
 			// Selected loopback, retry for real address
 			err = fmt.Errorf("kernel selected loopback source (%s) for non-loopback destination (%s)",
-				selectedSourceAddr, destAddress)
+				udpAddr.IP.String(), destAddress.String())
 			continue
+		}
+
+		if udpAddr.IP.IsLinkLocalMulticast() || udpAddr.IP.IsLinkLocalUnicast() {
+			if !allowLinkLocal {
+				// Selected link local, retry for real address
+				err = fmt.Errorf("kernel selected link-local source (%s) for non-link-local destination (%s)",
+					udpAddr.IP.String(), destAddress.String())
+				continue
+			}
 		}
 
 		// Got valid source

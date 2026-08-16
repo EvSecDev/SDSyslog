@@ -1,13 +1,17 @@
 package journald
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sdsyslog/internal/logctx"
 	"strings"
+	"time"
 )
 
-func getLastPosition(stateFilePath string) (cursor string, err error) {
+func getLastPosition(ctx context.Context, stateFilePath string) (cursor string, err error) {
 	stateDirectory := filepath.Dir(stateFilePath)
 
 	_, err = os.Stat(stateDirectory)
@@ -48,11 +52,15 @@ func getLastPosition(stateFilePath string) (cursor string, err error) {
 
 	// Validate cursor format - restart from zero otherwise
 	testCursorFields := strings.Split(cursor, ";")
+
+	// Just checking to see if there are more than one (2 times could be a coincidence)
 	if len(testCursorFields) < 3 {
-		// Just checking to see if there are more than one (2 times could be a coincidence)
+		logctx.LogStdWarn(ctx, "Found corrupted journal cursor in state file '%s': less than 3 fields\n", cursor)
 		cursor = ""
 	}
-	if strings.HasPrefix(testCursorFields[0], "s=") {
+	// Ensure the cursor looks like a valid cursor
+	if !strings.HasPrefix(testCursorFields[0], "s=") {
+		logctx.LogStdWarn(ctx, "Found corrupted journal cursor in state file '%s': improper prefix\n", cursor)
 		cursor = ""
 	}
 
@@ -94,4 +102,50 @@ func savePosition(cursor string, stateFilePath string) (err error) {
 		return
 	}
 	return
+}
+
+// Safely retrieves read position from atomic value - any error logs in context but returns empty cursor
+func (mod *InModule) getCurrentReadPosition() (cursor string) {
+	value := mod.currentPosition.Load()
+	position, valid := value.(*string)
+	if !valid {
+		logctx.LogStdWarn(mod.ctx, "Attempt to retrieve last read position cursor returned not a string: got type %s\n",
+			reflect.TypeFor[*string]())
+		return
+	}
+	if position == nil {
+		logctx.LogStdWarn(mod.ctx, "Attempt to retrieve last read position cursor returned a null string pointer\n")
+		return
+	}
+	cursor = *position
+	return
+}
+
+// Safely stores read position as atomic value from value - any error logs in context
+func (mod *InModule) setCurrentReadPosition(cursor string) {
+	mod.currentPosition.Store(&cursor)
+}
+
+// Ticker based loop to flush current read position to state file
+func (mod *InModule) periodicPositionSaver(saveInterval time.Duration) {
+	defer mod.wg.Done()
+
+	ticker := time.NewTicker(saveInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-mod.ctx.Done():
+			return
+		case <-ticker.C:
+			readPosition := mod.getCurrentReadPosition()
+			if readPosition == "" {
+				continue
+			}
+			err := savePosition(readPosition, mod.stateFile)
+			if err != nil {
+				logctx.LogStdErr(mod.ctx, "Failed to save current read position cursor to state file: %w\n", err)
+				continue
+			}
+		}
+	}
 }

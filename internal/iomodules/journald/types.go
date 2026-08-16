@@ -9,6 +9,7 @@ import (
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 	"sync"
+	"sync/atomic"
 )
 
 type OutModule struct {
@@ -35,7 +36,8 @@ type InModule struct {
 	outbox *mpmc.Queue[*protocol.Message]
 
 	// State
-	stateFile string
+	stateFile       string
+	currentPosition atomic.Value // *string
 
 	metrics MetricStorage
 

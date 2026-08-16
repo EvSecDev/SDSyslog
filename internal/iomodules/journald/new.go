@@ -17,7 +17,12 @@ import (
 )
 
 // Creates new journald listener module
-func NewInput(ctx context.Context, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[*protocol.Message]) (new *InModule, err error) {
+func NewInput(ctx context.Context,
+	baseStateFile string,
+	stateSaveInterval time.Duration,
+	filters []protocol.MessageFilter,
+	queue *mpmc.Queue[*protocol.Message],
+) (new *InModule, err error) {
 	// Create unique state file for journal
 	stateFileDir := filepath.Dir(baseStateFile)
 	stateFileName := filepath.Base(baseStateFile)
@@ -26,7 +31,7 @@ func NewInput(ctx context.Context, baseStateFile string, filters []protocol.Mess
 	newStateFile := filepath.Join(stateFileDir, newStateFileName)
 
 	// Load last cursor
-	oldPos, err := getLastPosition(newStateFile)
+	oldPos, err := getLastPosition(ctx, newStateFile)
 	if err != nil {
 		return
 	}
@@ -85,6 +90,7 @@ func NewInput(ctx context.Context, baseStateFile string, filters []protocol.Mess
 		metrics:   MetricStorage{},
 		cancel:    cancel,
 	}
+	new.setCurrentReadPosition(readPosition)
 
 	new.localHostname, err = os.Hostname()
 	if err != nil {
@@ -95,6 +101,10 @@ func NewInput(ctx context.Context, baseStateFile string, filters []protocol.Mess
 	// Channel to signal when go routine is about to block on first read
 	new.readerReady = make(chan struct{}, 1)
 
+	if stateSaveInterval > 0 {
+		new.wg.Add(1)
+		go new.periodicPositionSaver(stateSaveInterval)
+	}
 	return
 }
 

@@ -20,10 +20,10 @@ func (mod *InModule) reader() {
 	var iter uint64
 	const refreshMask = 1024 - 1
 
-	var readPosition string
 	for {
 		select {
 		case <-ctx.Done():
+			readPosition := mod.getCurrentReadPosition()
 			err := savePosition(readPosition, mod.stateFile)
 			if err != nil {
 				logctx.LogStdErr(ctx,
@@ -70,11 +70,12 @@ func (mod *InModule) reader() {
 			}
 
 			// Mark current cursor after successful entry retrieval
-			var fieldPresent bool
-			readPosition, fieldPresent = fields["__CURSOR"]
+			readPosition, fieldPresent := fields["__CURSOR"]
 			if !fieldPresent {
 				logctx.LogStdErr(ctx,
 					"failed cursor extraction\n")
+			} else {
+				mod.setCurrentReadPosition(readPosition)
 			}
 
 			// Parse and retrieve fields we need

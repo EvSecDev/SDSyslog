@@ -119,7 +119,7 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	if daemon.opts.Inputs.JournalEnabled {
-		err = daemon.Mgrs.In.AddJrnlInstance(daemon.opts.State.BaseFile)
+		err = daemon.Mgrs.In.AddJrnlInstance(daemon.opts.State.BaseFile, journalStateSaveInterval)
 		if err != nil {
 			err = fmt.Errorf("failed creating journal ingest instance: %w", err)
 			daemon.Shutdown()

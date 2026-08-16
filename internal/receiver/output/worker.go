@@ -52,8 +52,8 @@ func (instance *Instance) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			if instance.fileMod != nil {
-				_, err := instance.fileMod.FlushBuffer()
+			if instance.outModules["file"] != nil {
+				_, err := instance.outModules["file"].FlushBuffer()
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"failed to flush file line buffer to disk: %w\n", err)
@@ -61,10 +61,10 @@ func (instance *Instance) run(ctx context.Context) {
 			}
 			return
 		case <-ticker.C:
-			if instance.fileMod != nil {
+			if instance.outModules["file"] != nil {
 				// Periodic flush of file output event buffer
 				// Buffer might never fill and flush if we don't get enough messages
-				_, err := instance.fileMod.FlushBuffer()
+				_, err := instance.outModules["file"].FlushBuffer()
 				if err != nil {
 					logctx.LogStdErr(ctx,
 						"failed to flush file line buffer to disk: %w\n", err)
@@ -89,43 +89,19 @@ func (instance *Instance) run(ctx context.Context) {
 				instance.Metrics.ReceivedMessages.Add(1)
 
 				// Write message to all outputs
-				n1, err := instance.fileMod.Write(ctx, msg)
-				if err != nil {
-					logctx.LogStdErr(ctx,
-						"Failed to write message(s) to file output: %w\n", err)
+				var totalWritten int
+				for moduleName, module := range instance.outModules {
+					n, err := module.Write(ctx, msg)
+					if err != nil {
+						logctx.LogStdErr(ctx,
+							"Failed to write message(s) to %s output: %w\n", moduleName, err)
+					} else {
+						instance.writeModuleMetrics(moduleName, n)
+						totalWritten += n
+					}
 				}
-				instance.Metrics.SuccessfulFileWrites.Add(uint64(n1))
-
-				n2, err := instance.jrnlMod.Write(ctx, msg)
-				if err != nil {
-					logctx.LogStdErr(ctx,
-						"Failed to write message(s) to journald output: %w\n", err)
-				}
-				instance.Metrics.SuccessfulJrnlWrites.Add(uint64(n2))
-
-				n3, err := instance.beatsMod.Write(ctx, msg)
-				if err != nil {
-					logctx.LogStdErr(ctx,
-						"Failed to write message(s) to beats output: %w\n", err)
-				}
-				instance.Metrics.SuccessfulBeatsWrites.Add(uint64(n3))
-
-				n4, err := instance.rawMod.Write(ctx, msg)
-				if err != nil {
-					logctx.LogStdErr(ctx,
-						"Failed to write message(s) to raw output: %w\n", err)
-				}
-				instance.Metrics.SuccessfulRawWrites.Add(uint64(n4))
-
-				n5, err := instance.DBUSnotify.Write(ctx, msg)
-				if err != nil {
-					logctx.LogStdErr(ctx,
-						"Failed to write message(s) to DBUS notify output: %w\n", err)
-				}
-				instance.Metrics.SuccessfulNotifyWrites.Add(uint64(n5))
 
 				// Record consecutive total failures
-				totalWritten := n1 + n2 + n3 + n4 + n5
 				if totalWritten == 0 {
 					instance.Metrics.Dropped.Add(1)
 
@@ -148,7 +124,7 @@ func (instance *Instance) run(ctx context.Context) {
 					// Long term output failures means our own logs about output failures would go unnoticed
 					// Stop entire program for better visibility into fatal conditions like this
 					// Using OS signals to conduct the graceful shutdown through the signal handler in lifecycle
-					err = syscall.Kill(os.Getpid(), syscall.SIGTERM)
+					err := syscall.Kill(os.Getpid(), syscall.SIGTERM)
 					if err != nil {
 						logctx.LogStdFatal(ctx, "Failed to issue SIGTERM to self process after fatal amount of output write failures.\n")
 					}

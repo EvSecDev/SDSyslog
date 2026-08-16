@@ -161,7 +161,7 @@ Use `sdsyslog configure -c example.json --send-config-template` to generate an e
 - Journal output requires the installation of `systemd-journal-remote` and uses the HTTP configuration of the socket.
   - Logs are written to their own journal file (separate from the main system journal), usually located under `/var/log/journal/remote/`.
 - Beats output adds custom fields that are similar, but not the same, as other beats clients (like filebeat).
-  - Added fields can be found in the source at `internal/externalio/beats/write.go`
+  - Added fields can be found in the source at `internal/iomodules/beats/write.go`
   - Most of these fields will end up prefixed by `filebeat_` in third party log analysis software.
     - For example, code like below will end up as the field: `filebeat_log_id`
 

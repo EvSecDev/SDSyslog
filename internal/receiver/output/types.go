@@ -37,11 +37,7 @@ type Manager struct {
 
 type Instance struct {
 	namespace  []string
-	fileMod    iomodules.Output
-	jrnlMod    iomodules.Output
-	beatsMod   iomodules.Output
-	rawMod     iomodules.Output
-	DBUSnotify iomodules.Output
+	outModules map[string]iomodules.Output // Output registry
 
 	failures failureTracker
 

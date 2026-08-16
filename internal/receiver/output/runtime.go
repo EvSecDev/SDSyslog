@@ -2,12 +2,14 @@ package output
 
 import (
 	"context"
+	"sdsyslog/internal/iomodules"
 	"sdsyslog/internal/iomodules/beats"
 	"sdsyslog/internal/iomodules/dbusnotify"
 	"sdsyslog/internal/iomodules/file"
 	"sdsyslog/internal/iomodules/generic"
 	"sdsyslog/internal/iomodules/journald"
 	"sdsyslog/internal/logctx"
+	"time"
 )
 
 // Create and start new output instance
@@ -19,25 +21,35 @@ func (manager *Manager) AddWorkers() (err error) {
 	manager.Instance = *manager.newWorker()
 
 	const defaultFileBatchSize int = 20
+	const beatsRetryWriteCnt int = 6
+	const beatsStartupRetryTime time.Duration = 5 * time.Minute
 
-	// Add outputs
-	manager.Instance.fileMod, err = file.NewOutput(manager.Config.FilePath, defaultFileBatchSize)
+	// Add outputs from desired output modules (consume model only - modules do not register themselves)
+	manager.Instance.outModules = make(map[string]iomodules.Output)
+	fileMod, err := file.NewOutput(manager.Config.FilePath, defaultFileBatchSize)
 	if err != nil {
 		return
 	}
-	manager.Instance.jrnlMod, err = journald.NewOutput(manager.Config.JournaldURL)
+	jrnlMod, err := journald.NewOutput(manager.Config.JournaldURL)
 	if err != nil {
 		return
 	}
-	manager.Instance.beatsMod, err = beats.NewOutput(manager.Config.BeatsAddress, 6)
+	beatsMod, err := beats.NewOutput(manager.Config.BeatsAddress, beatsRetryWriteCnt, beatsStartupRetryTime)
 	if err != nil {
 		return
 	}
-	manager.Instance.rawMod = generic.NewOutput(manager.Config.RawWriter)
-	manager.Instance.DBUSnotify, err = dbusnotify.NewOutput(manager.Config.EnableDBUSNotify)
+	rawMod := generic.NewOutput(manager.Config.RawWriter)
+	dbusNotify, err := dbusnotify.NewOutput(manager.Config.EnableDBUSNotify)
 	if err != nil {
 		return
 	}
+
+	manager.Instance.outModules["file"] = fileMod
+	manager.Instance.outModules["journald"] = jrnlMod
+	manager.Instance.outModules["beats"] = beatsMod
+	manager.Instance.outModules["raw"] = rawMod
+	manager.Instance.outModules["notify"] = dbusNotify
+	manager.Instance.initializeMetrics()
 
 	// Start worker
 	manager.wg.Go(func() {
@@ -54,29 +66,15 @@ func (manager *Manager) RemoveWorkers() {
 	}
 	manager.wg.Wait()
 
-	err := manager.Instance.fileMod.Shutdown()
-	if err != nil {
-		logctx.LogStdErr(manager.ctx,
-			"failed to shutdown file module: %w\n", err)
+	if manager.Instance.outModules == nil {
+		return
 	}
-	err = manager.Instance.jrnlMod.Shutdown()
-	if err != nil {
-		logctx.LogStdErr(manager.ctx,
-			"failed to shutdown journal module: %w\n", err)
-	}
-	err = manager.Instance.beatsMod.Shutdown()
-	if err != nil {
-		logctx.LogStdErr(manager.ctx,
-			"failed to shutdown beats module: %w\n", err)
-	}
-	err = manager.Instance.rawMod.Shutdown()
-	if err != nil {
-		logctx.LogStdErr(manager.ctx,
-			"failed to shutdown raw module: %w\n", err)
-	}
-	err = manager.Instance.DBUSnotify.Shutdown()
-	if err != nil {
-		logctx.LogStdErr(manager.ctx,
-			"failed to shutdown DBUS notify module: %w\n", err)
+
+	for moduleName, module := range manager.Instance.outModules {
+		err := module.Shutdown()
+		if err != nil {
+			logctx.LogStdErr(manager.ctx,
+				"failed to shutdown %s module: %w\n", moduleName, err)
+		}
 	}
 }

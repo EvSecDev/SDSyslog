@@ -8,8 +8,14 @@ import (
 )
 
 // Creates new beats (lumberjack) output module. Returns nil nil if no path.
-func NewOutput(endpoint string, maxSendAttempts int) (module *OutModule, err error) {
+// Will wait until dial to beats server succeeds. Maximum time is defined as startupRetryDuration + 5 seconds (sleep+dial timeout)
+func NewOutput(endpoint string, maxSendAttempts int, startupRetryDuration time.Duration) (module *OutModule, err error) {
 	if endpoint == "" {
+		return
+	}
+
+	if startupRetryDuration < minStartupDuration {
+		err = fmt.Errorf("minimum retry startup duration must be at least %.0f seconds", minStartupDuration.Seconds())
 		return
 	}
 
@@ -19,12 +25,26 @@ func NewOutput(endpoint string, maxSendAttempts int) (module *OutModule, err err
 	}
 
 	module.compression = lumberjack.CompressionLevel(0)
-	module.timeout = lumberjack.Timeout(3 * time.Second)
+	module.timeout = lumberjack.Timeout(dialTimeout)
 
-	module.sink, err = lumberjack.SyncDial(endpoint, module.compression, module.timeout)
-	if err != nil {
-		err = fmt.Errorf("failed connection to beats server: %w", err)
-		return
+	startupStartTime := time.Now()
+	startupEndTime := startupStartTime.Add(startupRetryDuration)
+	retryCount := 0
+	for {
+		module.sink, err = lumberjack.SyncDial(endpoint, module.compression, module.timeout)
+		if err != nil {
+			if time.Now().After(startupEndTime) {
+				// Dial did not succeed in time
+				err = fmt.Errorf("failed connection to beats server after %d retries: %w", retryCount, err)
+				return
+			} else {
+				// Within retry period, wait and retry
+				time.Sleep(startupRetryDelay)
+				retryCount++
+				continue
+			}
+		}
+		break
 	}
 
 	return

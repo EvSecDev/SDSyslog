@@ -1,6 +1,7 @@
 package build
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -60,6 +61,58 @@ func runTests(ctx *context) (err error) {
 	err = runIntegTests(ctx, testArgs)
 	if err != nil {
 		return
+	}
+
+	// Fuzz tests (run by function+path)
+	err = runFuzzTests()
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func runFuzzTests() (err error) {
+	fuzzFunctions := map[string]string{
+		"FuzzDeconstructOuterPayload": "./pkg/protocol",
+	}
+
+	for function, packgePath := range fuzzFunctions {
+		printInfo(0, "Running fuzz test for %s...", function)
+
+		cmd := exec.Command("go", "test", "-fuzz="+function, "-fuzztime=10s", packgePath)
+
+		var stdout io.ReadCloser
+		stdout, err = cmd.StdoutPipe()
+		if err != nil {
+			err = fmt.Errorf("failed to get stdout pipe for fuzz command: %w", err)
+			return
+		}
+
+		err = cmd.Start()
+		if err != nil {
+			err = fmt.Errorf("failed to start fuzz command: %w", err)
+			return
+		}
+
+		// Stream stdout line by line
+		stdoutReader := bufio.NewReader(stdout)
+		for {
+			line, err := stdoutReader.ReadString('\n')
+			if len(line) > 0 {
+				fmt.Print(line)
+			}
+			if err != nil {
+				break
+			}
+		}
+		err = cmd.Wait()
+		if err != nil {
+			err = fmt.Errorf("failed to run fuzz test: %w", err)
+			return
+		}
+
+		printSuccess(0, "Done")
 	}
 
 	return

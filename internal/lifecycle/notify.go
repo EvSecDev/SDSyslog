@@ -1,4 +1,4 @@
-// Handles operations agnostic of daemon type (Receiver/Sender) to handle program lifecycle (signals, reloads, ect.)
+// Handles operations agnostic of daemon type (Receiver/Sender) to handle program lifecycle (signals, reloads, etc.)
 package lifecycle
 
 import (

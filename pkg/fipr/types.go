@@ -18,7 +18,7 @@ type Session struct {
 	stateMutex sync.RWMutex // Synchronize access to transport, session, and sequence
 	conn       net.Conn     // Underlying transport connection (Unix domain socket)
 	state      sessionState // Represents if the session is pre-start, accepting messages, or shutdown
-	seq        uint16       // Session-only counter - ALWAYS incrementing (sender, receiver, acks, resends, ect.)
+	seq        uint16       // Session-only counter - ALWAYS incrementing (sender, receiver, acks, resends, etc.)
 
 	// Framing
 	transportBuffer []byte // Buffer raw bytes from transport connection

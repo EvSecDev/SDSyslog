@@ -32,7 +32,7 @@ type Metric struct {
 type MetricValue struct {
 	Raw      interface{}   // uint64, float64
 	Unit     string        // e.g., "ns", "bytes", "count"
-	Interval time.Duration // measurement window, 1m, 5m, 15, ect
+	Interval time.Duration // measurement window, 1m, 5m, 15, etc.
 }
 
 // JSON version

@@ -1,4 +1,4 @@
-// Manages output writer worker instance. Handles writing final assembled log messages to configured output destinations (file, journald, ect.)
+// Manages output writer worker instance. Handles writing final assembled log messages to configured output destinations (file, journald, etc.)
 package output
 
 import (

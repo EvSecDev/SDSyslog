@@ -22,7 +22,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 			b.Fatalf("expected no error in creating queue, but got '%v'", err)
 		}
 
-		// Warm-up to stabilize caches, allocator, CPU frequency, ect
+		// Warm-up to stabilize caches, allocator, CPU frequency, etc.
 		for i := range 1000 {
 			err := queue.Push(i, 8)
 			if err != nil {

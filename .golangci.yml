@@ -1,0 +1,193 @@
+version: "2"
+
+run:
+  timeout: 10m
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    # Complexity
+    - funlen
+    - gocognit
+    - gocyclo
+    - cyclop
+    - nestif
+    - lll
+    - maintidx
+    - dupl
+    # Style / naming / layout
+    - misspell
+    - asciicheck
+    - bidichk
+    - decorder
+    - godot
+    - godox
+    - dupword
+    - predeclared
+    - inamedparam
+    - ireturn
+    - interfacebloat
+    - funcorder
+    - grouper
+    - mirror
+    - usestdlibvars
+    - gosmopolitan
+    - revive
+    - tagalign
+    - tagliatelle
+    - musttag
+    - gochecksumtype
+    - goconst
+    - gocritic
+    - whitespace
+    - varnamelen
+    - nolintlint
+    # Error handling / correctness
+    - errorlint
+    - errchkjson
+    - errname
+    - nilerr
+    - nilnil
+    - nilnesserr
+    - noinlineerr
+    - wrapcheck
+    - durationcheck
+    - exptostd
+    - nosprintfhostport
+    - asasalint
+    # Security
+    - gosec
+    # Performance / waste
+    - prealloc
+    - perfsprint
+    - unconvert
+    - unparam
+    - wastedassign
+    - reassign
+    - forcetypeassert
+    - makezero
+    - modernize
+    # Resource / context / concurrency
+    - bodyclose
+    - noctx
+    - containedctx
+    - contextcheck
+    - spancheck
+    - copyloopvar
+    - intrange
+    - fatcontext
+    # Structs / tags / DB
+    - exhaustive
+    - rowserrcheck
+    - sqlclosecheck
+    - recvcheck
+    - protogetter
+    - iotamixing
+    - embeddedstructfieldcheck
+    - iface
+    # Modules / imports / docs
+    - gomoddirectives
+    - importas
+    - godoclint
+    - goprintffuncname
+    - gocheckcompilerdirectives
+    # Tests
+    - testifylint
+    - thelper
+    - tparallel
+    - usetesting
+    - testableexamples
+    - ginkgolinter
+    # Misc
+    - forbidigo
+    - unqueryvet
+
+  settings:
+    # Enforces "no single-letter variables"
+    # (names < 2 chars flagged, incl. loop/temp vars via max-distance: 1).
+    varnamelen:
+      min-name-length: 2
+      max-distance: 1
+      check-receiver: true
+      check-return: true
+      check-type-param: true
+    funlen:
+      lines: 250
+      statements: 100
+    gocognit:
+      min-complexity: 20
+    cyclop:
+      max-complexity: 8
+    nestif:
+      min-complexity: 4
+    lll:
+      line-length: 150
+      tab-width: 4
+    dupl:
+      threshold: 100
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - experimental
+        - opinionated
+      disabled-checks:
+        - unnamedResult
+    godoclint:
+      disable:
+        - pkg-doc           # drop "Package x ..." format enforcement
+        - start-with-name   # drop "doc must start with symbol name"
+    revive:
+      enable-all-rules: true
+      severity: error
+      rules:
+        - name: bare-return
+          disabled: true   # preferring bare returns with named returns
+        - name: function-length
+          disabled: true   # redundant with funlen (avoids duplicate/conflicting findings)
+        - name: line-length-limit  # consolidated into lll
+          disabled: true
+        - name: unnecessary-format
+          disabled: true
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true   # enforces "Package x ..." format; existence kept via staticcheck ST1000
+        - name: var-declaration
+          disabled: true   # keep explicit types on var declarations (swappable func vars, etc.)
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+    staticcheck:
+      # All SA/S/ST checks except the doc-comment checks the builder filters out
+      # (ST1000 package, ST1020-1023 exported const/var/func/type).
+      checks: ["all", "-ST1020", "-ST1021", "-ST1022", "-ST1023"]
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - funlen
+          - tagalign
+      - path: _test\.go
+        linters:
+          - revive
+        text: 'malformed tag'
+      - linters: [staticcheck]
+        text: 'package comment should be of the form'
+      - linters: [nilerr]
+        text: 'error is nil \(.*\) but it returns error'
+
+formatters:
+  enable:
+    - gofmt
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -140,7 +140,6 @@ func getExecutablePath(ctx context.Context) (selfExePath string, err error) {
 		// Path exists and executable, use it
 		selfExePath = exePath
 		return
-
 	}
 
 	// No path was present/exists

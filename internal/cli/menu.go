@@ -260,5 +260,4 @@ func printFlagOptions(fs *flag.FlagSet, baseIndentSpaces int) {
 
 		fmt.Printf("%s%s%s%s\n", indent, left, padding, desc)
 	}
-
 }

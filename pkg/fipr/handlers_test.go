@@ -43,7 +43,6 @@ func TestAcknowledgements(t *testing.T) {
 	if sendError != nil {
 		t.Fatalf("failed to setup session: step: start: %v", sendError)
 	}
-
 }
 
 func TestResend(t *testing.T) {

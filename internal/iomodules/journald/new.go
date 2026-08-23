@@ -108,7 +108,7 @@ func NewInput(ctx context.Context,
 	return
 }
 
-// Creates new journald output module. Tests connection. Returns nil nil if no url.
+// Creates new journald output module. Tests connection. Returns nil, nil if no url.
 func NewOutput(endpoint string) (module *OutModule, err error) {
 	if endpoint == "" {
 		return

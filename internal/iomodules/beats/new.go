@@ -7,7 +7,7 @@ import (
 	lumberjack "github.com/elastic/go-lumber/client/v2"
 )
 
-// Creates new beats (lumberjack) output module. Returns nil nil if no path.
+// Creates new beats (lumberjack) output module. Returns nil, nil if no path.
 // Will wait until dial to beats server succeeds. Maximum time is defined as startupRetryDuration + 5 seconds (sleep+dial timeout)
 func NewOutput(endpoint string, maxSendAttempts int, startupRetryDuration time.Duration) (module *OutModule, err error) {
 	if endpoint == "" {

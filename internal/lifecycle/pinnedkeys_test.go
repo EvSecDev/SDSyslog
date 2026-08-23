@@ -25,7 +25,7 @@ func TestIssueLiveSigningKeyReload(t *testing.T) {
 			name:        "valid found program",
 			configPath:  global.DefaultConfigRecv,
 			programName: global.ProgBaseName,
-			psOutput: `    PID COMMAND         COMMAND
+			psOutput: `    PID COMMAND         NAME
       1 systemd         /sbin/init
      27 ksoftirqd/2     [ksoftirqd/2]
      28 kworker/2:0-cgr [kworker/2:0-cgroup_release]
@@ -52,7 +52,7 @@ func TestIssueLiveSigningKeyReload(t *testing.T) {
 			name:        "multiple receivers",
 			configPath:  global.DefaultConfigRecv,
 			programName: global.ProgBaseName,
-			psOutput: `    PID COMMAND         COMMAND
+			psOutput: `    PID COMMAND         NAME
       1 systemd         /sbin/init
      27 ksoftirqd/2     [ksoftirqd/2]
      28 kworker/2:0-cgr [kworker/2:0-cgroup_release]
@@ -80,7 +80,7 @@ func TestIssueLiveSigningKeyReload(t *testing.T) {
 			name:        "receiver and sender running",
 			configPath:  global.DefaultConfigRecv,
 			programName: global.ProgBaseName,
-			psOutput: `    PID COMMAND         COMMAND
+			psOutput: `    PID COMMAND         NAME
       1 systemd         /sbin/init
     138 kworker/R-kinte [kworker/R-kintegrityd]
    1375 dbus-daemon     /usr/bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
@@ -100,7 +100,7 @@ func TestIssueLiveSigningKeyReload(t *testing.T) {
 			name:        "no running processes",
 			configPath:  global.DefaultConfigRecv,
 			programName: global.ProgBaseName,
-			psOutput: `    PID COMMAND         COMMAND
+			psOutput: `    PID COMMAND         NAME
       1 systemd         /sbin/init
     138 kworker/R-kinte [kworker/R-kintegrityd]
    1375 dbus-daemon     /usr/bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only

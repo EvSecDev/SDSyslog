@@ -15,7 +15,7 @@ import (
 	"sdsyslog/pkg/protocol"
 )
 
-// Creates new file input module. Returns nil nil if no path.
+// Creates new file input module. Returns nil, nil if no path.
 func NewInput(ctx context.Context, filePath string, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[*protocol.Message]) (module *InModule, err error) {
 	if filePath == "" {
 		return
@@ -94,7 +94,7 @@ func NewInput(ctx context.Context, filePath string, baseStateFile string, filter
 	return
 }
 
-// Creates new file output module. Returns nil nil if no path.
+// Creates new file output module. Returns nil, nil if no path.
 func NewOutput(filePath string, batchSize int) (module *OutModule, err error) {
 	if filePath == "" {
 		return

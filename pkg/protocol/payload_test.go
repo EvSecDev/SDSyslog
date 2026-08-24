@@ -276,7 +276,7 @@ func TestDeconstructPayload(t *testing.T) {
 				MsgID:         2,
 				MessageSeq:    3,
 				MessageSeqMax: 4,
-				Timestamp:     time.UnixMilli(int64(time.Now().UnixMilli())),
+				Timestamp:     time.UnixMilli(time.Now().UnixMilli()),
 				Hostname:      HostPrefixUnverified + "test-host",
 				CustomFields: map[string]any{
 					"applicationname": "app1",
@@ -317,7 +317,7 @@ func TestDeconstructPayload(t *testing.T) {
 				MsgID:         2,
 				MessageSeq:    3,
 				MessageSeqMax: 4,
-				Timestamp:     time.UnixMilli(int64(time.Now().UnixMilli())),
+				Timestamp:     time.UnixMilli(time.Now().UnixMilli()),
 				Hostname:      "test-host",
 				SignatureID:   1,
 				CustomFields: map[string]any{

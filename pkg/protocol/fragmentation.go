@@ -19,7 +19,7 @@ func Fragment(primaryPayload *Payload, maxPayloadSize int, fixedProtocolSize int
 		return
 	}
 
-	remaining := []byte(primaryPayload.Data)
+	remaining := primaryPayload.Data
 	seq := 0
 
 	// Step through the payload to dynamically create fragment sizes

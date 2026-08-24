@@ -18,8 +18,8 @@ func getFileID(file os.FileInfo) (id fileID, err error) {
 		return
 	}
 	id = fileID{
-		dev: uint64(stat.Dev),
-		ino: uint64(stat.Ino),
+		dev: stat.Dev,
+		ino: stat.Ino,
 	}
 	return
 }

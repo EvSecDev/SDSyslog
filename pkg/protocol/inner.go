@@ -108,7 +108,7 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 			return
 		}
 	} else {
-		if err = writeUint16(&buf, uint16(customFieldsEmptyMarker)); err != nil {
+		if err = writeUint16(&buf, customFieldsEmptyMarker); err != nil {
 			err = fmt.Errorf("%w: Context section marker length: %w", ErrSerialization, err)
 			return
 		}
@@ -287,7 +287,7 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 		err = fmt.Errorf("%w: context section length cannot be empty", ErrProtocolViolation)
 		return
 	}
-	if ctxSecLen != uint16(customFieldsEmptyMarker) {
+	if ctxSecLen != customFieldsEmptyMarker {
 		// Custom fields present, extract
 		rawContextSection := make([]byte, ctxSecLen)
 		if _, err = io.ReadFull(buf, rawContextSection); err != nil {

@@ -114,7 +114,7 @@ func (watcher *Watcher) processEvent(buf []byte, readEndIndex int) (err error) {
 		}
 
 		// Name field has the filename for dir events (null-terminated)
-		nameBytes := buf[offset+watcher.eventSize : offset+watcher.eventSize+uint32(event.Len)]
+		nameBytes := buf[offset+watcher.eventSize : offset+watcher.eventSize+event.Len]
 		nameBytes = bytes.TrimRight(nameBytes, "\x00")
 		name := string(nameBytes)
 
@@ -140,7 +140,7 @@ func (watcher *Watcher) processEvent(buf []byte, readEndIndex int) (err error) {
 		}
 
 		// Move the offset forward to the next event
-		offset += watcher.eventSize + uint32(event.Len)
+		offset += watcher.eventSize + event.Len
 	}
 	return
 }

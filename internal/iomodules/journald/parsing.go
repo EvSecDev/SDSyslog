@@ -35,8 +35,8 @@ func parseFields(fields map[string]string, localHostname string) (message *proto
 		return
 	}
 	message.Timestamp = time.Unix(
-		int64(rawTimestampUs/1_000_000),         // seconds
-		int64((rawTimestampUs%1_000_000)*1_000), // nanoseconds
+		rawTimestampUs/1_000_000,         // seconds
+		(rawTimestampUs%1_000_000)*1_000, // nanoseconds
 	)
 
 	// APPLICATION NAME

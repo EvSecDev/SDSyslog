@@ -134,7 +134,7 @@ func TestDecryptWithTamperedCiphertext(t *testing.T) {
 	}
 
 	// Tamper with the ciphertext
-	tamperedCiphertext := append(ciphertext[:len(ciphertext)-1], byte(ciphertext[len(ciphertext)-1]^0x01)) // Flip last byte
+	tamperedCiphertext := append(ciphertext[:len(ciphertext)-1], ciphertext[len(ciphertext)-1]^0x01) // Flip last byte
 
 	// Attempt to decrypt the tampered ciphertext
 	_, err = Decrypt(tamperedCiphertext, decrKey, nonce, associatedData)

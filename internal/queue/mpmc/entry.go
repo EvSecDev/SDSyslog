@@ -122,7 +122,7 @@ func (container *Queue[T]) PushWithRetry(value T, size uint64, maxRetries int) (
 		maxRetries = 1
 	}
 	for range maxRetries {
-		err = container.Push(value, uint64(size)) // try once
+		err = container.Push(value, size) // try once
 		if err == nil {
 			return
 		}

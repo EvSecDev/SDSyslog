@@ -94,7 +94,7 @@ func DeconstructOuterPayload(blob []byte) (innerPayload []byte, err error) {
 	currentIndex := 0 // Running index to manage extraction
 
 	// Immediate extract first byte to check for further parameters
-	suiteID := uint8(blob[currentIndex])
+	suiteID := blob[currentIndex]
 	currentIndex += registry.SuiteIDLen
 
 	// Validate ID is known

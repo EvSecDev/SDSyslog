@@ -156,11 +156,21 @@ func newMockConn(inner net.Conn, secret []byte) *mockConn {
 }
 func (c *mockConn) Write(b []byte) (n int, err error) {
 	if !c.corruptNext.Load() {
-		return c.Conn.Write(b)
+		n, err = c.Conn.Write(b)
+		if err != nil {
+			err = fmt.Errorf("write corrupted: %w", err)
+			return
+		}
+		return
 	}
 
 	if len(b) < minDataLength {
-		return c.Conn.Write(b)
+		n, err = c.Conn.Write(b)
+		if err != nil {
+			err = fmt.Errorf("write: %w", err)
+			return
+		}
+		return
 	}
 
 	c.corruptNext.Store(false)

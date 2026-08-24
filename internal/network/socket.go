@@ -103,7 +103,10 @@ func ReuseTCPPort(addr string) (conn net.Listener, err error) {
 					1,
 				)
 			})
-			return err
+			if err != nil {
+				return fmt.Errorf("fd control: %w", err)
+			}
+			return nil
 		},
 	}
 

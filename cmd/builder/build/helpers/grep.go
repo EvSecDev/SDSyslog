@@ -83,7 +83,7 @@ func ScanRepo(
 
 		err = f.Close()
 		if err != nil {
-			return err
+			return fmt.Errorf("file close: %w", err)
 		}
 		return nil
 	})

@@ -115,6 +115,7 @@ func LoadProgram(ctx context.Context) (err error) {
 		}
 	} else if err != nil {
 		err = nil
+		//nolint:nilerr // Stat is just a check
 		return
 	}
 

@@ -10,7 +10,7 @@ import (
 )
 
 type DaemonLike interface {
-	Init([]byte) (err error)
+	Init(key []byte) (err error)
 	Start() (err error)
 	Shutdown()
 	StartFIPR() (err error)

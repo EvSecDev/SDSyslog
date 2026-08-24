@@ -175,7 +175,7 @@ func TestNumberInRange(t *testing.T) {
 	t.Run("randomness check", func(t *testing.T) {
 		min, max := 1, 100
 		results := make(map[int]bool)
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			n, err := NumberInRange(min, max)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)

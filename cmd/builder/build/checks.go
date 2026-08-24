@@ -131,7 +131,7 @@ func checkDevArtifacts(ctx *context) (err error) {
 
 		// Validate identifier (a-zA-Z0-9_)
 		name := fields[1]
-		for i := 0; i < len(name); i++ {
+		for i := range name {
 			c := name[i]
 			if c == '_' ||
 				c < 'a' || c > 'z' &&

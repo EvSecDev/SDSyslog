@@ -76,7 +76,7 @@ func TestQueueScaleCapacity_DecisionOnly(t *testing.T) {
 				t.Fatalf("new queue: %v", err)
 			}
 
-			for i := 0; i < tt.pushCount; i++ {
+			for i := range tt.pushCount {
 				q.PushBlocking(ctx, i, tt.bytesPerItem)
 			}
 

@@ -61,7 +61,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 			b.ResetTimer()
 			start := time.Now()
 
-			for i := 0; i < b.N; i++ {
+			for i := range b.N {
 				payloadTemplate.Data = bytes.Repeat([]byte("0"), msgSize)
 				queue.push(mockCtx, "key"+strconv.Itoa(i), payloadTemplate, time.Now())
 				key, ok := queue.PopKey(context.Background())

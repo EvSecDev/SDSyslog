@@ -67,7 +67,7 @@ func TestQueueMigration(t *testing.T) {
 			consumed := make(chan int, tt.numItems)
 
 			// Producers
-			for p := 0; p < tt.numProducers; p++ {
+			for p := range tt.numProducers {
 				wg.Add(1)
 				go func(id int) {
 					defer wg.Done()
@@ -85,7 +85,7 @@ func TestQueueMigration(t *testing.T) {
 			}
 
 			// Consumers
-			for c := 0; c < tt.numConsumers; c++ {
+			for range tt.numConsumers {
 				wg.Go(func() {
 					for {
 						select {

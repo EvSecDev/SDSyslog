@@ -33,9 +33,9 @@ func TestQueue_Concurrency(t *testing.T) {
 
 			done := make(chan bool, tt.numGoroutines*2)
 
-			for i := 0; i < tt.numGoroutines; i++ {
+			for range tt.numGoroutines {
 				go func() {
-					for j := 0; j < tt.numOps; j++ {
+					for j := range tt.numOps {
 						for {
 							err := queue.Push(j, 8)
 							if err == nil {
@@ -47,7 +47,7 @@ func TestQueue_Concurrency(t *testing.T) {
 					done <- true
 				}()
 				go func() {
-					for j := 0; j < tt.numOps; j++ {
+					for range tt.numOps {
 						_, success := queue.Pop(context.Background())
 						if !success {
 							t.Errorf("Pop failed during high contention")
@@ -57,7 +57,7 @@ func TestQueue_Concurrency(t *testing.T) {
 				}()
 			}
 
-			for i := 0; i < tt.numGoroutines*2; i++ {
+			for range tt.numGoroutines * 2 {
 				<-done
 			}
 		})

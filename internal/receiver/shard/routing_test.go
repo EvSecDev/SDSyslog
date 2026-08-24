@@ -456,7 +456,7 @@ func TestRouteSelect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Deterministic check: repeat call should give same result
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				selectedSecond, _ := routeSelect(tt.key, tt.candidates)
 				if !slices.Contains(tt.candidates, selectedSecond) {
 					t.Fatalf("selected value '%s' is not in test candidates %q", selectedSecond, tt.candidates)
@@ -525,7 +525,7 @@ func TestRoutePerformance(t *testing.T) {
 		}
 
 		b := testing.Benchmark(func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				routeSelect(key, candidates)
 			}
 		})

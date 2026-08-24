@@ -70,7 +70,7 @@ func TestMetricsPresence(t *testing.T) {
 			}
 
 			// Push items
-			for i := 0; i < tt.pushCount; i++ {
+			for i := range tt.pushCount {
 				err = q.Push(i, uint64(tt.bytesPerItem))
 				if err != nil {
 					t.Fatalf("push %d failed unexpectedly: %v", i, err)
@@ -79,7 +79,7 @@ func TestMetricsPresence(t *testing.T) {
 
 			// Pop items (consume some/all)
 			popCount := tt.expectPop
-			for i := 0; i < int(popCount); i++ {
+			for i := range int(popCount) {
 				val, success := q.Pop(ctx)
 				if !success {
 					t.Fatalf("pop %d failed unexpectedly", i)

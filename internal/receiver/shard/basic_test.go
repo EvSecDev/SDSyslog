@@ -195,7 +195,7 @@ func TestPushPop_Parallel(t *testing.T) {
 
 	wg.Wait()
 
-	for p := 0; p < numProducers; p++ {
+	for p := range numProducers {
 		key, ok := queue.PopKey(ctx)
 		if !ok {
 			t.Fatalf("expected to pop a key for producer %d", p)

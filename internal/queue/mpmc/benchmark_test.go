@@ -32,7 +32,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 		}
 
 		b.Run(fmt.Sprintf("QueueCapacity=%d", n), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for i := range b.N {
 				err := queue.Push(i, 8)
 				if err != nil {
 					b.Fatalf("failed push: %v", err)

@@ -81,7 +81,7 @@ func TestMemzero(t *testing.T) {
 			}
 
 			// Use unsafe to verify the contents of the slice have been zeroed in memory
-			for i := 0; i < len(tt.input); i++ {
+			for i := range tt.input {
 				if *(*byte)(unsafe.Pointer(&tt.input[i])) != 0 {
 					t.Errorf("memory at index %d was not zeroed, expected 0, got %d", i, tt.input[i])
 				}

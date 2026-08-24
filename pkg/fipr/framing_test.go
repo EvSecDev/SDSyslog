@@ -160,7 +160,7 @@ func TestReadFrame(t *testing.T) {
 
 			// Test - get each output frame
 			var gotFrames [][]byte
-			for i := 0; i < len(expectedWholeFrames); i++ {
+			for range expectedWholeFrames {
 				frame, err := session.readFrame()
 				gotExpected, err := utils.MatchWrappedError(err, tt.expectedErr)
 				if err != nil {

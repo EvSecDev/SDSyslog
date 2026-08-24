@@ -21,7 +21,12 @@ import (
 var webFiles embed.FS
 
 // Sets up HTTP listener configuration for metric querying
-func SetupListener(ctx context.Context, port int, search DataSearcher, discover Discoverer, aggregation AggSearcher) (server *http.Server, err error) {
+func SetupListener(ctx context.Context,
+	port int,
+	search DataSearcher,
+	discover Discoverer,
+	aggregation AggSearcher,
+) (server *http.Server, err error) {
 	requestMultiplexer := http.NewServeMux()
 
 	helpPage, err := webFiles.ReadFile("static-files/metric-help.html")

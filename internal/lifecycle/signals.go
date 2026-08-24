@@ -103,7 +103,8 @@ func SignalHandler(ctx context.Context, daemonManager DaemonLike) {
 				// Cleanup update variable
 				lerr := os.Unsetenv(EnvNameSelfUpdate)
 				if lerr != nil {
-					logctx.LogStdWarn(ctx, "failed to unset environment variable %s (future updates may use wrong PID): %w\n", EnvNameSelfUpdate, lerr)
+					logctx.LogStdWarn(ctx, "failed to unset environment variable %s (future updates may use wrong PID): %w\n",
+						EnvNameSelfUpdate, lerr)
 				}
 
 				// Start daemon back up

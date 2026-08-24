@@ -96,7 +96,8 @@ func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []
 		})
 	}
 
-	add(MTSize, currentCapacity, "capacity", metrics.Summary, "Current active queue max capacity (total allocated entries) at time of metric collection")
+	add(MTSize, currentCapacity, "capacity", metrics.Summary,
+		"Current active queue max capacity (total allocated entries) at time of metric collection")
 	add(MTDepth, agg.Depth, "count", metrics.Gauge, "Current number of items in the queue")
 	add(MTBytes, agg.Bytes, "bytes", metrics.Gauge, "Byte sum of all items in the queue")
 
@@ -104,15 +105,22 @@ func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []
 	add(MTPushSuc, agg.PushSuccess, "count", metrics.Counter, "Total push attempts that succeeded in the interval")
 	add(MTPushCASRetry, agg.PushCASRetries, "count", metrics.Counter, "Sum of retries to push in the interval")
 
-	add(MTPushSeqBehindTail, agg.PushSeqBehindTail, "count", metrics.Counter, "Push observed a sequence value behind the expected tail position, indicating the slot is not yet available for writing (writer ahead)")
-	add(MTPushStaleRetries, agg.PushStaleRetries, "count", metrics.Counter, "Push observed sequence ahead of local position (seq > pos), indicating another writer advanced the tail; retry due to stale local view of ring state.")
+	add(MTPushSeqBehindTail, agg.PushSeqBehindTail, "count", metrics.Counter,
+		"Push observed a sequence value behind the expected tail position, indicating the slot is not yet available for writing (writer ahead)")
+	add(MTPushStaleRetries, agg.PushStaleRetries, "count", metrics.Counter,
+		"Push observed sequence ahead of local position (seq > pos), indicating another writer advanced the tail"+
+			"retry due to stale local view of ring state.")
 
 	add(MTPopAttempt, agg.PopAttempts, "count", metrics.Counter, "Total pop attempts in the interval")
 	add(MTPopSuc, agg.PopSuccess, "count", metrics.Counter, "Total pop attempts that succeeded in the interval")
 	add(MTPopCASRetry, agg.PopCASRetries, "count", metrics.Counter, "Sum of retries to pop in the interval")
 
-	add(MTPopEmptySeq, agg.PopEmptySeqBehind, "count", metrics.Counter, "Pop observed sequence behind expected read position (seq < readySeq), indicating the slot is not yet visible/ready for consumption (read-before-write or visibility lag).")
-	add(MTPopStaleRetries, agg.PopStaleRetries, "count", metrics.Counter, "Pop observed sequence ahead of expected head position (seq > readySeq), indicating another consumer advanced the head; retry due to stale local view of ring state.")
+	add(MTPopEmptySeq, agg.PopEmptySeqBehind, "count", metrics.Counter,
+		"Pop observed sequence behind expected read position (seq < readySeq),"+
+			"indicating the slot is not yet visible/ready for consumption (read-before-write or visibility lag).")
+	add(MTPopStaleRetries, agg.PopStaleRetries, "count", metrics.Counter,
+		"Pop observed sequence ahead of expected head position (seq > readySeq),"+
+			"indicating another consumer advanced the head; retry due to stale local view of ring state.")
 
 	return
 }

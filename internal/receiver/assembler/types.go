@@ -20,10 +20,14 @@ type Manager struct {
 	Config         *ManagerConfig                  // Configuration values
 	nextInstanceID uint16                          // Next instance pair ID
 	routing        atomic.Pointer[routingSnapshot] // Atomic pointer to immutable routing snapshot used by hot-path readers
-	RoutingView    *RoutingState                   // External read-only by method for viewing routing - prevents direct manager access and import cycles
 	outQueue       *mpmc.Queue[*protocol.Payload]  // Next pipeline stage queue (not owned by this manager)
-	FIPRRunning    atomic.Bool                     // Syncs fipr send to local fipr receive to gate hot path from checking socket directory unnecessarily
 	ctx            context.Context
+
+	// External read-only by method for viewing routing - prevents direct manager access and import cycles
+	RoutingView *RoutingState
+
+	// Syncs fipr send to local fipr receive to gate hot path from checking socket directory unnecessarily
+	FIPRRunning atomic.Bool
 }
 
 type routingSnapshot struct {

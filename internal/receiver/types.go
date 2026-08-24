@@ -24,9 +24,14 @@ type JSONOptions struct {
 		SignatureSuite string `json:"signatureSuite,omitempty"`
 	} `json:"crypto,omitempty"`
 	ReplayProtection struct {
-		ProtectionWindow     parsing.Duration `json:"shortTermWindow,omitempty"`      // Short term replay protection window size (For Listener)
-		PastValidityWindow   parsing.Duration `json:"longTermPastWindow,omitempty"`   // Time window where old timestamps are still accepted (relative to processing time)
-		FutureValidityWindow parsing.Duration `json:"longTermFutureWindow,omitempty"` // Time window where future timestamps are still accepted (relative to processing time)
+		// Short term replay protection window size (For Listener)
+		ProtectionWindow parsing.Duration `json:"shortTermWindow,omitempty"`
+
+		// Time window where old timestamps are still accepted (relative to processing time)
+		PastValidityWindow parsing.Duration `json:"longTermPastWindow,omitempty"`
+
+		// Time window where future timestamps are still accepted (relative to processing time)
+		FutureValidityWindow parsing.Duration `json:"longTermFutureWindow,omitempty"`
 	} `json:"replayProtection,omitempty"`
 	State struct {
 		IPCSocketDirectory string `json:"ipcSocketDirectory,omitempty"`

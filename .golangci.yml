@@ -175,6 +175,7 @@ linters:
         linters:
           - funlen
           - tagalign
+          - lll
       - path: _test\.go
         linters:
           - revive

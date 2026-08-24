@@ -2,11 +2,21 @@ package setup
 
 type Step interface {
 	Name() string
-	NeedsApply(ctx *context) (alreadyDone bool, err error) // Non-mutating actions - reports if apply steps have already been done
-	Apply(ctx *context) (err error)                        // Mutating-actions - conducts apply steps, records steps in self struct
-	Rollback(ctx *context)                                 // Mutating-actions - conducts undo steps in case of apply failure using records in self struct
-	PostApply(ctx *context)                                // Mutating-actions - conducts cleanup actions after all install steps have succeeded (will not trigger rollback when failures occur)
-	Uninstall(ctx *context) (err error)                    // Mutating-actions - conducts full removal of all related files/state
+
+	// Non-mutating actions - reports if apply steps have already been done
+	NeedsApply(ctx *context) (alreadyDone bool, err error)
+
+	// Mutating-actions - conducts apply steps, records steps in self struct
+	Apply(ctx *context) (err error)
+
+	// Mutating-actions - conducts undo steps in case of apply failure using records in self struct
+	Rollback(ctx *context)
+
+	// Mutating-actions - conducts cleanup actions after all install steps have succeeded (will not trigger rollback when failures occur)
+	PostApply(ctx *context)
+
+	// Mutating-actions - conducts full removal of all related files/state
+	Uninstall(ctx *context) (err error)
 }
 
 type context struct {

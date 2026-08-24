@@ -85,10 +85,12 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	if stepUp {
 		newDeadline := deadlineDur + 10*time.Millisecond
 		asmMgr.Config.PacketDeadline.Store(int64(newDeadline))
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled up packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Scaled up packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
 	} else if stepDown {
 		newDeadline := deadlineDur - 10*time.Millisecond
 		asmMgr.Config.PacketDeadline.Store(int64(newDeadline))
-		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog, "Scaled down packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
+		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog,
+			"Scaled down packet deadline time from %dms to %dms\n", deadlineDur.Milliseconds(), newDeadline)
 	}
 }

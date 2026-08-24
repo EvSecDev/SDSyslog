@@ -138,7 +138,8 @@ func TestSignatureWrapper(t *testing.T) {
 			}
 
 			if valid != tt.expectedVerifySuccess {
-				t.Errorf("unexpected signature verification result: expected verify success: %v - got verify success: %v", tt.expectedVerifySuccess, valid)
+				t.Errorf("unexpected signature verification result: expected verify success: %v - got verify success: %v",
+					tt.expectedVerifySuccess, valid)
 			}
 		})
 	}

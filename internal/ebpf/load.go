@@ -67,7 +67,8 @@ func LoadProgram(ctx context.Context) (err error) {
 		modeIsCorrect := mode == fsops.CapEffective|fsops.CapInheritable|fsops.CapPermitted
 		if !bpfCapSet || !sysResourceCapSet || !modeIsCorrect {
 			// No-op (log for informative)
-			logctx.LogStdInfo(ctx, "Executable file is missing capability required to use eBPF socket draining program: CAP_SYS_RESOURCE,CAP_BPF=eip\n")
+			const reqCapability string = "CAP_SYS_RESOURCE,CAP_BPF=eip"
+			logctx.LogStdInfo(ctx, "Executable file is missing capability required to use eBPF socket draining program: "+reqCapability+"\n")
 			logctx.LogStdInfo(ctx, "eBPF socket draining will not be enabled (may cause dropped packets on scaling/upgrade events)\n")
 			return
 		}

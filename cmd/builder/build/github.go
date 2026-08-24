@@ -146,7 +146,10 @@ func publishRelease(ctx *context) (err error) {
 		return
 	}
 
-	baseAttachmentUploadURL := "https://" + uploadAPI + "/repos/" + ctx.cfg.RemoteGitUsername + "/" + ctx.cfg.RemoteGitRepo + "/releases/" + strconv.Itoa(int(releaseID)) + "/assets"
+	baseAttachmentUploadURL := "https://" + uploadAPI + "/repos/" +
+		ctx.cfg.RemoteGitUsername + "/" +
+		ctx.cfg.RemoteGitRepo + "/releases/" +
+		strconv.Itoa(int(releaseID)) + "/assets"
 	parsedUploadURL, err := url.Parse(baseAttachmentUploadURL)
 	if err != nil {
 		err = fmt.Errorf("invalid release asset upload endpoint URL: %w", err)

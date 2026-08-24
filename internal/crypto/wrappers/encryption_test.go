@@ -146,7 +146,8 @@ func TestEncryptionWrapper(t *testing.T) {
 			}
 
 			if !bytes.Equal(outPayload, tt.expectedPayload) {
-				t.Errorf("decrypted output payload does not match expected payload:\n  Expected Payload: %v\n  Actual Payload: %v\n", tt.expectedPayload, outPayload)
+				t.Errorf("decrypted output payload does not match expected payload:\n  Expected Payload: %v\n  Actual Payload: %v\n",
+					tt.expectedPayload, outPayload)
 			}
 		})
 	}

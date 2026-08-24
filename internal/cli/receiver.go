@@ -17,12 +17,14 @@ func ReceiveMode(ctx context.Context, cliOpts *CommandSet, commandname string, a
 	var addPinnedKey string
 	var delPinnedKey string
 
+	const exampleAddPinKey string = "<hostname>" + receiver.PinedKeysReqSeparator + "<base64 key|pem file>)"
+
 	commandFlags := flag.NewFlagSet(commandname, flag.ExitOnError)
 	requestedLogLevel := SetGlobalArguments(commandFlags)
 	SetCommon(commandFlags, &configPath, commandname)
 	commandFlags.BoolVar(&testConfig, "t", false, "Test configuration and exit")
 	commandFlags.BoolVar(&testConfig, "test-config", false, "Test configuration and exit")
-	commandFlags.StringVar(&addPinnedKey, "trust-sender", "", "Add a pinned public key for a sender (format: <hostname>"+receiver.PinedKeysReqSeparator+"<base64 key|pem file>)")
+	commandFlags.StringVar(&addPinnedKey, "trust-sender", "", "Add a pinned public key for a sender (format:"+exampleAddPinKey+")")
 	commandFlags.StringVar(&delPinnedKey, "distrust-sender", "", "Remove a pinned public key for the given sender hostname")
 
 	commandFlags.Usage = func() {

@@ -30,7 +30,8 @@ type QueueInst[T any] struct {
 type Queue[T any] struct {
 	ActiveWrite atomic.Pointer[QueueInst[T]] // Pointer to queue for producers
 	ActiveRead  atomic.Pointer[QueueInst[T]] // Pointer to queue for consumers
-	migrateCh   atomic.Value                 // Buffered channel, used to wake a consumer once migration is ready to complete (flip read pointer to write one)
-	minimumSize global.MinValue              // Lower configurable bound for scaling
-	maximumSize global.MaxValue              // Upper configurable bound for scaling
+	// Buffered channel, used to wake a consumer once migration is ready to complete (flip read pointer to write one)
+	migrateCh   atomic.Value
+	minimumSize global.MinValue // Lower configurable bound for scaling
+	maximumSize global.MaxValue // Upper configurable bound for scaling
 }

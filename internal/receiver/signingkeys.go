@@ -16,7 +16,8 @@ import (
 // Adds a sender pinned key to configuration file.
 // addRequest in format of <hostname><PinedKeysReqSeparator><base64 public key|pem file path|HTTPs URL>
 // Only one hostname is allowed in pinned keys, if it already exists, the public key will be overridden with supplied key.
-// If the pinned key map JSON file (separate from main config) does not exist, it will be created and main config will be updated to point to its path.
+// If the pinned key map JSON file (separate from main config) does not exist,
+// it will be created and main config will be updated to point to its path.
 func AddPinnedKey(confPath, addRequest string) (err error) {
 	if addRequest == "" {
 		err = fmt.Errorf("pinned key add request (hostname+key) cannot be empty")

@@ -3,6 +3,7 @@ package shard
 
 import (
 	"context"
+	"fmt"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
@@ -52,8 +53,9 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 		// Discard newest fragment if message sequence doesn't match last
 		// Root of trust is first fragment received
 		if bucket.maxSeq != fragment.MessageSeqMax {
-			logctx.LogStdWarn(ctx, "Received invalid maximum sequence: fragment has maximum sequence %d but bucket %s is set for maximum sequence %d\n",
+			detail := fmt.Sprintf("fragment has maximum sequence %d but bucket %s is set for maximum sequence %d\n",
 				fragment.MessageSeqMax, bucketKey, bucket.maxSeq)
+			logctx.LogStdWarn(ctx, "Received invalid maximum sequence: %s", detail)
 			return
 		}
 	}

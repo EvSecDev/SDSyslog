@@ -1,17 +1,17 @@
 package assembler
 
 import (
-	"fmt"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/receiver/shard"
+	"strconv"
 	"time"
 )
 
 // Create new shard+assembler
 func (manager *Manager) AddInstance() (instanceID string) {
 	// Grab the next sequence for ID
-	instanceID = fmt.Sprintf("%d", manager.nextInstanceID)
+	instanceID = strconv.FormatUint(uint64(manager.nextInstanceID), 10)
 	_, ok := manager.routing.Load().instances[instanceID]
 	if ok {
 		// Instance already exists, no-op

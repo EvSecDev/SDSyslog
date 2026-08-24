@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/pkg/protocol"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,9 +18,9 @@ func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (entries
 	}
 
 	fields := map[string]string{
-		"__REALTIME_TIMESTAMP": fmt.Sprintf("%d", time.Now().UnixMicro()), // Required field
-		"_BOOT_ID":             mod.bootID,                                // Required field
-		"MESSAGE":              string(msg.Data),                          // Required field
+		"__REALTIME_TIMESTAMP": strconv.FormatInt(time.Now().UnixMicro(), 10), // Required field
+		"_BOOT_ID":             mod.bootID,                                    // Required field
+		"MESSAGE":              string(msg.Data),                              // Required field
 		"HOSTNAME":             msg.Hostname,
 		"SYSLOG_HOSTNAME":      msg.Hostname,
 		"SYSLOG_TIMESTAMP":     msg.Timestamp.Format(time.RFC3339Nano),

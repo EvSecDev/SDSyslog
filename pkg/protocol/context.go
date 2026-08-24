@@ -3,6 +3,7 @@ package protocol
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"math"
@@ -316,7 +317,7 @@ func FormatValue(value any) (text string) {
 	case string:
 		text = x
 	case []byte:
-		text = fmt.Sprintf("%x", x)
+		text = hex.EncodeToString(x)
 	case int:
 		text = strconv.Itoa(x)
 	case int8:

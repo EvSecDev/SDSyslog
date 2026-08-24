@@ -12,7 +12,9 @@ const (
 	VerbosityData
 	VerbosityFullData
 	VerbosityDebug
+)
 
+const (
 	// Context keys
 	LoggerKey  CtxKey = "logger"  // Event queue (mostly for variable log verbosity handling)
 	LogTagsKey CtxKey = "logtags" // List of tags in order of broad->specific appended/popped at various parts of the program

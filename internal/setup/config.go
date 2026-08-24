@@ -79,7 +79,7 @@ func (step *InstallConfigStep) Apply(ctx *context) (err error) {
 	_, err = os.Stat(global.DefaultConfigDir)
 	if err != nil && os.IsNotExist(err) {
 		step.dirCreated = true
-		err = os.Mkdir(global.DefaultConfigDir, 0755)
+		err = os.Mkdir(global.DefaultConfigDir, 0750)
 		if err != nil {
 			err = fmt.Errorf("failed to create configuration directory: %w", err)
 			return

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/rand"
 	"net"
 	"runtime/debug"
 	"sdsyslog/internal/crypto/hash"
+	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/parsing"
@@ -258,7 +258,6 @@ func TestMultipleSenders(t *testing.T) {
 					// Wait for start signal
 					<-start
 
-					rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 					// Base delay
 					base := time.Millisecond
 
@@ -271,8 +270,12 @@ func TestMultipleSenders(t *testing.T) {
 						}
 
 						// Small delay to simulate (local) network latency
-						jitter := time.Duration(rng.Int63n(int64(100*time.Microsecond))) - 50*time.Microsecond
-						sleepDuration := base + jitter
+						jitterUs, err := random.NumberInRange(-50, 49)
+						if err != nil {
+							writeErrors <- fmt.Errorf("failed to generate jitter: %w", err)
+							return
+						}
+						sleepDuration := base + time.Duration(jitterUs)*time.Microsecond
 						time.Sleep(sleepDuration)
 					}
 				}()

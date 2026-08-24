@@ -215,6 +215,7 @@ func compile(ctx *context, longName bool) (err error) {
 			ctx.cliOpts.OperatingSystem,
 			ctx.cliOpts.Architecture,
 		)
+		newBinaryFile = filepath.Clean(newBinaryFile)
 		err = os.Rename(oldBinaryFile, newBinaryFile)
 		if err != nil {
 			err = fmt.Errorf("failed to rename binary to full name: %w", err)
@@ -230,6 +231,7 @@ func compile(ctx *context, longName bool) (err error) {
 		}
 
 		hash := helpers.Hash(binaryContents)
+		//nolint:gosec // G703: input is trusted
 		err = os.WriteFile(newBinaryFile+".sha256", []byte(hash), 0600)
 		if err != nil {
 			err = fmt.Errorf("failed to write binary hash to file: %w", err)
@@ -326,6 +328,7 @@ func postCompile(ctx *context, outFileName string) (err error) {
 	}
 
 	newReadme := bytes.Join(updatedLines, []byte("\n"))
+	//nolint:gosec // G703: content is derived from the same README file being updated (read-modify-write), not user input
 	err = os.WriteFile(readmePath, newReadme, 0600)
 	if err != nil {
 		err = fmt.Errorf("failed to write updated README file: %w", err)

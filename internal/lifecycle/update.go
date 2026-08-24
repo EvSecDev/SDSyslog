@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sdsyslog/internal/fsops"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"slices"
@@ -114,6 +116,13 @@ func getExecutablePath(ctx context.Context) (selfExePath string, err error) {
 		if exePath == "" {
 			continue
 		}
+
+		err = fsops.ValidatePath(exePath)
+		if err != nil {
+			err = fmt.Errorf("executable path '%s' is illegal: %w", exePath, err)
+			return
+		}
+		exePath = filepath.Clean(exePath)
 
 		var info os.FileInfo
 		info, err = os.Stat(exePath)

@@ -23,7 +23,7 @@ func newReplayCacheWithShards(numShards int, ttlSeconds int64) (newCache *replay
 // Pick shard deterministically based on key
 func (cache *replayCache) getShard(publicKey []byte) (shard *replayCacheShard) {
 	h := fnv.New32a()
-	h.Write(publicKey)
+	_, _ = h.Write(publicKey) // fnv doesn't actually return an error internally (interface satisfy only)
 	id := h.Sum32()
 
 	shardNum := uint32(len(cache.shards))

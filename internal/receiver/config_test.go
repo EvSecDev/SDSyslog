@@ -149,7 +149,7 @@ func TestReloadSigningKeys(t *testing.T) {
 			var pinnedKeyPath string
 			if tt.pinnedKeyFile != "" {
 				pinnedKeyPath = filepath.Join(testDir, tt.pinnedKeyFile)
-				err := os.WriteFile(pinnedKeyPath, []byte(tt.newPinnedKeysJSON), 0644)
+				err := os.WriteFile(pinnedKeyPath, []byte(tt.newPinnedKeysJSON), 0600)
 				if err != nil {
 					t.Fatalf("failed to write test pinned keys JSON: %v", err)
 				}
@@ -162,7 +162,7 @@ func TestReloadSigningKeys(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to marshal mock daemon JSON: %v", err)
 			}
-			err = os.WriteFile(mockDaemon.configPath, cfg, 0644)
+			err = os.WriteFile(mockDaemon.configPath, cfg, 0600)
 			if err != nil {
 				t.Fatalf("failed to write mock daemon JSON: %v", err)
 			}

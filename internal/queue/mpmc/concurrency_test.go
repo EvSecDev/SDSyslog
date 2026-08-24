@@ -3,8 +3,8 @@ package mpmc
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"runtime"
+	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
 	"sync"
@@ -161,7 +161,13 @@ func TestQueue_StressIntegrity(t *testing.T) {
 		defer wg.Done()
 		for i := range N / numConsumers {
 			// Randomize sleep interval to simulate varied workloads
-			time.Sleep(time.Duration(rand.Intn(50)) * time.Microsecond)
+			randTime, err := random.NumberInRange(0, 50)
+			if err != nil {
+				errCh <- fmt.Errorf("random generation failed: %w", err)
+				return
+			}
+			microTime := randTime * int(time.Microsecond)
+			time.Sleep(time.Duration(microTime))
 
 			v, ok := queue.Pop(context.Background())
 			if !ok {

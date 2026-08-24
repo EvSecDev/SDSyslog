@@ -97,6 +97,7 @@ func (step *InstallAppArmorStep) Apply(ctx *context) (err error) {
 	}
 
 	// Write Apparmor Profile to /etc
+	//nolint:gosec // G306: apparmor profiles are world-readable
 	err = os.WriteFile(appArmorProfilePath, appArmorProfile, 0644)
 	if err != nil {
 		err = fmt.Errorf("failed to write apparmor profile: %w", err)

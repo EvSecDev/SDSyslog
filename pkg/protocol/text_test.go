@@ -25,7 +25,8 @@ func TestCleanStringToBytes(t *testing.T) {
 			want:      []byte("abcdEF"),
 		},
 		{
-			name:      "removes non-ASCII unicode",
+			name: "removes non-ASCII unicode",
+			//nolint:gosmopolitan // Intentional Han-script for test purposes
 			input:     "hello✓世界",
 			maxLength: 10,
 			want:      []byte("hello"),

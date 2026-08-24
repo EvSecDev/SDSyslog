@@ -188,6 +188,7 @@ func withCurrentYear(old time.Time) (new time.Time) {
 		old.Minute(),
 		old.Second(),
 		0,
+		//nolint:gosmopolitan // Intentional local time use for syslog
 		time.Local,
 	)
 	return

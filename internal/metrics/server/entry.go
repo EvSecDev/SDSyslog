@@ -6,6 +6,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -112,7 +113,7 @@ func Start(ctx context.Context, server *http.Server) {
 	)
 
 	err = server.Serve(conn)
-	if err != nil && err != http.ErrServerClosed {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logctx.LogStdErr(ctx, "Metric query server failed to start: %w\n", err)
 	}
 }

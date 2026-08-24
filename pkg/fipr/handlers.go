@@ -1,6 +1,7 @@
 package fipr
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 )
@@ -19,7 +20,7 @@ func (session *Session) awaitAck(expectedAckdSeq uint16) (err error) {
 		response, err = session.await(opAck, opResend)
 		if err != nil {
 			session.Close()
-			if err == ErrInvalidOpcode {
+			if errors.Is(err, ErrInvalidOpcode) {
 				err = ErrReceivedNoAck
 			}
 			err = fmt.Errorf("await: %w", err)

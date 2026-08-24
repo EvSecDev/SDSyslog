@@ -131,7 +131,7 @@ func WaitUntilEmptySocket(conn *net.UDPConn) (remainingBytes int, err error) {
 	defer func() {
 		lerr := file.Close()
 		if lerr != nil && err == nil {
-			err = fmt.Errorf("failed closing connection: %v", lerr)
+			err = fmt.Errorf("failed closing connection: %w", lerr)
 		}
 	}()
 

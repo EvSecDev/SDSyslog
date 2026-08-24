@@ -253,7 +253,7 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 
 			// Force kill
 			err = syscallKill(pid, unix.SIGKILL)
-			if err != nil && err != unix.ESRCH {
+			if err != nil && !errors.Is(err, unix.ESRCH) {
 				logctx.LogStdErr(ctx,
 					"failed to issue SIGKILL to child PID %d (child process might be still running): %w\n", pid, err)
 				return
@@ -267,12 +267,12 @@ func PostUpdateActions(ctx context.Context, daemonManager DaemonLike, timeout ti
 						"Child PID %d killed and reaped (status=%v)\n", pid, status)
 					return
 				}
-				if err != nil && err != unix.ECHILD {
+				if err != nil && !errors.Is(err, unix.ECHILD) {
 					logctx.LogStdErr(ctx,
 						"failed to wait for child PID %d (child process might be a zombie): %w\n", pid, err)
 					return
 				}
-				if err == unix.ECHILD {
+				if errors.Is(err, unix.ECHILD) {
 					logctx.LogStdWarn(ctx,
 						"Child PID %d force killed and was cleaned up by something else\n", pid)
 					break

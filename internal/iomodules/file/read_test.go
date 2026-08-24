@@ -127,12 +127,12 @@ func TestReader(t *testing.T) {
 				_ = file
 				err = os.Rename(filePath, filePath+".1")
 				if err != nil {
-					err = fmt.Errorf("failed to rename log file: %v", err)
+					err = fmt.Errorf("failed to rename log file: %w", err)
 					return
 				}
 				newFile, err = os.Create(filePath)
 				if err != nil {
-					err = fmt.Errorf("failed to create new log file: %v", err)
+					err = fmt.Errorf("failed to create new log file: %w", err)
 					return
 				}
 				return

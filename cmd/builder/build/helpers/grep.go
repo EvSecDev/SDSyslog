@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -87,7 +88,7 @@ func ScanRepo(
 		return nil
 	})
 
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return
 	}
 	return

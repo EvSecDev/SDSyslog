@@ -3,6 +3,7 @@ package fipr
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -151,7 +152,7 @@ func TestReadFrame(t *testing.T) {
 			}()
 
 			// Simulate transport layer closing
-			if tt.expectedErr == ErrTransportFailure {
+			if errors.Is(tt.expectedErr, ErrTransportFailure) {
 				err := client.Close()
 				if err != nil {
 					t.Fatalf("unexpected error closing client connection: %v", err)

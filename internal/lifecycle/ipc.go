@@ -1,6 +1,7 @@
 package lifecycle
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +12,7 @@ import (
 // Block (with timeout) until child sends readiness message over file descriptor.
 func readinessReceiver(readyReader *os.File) (err error) {
 	err = readyReader.SetReadDeadline(time.Now().Add(DefaultMaxWaitForUpdate))
-	if err != nil && err != os.ErrNoDeadline {
+	if err != nil && !errors.Is(err, os.ErrNoDeadline) {
 		err = fmt.Errorf("failed setting timeout for readiness receiver: %w", err)
 		return
 	}

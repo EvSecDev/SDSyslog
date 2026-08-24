@@ -3,6 +3,7 @@ package journald
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -18,7 +19,7 @@ func extractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
 
 		line, err = reader.ReadString('\n')
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				err = nil
 				// EOF means journal did not start properly
 				// Sleeping longer than stderr check read timeout

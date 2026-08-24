@@ -266,7 +266,7 @@ func TestMultipleSenders(t *testing.T) {
 					for range tt.sendRepeatCtn {
 						_, err := inputWriter.Write([]byte(tt.inputText + "\n"))
 						if err != nil {
-							writeErrors <- fmt.Errorf("expected no error writing to test input, but got '%v'", err)
+							writeErrors <- fmt.Errorf("expected no error writing to test input, but got '%w'", err)
 							return
 						}
 

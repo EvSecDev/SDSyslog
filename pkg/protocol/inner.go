@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"sdsyslog/pkg/crypto/registry"
@@ -298,7 +299,7 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 		for {
 			var keyLen uint8
 			keyLen, err = contextReader.ReadByte()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break // end of context section
 			}
 			if err != nil {

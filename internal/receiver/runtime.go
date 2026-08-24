@@ -2,6 +2,7 @@
 package receiver
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -287,7 +288,7 @@ func (daemon *Daemon) Shutdown() {
 	// Stop metric server
 	if daemon.opts.Metrics.EnableQueryServer && daemon.MetricServer != nil {
 		err := daemon.MetricServer.Shutdown(daemon.ctx)
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logctx.LogStdWarn(daemon.ctx, "metric HTTP server did not shutdown gracefully: %w\n", err)
 		} else {
 			logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,

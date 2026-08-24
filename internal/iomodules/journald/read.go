@@ -81,7 +81,7 @@ func (mod *InModule) reader() {
 			// Parse and retrieve fields we need
 			msg, err := parseFields(fields, mod.localHostname)
 			if err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					return
 				}
 				logctx.LogStdErr(ctx,

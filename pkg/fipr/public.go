@@ -1,6 +1,7 @@
 package fipr
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -197,7 +198,7 @@ func (session *Session) SendFragment(fragment []byte) (err error) {
 
 	_, err = session.await(opAccepted)
 	if err != nil {
-		if err == ErrInvalidOpcode {
+		if errors.Is(err, ErrInvalidOpcode) {
 			err = ErrRemoteRejected
 		}
 		err = fmt.Errorf("did not receive accepted response to fragment: %w", err)

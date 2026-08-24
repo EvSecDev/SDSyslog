@@ -161,7 +161,7 @@ func TestInotify(t *testing.T) {
 			go func() {
 				err := tt.changeFunc(logFilePath)
 				if err != nil {
-					errChan <- fmt.Errorf("failed to run change function: %v", err)
+					errChan <- fmt.Errorf("failed to run change function: %w", err)
 				}
 				watcher.Stop()
 			}()

@@ -88,7 +88,7 @@ func getModuleList() (modules []string, err error) {
 	for {
 		var modInfo goDownloadJSON
 		err = dec.Decode(&modInfo)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			err = nil
 			break
 		}

@@ -72,11 +72,11 @@ func MatchLogCtxErrors(ctx context.Context, searchFilter string, excludeFilters 
 func MatchErrorString(gotError error, expectedError string) (matches bool, err error) {
 	if gotError != nil {
 		if expectedError == "" {
-			err = fmt.Errorf("expected no error, but got '%v'", gotError)
+			err = fmt.Errorf("expected no error, but got '%w'", gotError)
 		} else if strings.Contains(gotError.Error(), expectedError) {
 			matches = true
 		} else {
-			err = fmt.Errorf("expected error '%s', but got error '%v'", expectedError, gotError)
+			err = fmt.Errorf("expected error '%s', but got error '%w'", expectedError, gotError)
 		}
 	} else {
 		if expectedError != "" {
@@ -91,15 +91,15 @@ func MatchErrorString(gotError error, expectedError string) (matches bool, err e
 func MatchWrappedError(gotError error, expectedError error) (matches bool, err error) {
 	if gotError != nil {
 		if expectedError == nil {
-			err = fmt.Errorf("expected no error, but got '%v'", gotError)
+			err = fmt.Errorf("expected no error, but got '%w'", gotError)
 		} else if errors.Is(gotError, expectedError) {
 			matches = true
 		} else {
-			err = fmt.Errorf("expected error '%v', but got error '%v'", expectedError, gotError)
+			err = fmt.Errorf("expected error '%w', but got error '%w'", expectedError, gotError)
 		}
 	} else {
 		if expectedError != nil {
-			err = fmt.Errorf("expected error '%v', but got none", expectedError)
+			err = fmt.Errorf("expected error '%w', but got none", expectedError)
 		}
 	}
 	return

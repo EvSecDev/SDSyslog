@@ -143,7 +143,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 		err = fmt.Errorf("error deserializing fragment: %w", err)
 
 		lerr := session.SendReject()
-		if lerr != nil && lerr != fipr.ErrSessionClosed {
+		if lerr != nil && !errors.Is(lerr, fipr.ErrSessionClosed) {
 			logctx.LogStdErr(ctx,
 				"failed encoding reject response frame: %w (original error: %w)\n", lerr, err)
 		} else {
@@ -158,7 +158,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 		err = fmt.Errorf("error validating fragment: %w", err)
 
 		lerr := session.SendReject()
-		if lerr != nil && lerr != fipr.ErrSessionClosed {
+		if lerr != nil && errors.Is(lerr, fipr.ErrSessionClosed) {
 			logctx.LogStdErr(ctx,
 				"failed encoding reject response frame: %w (original error: %w)\n", lerr, err)
 		} else {
@@ -175,7 +175,7 @@ func (instance *Instance) handleConnection(ctx context.Context, wg *sync.WaitGro
 		err = fmt.Errorf("failed to route fragment to shard queue")
 
 		lerr := session.SendReject()
-		if lerr != nil && lerr != fipr.ErrSessionClosed {
+		if lerr != nil && errors.Is(lerr, fipr.ErrSessionClosed) {
 			logctx.LogStdErr(ctx,
 				"failed to send rejection: %w (original error: %w)\n", lerr, err)
 		} else {

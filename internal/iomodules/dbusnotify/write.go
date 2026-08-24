@@ -55,6 +55,7 @@ func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (entries
 	lerr := notifyCall.Store(&ret)
 	if lerr != nil {
 		logctx.LogStdWarn(ctx, "failed retrieving uint32 return value: %w", lerr)
+		//nolint:nilnesserr // Warning only - not returning error
 		return
 	}
 

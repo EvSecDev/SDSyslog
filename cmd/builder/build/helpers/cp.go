@@ -77,6 +77,7 @@ func copyDirCore(srcDir, dstDir string, exclude []string) (totalCopiedBytes int6
 		// Copy file
 		writtenBytes, err := copyFile(path, targetPath)
 		if err != nil {
+			retErr = err
 			return
 		}
 

@@ -134,7 +134,7 @@ func TestResend_MaxRetries(t *testing.T) {
 
 	for len(errChan) > 0 {
 		testClientError := <-errChan
-		if testClientError != nil && errors.Is(err, ErrTransportWasClosed) {
+		if testClientError != nil && errors.Is(testClientError, ErrTransportWasClosed) {
 			t.Fatalf("test client had error: %v", testClientError)
 		}
 	}

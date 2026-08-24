@@ -178,7 +178,7 @@ func TestRecvConstantFlow(t *testing.T) {
 		}
 	}()
 	if writerErr != nil {
-		t.Fatalf("encountered error while writing mock packets: %v", err)
+		t.Fatalf("encountered error while writing mock packets: %v", writerErr)
 	}
 
 	// Pipeline watcher

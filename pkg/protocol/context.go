@@ -18,6 +18,7 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 	rt := rv.Type()
 
 	var buf bytes.Buffer
+	//nolint:exhaustive // Intentionally not supporting every type (for now)
 	switch rt.Kind() {
 	case reflect.Slice:
 		if rt.Elem().Kind() == reflect.Uint8 {

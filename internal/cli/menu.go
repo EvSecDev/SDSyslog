@@ -180,7 +180,7 @@ func printFlagOptions(fs *flag.FlagSet, baseIndentSpaces int) {
 	})
 
 	// Deduplicated option list
-	opts := []*optInfo{}
+	opts := make([]*optInfo, len(seen))
 	for _, opt := range seen {
 		opts = append(opts, opt)
 	}

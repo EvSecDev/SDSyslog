@@ -41,7 +41,7 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 	} else {
 		// Discard newest fragment if duplicate keys exist within the deadline
 		if bucket.filled {
-			var haveSeq []int
+			haveSeq := make([]int, len(bucket.Fragments))
 			for _, fragment := range bucket.Fragments {
 				haveSeq = append(haveSeq, fragment.MessageSeq)
 			}

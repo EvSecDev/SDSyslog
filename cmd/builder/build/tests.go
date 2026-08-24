@@ -141,7 +141,8 @@ func runUnitTests(ctx *context, testArgs []string) (err error) {
 			_ = os.Remove(coverProfileOut)
 		}()
 
-		args := []string{"test", "-C", testInfo.absolutePath}
+		args := make([]string, 5+len(testArgs))
+		args = []string{"test", "-C", testInfo.absolutePath}
 		args = append(args, testArgs...)
 		args = append(args, "-coverprofile="+coverProfileOut)
 		args = append(args, "./...")

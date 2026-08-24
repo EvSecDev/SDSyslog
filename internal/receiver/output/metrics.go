@@ -50,6 +50,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
+	collection = make([]metrics.Metric, 3+len(instance.Metrics.successfulWrites))
 	collection = []metrics.Metric{
 		{
 			Name:        MTRecvMsgs,

@@ -1,7 +1,6 @@
 package inotify
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -135,8 +134,7 @@ func TestInotify(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Per test mocks
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 			ctx = logctx.New(ctx, logctx.NSTest, 1, ctx.Done())
 
 			tempDir := t.TempDir()

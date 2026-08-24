@@ -22,7 +22,7 @@ type JSONOptions struct {
 	Crypto                struct {
 		TransportSuite string `json:"transportSuite,omitempty"`
 		SignatureSuite string `json:"signatureSuite,omitempty"`
-	} `json:"crypto,omitempty"`
+	} `json:"crypto,omitzero"`
 	ReplayProtection struct {
 		// Short term replay protection window size (For Listener)
 		ProtectionWindow parsing.Duration `json:"shortTermWindow,omitempty"`
@@ -32,10 +32,10 @@ type JSONOptions struct {
 
 		// Time window where future timestamps are still accepted (relative to processing time)
 		FutureValidityWindow parsing.Duration `json:"longTermFutureWindow,omitempty"`
-	} `json:"replayProtection,omitempty"`
+	} `json:"replayProtection,omitzero"`
 	State struct {
 		IPCSocketDirectory string `json:"ipcSocketDirectory,omitempty"`
-	} `json:"state,omitempty"`
+	} `json:"state,omitzero"`
 	Network struct {
 		Address string `json:"address"`
 		Port    int    `json:"port"`

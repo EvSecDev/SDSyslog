@@ -99,8 +99,7 @@ func TestSignalHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			baseCtx := t.Context()
 			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, baseCtx.Done())
 			ctx = context.WithValue(ctx, global.CtxModeKey, global.RecvMode)
 			ctx = context.WithValue(ctx, global.CtxExePathKey, mockExePath)

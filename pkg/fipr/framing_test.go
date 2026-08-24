@@ -227,10 +227,7 @@ func buildTestFrame(op opCode, seq uint16, payload []byte, chunks int, firstChun
 	remChunkSize := (len(remaining) + chunks - 2) / (chunks - 1)
 
 	for i := 0; i < len(remaining); i += remChunkSize {
-		end := i + remChunkSize
-		if end > len(remaining) {
-			end = len(remaining)
-		}
+		end := min(i+remChunkSize, len(remaining))
 		frameChunks = append(frameChunks, remaining[i:end])
 	}
 

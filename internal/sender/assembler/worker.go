@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"maps"
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
@@ -61,9 +62,7 @@ func (instance *Instance) run() {
 
 			// In-module added fields
 			customFields := make(map[string]any)
-			for key, val := range container.Fields {
-				customFields[key] = val
-			}
+			maps.Copy(customFields, container.Fields)
 
 			newMsg := &protocol.Message{
 				Timestamp: container.Timestamp,

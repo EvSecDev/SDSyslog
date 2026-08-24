@@ -40,10 +40,7 @@ func WaitUntilZero(value *atomic.Uint64, timeout time.Duration) (reachedZero boo
 			return
 		}
 
-		sleep := backoff
-		if sleep > remaining {
-			sleep = remaining
-		}
+		sleep := min(backoff, remaining)
 		time.Sleep(sleep)
 
 		// Exponential backoff with cap

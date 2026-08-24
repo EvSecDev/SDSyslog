@@ -2,6 +2,7 @@ package fipr
 
 import (
 	"fmt"
+	"slices"
 )
 
 // Fire and forget acknowledgement message of provided sequence number
@@ -146,11 +147,8 @@ func (session *Session) await(expectedOps ...opCode) (responseFrame *framebody, 
 
 		// Success on first match
 		var opCodeMatches bool
-		for _, expectedOp := range expectedOps {
-			if responseFrame.op == expectedOp {
-				opCodeMatches = true
-				break
-			}
+		if slices.Contains(expectedOps, responseFrame.op) {
+			opCodeMatches = true
 		}
 		if opCodeMatches && requiresAck(responseFrame.op) {
 			// Send acknowledgement for regular requests

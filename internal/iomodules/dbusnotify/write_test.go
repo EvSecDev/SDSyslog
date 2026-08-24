@@ -1,7 +1,6 @@
 package dbusnotify
 
 import (
-	"context"
 	"errors"
 	"os"
 	"sdsyslog/internal/iomodules"
@@ -15,8 +14,7 @@ import (
 )
 
 func TestWrite(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	ctx = logctx.New(ctx, logctx.NSTest, 1, ctx.Done())
 
 	mod, err := NewOutput(true)

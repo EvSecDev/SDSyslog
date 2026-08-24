@@ -103,9 +103,7 @@ func TestPublic_Full(t *testing.T) {
 			var wg sync.WaitGroup
 
 			clientErrChan := make(chan error, 7) // Buffered to avoid blocking test run
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				err := clientSession.SendStart(tt.messageID)
 				if err != nil {
 					clientErrChan <- fmt.Errorf("failed to send start: %w", err)
@@ -150,12 +148,10 @@ func TestPublic_Full(t *testing.T) {
 					clientErrChan <- fmt.Errorf("failed sending fragment: %w", err)
 					return
 				}
-			}()
+			})
 
 			serverErrChan := make(chan error, 12) // Buffered to avoid blocking test run
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				err = serverSession.WaitStart()
 				if err != nil {
 					serverErrChan <- fmt.Errorf("failed to wait for start: %w", err)
@@ -222,7 +218,7 @@ func TestPublic_Full(t *testing.T) {
 				if err != nil {
 					serverErrChan <- fmt.Errorf("failed to send final accept/reject code: %w", err)
 				}
-			}()
+			})
 			wg.Wait()
 
 			for len(clientErrChan) > 0 {

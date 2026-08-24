@@ -22,10 +22,10 @@ type JSONOptions struct {
 	Crypto         struct {
 		TransportSuite string `json:"transportSuite,omitempty"`
 		SignatureSuite string `json:"signatureSuite,omitempty"`
-	} `json:"crypto,omitempty"`
+	} `json:"crypto,omitzero"`
 	State struct {
 		BaseFile string `json:"baseStateFile,omitempty"`
-	} `json:"state,omitempty"`
+	} `json:"state,omitzero"`
 	Network struct {
 		SourceAddress          string `json:"sourceAddress,omitempty"`
 		SourcePort             int    `json:"sourcePort,omitempty"`

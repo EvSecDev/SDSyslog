@@ -246,10 +246,7 @@ func printFlagOptions(fs *flag.FlagSet, baseIndentSpaces int) {
 		if !opt.hasShort {
 			leftLen += longShortArgOffset
 		}
-		paddingSpaces := maxLen - leftLen + argToUsageSpaces
-		if paddingSpaces < argToUsageSpaces {
-			paddingSpaces = argToUsageSpaces
-		}
+		paddingSpaces := max(maxLen-leftLen+argToUsageSpaces, argToUsageSpaces)
 		padding := strings.Repeat(" ", paddingSpaces)
 
 		// Skip printing any "empty" defaults

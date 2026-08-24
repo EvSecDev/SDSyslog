@@ -1,7 +1,6 @@
 package shard
 
 import (
-	"context"
 	"fmt"
 	"net/netip"
 	"sdsyslog/internal/crypto/random"
@@ -333,8 +332,7 @@ func TestRouteFragment(t *testing.T) {
 			// Ensure flag is per-test only
 			existingFragmentFlag = nil
 
-			baseCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			baseCtx := t.Context()
 			mockCtx := logctx.New(baseCtx, "test", logctx.VerbosityFullData, baseCtx.Done())
 
 			mockShard = New([]string{logctx.NSTest}, 64, &mockDeadline)

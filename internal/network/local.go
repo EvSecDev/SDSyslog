@@ -96,11 +96,7 @@ func GetLocalIPForDestination(destAddress net.IP) (sourceSocket *net.UDPAddr, er
 		// Increasing delay after initial failure
 		if retryCount > 1 {
 			time.Sleep(waitDuration)
-			waitDuration = waitDuration * 2
-
-			if waitDuration >= maxWaitDuration {
-				waitDuration = maxWaitDuration
-			}
+			waitDuration = min(waitDuration*2, maxWaitDuration)
 		}
 
 		// Dial UDP (no actual network traffic generated) to see what route table selects as source

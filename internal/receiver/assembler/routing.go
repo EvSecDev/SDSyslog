@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"maps"
 	"sdsyslog/internal/receiver/shard"
 )
 
@@ -10,9 +11,7 @@ func (rs *RoutingState) GetInstancePairs() (instances map[string]*Instance) {
 	instances = make(map[string]*Instance, len(currentInstances))
 
 	// Make a map copy - but preserve the pair pointer value
-	for id, instance := range currentInstances {
-		instances[id] = instance
-	}
+	maps.Copy(instances, currentInstances)
 	return
 }
 

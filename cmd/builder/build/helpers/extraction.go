@@ -6,8 +6,8 @@ import (
 )
 
 func GetProgVersion(fileContents []byte, versionVariableName string) (progVersion string, err error) {
-	lines := bytes.Split(fileContents, []byte("\n"))
-	for _, line := range lines {
+	lines := bytes.SplitSeq(fileContents, []byte("\n"))
+	for line := range lines {
 		line = bytes.TrimSpace(line)
 		if !bytes.HasPrefix(line, []byte(versionVariableName)) {
 			continue

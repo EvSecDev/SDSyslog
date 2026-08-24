@@ -57,8 +57,9 @@ func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
 		// Extract timestamp prefix (up to first space)
 		getTime := func(s string) time.Time {
 			ts := s
-			if idx := strings.IndexByte(s, ' '); idx != -1 {
-				ts = s[:idx]
+			before, _, ok := strings.Cut(s, " ")
+			if ok {
+				ts = before
 			}
 			t, err := time.Parse(time.RFC3339Nano, ts)
 			if err != nil {

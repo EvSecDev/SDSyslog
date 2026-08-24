@@ -27,11 +27,9 @@ func TestAcknowledgements(t *testing.T) {
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, 1)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		errChan <- clientSession.awaitAck(ack)
-	}()
+	})
 
 	err = serverSession.sendAck(ack)
 	if err != nil {
@@ -60,12 +58,10 @@ func TestResend(t *testing.T) {
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, 1)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, err := clientSession.send(opShardStatus, []byte{byte(shardShutdown)})
 		errChan <- err
-	}()
+	})
 
 	response, err := serverSession.await(opShardStatus)
 	if err != nil {
@@ -105,12 +101,10 @@ func TestResend_MaxRetries(t *testing.T) {
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, 1)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, err := clientSession.send(opShardStatus, []byte{}) // Invalid payload always
 		errChan <- err
-	}()
+	})
 
 	// Wrap await in timeout
 	var awaitErr error

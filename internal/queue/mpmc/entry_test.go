@@ -9,7 +9,7 @@ import (
 )
 
 // Helper
-func intPtr[T any](v T) *T { return &v }
+func intPtr[T any](v T) *T { return new(v) }
 
 func TestQueue_PushPopScenarios(t *testing.T) {
 	type op struct {

@@ -18,6 +18,7 @@ import (
 	"sdsyslog/internal/receiver"
 	"sdsyslog/internal/receiver/output"
 	"sdsyslog/internal/sender"
+	"slices"
 	"strings"
 	"time"
 )
@@ -183,13 +184,7 @@ func filterLogBuffer(ctx context.Context, searchText, searchTag, searchSeverity 
 		if re != nil {
 			// Extract all bracketed sections
 			brackets := bracketRe.FindAllString(line, -1)
-			foundTag := false
-			for _, b := range brackets {
-				if re.MatchString(b) {
-					foundTag = true
-					break
-				}
-			}
+			foundTag := slices.ContainsFunc(brackets, re.MatchString)
 			if !foundTag {
 				continue
 			}

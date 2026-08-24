@@ -35,10 +35,6 @@ func newLogger(verbose bool) (new *logger) {
 	return
 }
 
-func (logger *logger) prefix() string {
-	return strings.Repeat("  ", logger.indent)
-}
-
 func (logger *logger) Step(name string) {
 	fmt.Printf("%s==> %s\n", logger.prefix(), name)
 }
@@ -69,3 +65,7 @@ func (logger *logger) Verbose(msg string, args ...any) {
 
 func (logger *logger) Indent() { logger.indent++ }
 func (logger *logger) Dedent() { logger.indent-- }
+
+func (logger *logger) prefix() string {
+	return strings.Repeat("  ", logger.indent)
+}

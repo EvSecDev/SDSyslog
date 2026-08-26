@@ -249,10 +249,7 @@ func TestRouteFragment(t *testing.T) {
 					return false
 				},
 				IsShardShutdownFunc: func(s string) bool {
-					if s == "s2" {
-						return true
-					}
-					return false
+					return s == "s2"
 				},
 				GetNonDrainingIDsFunc: func() []string {
 					return []string{"s1", "s2", "s3", "s4"}

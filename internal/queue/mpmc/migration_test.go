@@ -68,10 +68,8 @@ func TestQueueMigration(t *testing.T) {
 
 			// Producers
 			for producerNum := range tt.numProducers {
-				wg.Add(1)
-				go func(id int) {
-					defer wg.Done()
-					for index := id; index < tt.numItems; index += tt.numProducers {
+				wg.Go(func() {
+					for index := producerNum; index < tt.numItems; index += tt.numProducers {
 						for {
 							err := queue.Push(index, 1)
 							if err == nil {
@@ -81,7 +79,7 @@ func TestQueueMigration(t *testing.T) {
 						}
 						produced <- index
 					}
-				}(producerNum)
+				})
 			}
 
 			// Consumers

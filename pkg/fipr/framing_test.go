@@ -131,13 +131,11 @@ func TestReadFrame(t *testing.T) {
 			}
 
 			var wg sync.WaitGroup
-			wg.Add(1)
 
 			errChan := make(chan error, 1)
 
 			expectedWholeFrames := make([][]byte, len(tt.frameChunks)) // source of truth for test output
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				// Inject chunk by chunk into mocked connection buffer
 				for frameIndex, frame := range tt.frameChunks {
 					for _, chunk := range frame {
@@ -149,7 +147,7 @@ func TestReadFrame(t *testing.T) {
 						expectedWholeFrames[frameIndex] = append(expectedWholeFrames[frameIndex], chunk...)
 					}
 				}
-			}()
+			})
 
 			// Simulate transport layer closing
 			if errors.Is(tt.expectedErr, ErrTransportFailure) {

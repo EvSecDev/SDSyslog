@@ -192,7 +192,10 @@ func TestConstructPayload(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected no error creating signing function, but got: %v", err)
 			}
-			publicKey := priv.Public().(ed25519.PublicKey)
+			publicKey, ok := priv.Public().(ed25519.PublicKey)
+			if !ok {
+				t.Fatalf("public key is not of type ed25519.PublicKey")
+			}
 			pinnedKeys := map[string][]byte{
 				tt.input.Hostname: publicKey,
 			}
@@ -398,7 +401,10 @@ func TestDeconstructPayload(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected no error creating signing function, but got: %v", err)
 			}
-			publicKey := priv.Public().(ed25519.PublicKey)
+			publicKey, ok := priv.Public().(ed25519.PublicKey)
+			if !ok {
+				t.Fatalf("public key is not of type ed25519.PublicKey")
+			}
 
 			var pinnedKeys map[string][]byte
 			if tt.input.SignatureID > 0 {

@@ -14,7 +14,10 @@ func TestSignatureWrapper(t *testing.T) {
 		t.Fatalf("unexpected error creating random seed: %v", err)
 	}
 	signingPrivKey := ed25519.NewKeyFromSeed(seed)
-	signingPubKey := signingPrivKey.Public().(ed25519.PublicKey)
+	signingPubKey, ok := signingPrivKey.Public().(ed25519.PublicKey)
+	if !ok {
+		t.Fatalf("signing public key is not ed25519.PublicKey")
+	}
 
 	suiteID := uint8(1)
 

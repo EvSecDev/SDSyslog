@@ -257,7 +257,10 @@ func TestProcessor_Basic(t *testing.T) {
 
 			// Validate metrics from the collection func point of view
 			for _, metric := range gotMetrics {
-				value := metric.Value.Raw.(uint64)
+				value, ok := metric.Value.Raw.(uint64)
+				if !ok {
+					t.Fatalf("metric value is not type uint64")
+				}
 				if metric.Name == MTValidPayloads && value != tt.expectedValidCount {
 					t.Errorf("expected metric valid payloads count to be %d, but got %d", tt.expectedValidCount, value)
 				}

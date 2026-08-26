@@ -129,7 +129,10 @@ func TestPushPop_Basic(t *testing.T) {
 
 			// Validate metrics from the collection func point of view
 			for _, metric := range metrics {
-				value := metric.Value.Raw.(uint64)
+				value, ok := metric.Value.Raw.(uint64)
+				if !ok {
+					t.Fatalf("metric value is not type uint64")
+				}
 				if metric.Name == MTPopCnt && int(value) != expectedMsgCount {
 					t.Errorf("expected metric pop count to be %d, but got %d", expectedMsgCount, value)
 				}

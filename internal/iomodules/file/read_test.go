@@ -301,7 +301,10 @@ func TestReader(t *testing.T) {
 
 			// Validate metrics from the collection func point of view
 			for _, metric := range metrics {
-				value := metric.Value.Raw.(uint64)
+				value, ok := metric.Value.Raw.(uint64)
+				if !ok {
+					t.Fatalf("metric value is not uint64")
+				}
 				if metric.Name == MTLinesRead && value != tt.expectedLinesRead {
 					t.Errorf("expected metric lines read count to be %d, but got %d", tt.expectedLinesRead, value)
 				}

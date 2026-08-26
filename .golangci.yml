@@ -62,7 +62,6 @@ linters:
     - prealloc
     - perfsprint
     - unconvert
-    - unparam
     - wastedassign
     - reassign
     - forcetypeassert

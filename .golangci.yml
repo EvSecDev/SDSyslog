@@ -65,7 +65,6 @@ linters:
     - wastedassign
     - reassign
     - forcetypeassert
-    - makezero
     - modernize
     # Resource / context / concurrency
     - bodyclose

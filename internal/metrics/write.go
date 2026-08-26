@@ -10,10 +10,6 @@ func (registry *Registry) NewTimeSlice(now time.Time, interval time.Duration) (t
 	registry.mu.Lock()
 	defer registry.mu.Unlock()
 
-	if interval <= 0 {
-		timeSlice = time.Now()
-	}
-
 	// Round down for this interval
 	timeSlice = now.Truncate(interval)
 	if registry.metrics[timeSlice] == nil {

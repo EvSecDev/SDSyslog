@@ -68,10 +68,10 @@ func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (logsSen
 					return
 				}
 				continue
-			} else {
-				// Fatal Error
-				return
 			}
+
+			// Fatal Error
+			return
 		} else {
 			break
 		}

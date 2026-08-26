@@ -324,10 +324,10 @@ This distribution includes third-party software components.
 			printWarn(2, "module %s: %s", module, warning)
 			encounteredError = true
 			continue
-		} else {
-			// Got a license, extract name
-			licenseName = extractLicenseName(license)
 		}
+
+		// Got a license, extract name
+		licenseName = extractLicenseName(license)
 
 		moduleNameFields := strings.Split(module, "@")
 		if len(moduleNameFields) != 2 {

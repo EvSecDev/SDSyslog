@@ -31,10 +31,10 @@ func (mod *InModule) read() {
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				continue
-			} else {
-				logctx.LogStdErr(mod.ctx, "failed to read from raw sink: %w\n", err)
-				continue
 			}
+
+			logctx.LogStdErr(mod.ctx, "failed to read from raw sink: %w\n", err)
+			continue
 		}
 
 		// Do not allow newlines in data

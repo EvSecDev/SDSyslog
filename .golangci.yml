@@ -158,6 +158,8 @@ linters:
           disabled: true   # enforces "Package x ..." format; existence kept via staticcheck ST1000
         - name: var-declaration
           disabled: true   # keep explicit types on var declarations (swappable func vars, etc.)
+        - name: add-constant
+          disabled: true
     nolintlint:
       require-explanation: true
       require-specific: true

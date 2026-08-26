@@ -15,7 +15,7 @@ func (session *Session) sendAck(seqToAck uint16) (err error) {
 // Blocks until message is received. Error when received opcode is not ack.
 // Ensures received acknowledgement message is for the provided expected sequence number.
 func (session *Session) awaitAck(expectedAckdSeq uint16) (err error) {
-	for range maxConsecutiveResends {
+	for attempt := range maxConsecutiveResends {
 		var response *framebody
 		response, err = session.await(opAck, opResend)
 		if err != nil {
@@ -28,6 +28,15 @@ func (session *Session) awaitAck(expectedAckdSeq uint16) (err error) {
 		}
 
 		if response.op == opResend {
+			if attempt == maxConsecutiveResends-1 {
+				// Final iteration: no iteration remains to receive the ack for a resend.
+				// And the peer has also exhausted its resend budget
+				// so give up rather than write a frame that cannot be delivered.
+				session.Close()
+				err = ErrTooManyResends
+				return
+			}
+
 			seqToResend := decodeSeq(response.payload)
 			var sentSequence uint16
 			sentSequence, err = session.resend(seqToResend)

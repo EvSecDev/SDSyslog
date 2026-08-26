@@ -175,6 +175,7 @@ linters:
           - funlen
           - tagalign
           - lll
+          - forcetypeassert
       - path: _test\.go
         linters:
           - revive

@@ -494,13 +494,21 @@ func assertEqualAny(t *testing.T, a, b any) {
 
 	switch va := a.(type) {
 	case []byte:
-		if !bytes.Equal(va, b.([]byte)) {
+		vb, ok := b.([]byte)
+		if !ok {
+			t.Fatalf("[]byte is not []byte ??")
+		}
+		if !bytes.Equal(va, vb) {
 			t.Fatalf("[]byte values not equal")
 		}
 		return
 
 	case time.Time:
-		if !va.Equal(b.(time.Time)) {
+		bT, ok := b.(time.Time)
+		if !ok {
+			t.Fatalf("time.Time is not time.Time ??")
+		}
+		if !va.Equal(bT) {
 			t.Fatalf("time.Time values not equal: %v vs %v",
 				va, b,
 			)

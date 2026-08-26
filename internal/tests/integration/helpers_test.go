@@ -255,20 +255,20 @@ func waitForCompleteLines(testOutput *PipeBuffer, expected int, readMaxIdleTime 
 		}
 
 		if readErr != nil {
-			if errors.Is(readErr, io.EOF) {
-				// If EOF but we still got data without newline, ignore (incomplete line)
-				if len(line) == 0 {
-					err = fmt.Errorf("unexpected EOF before receiving %d lines (got %d)", expected, len(rawLines))
-					return
-				}
-
-				// If EOF returned a partial line without newline, drop it
-				if line[len(line)-1] != '\n' {
-					err = fmt.Errorf("incomplete line at EOF")
-					return
-				}
-			} else {
+			if !errors.Is(readErr, io.EOF) {
 				err = fmt.Errorf("failed reading from pipe: %w", readErr)
+				return
+			}
+
+			// If EOF but we still got data without newline, ignore (incomplete line)
+			if len(line) == 0 {
+				err = fmt.Errorf("unexpected EOF before receiving %d lines (got %d)", expected, len(rawLines))
+				return
+			}
+
+			// If EOF returned a partial line without newline, drop it
+			if line[len(line)-1] != '\n' {
+				err = fmt.Errorf("incomplete line at EOF")
 				return
 			}
 		}

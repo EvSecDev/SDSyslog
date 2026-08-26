@@ -108,14 +108,14 @@ func (instance *Instance) run() {
 			instance.Metrics.SumNs.Add(uint64(durNs))
 			oldMax := int64(instance.Metrics.MaxNs.Load())
 			for {
-				if durNs > oldMax {
-					if instance.Metrics.MaxNs.CompareAndSwap(uint64(oldMax), uint64(durNs)) {
-						break
-					}
-					oldMax = int64(instance.Metrics.MaxNs.Load())
-				} else {
+				if durNs <= oldMax {
 					break
 				}
+
+				if instance.Metrics.MaxNs.CompareAndSwap(uint64(oldMax), uint64(durNs)) {
+					break
+				}
+				oldMax = int64(instance.Metrics.MaxNs.Load())
 			}
 
 			size := len(newQueueEntry.Data) + netipAddrSize

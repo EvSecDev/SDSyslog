@@ -21,21 +21,21 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 	//nolint:exhaustive // Intentionally not supporting every type (for now)
 	switch rt.Kind() {
 	case reflect.Slice:
-		if rt.Elem().Kind() == reflect.Uint8 {
-			valType = ContextSliceBytes
-
-			valueSize := rv.Bytes()
-			err = binary.Write(&buf, binary.BigEndian, uint32(len(valueSize)))
-			if err != nil {
-				return
-			}
-
-			_, err = buf.Write(valueSize)
-			if err != nil {
-				return
-			}
-		} else {
+		if rt.Elem().Kind() != reflect.Uint8 {
 			err = fmt.Errorf("unsupported slice type %T", value)
+			return
+		}
+
+		valType = ContextSliceBytes
+
+		valueSize := rv.Bytes()
+		err = binary.Write(&buf, binary.BigEndian, uint32(len(valueSize)))
+		if err != nil {
+			return
+		}
+
+		_, err = buf.Write(valueSize)
+		if err != nil {
 			return
 		}
 	case reflect.Int8:

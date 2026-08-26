@@ -130,11 +130,11 @@ func Trend(depthValues []uint64, queueSize int) (scaleUp bool, scaleDown bool) {
 			continue
 		}
 
-		if direction == trend {
-			consistentTrendCount++
-		} else {
+		if direction != trend {
 			break
 		}
+
+		consistentTrendCount++
 	}
 
 	// Scale UP

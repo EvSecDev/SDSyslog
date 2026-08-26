@@ -56,25 +56,25 @@ func (mod *OutModule) Write(ctx context.Context, msg *protocol.Payload) (logsSen
 
 	for range mod.maxSendRetries {
 		logsSent, err = mod.sink.Send(events)
-		if err != nil {
-			// Retryable errors
-			if errors.Is(err, syscall.EPIPE) ||
-				errors.Is(err, os.ErrDeadlineExceeded) {
-				// Re-open connection
-				_ = mod.sink.Close()
-				mod.sink, err = lumberjack.SyncDial(mod.endpoint, mod.compression, mod.timeout)
-				if err != nil {
-					err = fmt.Errorf("failed re-connection to beats server after remote ended the connection: %w", err)
-					return
-				}
-				continue
-			}
-
-			// Fatal Error
-			return
-		} else {
+		if err == nil {
 			break
 		}
+
+		// Retryable errors
+		if errors.Is(err, syscall.EPIPE) ||
+			errors.Is(err, os.ErrDeadlineExceeded) {
+			// Re-open connection
+			_ = mod.sink.Close()
+			mod.sink, err = lumberjack.SyncDial(mod.endpoint, mod.compression, mod.timeout)
+			if err != nil {
+				err = fmt.Errorf("failed re-connection to beats server after remote ended the connection: %w", err)
+				return
+			}
+			continue
+		}
+
+		// Fatal Error
+		return
 	}
 	return
 }

@@ -276,8 +276,8 @@ func diffModuleSource(moduleName string, versionDifference versionDiff, tmpDir s
 	cmd = exec.Command("git", "-c", "color.ui=always", "diff", "--no-index", tmpOld+"/filtered", tmpNew+"/filtered")
 	out, err = cmd.CombinedOutput()
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
+		exitErr, ok := errors.AsType[*exec.ExitError](err)
+		if ok {
 			if exitErr.ExitCode() > 1 {
 				err = fmt.Errorf("failed to generate source diff for module %s version %s: %w: %s",
 					moduleName, versionDifference.old, err, string(out))

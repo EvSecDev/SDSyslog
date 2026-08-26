@@ -55,10 +55,9 @@ func checkVersioning(ctx *context) (err error) {
 			err = nil
 			printSuccess(0, "Done")
 			return
-		} else {
-			err = fmt.Errorf("git show: %w: %s", err, string(out))
-			return
 		}
+		err = fmt.Errorf("git show: %w: %s", err, string(out))
+		return
 	}
 	lastReleaseVersionNumber, err := helpers.GetProgVersion(out, versionVariableName)
 	if err != nil {

@@ -26,11 +26,11 @@ func extractEntry(reader *bufio.Reader) (fields map[string]string, err error) {
 				//   so if there was an error, we will return from this when the daemon is shutting down
 				time.Sleep(30 * time.Millisecond)
 				return
-			} else {
-				// Any other error
-				err = fmt.Errorf("failed initial line read: %w", err)
-				return
 			}
+
+			// Any other error
+			err = fmt.Errorf("failed initial line read: %w", err)
+			return
 		}
 		line = strings.TrimSuffix(line, "\n")
 

@@ -149,10 +149,9 @@ func (step *InstallBinaryStep) Uninstall(ctx *context) (err error) {
 	if err != nil && !os.IsNotExist(err) {
 		err = fmt.Errorf("failed to remove target executable path: %w", err)
 		return
-	} else {
-		// File is gone
-		err = nil
 	}
+	// File is gone
+	err = nil
 
 	ctx.logger.Success("Successfully removed executable from '%s'", global.DefaultBinaryPath)
 	return

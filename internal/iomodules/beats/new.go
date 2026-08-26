@@ -37,12 +37,12 @@ func NewOutput(endpoint string, maxSendAttempts int, startupRetryDuration time.D
 				// Dial did not succeed in time
 				err = fmt.Errorf("failed connection to beats server after %d retries: %w", retryCount, err)
 				return
-			} else {
-				// Within retry period, wait and retry
-				time.Sleep(startupRetryDelay)
-				retryCount++
-				continue
 			}
+
+			// Within retry period, wait and retry
+			time.Sleep(startupRetryDelay)
+			retryCount++
+			continue
 		}
 		break
 	}

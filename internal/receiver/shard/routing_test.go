@@ -185,9 +185,8 @@ func TestRouteFragment(t *testing.T) {
 							newFlag := true
 							existingFragmentFlag = &newFlag
 							return false
-						} else {
-							return true
 						}
+						return true
 					}
 					return false
 				},
@@ -244,18 +243,16 @@ func TestRouteFragment(t *testing.T) {
 							newFlag := true
 							existingFragmentFlag = &newFlag
 							return false
-						} else {
-							return true
 						}
+						return true
 					}
 					return false
 				},
 				IsShardShutdownFunc: func(s string) bool {
 					if s == "s2" {
 						return true
-					} else {
-						return false
 					}
+					return false
 				},
 				GetNonDrainingIDsFunc: func() []string {
 					return []string{"s1", "s2", "s3", "s4"}

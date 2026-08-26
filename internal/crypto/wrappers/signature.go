@@ -58,11 +58,11 @@ func SetupCreateSignature(privateKey []byte) (err error) {
 		if sigID == 0 {
 			// Signature is purposely empty slice when using 0 id
 			return
-		} else {
-			if len(privateKey) == 0 {
-				err = fmt.Errorf("private key empty: attempted call to uninitialized function")
-				return
-			}
+		}
+
+		if len(privateKey) == 0 {
+			err = fmt.Errorf("private key empty: attempted call to uninitialized function")
+			return
 		}
 
 		signature, err = sigSuite.Sign(privateKey, data)
@@ -109,9 +109,9 @@ func LookupPinnedSender(hostname string) (key []byte, present bool) {
 	if !ok {
 		present = false
 		return
-	} else {
-		present = true
 	}
+
+	present = true
 	return
 }
 

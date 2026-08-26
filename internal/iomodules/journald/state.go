@@ -44,9 +44,9 @@ func getLastPosition(ctx context.Context, stateFilePath string) (cursor string, 
 	if err != nil && err.Error() != "EOF" {
 		err = fmt.Errorf("unable to read position file: %w", err)
 		return
-	} else {
-		err = nil
 	}
+	err = nil
+
 	cursor = string(data[:bytesRead])
 	cursor = strings.Trim(cursor, "\n")
 

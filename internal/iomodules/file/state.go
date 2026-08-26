@@ -43,9 +43,8 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 	if err != nil && err.Error() != "EOF" {
 		err = fmt.Errorf("unable to read position file: %w", err)
 		return
-	} else {
-		err = nil
 	}
+	err = nil
 
 	content := strings.TrimSpace(string(data[:bytesRead]))
 	if content == "" {

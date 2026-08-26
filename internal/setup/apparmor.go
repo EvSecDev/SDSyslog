@@ -213,9 +213,8 @@ func (step *InstallAppArmorStep) Uninstall(ctx *context) (err error) {
 	if err != nil && !os.IsNotExist(err) {
 		err = fmt.Errorf("failed to remove apparmor profile: %w", err)
 		return
-	} else {
-		err = nil
 	}
+	err = nil
 
 	ctx.logger.Success("Successfully uninstalled AppArmor Profile")
 	return

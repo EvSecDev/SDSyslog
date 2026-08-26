@@ -209,9 +209,8 @@ func (step *InstallConfigStep) Uninstall(ctx *context) (err error) {
 	err = os.RemoveAll(global.DefaultConfigDir)
 	if err != nil && !os.IsNotExist(err) {
 		return
-	} else {
-		err = nil
 	}
+	err = nil
 
 	ctx.logger.Success("Successfully removed configuration directory '%s'", global.DefaultConfigDir)
 	return

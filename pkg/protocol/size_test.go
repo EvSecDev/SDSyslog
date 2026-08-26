@@ -25,15 +25,15 @@ func TestPayloadSize_StringGrowth(t *testing.T) {
 }
 
 func TestPayloadSize_Invariants(t *testing.T) {
-	p := Payload{}
+	payload := Payload{}
 
-	if p.Size() <= 0 {
+	if payload.Size() <= 0 {
 		t.Fatalf("payload size must be positive")
 	}
 
 	mockPtr := 45
 
-	p2 := p
+	p2 := payload
 	p2.CustomFields = map[string]any{
 		"a": 1,
 		"b": "text",
@@ -46,7 +46,7 @@ func TestPayloadSize_Invariants(t *testing.T) {
 		"g": &mockPtr,
 	}
 
-	if p2.Size() <= p.Size() {
+	if p2.Size() <= payload.Size() {
 		t.Fatalf("adding custom fields should increase size")
 	}
 }

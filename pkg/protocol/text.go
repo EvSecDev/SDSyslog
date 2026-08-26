@@ -9,9 +9,9 @@ func cleanStringToBytes(input string, maxLength int) (cleanBytes []byte) {
 
 	// Remove non-ASCII characters
 	cleanBytes = make([]byte, 0, len(input))
-	for _, r := range input {
-		if r >= 0x20 && r <= 0x7E {
-			cleanBytes = append(cleanBytes, byte(r))
+	for _, char := range input {
+		if char >= 0x20 && char <= 0x7E {
+			cleanBytes = append(cleanBytes, byte(char))
 		}
 	}
 
@@ -25,9 +25,9 @@ func cleanStringToBytes(input string, maxLength int) (cleanBytes []byte) {
 // Removes null-byte sequences from data
 func cleanBytes(data []byte) (cleanBytes []byte) {
 	cleanBytes = data[:0]
-	for _, b := range data {
-		if b != 0 {
-			cleanBytes = append(cleanBytes, b)
+	for _, singleByte := range data {
+		if singleByte != 0 {
+			cleanBytes = append(cleanBytes, singleByte)
 		}
 	}
 	return

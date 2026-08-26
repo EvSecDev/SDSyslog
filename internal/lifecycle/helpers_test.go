@@ -16,40 +16,40 @@ type daemonFuncAdapter struct {
 	stopFIPRFunc  func()
 }
 
-func (d daemonFuncAdapter) Init(key []byte) (err error) {
-	if d.initFunc != nil {
-		err = d.initFunc(key)
+func (daemonAdapter daemonFuncAdapter) Init(key []byte) (err error) {
+	if daemonAdapter.initFunc != nil {
+		err = daemonAdapter.initFunc(key)
 	}
 	return
 }
 
-func (d daemonFuncAdapter) Start() (err error) {
-	if d.startFunc != nil {
-		err = d.startFunc()
+func (daemonAdapter daemonFuncAdapter) Start() (err error) {
+	if daemonAdapter.startFunc != nil {
+		err = daemonAdapter.startFunc()
 	}
 	return
 }
 
-func (d daemonFuncAdapter) Shutdown() {
-	if d.shutdownFunc != nil {
-		d.shutdownFunc()
+func (daemonAdapter daemonFuncAdapter) Shutdown() {
+	if daemonAdapter.shutdownFunc != nil {
+		daemonAdapter.shutdownFunc()
 	}
 }
 
-func (d daemonFuncAdapter) StartFIPR() (err error) {
-	if d.startFIPRFunc != nil {
-		err = d.startFIPRFunc()
+func (daemonAdapter daemonFuncAdapter) StartFIPR() (err error) {
+	if daemonAdapter.startFIPRFunc != nil {
+		err = daemonAdapter.startFIPRFunc()
 	}
 	return
 }
 
-func (d daemonFuncAdapter) StopFIPR() {
-	if d.stopFIPRFunc != nil {
-		d.stopFIPRFunc()
+func (daemonAdapter daemonFuncAdapter) StopFIPR() {
+	if daemonAdapter.stopFIPRFunc != nil {
+		daemonAdapter.stopFIPRFunc()
 	}
 }
 
-func (d daemonFuncAdapter) ReloadSigningKeys() (n int, err error) {
+func (daemonAdapter daemonFuncAdapter) ReloadSigningKeys() (n int, err error) {
 	return
 }
 
@@ -74,11 +74,11 @@ func setupNotifySocket(t *testing.T) (socketPath string, msgChannel <-chan strin
 	go func() {
 		buf := make([]byte, 4096)
 		for {
-			n, _, err := conn.ReadFromUnix(buf)
+			bytesRead, _, err := conn.ReadFromUnix(buf)
 			if err != nil {
 				return
 			}
-			messages <- string(buf[:n])
+			messages <- string(buf[:bytesRead])
 		}
 	}()
 

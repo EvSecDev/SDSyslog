@@ -11,7 +11,7 @@ func TestSubtract(t *testing.T) {
 		initial     uint64
 		subtract    uint64
 		maxRetries  int
-		mutate      func(a *atomic.Uint64)
+		mutate      func(value *atomic.Uint64)
 		wantSuccess bool
 		wantFinal   uint64
 	}{
@@ -43,15 +43,15 @@ func TestSubtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var a atomic.Uint64
-			a.Store(tt.initial)
+			var value atomic.Uint64
+			value.Store(tt.initial)
 
 			if tt.mutate != nil {
-				tt.mutate(&a)
+				tt.mutate(&value)
 			}
 
-			ok := Subtract(&a, tt.subtract, tt.maxRetries)
-			final := a.Load()
+			ok := Subtract(&value, tt.subtract, tt.maxRetries)
+			final := value.Load()
 
 			if ok != tt.wantSuccess {
 				t.Fatalf("expected success=%v, got %v", tt.wantSuccess, ok)

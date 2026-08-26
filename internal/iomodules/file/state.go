@@ -39,7 +39,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 
 	// Retrieve cached data
 	data := make([]byte, 128)
-	n, err := stateFile.Read(data)
+	bytesRead, err := stateFile.Read(data)
 	if err != nil && err.Error() != "EOF" {
 		err = fmt.Errorf("unable to read position file: %w", err)
 		return
@@ -47,7 +47,7 @@ func getLastPosition(logFilePath string, stateFilePath string) (inode uint64, po
 		err = nil
 	}
 
-	content := strings.TrimSpace(string(data[:n]))
+	content := strings.TrimSpace(string(data[:bytesRead]))
 	if content == "" {
 		// Empty state file, assume new
 		return

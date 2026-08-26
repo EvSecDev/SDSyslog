@@ -25,12 +25,12 @@ func ScanRepo(
 ) (matches []FileMatch, err error) {
 	allowedExtensions := []string{".txt", ".md", ".go", ".sh", ".conf", ".c", ".json"}
 
-	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if d.IsDir() {
+		if entry.IsDir() {
 			return nil
 		}
 

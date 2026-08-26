@@ -64,23 +64,23 @@ func TestMetricsPresence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := New[int]([]string{"test"}, tt.initialCap, tt.minCap, tt.maxCap)
+			queue, err := New[int]([]string{"test"}, tt.initialCap, tt.minCap, tt.maxCap)
 			if err != nil {
 				t.Fatalf("failed to create queue: %v", err)
 			}
 
 			// Push items
-			for i := range tt.pushCount {
-				err = q.Push(i, uint64(tt.bytesPerItem))
+			for iteration := range tt.pushCount {
+				err = queue.Push(iteration, uint64(tt.bytesPerItem))
 				if err != nil {
-					t.Fatalf("push %d failed unexpectedly: %v", i, err)
+					t.Fatalf("push %d failed unexpectedly: %v", iteration, err)
 				}
 			}
 
 			// Pop items (consume some/all)
 			popCount := tt.expectPop
 			for i := range int(popCount) {
-				val, success := q.Pop(ctx)
+				val, success := queue.Pop(ctx)
 				if !success {
 					t.Fatalf("pop %d failed unexpectedly", i)
 				}
@@ -88,13 +88,13 @@ func TestMetricsPresence(t *testing.T) {
 			}
 
 			// Collect metrics
-			metricsCollected := q.CollectMetrics(time.Second)
+			metricsCollected := queue.CollectMetrics(time.Second)
 
 			// Convert to map for easier assertions
 			mmap := map[string]uint64{}
-			for _, m := range metricsCollected {
-				if v, ok := m.Value.Raw.(uint64); ok {
-					mmap[m.Name] = v
+			for _, metric := range metricsCollected {
+				if v, ok := metric.Value.Raw.(uint64); ok {
+					mmap[metric.Name] = v
 				}
 			}
 

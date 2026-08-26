@@ -124,9 +124,9 @@ func (mod *InModule) fileReadAll(ctx context.Context, lineBuf *[]byte, buf []byt
 			return
 		}
 
-		var n int
-		n, err = mod.sink.Read(buf)
-		if n == 0 || err == io.EOF {
+		var bytesRead int
+		bytesRead, err = mod.sink.Read(buf)
+		if bytesRead == 0 || err == io.EOF {
 			// no more bytes available, break to outer select for blocking
 			err = nil
 			break
@@ -136,7 +136,7 @@ func (mod *InModule) fileReadAll(ctx context.Context, lineBuf *[]byte, buf []byt
 		}
 
 		// process the bytes read
-		mod.processFileChunk(ctx, lineBuf, buf[:n])
+		mod.processFileChunk(ctx, lineBuf, buf[:bytesRead])
 	}
 	return
 }

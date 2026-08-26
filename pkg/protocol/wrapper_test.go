@@ -385,9 +385,9 @@ func TestProtocol(t *testing.T) {
 			if len(recvMsg.Fields) != len(tt.expectedMsg.Fields) {
 				t.Fatalf("fields length mismatch: got %d want %d", len(recvMsg.Fields), len(tt.expectedMsg.Fields))
 			}
-			for k, v := range tt.expectedMsg.Fields {
-				if recvMsg.Fields[k] != v {
-					t.Fatalf("field %q mismatch: got %q want %q", k, recvMsg.Fields[k], v)
+			for key, value := range tt.expectedMsg.Fields {
+				if recvMsg.Fields[key] != value {
+					t.Fatalf("field %q mismatch: got %q want %q", key, recvMsg.Fields[key], value)
 				}
 			}
 			if !bytes.Equal(recvMsg.Data, tt.expectedMsg.Data) {

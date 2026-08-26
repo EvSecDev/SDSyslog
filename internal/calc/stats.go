@@ -9,24 +9,24 @@ func TrimmedMeanUint64(values []uint64, trimPercent float64) (mean uint64) {
 		trimPercent = 0
 	}
 
-	n := len(values)
-	if n == 0 {
+	numValues := len(values)
+	if numValues == 0 {
 		return
 	}
 
-	nums := make([]uint64, n)
+	nums := make([]uint64, numValues)
 	copy(nums, values)
 
 	sort.Slice(nums, func(i, j int) bool { return nums[i] < nums[j] })
 
 	// How many values to drop from each end
-	trimCount := int(float64(n) * trimPercent)
-	if trimCount*2 >= n {
-		trimCount = (n - 1) / 2
+	trimCount := int(float64(numValues) * trimPercent)
+	if trimCount*2 >= numValues {
+		trimCount = (numValues - 1) / 2
 	}
 
 	start := trimCount
-	end := n - trimCount
+	end := numValues - trimCount
 
 	var sum uint64
 	count := end - start
@@ -45,24 +45,24 @@ func TrimmedMeanFloat64(values []float64, trimPercent float64) (mean float64) {
 		trimPercent = 0
 	}
 
-	n := len(values)
-	if n == 0 {
+	numValues := len(values)
+	if numValues == 0 {
 		return
 	}
 
 	// Copy and sort
-	nums := make([]float64, n)
+	nums := make([]float64, numValues)
 	copy(nums, values)
 	sort.Float64s(nums)
 
 	// How many to trim from each end
-	trimCount := int(float64(n) * trimPercent)
-	if trimCount*2 >= n {
-		trimCount = (n - 1) / 2
+	trimCount := int(float64(numValues) * trimPercent)
+	if trimCount*2 >= numValues {
+		trimCount = (numValues - 1) / 2
 	}
 
 	start := trimCount
-	end := n - trimCount
+	end := numValues - trimCount
 
 	var sum float64
 	count := float64(end - start)

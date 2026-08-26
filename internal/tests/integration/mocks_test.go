@@ -33,68 +33,68 @@ func NewPipeBuffer(maxCap int) (new *PipeBuffer) {
 
 // Write appends bytes to the buffer, signals readers.
 // Returns error if buffer is closed or would exceed maxCap
-func (p *PipeBuffer) Write(data []byte) (n int, err error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+func (pipe *PipeBuffer) Write(data []byte) (bytesWritten int, err error) {
+	pipe.mu.Lock()
+	defer pipe.mu.Unlock()
 
-	if p.closed {
+	if pipe.closed {
 		err = os.ErrClosed
 		return
 	}
 
-	if p.maxCap > 0 && len(p.buffer)+len(data) > p.maxCap {
+	if pipe.maxCap > 0 && len(pipe.buffer)+len(data) > pipe.maxCap {
 		err = fmt.Errorf("buffer full")
 		return
 	}
 
-	p.buffer = append(p.buffer, data...)
-	p.cond.Broadcast() // wake up all waiting readers
-	n = len(data)
+	pipe.buffer = append(pipe.buffer, data...)
+	pipe.cond.Broadcast() // wake up all waiting readers
+	bytesWritten = len(data)
 	return
 }
 
 // Read reads bytes from the buffer into pBytes. Blocks if empty.
 // Returns io.EOF if closed and no more data is available.
-func (p *PipeBuffer) Read(pBytes []byte) (n int, err error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+func (pipe *PipeBuffer) Read(pBytes []byte) (bytesRead int, err error) {
+	pipe.mu.Lock()
+	defer pipe.mu.Unlock()
 
-	for len(p.buffer) == 0 && !p.closed {
-		p.cond.Wait() // safely wait. Wakeup on signal or broadcast
+	for len(pipe.buffer) == 0 && !pipe.closed {
+		pipe.cond.Wait() // safely wait. Wakeup on signal or broadcast
 	}
 
-	if len(p.buffer) == 0 && p.closed {
+	if len(pipe.buffer) == 0 && pipe.closed {
 		err = io.EOF
 		return
 	}
 
-	n = copy(pBytes, p.buffer)
-	p.buffer = p.buffer[n:]
+	bytesRead = copy(pBytes, pipe.buffer)
+	pipe.buffer = pipe.buffer[bytesRead:]
 	return
 }
 
 // Close marks the buffer as closed and wakes up all readers
-func (p *PipeBuffer) Close() (err error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+func (pipe *PipeBuffer) Close() (err error) {
+	pipe.mu.Lock()
+	defer pipe.mu.Unlock()
 
-	if p.closed {
+	if pipe.closed {
 		err = os.ErrClosed
 		return
 	}
 
-	p.closed = true
-	p.cond.Broadcast() // unblock any waiting readers
+	pipe.closed = true
+	pipe.cond.Broadcast() // unblock any waiting readers
 	return
 }
 
-// Truncate shortens the buffer to n bytes (if n < len(buffer))
-func (p *PipeBuffer) Truncate(n int) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+// Truncate shortens the buffer to numBytes bytes (if n < len(buffer))
+func (pipe *PipeBuffer) Truncate(numBytes int) {
+	pipe.mu.Lock()
+	defer pipe.mu.Unlock()
 
-	if n < len(p.buffer) {
-		p.buffer = p.buffer[:n]
+	if numBytes < len(pipe.buffer) {
+		pipe.buffer = pipe.buffer[:numBytes]
 	}
 }
 

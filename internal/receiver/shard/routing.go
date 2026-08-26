@@ -19,15 +19,15 @@ import (
 // Dynamically reroutes and tracks when targeted shard/process is shutdown.
 func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress netip.Addr, fragment *protocol.Payload, processingStartTime time.Time) (success bool) {
 	// Identifier for all fragments within a given message per host
-	var b strings.Builder
-	b.Grow(len(remoteAddress.String()) + 32)
-	b.WriteString(remoteAddress.String())
-	b.WriteByte('-')
-	b.WriteString(strconv.FormatInt(int64(fragment.HostID), 10))
-	b.WriteByte('-')
-	b.WriteString(strconv.FormatInt(int64(fragment.MsgID), 10))
+	var builder strings.Builder
+	builder.Grow(len(remoteAddress.String()) + 32)
+	builder.WriteString(remoteAddress.String())
+	builder.WriteByte('-')
+	builder.WriteString(strconv.FormatInt(int64(fragment.HostID), 10))
+	builder.WriteByte('-')
+	builder.WriteString(strconv.FormatInt(int64(fragment.MsgID), 10))
 	// Format Example: 127.0.0.1-1234-5678
-	bucketKey := b.String()
+	bucketKey := builder.String()
 
 	// Short circuit routing for single fragment messages
 	if fragment.MessageSeqMax == 0 {
@@ -201,10 +201,10 @@ func routeSelect(key string, candidates []string) (primary, secondary string) {
 
 	// Hash the key (deterministic, uniform)
 	sum := sha256.Sum256([]byte(key))
-	h := binary.BigEndian.Uint64(sum[:8]) % uint64(candidateNum)
+	hashID := binary.BigEndian.Uint64(sum[:8]) % uint64(candidateNum)
 
 	// Map to primary index
-	idx := int(h % uint64(candidateNum))
+	idx := int(hashID % uint64(candidateNum))
 	primary = candidates[idx]
 
 	// Deterministic secondary fallback: pick the next candidate (wrap around)

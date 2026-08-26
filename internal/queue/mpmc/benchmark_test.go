@@ -16,8 +16,8 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 
 	perOp := make([]float64, len(sizes))
 
-	for idx, n := range sizes {
-		queue, err := New[int]([]string{logctx.NSTest}, uint64(n*2), 2, global.DefaultMaxQueueSize)
+	for idx, size := range sizes {
+		queue, err := New[int]([]string{logctx.NSTest}, uint64(size*2), 2, global.DefaultMaxQueueSize)
 		if err != nil {
 			b.Fatalf("expected no error in creating queue, but got '%v'", err)
 		}
@@ -31,7 +31,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 			queue.Pop(context.Background())
 		}
 
-		b.Run(fmt.Sprintf("QueueCapacity=%d", n), func(b *testing.B) {
+		b.Run(fmt.Sprintf("QueueCapacity=%d", size), func(b *testing.B) {
 			for i := range b.N {
 				err := queue.Push(i, 8)
 				if err != nil {

@@ -95,10 +95,10 @@ func TestReadFrame(t *testing.T) {
 		{
 			name: "zero byte read before frame arrives",
 			frameChunks: func() (frames [][][]byte) {
-				f := buildTestFrame(opAck, 0, []byte("hello"), 1, 0)
+				frame := buildTestFrame(opAck, 0, []byte("hello"), 1, 0)
 				frames = append(frames, [][]byte{
 					{}, // zero-byte read
-					f[0],
+					frame[0],
 				})
 				return
 			}(),
@@ -139,14 +139,14 @@ func TestReadFrame(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				// Inject chunk by chunk into mocked connection buffer
-				for i, frame := range tt.frameChunks {
+				for frameIndex, frame := range tt.frameChunks {
 					for _, chunk := range frame {
 						_, err := server.Write(chunk)
 						if err != nil {
 							errChan <- fmt.Errorf("unexpected error writing frame chunk: %w", err)
 							return
 						}
-						expectedWholeFrames[i] = append(expectedWholeFrames[i], chunk...)
+						expectedWholeFrames[frameIndex] = append(expectedWholeFrames[frameIndex], chunk...)
 					}
 				}
 			}()
@@ -182,9 +182,9 @@ func TestReadFrame(t *testing.T) {
 			}
 
 			// Ensure ordering and contents stayed the same
-			for i, want := range expectedWholeFrames {
-				if !bytes.Equal(gotFrames[i], want) {
-					t.Errorf("frame %d mismatch\nexpected: %v\nactual:   %v", i, want, gotFrames[i])
+			for frameIndex, want := range expectedWholeFrames {
+				if !bytes.Equal(gotFrames[frameIndex], want) {
+					t.Errorf("frame %d mismatch\nexpected: %v\nactual:   %v", frameIndex, want, gotFrames[frameIndex])
 				}
 			}
 

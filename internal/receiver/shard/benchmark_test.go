@@ -61,16 +61,16 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 			b.ResetTimer()
 			start := time.Now()
 
-			for i := range b.N {
+			for iteration := range b.N {
 				payloadTemplate.Data = bytes.Repeat([]byte("0"), msgSize)
-				queue.push(mockCtx, "key"+strconv.Itoa(i), payloadTemplate, time.Now())
+				queue.push(mockCtx, "key"+strconv.Itoa(iteration), payloadTemplate, time.Now())
 				key, ok := queue.PopKey(context.Background())
 				if !ok {
-					b.Fatalf("expected no error during benchmark, but failed to pop key at iteration %d", i)
+					b.Fatalf("expected no error during benchmark, but failed to pop key at iteration %d", iteration)
 				}
 				_, notExist := queue.DrainBucket(mockCtx, key)
 				if notExist {
-					b.Fatalf("expected no error during benchmark, but bucket drain failed at iteration %d", i)
+					b.Fatalf("expected no error during benchmark, but bucket drain failed at iteration %d", iteration)
 				}
 			}
 

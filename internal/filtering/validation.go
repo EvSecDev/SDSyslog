@@ -40,20 +40,20 @@ func (filter Filter) Validate() (err error) {
 
 	// Recursively validate children
 	if len(filter.And) > 0 {
-		for i, sub := range filter.And {
+		for index, sub := range filter.And {
 			err = sub.Validate()
 			if err != nil {
-				err = fmt.Errorf("and[%d]: %w", i, err)
+				err = fmt.Errorf("and[%d]: %w", index, err)
 				return
 			}
 		}
 	}
 
 	if len(filter.Or) > 0 {
-		for i, sub := range filter.Or {
+		for index, sub := range filter.Or {
 			err = sub.Validate()
 			if err != nil {
-				err = fmt.Errorf("or[%d]: %w", i, err)
+				err = fmt.Errorf("or[%d]: %w", index, err)
 				return
 			}
 		}

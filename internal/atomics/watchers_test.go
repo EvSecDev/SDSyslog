@@ -26,10 +26,10 @@ func TestWaitUntilZero(t *testing.T) {
 		{
 			name:    "eventually reaches zero",
 			initial: 5,
-			mutate: func(a *atomic.Uint64) {
+			mutate: func(value *atomic.Uint64) {
 				go func() {
 					time.Sleep(100 * time.Millisecond)
-					a.Store(0)
+					value.Store(0)
 				}()
 			},
 			maxWaitTime:   500 * time.Millisecond,
@@ -38,7 +38,7 @@ func TestWaitUntilZero(t *testing.T) {
 		{
 			name:    "never reaches zero",
 			initial: 3,
-			mutate: func(a *atomic.Uint64) {
+			mutate: func(value *atomic.Uint64) {
 				// no-op
 			},
 			maxWaitTime:   200 * time.Millisecond,
@@ -48,12 +48,12 @@ func TestWaitUntilZero(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var a atomic.Uint64
-			a.Store(tt.initial)
+			var value atomic.Uint64
+			value.Store(tt.initial)
 
-			tt.mutate(&a)
+			tt.mutate(&value)
 
-			reached, last := WaitUntilZero(&a, tt.maxWaitTime)
+			reached, last := WaitUntilZero(&value, tt.maxWaitTime)
 
 			if reached != tt.expectReached {
 				t.Fatalf("expected reached=%v, got %v (last=%d)",

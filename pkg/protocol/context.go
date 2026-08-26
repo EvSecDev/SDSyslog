@@ -24,13 +24,13 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 		if rt.Elem().Kind() == reflect.Uint8 {
 			valType = ContextSliceBytes
 
-			b := rv.Bytes()
-			err = binary.Write(&buf, binary.BigEndian, uint32(len(b)))
+			valueSize := rv.Bytes()
+			err = binary.Write(&buf, binary.BigEndian, uint32(len(valueSize)))
 			if err != nil {
 				return
 			}
 
-			_, err = buf.Write(b)
+			_, err = buf.Write(valueSize)
 			if err != nil {
 				return
 			}
@@ -70,14 +70,14 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 		}
 	case reflect.Int, reflect.Int64:
 		valType = ContextInt64
-		switch v := value.(type) {
+		switch rawValue := value.(type) {
 		case int64:
-			err = binary.Write(&buf, binary.BigEndian, v)
+			err = binary.Write(&buf, binary.BigEndian, rawValue)
 			if err != nil {
 				return
 			}
 		case int:
-			err = binary.Write(&buf, binary.BigEndian, int64(v))
+			err = binary.Write(&buf, binary.BigEndian, int64(rawValue))
 			if err != nil {
 				return
 			}
@@ -160,8 +160,8 @@ func deserializeAnyValue(valType uint8, data []byte) (value any, err error) {
 			return
 		}
 
-		b := make([]byte, length)
-		_, err = io.ReadFull(buf, b)
+		data := make([]byte, length)
+		_, err = io.ReadFull(buf, data)
 		if err != nil {
 			return
 		}
@@ -172,18 +172,18 @@ func deserializeAnyValue(valType uint8, data []byte) (value any, err error) {
 			return
 		}
 
-		value = b
+		value = data
 	case ContextInt8:
 		if len(data) != 1 {
 			err = fmt.Errorf("invalid int8 length: %d", len(data))
 			return
 		}
-		var b byte
-		b, err = buf.ReadByte()
+		var singleByte byte
+		singleByte, err = buf.ReadByte()
 		if err != nil {
 			return
 		}
-		num := int8(b)
+		num := int8(singleByte)
 		value = num
 	case ContextInt16:
 		if len(data) != 2 {
@@ -267,12 +267,12 @@ func deserializeAnyValue(valType uint8, data []byte) (value any, err error) {
 			err = fmt.Errorf("invalid bool length: %d", len(data))
 			return
 		}
-		var b byte
-		b, err = buf.ReadByte()
+		var singleByte byte
+		singleByte, err = buf.ReadByte()
 		if err != nil {
 			return
 		}
-		switch b {
+		switch singleByte {
 		case 0x00:
 			value = false
 			return
@@ -280,7 +280,7 @@ func deserializeAnyValue(valType uint8, data []byte) (value any, err error) {
 			value = true
 			return
 		default:
-			err = fmt.Errorf("invalid bool value: %d", b)
+			err = fmt.Errorf("invalid bool value: %d", singleByte)
 			return
 		}
 	case ContextString:

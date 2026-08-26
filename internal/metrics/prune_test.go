@@ -31,9 +31,9 @@ func TestRegistry_Prune(t *testing.T) {
 	}
 
 	// Expect only metrics from ts2 and ts3
-	for _, m := range results {
-		if m.Timestamp.Before(ts["ts2"]) {
-			t.Fatalf("unexpected old metric timestamp: %v", m.Timestamp)
+	for _, metric := range results {
+		if metric.Timestamp.Before(ts["ts2"]) {
+			t.Fatalf("unexpected old metric timestamp: %v", metric.Timestamp)
 		}
 	}
 }

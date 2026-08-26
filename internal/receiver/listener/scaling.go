@@ -23,26 +23,26 @@ func Trend(busyTimes []float64) (scaleUp bool, scaleDown bool) {
 	// Trend detection via linear regression
 	// x = 0..n-1, y = values[i]
 	var (
-		n   = float64(len(busyTimes))
-		sx  float64
-		sy  float64
-		sxy float64
-		sxx float64
+		valueCount = float64(len(busyTimes))
+		sx         float64
+		sy         float64
+		sxy        float64
+		sxx        float64
 	)
-	for i, v := range busyTimes {
-		x := float64(i)
-		sx += x
-		sy += v
-		sxy += x * v
-		sxx += x * x
+	for index, value := range busyTimes {
+		indexFloat := float64(index)
+		sx += indexFloat
+		sy += value
+		sxy += indexFloat * value
+		sxx += indexFloat * indexFloat
 	}
 
 	// slope of the best-fit line
-	denom := n*sxx - sx*sx
+	denom := valueCount*sxx - sx*sx
 	if denom == 0 {
 		return // pathological case, can't evaluate trend
 	}
-	slope := (n*sxy - sx*sy) / denom
+	slope := (valueCount*sxy - sx*sy) / denom
 
 	// Scale-UP conditions:
 	// - average above threshold

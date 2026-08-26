@@ -282,14 +282,14 @@ func waitForCompleteLines(testOutput *PipeBuffer, expected int, readMaxIdleTime 
 	}
 
 	for _, ln := range rawLines {
-		var h []byte
-		h, err = hash.MultipleSlices(ln)
+		var hashBytes []byte
+		hashBytes, err = hash.MultipleSlices(ln)
 		if err != nil {
 			err = fmt.Errorf("hashing line: %w", err)
 			return
 		}
 
-		lineHashes = append(lineHashes, h)
+		lineHashes = append(lineHashes, hashBytes)
 	}
 
 	return

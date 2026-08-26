@@ -71,20 +71,20 @@ func TestQueueScaleCapacity_DecisionOnly(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := New[int]([]string{logctx.NSTest}, tt.initialCap, tt.minCap, tt.maxCap)
+			queue, err := New[int]([]string{logctx.NSTest}, tt.initialCap, tt.minCap, tt.maxCap)
 			if err != nil {
 				t.Fatalf("new queue: %v", err)
 			}
 
-			for i := range tt.pushCount {
-				q.PushBlocking(ctx, i, tt.bytesPerItem)
+			for iteration := range tt.pushCount {
+				queue.PushBlocking(ctx, iteration, tt.bytesPerItem)
 			}
 
-			before := q.ActiveWrite.Load()
+			before := queue.ActiveWrite.Load()
 
-			q.ScaleCapacity(ctx)
+			queue.ScaleCapacity(ctx)
 
-			after := q.ActiveWrite.Load()
+			after := queue.ActiveWrite.Load()
 
 			if tt.expectResize {
 				if before == after {

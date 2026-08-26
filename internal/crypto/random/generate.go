@@ -10,14 +10,14 @@ import (
 
 // Generates random integer that would fit into a uint32
 func FourByte() (randInt int, err error) {
-	var b [4]byte
+	var array [4]byte
 
-	_, err = rand.Read(b[:])
+	_, err = rand.Read(array[:])
 	if err != nil {
 		return
 	}
 
-	randInt = int(binary.BigEndian.Uint32(b[:]))
+	randInt = int(binary.BigEndian.Uint32(array[:]))
 	return
 }
 
@@ -79,12 +79,12 @@ func NumberInRange(min, max int) (randomNumber int, err error) {
 	}
 
 	// Generate a random number in [min, max]
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(max-min+1)))
+	randomValue, err := rand.Int(rand.Reader, big.NewInt(int64(max-min+1)))
 	if err != nil {
 		err = fmt.Errorf("failed reading in range: %w", err)
 		return
 	}
 
-	randomNumber = int(n.Int64()) + min
+	randomNumber = int(randomValue.Int64()) + min
 	return
 }

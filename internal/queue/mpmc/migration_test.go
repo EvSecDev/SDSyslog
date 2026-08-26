@@ -54,7 +54,7 @@ func TestQueueMigration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := New[int]([]string{logctx.NSTest}, tt.initialSize, 2, global.DefaultMaxQueueSize) // min/max not used here
+			queue, err := New[int]([]string{logctx.NSTest}, tt.initialSize, 2, global.DefaultMaxQueueSize) // min/max not used here
 			if err != nil {
 				t.Fatalf("failed to create queue: %v", err)
 			}
@@ -67,21 +67,21 @@ func TestQueueMigration(t *testing.T) {
 			consumed := make(chan int, tt.numItems)
 
 			// Producers
-			for p := range tt.numProducers {
+			for producerNum := range tt.numProducers {
 				wg.Add(1)
 				go func(id int) {
 					defer wg.Done()
-					for i := id; i < tt.numItems; i += tt.numProducers {
+					for index := id; index < tt.numItems; index += tt.numProducers {
 						for {
-							err := q.Push(i, 1)
+							err := queue.Push(index, 1)
 							if err == nil {
 								break
 							}
 							time.Sleep(time.Microsecond) // backoff
 						}
-						produced <- i
+						produced <- index
 					}
-				}(p)
+				}(producerNum)
 			}
 
 			// Consumers
@@ -92,7 +92,7 @@ func TestQueueMigration(t *testing.T) {
 						case <-ctx.Done():
 							return
 						default:
-							if item, ok := q.Pop(ctx); ok {
+							if item, ok := queue.Pop(ctx); ok {
 								consumed <- item
 							} else {
 								time.Sleep(time.Microsecond)
@@ -104,7 +104,7 @@ func TestQueueMigration(t *testing.T) {
 
 			// Trigger resize after some items have been pushed
 			time.Sleep(10 * time.Millisecond)
-			if err := q.mutateSize(tt.newSize); err != nil {
+			if err := queue.mutateSize(tt.newSize); err != nil {
 				t.Fatalf("failed to mutate size: %v", err)
 			}
 			time.Sleep(10 * time.Millisecond)
@@ -128,12 +128,12 @@ func TestQueueMigration(t *testing.T) {
 			}
 
 			consumedCount := 0
-			for v := range consumed {
+			for index := range consumed {
 				consumedCount++
-				if _, ok := producedMap[v]; !ok {
-					t.Errorf("consumed unknown item: %d", v)
+				if _, ok := producedMap[index]; !ok {
+					t.Errorf("consumed unknown item: %d", index)
 				} else {
-					delete(producedMap, v)
+					delete(producedMap, index)
 				}
 			}
 

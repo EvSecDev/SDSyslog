@@ -61,21 +61,21 @@ func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []
 		PopAttempts, PopSuccess, PopCASRetries, PopEmptySeqBehind, PopStaleRetries     uint64
 	}{}
 
-	for _, q := range queues {
-		agg.Depth += q.Metrics.Depth.Load()
-		agg.Bytes += q.Metrics.Bytes.Load()
+	for _, queue := range queues {
+		agg.Depth += queue.Metrics.Depth.Load()
+		agg.Bytes += queue.Metrics.Bytes.Load()
 
-		agg.PushAttempts += q.Metrics.PushAttempts.Swap(0)
-		agg.PushSuccess += q.Metrics.PushSuccess.Swap(0)
-		agg.PushCASRetries += q.Metrics.PushCASRetries.Swap(0)
-		agg.PushSeqBehindTail += q.Metrics.PushSeqBehindTail.Swap(0)
-		agg.PushStaleRetries += q.Metrics.PushStaleRetries.Swap(0)
+		agg.PushAttempts += queue.Metrics.PushAttempts.Swap(0)
+		agg.PushSuccess += queue.Metrics.PushSuccess.Swap(0)
+		agg.PushCASRetries += queue.Metrics.PushCASRetries.Swap(0)
+		agg.PushSeqBehindTail += queue.Metrics.PushSeqBehindTail.Swap(0)
+		agg.PushStaleRetries += queue.Metrics.PushStaleRetries.Swap(0)
 
-		agg.PopAttempts += q.Metrics.PopAttempts.Swap(0)
-		agg.PopSuccess += q.Metrics.PopSuccess.Swap(0)
-		agg.PopCASRetries += q.Metrics.PopCASRetries.Swap(0)
-		agg.PopEmptySeqBehind += q.Metrics.PopEmptySeqBehind.Swap(0)
-		agg.PopStaleRetries += q.Metrics.PopStaleRetries.Swap(0)
+		agg.PopAttempts += queue.Metrics.PopAttempts.Swap(0)
+		agg.PopSuccess += queue.Metrics.PopSuccess.Swap(0)
+		agg.PopCASRetries += queue.Metrics.PopCASRetries.Swap(0)
+		agg.PopEmptySeqBehind += queue.Metrics.PopEmptySeqBehind.Swap(0)
+		agg.PopStaleRetries += queue.Metrics.PopStaleRetries.Swap(0)
 	}
 
 	recordTime := time.Now()

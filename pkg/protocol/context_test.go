@@ -68,9 +68,9 @@ func TestSerializeAnyValue(t *testing.T) {
 			input:        float32(1.5),
 			expectedType: ContextFloat32,
 			expectedValue: func() []byte {
-				var b [4]byte
-				binary.BigEndian.PutUint32(b[:], math.Float32bits(1.5))
-				return b[:]
+				var array [4]byte
+				binary.BigEndian.PutUint32(array[:], math.Float32bits(1.5))
+				return array[:]
 			}(),
 		},
 		{
@@ -78,9 +78,9 @@ func TestSerializeAnyValue(t *testing.T) {
 			input:        float64(1.5),
 			expectedType: ContextFloat64,
 			expectedValue: func() []byte {
-				var b [8]byte
-				binary.BigEndian.PutUint64(b[:], math.Float64bits(1.5))
-				return b[:]
+				var array [8]byte
+				binary.BigEndian.PutUint64(array[:], math.Float64bits(1.5))
+				return array[:]
 			}(),
 		},
 		{
@@ -196,9 +196,9 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:      "float32",
 			inputType: ContextFloat32,
 			inputValue: func() []byte {
-				var b [4]byte
-				binary.BigEndian.PutUint32(b[:], math.Float32bits(1.5))
-				return b[:]
+				var array [4]byte
+				binary.BigEndian.PutUint32(array[:], math.Float32bits(1.5))
+				return array[:]
 			}(),
 			expectedOut: float32(1.5),
 		},
@@ -206,9 +206,9 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:      "float64",
 			inputType: ContextFloat64,
 			inputValue: func() []byte {
-				var b [8]byte
-				binary.BigEndian.PutUint64(b[:], math.Float64bits(1.5))
-				return b[:]
+				var array [8]byte
+				binary.BigEndian.PutUint64(array[:], math.Float64bits(1.5))
+				return array[:]
 			}(),
 			expectedOut: float64(1.5),
 		},
@@ -314,9 +314,9 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:      "float64 NaN",
 			inputType: ContextFloat64,
 			inputValue: func() []byte {
-				var b [8]byte
-				binary.BigEndian.PutUint64(b[:], math.Float64bits(math.NaN()))
-				return b[:]
+				var array [8]byte
+				binary.BigEndian.PutUint64(array[:], math.Float64bits(math.NaN()))
+				return array[:]
 			}(),
 			expectedErr: "invalid float64 value",
 		},
@@ -324,9 +324,9 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:      "float32 NaN",
 			inputType: ContextFloat32,
 			inputValue: func() []byte {
-				var b [4]byte
-				binary.BigEndian.PutUint32(b[:], math.Float32bits(float32(math.NaN())))
-				return b[:]
+				var array [4]byte
+				binary.BigEndian.PutUint32(array[:], math.Float32bits(float32(math.NaN())))
+				return array[:]
 			}(),
 			expectedErr: "invalid float32 value",
 		},
@@ -334,9 +334,9 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:      "float64 +Inf",
 			inputType: ContextFloat64,
 			inputValue: func() []byte {
-				var b [8]byte
-				binary.BigEndian.PutUint64(b[:], math.Float64bits(math.Inf(1)))
-				return b[:]
+				var array [8]byte
+				binary.BigEndian.PutUint64(array[:], math.Float64bits(math.Inf(1)))
+				return array[:]
 			}(),
 			expectedErr: "invalid float64 value",
 		},
@@ -344,9 +344,9 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:      "float64 -Inf",
 			inputType: ContextFloat64,
 			inputValue: func() []byte {
-				var b [8]byte
-				binary.BigEndian.PutUint64(b[:], math.Float64bits(math.Inf(-1)))
-				return b[:]
+				var array [8]byte
+				binary.BigEndian.PutUint64(array[:], math.Float64bits(math.Inf(-1)))
+				return array[:]
 			}(),
 			expectedErr: "invalid float64 value",
 		},
@@ -354,9 +354,9 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:      "float64 negative zero normalized",
 			inputType: ContextFloat64,
 			inputValue: func() []byte {
-				var b [8]byte
-				binary.BigEndian.PutUint64(b[:], 0x8000000000000000) // -0
-				return b[:]
+				var array [8]byte
+				binary.BigEndian.PutUint64(array[:], 0x8000000000000000) // -0
+				return array[:]
 			}(),
 			expectedOut: float64(0),
 		},
@@ -388,9 +388,9 @@ func TestDeserializeAnyValue(t *testing.T) {
 			name:      "int64 max",
 			inputType: ContextInt64,
 			inputValue: func() []byte {
-				var b [8]byte
-				binary.BigEndian.PutUint64(b[:], math.MaxInt64)
-				return b[:]
+				var array [8]byte
+				binary.BigEndian.PutUint64(array[:], math.MaxInt64)
+				return array[:]
 			}(),
 			expectedOut: int64(math.MaxInt64),
 		},

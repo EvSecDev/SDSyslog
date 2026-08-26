@@ -146,7 +146,7 @@ func TestNumberInRange(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n, err := NumberInRange(tt.min, tt.max)
+			randomNumber, err := NumberInRange(tt.min, tt.max)
 
 			if tt.wantErr {
 				if err == nil {
@@ -160,13 +160,13 @@ func TestNumberInRange(t *testing.T) {
 			}
 
 			// When min == max, result must equal min
-			if tt.wantEqual && n != tt.min {
-				t.Fatalf("expected %d, got %d", tt.min, n)
+			if tt.wantEqual && randomNumber != tt.min {
+				t.Fatalf("expected %d, got %d", tt.min, randomNumber)
 			}
 
 			// Ensure result in range
-			if !tt.wantEqual && (n < tt.min || n > tt.max) {
-				t.Fatalf("number out of range: got %d, want between %d and %d", n, tt.min, tt.max)
+			if !tt.wantEqual && (randomNumber < tt.min || randomNumber > tt.max) {
+				t.Fatalf("number out of range: got %d, want between %d and %d", randomNumber, tt.min, tt.max)
 			}
 		})
 	}
@@ -176,11 +176,11 @@ func TestNumberInRange(t *testing.T) {
 		min, max := 1, 100
 		results := make(map[int]bool)
 		for range 50 {
-			n, err := NumberInRange(min, max)
+			randomNumber, err := NumberInRange(min, max)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			results[n] = true
+			results[randomNumber] = true
 		}
 		if len(results) < 2 {
 			t.Fatalf("expected multiple distinct results, got only %d unique values", len(results))

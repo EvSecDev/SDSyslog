@@ -173,32 +173,32 @@ func TestPushPop_Parallel(t *testing.T) {
 	fragsPerProducer := 5
 	var wg sync.WaitGroup
 
-	for p := range numProducers {
+	for producerNum := range numProducers {
 		wg.Add(1)
 		go func(pid int) {
 			defer wg.Done()
 
 			uniqueID, _ := random.FourByte()
 
-			for i := range fragsPerProducer {
+			for sequence := range fragsPerProducer {
 				frag := &protocol.Payload{
 					HostID:        pid,
-					MessageSeq:    i,
+					MessageSeq:    sequence,
 					MessageSeqMax: fragsPerProducer - 1,
 					Data:          []byte("data"),
 				}
 				key := "bucket" + strconv.Itoa(uniqueID+fragsPerProducer)
 				queue.push(ctx, key, frag, time.Now())
 			}
-		}(p)
+		}(producerNum)
 	}
 
 	wg.Wait()
 
-	for p := range numProducers {
+	for producerNum := range numProducers {
 		key, ok := queue.PopKey(ctx)
 		if !ok {
-			t.Fatalf("expected to pop a key for producer %d", p)
+			t.Fatalf("expected to pop a key for producer %d", producerNum)
 		}
 		bucket, notExist := queue.DrainBucket(ctx, key)
 		if notExist {

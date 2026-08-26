@@ -147,12 +147,12 @@ type mockConn struct {
 }
 
 func newMockConn(inner net.Conn, secret []byte) *mockConn {
-	c := &mockConn{
+	mockedConn := &mockConn{
 		Conn:       inner,
 		hmacSecret: secret,
 	}
-	c.corruptNext.Store(true)
-	return c
+	mockedConn.corruptNext.Store(true)
+	return mockedConn
 }
 func (c *mockConn) Write(b []byte) (n int, err error) {
 	if !c.corruptNext.Load() {

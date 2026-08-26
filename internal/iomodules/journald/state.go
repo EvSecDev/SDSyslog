@@ -40,14 +40,14 @@ func getLastPosition(ctx context.Context, stateFilePath string) (cursor string, 
 
 	// Retrieve cached data
 	data := make([]byte, 256)
-	n, err := stateFile.Read(data)
+	bytesRead, err := stateFile.Read(data)
 	if err != nil && err.Error() != "EOF" {
 		err = fmt.Errorf("unable to read position file: %w", err)
 		return
 	} else {
 		err = nil
 	}
-	cursor = string(data[:n])
+	cursor = string(data[:bytesRead])
 	cursor = strings.Trim(cursor, "\n")
 
 	// Validate cursor format - restart from zero otherwise

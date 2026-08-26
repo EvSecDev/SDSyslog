@@ -2,14 +2,14 @@ package shard
 
 // Decides whether to scale up or down based on total buckets in shard (metric=total_buckets)
 func Trend(bucketCounts []uint64) (scaleUp bool, scaleDown bool) {
-	n := len(bucketCounts)
-	if n < 2 {
+	numBuckets := len(bucketCounts)
+	if numBuckets < 2 {
 		return
 	}
 
 	// Compute deltas
-	deltas := make([]float64, n-1)
-	for i := 1; i < n; i++ {
+	deltas := make([]float64, numBuckets-1)
+	for i := 1; i < numBuckets; i++ {
 		delta := float64(bucketCounts[i]) - float64(bucketCounts[i-1])
 		// Clamp delta to ignore spikes
 		const maxDelta = 10.0
@@ -46,15 +46,15 @@ func Trend(bucketCounts []uint64) (scaleUp bool, scaleDown bool) {
 
 // Decides whether to increase or decrease timeout value for buckets (account for high latency network links)
 func TrendLatency(sumSpacing, totalFragments, timedOutFragments []uint64) (stepUp bool, stepDown bool) {
-	n := len(totalFragments)
-	if n == 0 {
+	numFragments := len(totalFragments)
+	if numFragments == 0 {
 		return
 	}
 
-	timeoutRatios := make([]float64, n)
-	avgSpacings := make([]float64, n)
+	timeoutRatios := make([]float64, numFragments)
+	avgSpacings := make([]float64, numFragments)
 
-	for i := 0; i < n; i++ {
+	for i := 0; i < numFragments; i++ {
 		if totalFragments[i] == 0 {
 			timeoutRatios[i] = 0
 			avgSpacings[i] = 0
@@ -66,12 +66,12 @@ func TrendLatency(sumSpacing, totalFragments, timedOutFragments []uint64) (stepU
 
 	// Compute average timeout ratio and spacing trend
 	var sumRatio float64
-	for i := 0; i < n; i++ {
+	for i := 0; i < numFragments; i++ {
 		sumRatio += timeoutRatios[i]
 	}
-	avgTimeoutRatio := sumRatio / float64(n)
+	avgTimeoutRatio := sumRatio / float64(numFragments)
 
-	spacingSlope := (avgSpacings[n-1] - avgSpacings[0]) / float64(n)
+	spacingSlope := (avgSpacings[numFragments-1] - avgSpacings[0]) / float64(numFragments)
 
 	// Step up conditions
 	if avgTimeoutRatio > 0.05 || spacingSlope > 0 {

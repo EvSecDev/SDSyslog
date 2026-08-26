@@ -13,19 +13,19 @@ import (
 )
 
 // Creates a new queue
-func New[T any](
+func New[valueType any](
 	namespace []string,
 	initialCapacity uint64,
 	minCapacity global.MinValue,
-	maxCapacity global.MaxValue) (new *Queue[T], err error) {
+	maxCapacity global.MaxValue) (new *Queue[valueType], err error) {
 
-	qInst, err := newQueueInst[T](namespace, initialCapacity)
+	qInst, err := newQueueInst[valueType](namespace, initialCapacity)
 	if err != nil {
 		return
 	}
 
 	// Setup container where both pointers are to the same queue (initially)
-	new = &Queue[T]{}
+	new = &Queue[valueType]{}
 	new.ActiveRead.Store(qInst)
 	new.ActiveWrite.Store(qInst)
 	new.migrateCh.Store(make(chan struct{}, 1))

@@ -22,17 +22,17 @@ func TestPrintHelpMenu_RootOutput(t *testing.T) {
 	// Capture stdout
 	var buf bytes.Buffer
 	origStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+	reader, writer, _ := os.Pipe()
+	os.Stdout = writer
 
 	PrintHelpMenu(fs, "", root)
 
-	err := w.Close()
+	err := writer.Close()
 	if err != nil {
 		t.Fatalf("unexpected error when closing stdout write pipe: %v", err)
 	}
 	os.Stdout = origStdout
-	_, err = buf.ReadFrom(r)
+	_, err = buf.ReadFrom(reader)
 	if err != nil {
 		t.Fatalf("unexpected error when reading from stdout: %v", err)
 	}

@@ -91,13 +91,13 @@ func (instance *Instance) run(ctx context.Context) {
 				// Write message to all outputs
 				var totalWritten int
 				for moduleName, module := range instance.outModules {
-					n, err := module.Write(ctx, msg)
+					bytesWritten, err := module.Write(ctx, msg)
 					if err != nil {
 						logctx.LogStdErr(ctx,
 							"Failed to write message(s) to %s output: %w\n", moduleName, err)
 					} else {
-						instance.writeModuleMetrics(moduleName, n)
-						totalWritten += n
+						instance.writeModuleMetrics(moduleName, bytesWritten)
+						totalWritten += bytesWritten
 					}
 				}
 

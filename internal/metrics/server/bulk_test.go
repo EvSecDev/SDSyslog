@@ -33,8 +33,8 @@ func TestHandleBulk(t *testing.T) {
 			reqBody: BulkRequest{
 				SearchFilters: []MetricFilter{},
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-				handleBulk(ctx, mockDataSearcher(nil), mockAggSearcher(metrics.Metric{}, nil), w, r)
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
+				handleBulk(ctx, mockDataSearcher(nil), mockAggSearcher(metrics.Metric{}, nil), writer, reader)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -42,8 +42,8 @@ func TestHandleBulk(t *testing.T) {
 			name:    "invalid method",
 			method:  http.MethodGet,
 			reqBody: BulkRequest{},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-				handleBulk(ctx, mockDataSearcher(nil), mockAggSearcher(metrics.Metric{}, nil), w, r)
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
+				handleBulk(ctx, mockDataSearcher(nil), mockAggSearcher(metrics.Metric{}, nil), writer, reader)
 			},
 			wantStatus:        http.StatusMethodNotAllowed,
 			expectedError:     true,
@@ -62,14 +62,14 @@ func TestHandleBulk(t *testing.T) {
 					},
 				},
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
 				mockMetric := metrics.Metric{
 					Name: "metric",
 				}
 				handleBulk(ctx,
 					mockDataSearcher([]metrics.Metric{mockMetric}),
 					mockAggSearcher(metrics.Metric{}, fmt.Errorf("wrong call")),
-					w, r)
+					writer, reader)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -87,14 +87,14 @@ func TestHandleBulk(t *testing.T) {
 					},
 				},
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
 				mockMetric := metrics.Metric{
 					Name: "metric_",
 				}
 				handleBulk(ctx,
 					mockDataSearcher([]metrics.Metric{}),
 					mockAggSearcher(mockMetric, nil),
-					w, r)
+					writer, reader)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -118,7 +118,7 @@ func TestHandleBulk(t *testing.T) {
 					},
 				},
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
 				mockMetric1 := metrics.Metric{
 					Name: "metric_data",
 				}
@@ -128,7 +128,7 @@ func TestHandleBulk(t *testing.T) {
 				handleBulk(ctx,
 					mockDataSearcher([]metrics.Metric{mockMetric1}),
 					mockAggSearcher(mockMetric2, nil),
-					w, r)
+					writer, reader)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -138,11 +138,11 @@ func TestHandleBulk(t *testing.T) {
 			reqBody: mockInvalidJSON{
 				Field: "hello",
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
 				handleBulk(ctx,
 					mockDataSearcher([]metrics.Metric{}),
 					mockAggSearcher(metrics.Metric{}, nil),
-					w, r)
+					writer, reader)
 			},
 			wantStatus:        http.StatusBadRequest,
 			expectedError:     true,
@@ -158,8 +158,8 @@ func TestHandleBulk(t *testing.T) {
 					},
 				},
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-				handleBulk(ctx, mockDataSearcher([]metrics.Metric{}), mockAggSearcher(metrics.Metric{}, nil), w, r)
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
+				handleBulk(ctx, mockDataSearcher([]metrics.Metric{}), mockAggSearcher(metrics.Metric{}, nil), writer, reader)
 			},
 			wantStatus:        http.StatusBadRequest,
 			expectedError:     true,
@@ -176,8 +176,8 @@ func TestHandleBulk(t *testing.T) {
 					},
 				},
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-				handleBulk(ctx, mockDataSearcher([]metrics.Metric{}), mockAggSearcher(metrics.Metric{}, nil), w, r)
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
+				handleBulk(ctx, mockDataSearcher([]metrics.Metric{}), mockAggSearcher(metrics.Metric{}, nil), writer, reader)
 			},
 			wantStatus:        http.StatusBadRequest,
 			expectedError:     true,
@@ -195,8 +195,8 @@ func TestHandleBulk(t *testing.T) {
 					},
 				},
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-				handleBulk(ctx, mockDataSearcher([]metrics.Metric{}), mockAggSearcher(metrics.Metric{}, nil), w, r)
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
+				handleBulk(ctx, mockDataSearcher([]metrics.Metric{}), mockAggSearcher(metrics.Metric{}, nil), writer, reader)
 			},
 			wantStatus:        http.StatusBadRequest,
 			expectedError:     true,
@@ -215,11 +215,11 @@ func TestHandleBulk(t *testing.T) {
 					},
 				},
 			},
-			handler: func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			handler: func(ctx context.Context, writer http.ResponseWriter, reader *http.Request) {
 				handleBulk(ctx,
 					mockDataSearcher([]metrics.Metric{}),
 					mockAggSearcher(metrics.Metric{}, fmt.Errorf("aggregation error")),
-					w, r)
+					writer, reader)
 			},
 			wantStatus: http.StatusOK,
 		},

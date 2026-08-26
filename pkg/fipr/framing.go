@@ -33,8 +33,8 @@ func (session *Session) writeFrame(wireFrame []byte) (err error) {
 	}()
 
 	for len(wireFrame) > 0 {
-		var n int
-		n, err = session.conn.Write(wireFrame)
+		var bytesWritten int
+		bytesWritten, err = session.conn.Write(wireFrame)
 		if err != nil {
 			if transportWasClosed(err) {
 				err = ErrTransportWasClosed
@@ -44,7 +44,7 @@ func (session *Session) writeFrame(wireFrame []byte) (err error) {
 			}
 			return
 		}
-		wireFrame = wireFrame[n:]
+		wireFrame = wireFrame[bytesWritten:]
 	}
 	return
 }
@@ -74,18 +74,19 @@ func (session *Session) readFrame() (wireFrame []byte, err error) {
 
 	for {
 		// Attempt to extract frame from internal buffer
-		var n int
-		n, wireFrame, err = tryParseFrame(session.transportBuffer)
+		var bytesWritten int
+		bytesWritten, wireFrame, err = tryParseFrame(session.transportBuffer)
 		if err != nil {
 			return
 		} else if len(wireFrame) > 0 {
-			session.transportBuffer = session.transportBuffer[n:] // keep leftovers
+			session.transportBuffer = session.transportBuffer[bytesWritten:] // keep leftovers
 			return
 		}
 
 		// Otherwise read additional bytes from OS buffer to internal buffer
 		tmp := make([]byte, 4096)
-		n, err = session.conn.Read(tmp)
+		var bytesRead int
+		bytesRead, err = session.conn.Read(tmp)
 		if err != nil {
 			if transportWasClosed(err) {
 				err = ErrTransportWasClosed
@@ -95,7 +96,7 @@ func (session *Session) readFrame() (wireFrame []byte, err error) {
 			}
 			return
 		}
-		session.transportBuffer = append(session.transportBuffer, tmp[:n]...)
+		session.transportBuffer = append(session.transportBuffer, tmp[:bytesRead]...)
 	}
 }
 

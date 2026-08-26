@@ -277,13 +277,13 @@ func TestReader(t *testing.T) {
 					t.Errorf("expected:   %+v", expected)
 				}
 			} else {
-				for i := 0; len(outputs) > 0; i++ {
+				for index := 0; len(outputs) > 0; index++ {
 					msg := <-outputs
-					if tt.expectedMsgs[i].Hostname != msg.Hostname {
-						t.Errorf("msg: expected hostname %q, but got %q", tt.expectedMsgs[i].Hostname, msg.Hostname)
+					if tt.expectedMsgs[index].Hostname != msg.Hostname {
+						t.Errorf("msg: expected hostname %q, but got %q", tt.expectedMsgs[index].Hostname, msg.Hostname)
 					}
-					if !bytes.Equal(tt.expectedMsgs[i].Data, msg.Data) {
-						t.Errorf("msg: expected data %q, but got %q", string(tt.expectedMsgs[i].Data), string(msg.Data))
+					if !bytes.Equal(tt.expectedMsgs[index].Data, msg.Data) {
+						t.Errorf("msg: expected data %q, but got %q", string(tt.expectedMsgs[index].Data), string(msg.Data))
 					}
 				}
 			}

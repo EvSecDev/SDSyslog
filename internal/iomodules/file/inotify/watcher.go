@@ -21,7 +21,7 @@ func (watcher *Watcher) run() {
 	draining := false
 
 	for {
-		n, err := unix.EpollWait(watcher.epollFD, events, -1)
+		readyFDs, err := unix.EpollWait(watcher.epollFD, events, -1)
 		if err != nil {
 			if errors.Is(err, unix.EINTR) {
 				continue
@@ -30,8 +30,8 @@ func (watcher *Watcher) run() {
 			return
 		}
 
-		for i := range n {
-			fd := int(events[i].Fd)
+		for index := range readyFDs {
+			fd := int(events[index].Fd)
 
 			switch fd {
 			case watcher.wakeFD:
@@ -53,7 +53,7 @@ func (watcher *Watcher) run() {
 			case watcher.instanceFD:
 				// inotify events
 				for {
-					n, err := unix.Read(watcher.instanceFD, buf)
+					bytesRead, err := unix.Read(watcher.instanceFD, buf)
 					if err != nil {
 						if errors.Is(err, unix.EAGAIN) {
 							break // fully drained
@@ -62,11 +62,11 @@ func (watcher *Watcher) run() {
 						break
 					}
 
-					if n == 0 {
+					if bytesRead == 0 {
 						break
 					}
 
-					err = watcher.processEvent(buf, n)
+					err = watcher.processEvent(buf, bytesRead)
 					if err != nil {
 						logctx.LogStdErr(watcher.ctx, "%w\n", err)
 						continue

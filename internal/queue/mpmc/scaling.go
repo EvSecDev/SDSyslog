@@ -95,8 +95,8 @@ func prevPowerOfTwo(start int) (prev int) {
 
 // Decides whether to scale up or down based on depth metric values (metric=depth)
 func Trend(depthValues []uint64, queueSize int) (scaleUp bool, scaleDown bool) {
-	n := len(depthValues)
-	if n < 3 {
+	valueCount := len(depthValues)
+	if valueCount < 3 {
 		return
 	}
 
@@ -105,32 +105,32 @@ func Trend(depthValues []uint64, queueSize int) (scaleUp bool, scaleDown bool) {
 	const requireConsistent = 3   // trend must be consistently up/down
 
 	// Compute occupancy percent of last value
-	latestPct := float64(depthValues[n-1]) / float64(queueSize) * 100
+	latestPct := float64(depthValues[valueCount-1]) / float64(queueSize) * 100
 
 	// Compute trend direction for each adjacent pair:
 	// +1 = growing, -1 = shrinking, 0 = flat
 	trend := 0
 	consistentTrendCount := 1
 
-	for i := n - 2; i >= 0 && consistentTrendCount < requireConsistent; i-- {
-		diff := int64(depthValues[i+1]) - int64(depthValues[i])
+	for index := valueCount - 2; index >= 0 && consistentTrendCount < requireConsistent; index-- {
+		diff := int64(depthValues[index+1]) - int64(depthValues[index])
 
-		var d int
+		var direction int
 		switch {
 		case diff > 0:
-			d = 1
+			direction = 1
 		case diff < 0:
-			d = -1
+			direction = -1
 		default:
-			d = 0
+			direction = 0
 		}
 
 		if trend == 0 {
-			trend = d
+			trend = direction
 			continue
 		}
 
-		if d == trend {
+		if direction == trend {
 			consistentTrendCount++
 		} else {
 			break

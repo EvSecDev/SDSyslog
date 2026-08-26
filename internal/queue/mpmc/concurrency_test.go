@@ -35,9 +35,9 @@ func TestQueue_Concurrency(t *testing.T) {
 
 			for range tt.numGoroutines {
 				go func() {
-					for j := range tt.numOps {
+					for opNum := range tt.numOps {
 						for {
-							err := queue.Push(j, 8)
+							err := queue.Push(opNum, 8)
 							if err == nil {
 								break
 							}
@@ -128,7 +128,7 @@ func TestQueue_StressIntegrity(t *testing.T) {
 	}
 
 	// Test configuration
-	const N = 20000
+	const iterations = 20000
 	const numProducers = 4
 	const numConsumers = 4
 
@@ -143,23 +143,23 @@ func TestQueue_StressIntegrity(t *testing.T) {
 	// Helper function for producers
 	producer := func(id int) {
 		defer wg.Done()
-		for i := range N / numProducers {
+		for index := range iterations / numProducers {
 			for { // Push different range per producer
-				err := queue.Push(i+id*N/numProducers, 8)
+				err := queue.Push(index+id*iterations/numProducers, 8)
 				if err == nil {
 					break
 				}
 				// Random delay between push attempts
 				time.Sleep(time.Nanosecond)
 			}
-			produced.Store(i+id*N/numProducers, true) // Mark value as produced
+			produced.Store(index+id*iterations/numProducers, true) // Mark value as produced
 		}
 	}
 
 	// Helper function for consumers
 	consumer := func() {
 		defer wg.Done()
-		for i := range N / numConsumers {
+		for index := range iterations / numConsumers {
 			// Randomize sleep interval to simulate varied workloads
 			randTime, err := random.NumberInRange(0, 50)
 			if err != nil {
@@ -169,16 +169,16 @@ func TestQueue_StressIntegrity(t *testing.T) {
 			microTime := randTime * int(time.Microsecond)
 			time.Sleep(time.Duration(microTime))
 
-			v, ok := queue.Pop(context.Background())
+			value, ok := queue.Pop(context.Background())
 			if !ok {
-				errCh <- fmt.Errorf("pop failed at iteration %d", i)
+				errCh <- fmt.Errorf("pop failed at iteration %d", index)
 				return
 			}
-			if v < 0 || v >= N {
-				errCh <- fmt.Errorf("invalid value popped: %d", v)
+			if value < 0 || value >= iterations {
+				errCh <- fmt.Errorf("invalid value popped: %d", value)
 				return
 			}
-			consumed.Store(v, true) // Mark value as consumed
+			consumed.Store(value, true) // Mark value as consumed
 		}
 	}
 
@@ -205,16 +205,16 @@ func TestQueue_StressIntegrity(t *testing.T) {
 
 	// Validate integrity after all the work is done
 	// Ensure all produced values were consumed
-	for i := range N {
+	for iteration := range iterations {
 		// Check if each produced value has been consumed
-		_, producedOk := produced.Load(i)
-		_, consumedOk := consumed.Load(i)
+		_, producedOk := produced.Load(iteration)
+		_, consumedOk := consumed.Load(iteration)
 
 		if !producedOk {
-			t.Errorf("value %d was never produced", i)
+			t.Errorf("value %d was never produced", iteration)
 		}
 		if !consumedOk {
-			t.Errorf("value %d was never consumed", i)
+			t.Errorf("value %d was never consumed", iteration)
 		}
 	}
 }
@@ -233,10 +233,10 @@ func TestQueue_LowLoadEfficiency(t *testing.T) {
 
 	// single producer
 	go func() {
-		for i := range ops {
+		for iteration := range ops {
 			time.Sleep(1 * time.Microsecond) // Huge delay timing to reproduce the bug reliably
 
-			for queue.Push(i*10, 8) != nil {
+			for queue.Push(iteration*10, 8) != nil {
 				runtime.Gosched()
 			}
 
@@ -245,10 +245,10 @@ func TestQueue_LowLoadEfficiency(t *testing.T) {
 	}()
 
 	// single consumer, steady blocking
-	for i := range ops {
+	for iteration := range ops {
 		_, ok := queue.Pop(ctx)
 		if !ok {
-			t.Fatalf("pop failed at %d", i)
+			t.Fatalf("pop failed at %d", iteration)
 		}
 	}
 

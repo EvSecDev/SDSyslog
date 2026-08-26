@@ -18,13 +18,13 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "receiver success",
 			run: func(t *testing.T) {
-				r, w, _ := os.Pipe()
+				reader, writer, _ := os.Pipe()
 				defer func() {
-					err := r.Close()
+					err := reader.Close()
 					if err != nil {
 						t.Fatalf("failed closing pipe reader: %v", err)
 					}
-					err = w.Close()
+					err = writer.Close()
 					if err != nil {
 						t.Fatalf("failed closing pipe writer: %v", err)
 					}
@@ -32,13 +32,13 @@ func TestReadinessHandshake(t *testing.T) {
 
 				go func() {
 					time.Sleep(10 * time.Millisecond)
-					_, err := w.Write([]byte(ReadyMessage))
+					_, err := writer.Write([]byte(ReadyMessage))
 					if err != nil {
 						t.Logf("unexpected error writing to pipe: %v", err)
 					}
 				}()
 
-				if err := readinessReceiver(r); err != nil {
+				if err := readinessReceiver(reader); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			},
@@ -46,26 +46,26 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "receiver wrong message",
 			run: func(t *testing.T) {
-				r, w, _ := os.Pipe()
+				reader, writer, _ := os.Pipe()
 				defer func() {
-					err := r.Close()
+					err := reader.Close()
 					if err != nil {
 						t.Fatalf("failed closing pipe reader: %v", err)
 					}
-					err = w.Close()
+					err = writer.Close()
 					if err != nil {
 						t.Fatalf("failed closing pipe writer: %v", err)
 					}
 				}()
 
 				go func() {
-					_, err := w.Write([]byte("WRONGMSG"))
+					_, err := writer.Write([]byte("WRONGMSG"))
 					if err != nil {
 						t.Logf("unexpected error writing to pipe: %v", err)
 					}
 				}()
 
-				if err := readinessReceiver(r); err == nil {
+				if err := readinessReceiver(reader); err == nil {
 					t.Fatal("expected error")
 				}
 			},
@@ -73,26 +73,26 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "receiver short read",
 			run: func(t *testing.T) {
-				r, w, _ := os.Pipe()
+				reader, writer, _ := os.Pipe()
 				defer func() {
-					err := r.Close()
+					err := reader.Close()
 					if err != nil {
 						t.Fatalf("failed closing pipe reader: %v", err)
 					}
 				}()
 
 				go func() {
-					_, err := w.Write([]byte(ReadyMessage[:1]))
+					_, err := writer.Write([]byte(ReadyMessage[:1]))
 					if err != nil {
 						t.Logf("unexpected error writing to pipe: %v", err)
 					}
-					err = w.Close()
+					err = writer.Close()
 					if err != nil {
 						t.Logf("failed closing pipe writer: %v", err)
 					}
 				}()
 
-				if err := readinessReceiver(r); err == nil {
+				if err := readinessReceiver(reader); err == nil {
 					t.Fatal("expected error")
 				}
 			},
@@ -150,15 +150,15 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender success",
 			run: func(t *testing.T) {
-				r, w, _ := os.Pipe()
+				reader, writer, _ := os.Pipe()
 				defer func() {
-					err := r.Close()
+					err := reader.Close()
 					if err != nil {
 						t.Fatalf("failed closing pipe reader: %v", err)
 					}
 				}()
 
-				err := os.Setenv(EnvNameReadinessFD, strconv.Itoa(int(w.Fd())))
+				err := os.Setenv(EnvNameReadinessFD, strconv.Itoa(int(writer.Fd())))
 				if err != nil {
 					t.Fatalf("unexpected error setting environment variable: %v", err)
 				}
@@ -174,7 +174,7 @@ func TestReadinessHandshake(t *testing.T) {
 				}
 
 				buf := make([]byte, len(ReadyMessage))
-				if _, err := io.ReadFull(r, buf); err != nil {
+				if _, err := io.ReadFull(reader, buf); err != nil {
 					t.Fatalf("read failed: %v", err)
 				}
 

@@ -245,7 +245,7 @@ func TestContextTags_ConcurrentImmutability(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(goroutines)
 
-	for i := range goroutines {
+	for index := range goroutines {
 		go func(id int) {
 			defer wg.Done()
 
@@ -261,7 +261,7 @@ func TestContextTags_ConcurrentImmutability(t *testing.T) {
 				id:   id,
 				tags: GetTagList(ctx),
 			}
-		}(i)
+		}(index)
 	}
 
 	wg.Wait()

@@ -133,12 +133,12 @@ func jResp(ctx context.Context, serverResponder http.ResponseWriter, content any
 }
 
 // Logs HTTP server errors to internal program buffer (via context logger)
-func (logWriter httpLogWriter) Write(p []byte) (n int, err error) {
-	n = len(p)
-	if n == 0 {
+func (logWriter httpLogWriter) Write(data []byte) (bytesWritten int, err error) {
+	bytesWritten = len(data)
+	if bytesWritten == 0 {
 		return
 	}
-	message := strings.TrimSpace(string(p))
+	message := strings.TrimSpace(string(data))
 	logctx.LogStdErr(logWriter.ctx, "%s\n", message)
 	return
 }

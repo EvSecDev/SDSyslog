@@ -111,13 +111,13 @@ func TestFragmentAndDefragment(t *testing.T) {
 				t.Fatalf("Expected multiple fragments, got %d", maxSeq)
 			}
 
-			for _, f := range frags {
-				if f.HostID != tt.input.HostID ||
-					f.MsgID != tt.input.MsgID {
+			for _, fragment := range frags {
+				if fragment.HostID != tt.input.HostID ||
+					fragment.MsgID != tt.input.MsgID {
 					t.Errorf("Shared field mismatch in fragment")
 				}
-				if f.MessageSeqMax != maxSeq {
-					t.Errorf("Expected MessageSeqMax=%d, got %d", maxSeq, f.MessageSeqMax)
+				if fragment.MessageSeqMax != maxSeq {
+					t.Errorf("Expected MessageSeqMax=%d, got %d", maxSeq, fragment.MessageSeqMax)
 				}
 			}
 

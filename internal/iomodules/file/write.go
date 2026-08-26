@@ -55,17 +55,16 @@ func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
 
 	sort.Slice(*mod.batchBuffer, func(i, j int) bool {
 		// Extract timestamp prefix (up to first space)
-		getTime := func(s string) time.Time {
-			ts := s
-			before, _, ok := strings.Cut(s, " ")
+		getTime := func(timestamp string) time.Time {
+			before, _, ok := strings.Cut(timestamp, " ")
 			if ok {
-				ts = before
+				timestamp = before
 			}
-			t, err := time.Parse(time.RFC3339Nano, ts)
+			ts, err := time.Parse(time.RFC3339Nano, timestamp)
 			if err != nil {
 				return time.Time{} // zero time on error
 			}
-			return t
+			return ts
 		}
 
 		ti := getTime((*mod.batchBuffer)[i])
@@ -78,12 +77,12 @@ func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
 	for _, line := range *mod.batchBuffer {
 		data := []byte(line)
 		for len(data) > 0 {
-			var n int
-			n, err = mod.sink.Write(data)
+			var bytesRead int
+			bytesRead, err = mod.sink.Write(data)
 			if err != nil {
 				return
 			}
-			data = data[n:] // remove the bytes that were successfully written
+			data = data[bytesRead:] // remove the bytes that were successfully written
 		}
 		flushedCnt++
 	}

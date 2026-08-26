@@ -165,17 +165,17 @@ func deepestCommonNamespace(input [][]string) (common []string) {
 		return
 	}
 
-	for i := 0; ; i++ {
+	for index := 0; ; index++ {
 		var val string
-		for j, slice := range input {
+		for namespace, slice := range input {
 			// Stop if any slice is too short
-			if i >= len(slice) {
+			if index >= len(slice) {
 				return
 			}
 
-			if j == 0 {
-				val = slice[i]
-			} else if slice[i] != val {
+			if namespace == 0 {
+				val = slice[index]
+			} else if slice[index] != val {
 				return
 			}
 		}

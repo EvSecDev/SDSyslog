@@ -100,10 +100,10 @@ func TestReloadSigningKeys(t *testing.T) {
 		},
 	}
 
-	formatBytes := func(b []byte) (formatted string) {
-		out := make([]string, len(b))
-		for i, v := range b {
-			out[i] = fmt.Sprintf("%02x", v)
+	formatBytes := func(data []byte) (formatted string) {
+		out := make([]string, len(data))
+		for index, value := range data {
+			out[index] = fmt.Sprintf("%02x", value)
 		}
 		formatted = strings.Join(out, " ")
 		return

@@ -149,8 +149,8 @@ func TestGetFormattedLogLines_ChronologicalBatching(t *testing.T) {
 		done,
 	)
 
-	l := GetLogger(ctx)
-	if l == nil {
+	logger := GetLogger(ctx)
+	if logger == nil {
 		t.Fatal("logger not found in context")
 		return // Satisfy staticcheck SA5011
 	}
@@ -180,11 +180,11 @@ func TestGetFormattedLogLines_ChronologicalBatching(t *testing.T) {
 	}
 
 	// Insert in non-chronological order (simulating multiple producers)
-	l.mutex.Lock()
-	l.queue = []Event{e1, e4, e2, e3}
-	l.mutex.Unlock()
+	logger.mutex.Lock()
+	logger.queue = []Event{e1, e4, e2, e3}
+	logger.mutex.Unlock()
 
-	lines := l.GetFormattedLogLines()
+	lines := logger.GetFormattedLogLines()
 
 	if len(lines) != 4 {
 		t.Fatalf("expected 4 log lines, got %d", len(lines))
@@ -202,18 +202,18 @@ func TestGetFormattedLogLines_ChronologicalBatching(t *testing.T) {
 		"zero",
 	}
 
-	for i, want := range expectedOrder {
-		if !strings.Contains(lines[i], want) {
+	for index, want := range expectedOrder {
+		if !strings.Contains(lines[index], want) {
 			t.Fatalf(
 				"line %d ordering mismatch: got %q, want message containing %q",
-				i,
-				lines[i],
+				index,
+				lines[index],
 				want,
 			)
 		}
 
-		if !strings.HasSuffix(lines[i], "\n") {
-			t.Fatalf("line %d missing trailing newline: %q", i, lines[i])
+		if !strings.HasSuffix(lines[index], "\n") {
+			t.Fatalf("line %d missing trailing newline: %q", index, lines[index])
 		}
 	}
 }

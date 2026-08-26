@@ -54,18 +54,18 @@ func TestGetSocketFileList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
 
-			for _, f := range tt.files {
-				path := filepath.Join(dir, f)
+			for _, file := range tt.files {
+				path := filepath.Join(dir, file)
 
-				if strings.HasSuffix(f, fipr.SocketFileNameSuffix) && strings.HasPrefix(f, fipr.SocketFileNamePrefix) {
+				if strings.HasSuffix(file, fipr.SocketFileNameSuffix) && strings.HasPrefix(file, fipr.SocketFileNamePrefix) {
 					// Create an actual UNIX socket
 					addr := &net.UnixAddr{Name: path, Net: "unix"}
-					l, err := net.ListenUnix("unix", addr)
+					listener, err := net.ListenUnix("unix", addr)
 					if err != nil {
 						t.Fatalf("failed to create unix socket: %v", err)
 					}
 					t.Cleanup(func() {
-						err := l.Close()
+						err := listener.Close()
 						if err != nil {
 							t.Errorf("failed to close unix listener: %v", err)
 						}

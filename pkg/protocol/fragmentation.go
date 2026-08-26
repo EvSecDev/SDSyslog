@@ -166,7 +166,6 @@ func (payload *Payload) EqualTo(comparePayload *Payload) (equal bool) {
 	if comparePayload.RemoteIP != payload.RemoteIP || comparePayload.HostID != payload.HostID ||
 		comparePayload.MsgID != payload.MsgID || !comparePayload.Timestamp.Equal(payload.Timestamp) ||
 		comparePayload.Hostname != payload.Hostname {
-
 		equal = false
 		return
 	}

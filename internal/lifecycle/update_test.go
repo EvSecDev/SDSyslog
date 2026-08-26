@@ -56,7 +56,6 @@ func TestPostUpdateActions_ErrorPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			baseCtx := context.Background()
 			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, nil)
 
@@ -129,7 +128,6 @@ func TestTerminateChildProcess_ErrorPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			baseCtx := context.Background()
 			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, nil)
 

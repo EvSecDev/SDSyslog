@@ -37,7 +37,6 @@ func (state *dedupState) handleDuplication(latestEvent Event) (newEvent Event, p
 	if latestEvent.Message != "" &&
 		now.Sub(latestEvent.Timestamp) <= dedupWindow &&
 		latestEvent.Message == state.lastMsg {
-
 		state.repeatCount++
 		if state.repeatCount >= minRepeats && now.Sub(state.lastSuppressTime) >= suppressCooldown {
 			// Suppression message once per minute max

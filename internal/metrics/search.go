@@ -220,14 +220,12 @@ func (registry *Registry) Discover(name, description string, namespacePrefix []s
 
 	for _, nsMap := range registry.metrics {
 		for nsStr, metricsMap := range nsMap {
-
 			ns := strings.Split(nsStr, "/")
 			if !matchesNamespace(ns, namespacePrefix) {
 				continue
 			}
 
 			for _, metric := range metricsMap {
-
 				// Filters
 				if name != "" && !strings.Contains(metric.Name, name) {
 					continue

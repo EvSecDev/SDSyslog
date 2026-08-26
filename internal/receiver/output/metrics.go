@@ -50,7 +50,9 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	collection = make([]metrics.Metric, 3+len(instance.Metrics.successfulWrites))
+	instance.Metrics.writeMutex.Lock()
+	collection = make([]metrics.Metric, 0, 3+len(instance.Metrics.successfulWrites))
+	instance.Metrics.writeMutex.Unlock()
 	collection = []metrics.Metric{
 		{
 			Name:        MTRecvMsgs,

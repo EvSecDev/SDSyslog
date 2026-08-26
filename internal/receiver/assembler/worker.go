@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-func (manager *Manager) newWorker(shard *shard.Instance) (new *Instance) {
+func (manager *Manager) newWorker(shardInst *shard.Instance) (new *Instance) {
 	new = &Instance{
-		Shard:   shard,
+		Shard:   shardInst,
 		outbox:  manager.outQueue,
 		Metrics: MetricStorage{},
 	}

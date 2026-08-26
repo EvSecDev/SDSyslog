@@ -27,24 +27,24 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 	instValues := make([][]float64, 0, len(instances))
 
 	for id := 0; id <= len(instances)-1; id++ {
-		metrics := metricStore.Search(
+		metricResults := metricStore.Search(
 			listener.MTBusyPct,
 			[]string{logctx.NSRecv, logctx.NSmIngest, strconv.Itoa(id)},
 			time.Now().Add(-time.Duration(pastNIntervals)*interval),
 			time.Now(),
 		)
 
-		if len(metrics) < pastNIntervals {
+		if len(metricResults) < pastNIntervals {
 			// Not enough data, skip this instance
 			continue
 		}
 
 		// Keep only last x entries
-		metrics = metrics[len(metrics)-pastNIntervals:]
+		metricResults = metricResults[len(metricResults)-pastNIntervals:]
 
 		// Extract raw float64 values for this instance
 		vals := make([]float64, pastNIntervals)
-		for i, m := range metrics {
+		for i, m := range metricResults {
 			var ok bool
 			vals[i], ok = m.Value.Raw.(float64)
 			if !ok {

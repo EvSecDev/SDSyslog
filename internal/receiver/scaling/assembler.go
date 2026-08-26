@@ -27,24 +27,24 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	instValues := make([][]uint64, 0, instanceCount)
 
 	for _, id := range asmMgr.RoutingView.GetNonDrainingIDs() {
-		metrics := metricStore.Search(
+		metricResults := metricStore.Search(
 			shard.MTTotalBuckets,
 			[]string{logctx.NSRecv, logctx.NSmDefrag, id},
 			time.Now().Add(-time.Duration(pastNIntervals)*interval),
 			time.Now(),
 		)
 
-		if len(metrics) < pastNIntervals {
+		if len(metricResults) < pastNIntervals {
 			// Not enough data, skip this instance
 			continue
 		}
 
 		// Keep only last x entries
-		metrics = metrics[len(metrics)-pastNIntervals:]
+		metricResults = metricResults[len(metricResults)-pastNIntervals:]
 
 		// Extract raw uint64 values for this instance
 		vals := make([]uint64, pastNIntervals)
-		for i, m := range metrics {
+		for i, m := range metricResults {
 			var ok bool
 			vals[i], ok = m.Value.Raw.(uint64)
 			if !ok {

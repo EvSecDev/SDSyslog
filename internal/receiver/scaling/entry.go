@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-func New(metrics *metrics.Registry, interval time.Duration, managers shared.Managers) (new *Instance) {
+func New(metricRegistry *metrics.Registry, interval time.Duration, managers shared.Managers) (new *Instance) {
 	new = &Instance{
-		MetricStore:  metrics,
+		MetricStore:  metricRegistry,
 		PollInterval: interval,
 		Managers:     managers,
 	}

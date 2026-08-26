@@ -23,8 +23,8 @@ func (manager *Manager) AddInstance() (instanceID string) {
 	workerCtx, cancelPair := logctx.NewCancelWithValues(manager.ctx, instanceID)
 
 	// Create new defrag instance
-	shard := shard.New(logctx.GetTagList(workerCtx), 1024, &manager.Config.PacketDeadline)
-	instance := manager.newWorker(shard)
+	shardInst := shard.New(logctx.GetTagList(workerCtx), 1024, &manager.Config.PacketDeadline)
+	instance := manager.newWorker(shardInst)
 	instance.ctx = logctx.AppendCtxTag(workerCtx, logctx.NSAssm)
 	instance.cancel = cancelPair
 

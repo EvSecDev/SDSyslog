@@ -46,11 +46,11 @@ func (rs *RoutingState) BucketExists(shardID string, bucketKey string) (present 
 	if !ok {
 		return
 	}
-	shard := instance.Shard
+	shardInst := instance.Shard
 
-	shard.Mu.Lock()
-	defer shard.Mu.Unlock()
-	_, present = shard.Buckets[bucketKey]
+	shardInst.Mu.Lock()
+	defer shardInst.Mu.Unlock()
+	_, present = shardInst.Buckets[bucketKey]
 	return
 }
 

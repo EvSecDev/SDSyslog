@@ -56,12 +56,12 @@ func TestImportRestrictions(t *testing.T) {
 			packages.NeedModule,
 	}
 
-	packages, err := packages.Load(cfg, global.ProgBaseName+"/...")
+	packageList, err := packages.Load(cfg, global.ProgBaseName+"/...")
 	if err != nil {
 		t.Fatalf("load failed: %v", err)
 	}
 
-	for _, pkg := range packages {
+	for _, pkg := range packageList {
 		if strings.HasSuffix(pkg.PkgPath, "_test") {
 			continue
 		}
@@ -117,12 +117,12 @@ func TestNoImports(t *testing.T) {
 			packages.NeedModule,
 	}
 
-	packages, err := packages.Load(cfg, global.ProgBaseName+"/...")
+	packageList, err := packages.Load(cfg, global.ProgBaseName+"/...")
 	if err != nil {
 		t.Fatalf("load failed: %v", err)
 	}
 
-	for _, pkg := range packages {
+	for _, pkg := range packageList {
 		if strings.HasSuffix(pkg.PkgPath, "_test") {
 			continue
 		}

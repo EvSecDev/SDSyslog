@@ -2,9 +2,10 @@ package protocol
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"sdsyslog/internal/crypto/random"
-	"sort"
+	"slices"
 )
 
 // Creates payload objects based on main payload and the transports maximum payload size
@@ -79,8 +80,8 @@ func Defragment(payloads []*Payload) (primaryPayload *Payload, err error) {
 	}
 
 	// Sort incoming based on sequence
-	sort.Slice(payloads, func(a, b int) bool {
-		return payloads[a].MessageSeq < payloads[b].MessageSeq
+	slices.SortFunc(payloads, func(payloadA, payloadB *Payload) int {
+		return cmp.Compare(payloadA.MessageSeq, payloadB.MessageSeq)
 	})
 
 	var reassemblyBuffer bytes.Buffer

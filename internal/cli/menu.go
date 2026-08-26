@@ -1,10 +1,11 @@
 package cli
 
 import (
+	"cmp"
 	"flag"
 	"fmt"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -102,7 +103,7 @@ func PrintHelpMenu(fs *flag.FlagSet, command string, rootCmd *CommandSet) {
 		for name := range curCmdSet.ChildCommands {
 			subNames = append(subNames, name)
 		}
-		sort.Strings(subNames)
+		slices.Sort(subNames)
 
 		cmdIndent := strings.Repeat(" ", baseIndentSpaces+2)
 		for _, name := range subNames {
@@ -191,23 +192,17 @@ func printFlagOptions(fs *flag.FlagSet, baseIndentSpaces int) {
 			continue
 		}
 
-		sort.Slice(opt.names, func(indexA, indexB int) bool {
-			flagNameA := opt.names[indexA]
-			flagNameB := opt.names[indexB]
-
-			return len(flagNameA) < len(flagNameB)
+		slices.SortFunc(opt.names, func(flagNameA, flagNameB string) int {
+			return cmp.Compare(len(flagNameA), len(flagNameB))
 		})
 	}
 
 	// Sort list to group long/short args
-	sort.Slice(opts, func(indexA, indexB int) bool {
-		flagA := opts[indexA]
-		flagB := opts[indexB]
-
+	slices.SortFunc(opts, func(flagA, flagB *optInfo) int {
 		firstNameA := strings.ToLower(flagA.names[0])
 		firstNameB := strings.ToLower(flagB.names[0])
 
-		return firstNameA < firstNameB
+		return strings.Compare(firstNameA, firstNameB)
 	})
 
 	// accounts for short arg prefix length, short arg default len (1), and joiner length

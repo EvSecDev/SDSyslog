@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sdsyslog/internal/crypto/wrappers"
 	"sdsyslog/pkg/crypto/registry"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -92,7 +92,7 @@ func ConstructPayload(request *Payload, sigID uint8) (proto *innerWireFormat, er
 		for k := range request.CustomFields {
 			keys = append(keys, k)
 		}
-		sort.Strings(keys)
+		slices.Sort(keys)
 
 		var totalCtxLen int
 		for _, key := range keys {

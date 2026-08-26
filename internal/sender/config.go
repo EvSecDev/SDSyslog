@@ -16,7 +16,6 @@ import (
 	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 )
@@ -92,8 +91,8 @@ func (opts *JSONOptions) loadInputs() (err error) {
 			return
 		}
 
-		sort.Slice(entries, func(i, j int) bool {
-			return entries[i].Name() < entries[j].Name()
+		slices.SortFunc(entries, func(entryA, entryB os.DirEntry) int {
+			return strings.Compare(entryA.Name(), entryB.Name())
 		})
 
 		for _, entry := range entries {

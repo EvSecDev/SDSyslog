@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sdsyslog/pkg/fipr"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -44,8 +44,8 @@ func GetSocketFileList(socketDir string, selfID int) (fileList []string, err err
 	}
 
 	// Stable, deterministic sort
-	sort.SliceStable(fileList, func(a, b int) bool {
-		return fileList[a] < fileList[b]
+	slices.SortStableFunc(fileList, func(fileNameA, fileNameB string) int {
+		return strings.Compare(fileNameA, fileNameB)
 	})
 	return
 }

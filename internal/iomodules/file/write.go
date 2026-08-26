@@ -3,7 +3,7 @@ package file
 import (
 	"context"
 	"sdsyslog/pkg/protocol"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 )
@@ -53,7 +53,7 @@ func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
 		return
 	}
 
-	sort.Slice(*mod.batchBuffer, func(i, j int) bool {
+	slices.SortFunc(*mod.batchBuffer, func(lineA, lineB string) int {
 		// Extract timestamp prefix (up to first space)
 		getTime := func(timestamp string) time.Time {
 			before, _, ok := strings.Cut(timestamp, " ")
@@ -67,11 +67,11 @@ func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
 			return ts
 		}
 
-		ti := getTime((*mod.batchBuffer)[i])
-		tj := getTime((*mod.batchBuffer)[j])
+		timeA := getTime(lineA)
+		timeB := getTime(lineB)
 
-		// Newest last
-		return tj.After(ti)
+		// Newest first
+		return timeB.Compare(timeA)
 	})
 
 	for _, line := range *mod.batchBuffer {

@@ -1,7 +1,9 @@
 // Basic calculation functions
 package calc
 
-import "sort"
+import (
+	"slices"
+)
 
 // Calculates mean of supplied values after removing percentage of extreme values (post-sort)
 func TrimmedMeanUint64(values []uint64, trimPercent float64) (mean uint64) {
@@ -17,7 +19,7 @@ func TrimmedMeanUint64(values []uint64, trimPercent float64) (mean uint64) {
 	nums := make([]uint64, numValues)
 	copy(nums, values)
 
-	sort.Slice(nums, func(i, j int) bool { return nums[i] < nums[j] })
+	slices.Sort(nums)
 
 	// How many values to drop from each end
 	trimCount := int(float64(numValues) * trimPercent)
@@ -53,7 +55,7 @@ func TrimmedMeanFloat64(values []float64, trimPercent float64) (mean float64) {
 	// Copy and sort
 	nums := make([]float64, numValues)
 	copy(nums, values)
-	sort.Float64s(nums)
+	slices.Sort(nums)
 
 	// How many to trim from each end
 	trimCount := int(float64(numValues) * trimPercent)

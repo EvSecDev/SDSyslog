@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 )
@@ -18,21 +18,21 @@ func (logger *Logger) GetFormattedLogLines() (formatted []string) {
 	logger.mutex.Unlock()
 
 	// Stable sort: oldest to newest
-	sort.SliceStable(events, func(i, j int) bool {
-		ti := events[i].Timestamp
-		tj := events[j].Timestamp
+	slices.SortStableFunc(events, func(eventA, eventB Event) int {
+		timestampA := eventA.Timestamp
+		timestampB := eventB.Timestamp
 
 		// Zero timestamps sort last
-		if ti.IsZero() && tj.IsZero() {
-			return false
+		if timestampA.IsZero() && timestampB.IsZero() {
+			return 0
 		}
-		if ti.IsZero() {
-			return false
+		if timestampA.IsZero() {
+			return 1
 		}
-		if tj.IsZero() {
-			return true
+		if timestampB.IsZero() {
+			return -1
 		}
-		return ti.Before(tj)
+		return timestampA.Compare(timestampB)
 	})
 
 	formatted = make([]string, 0, len(events))

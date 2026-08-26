@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -47,8 +47,8 @@ func (registry *Registry) Search(name string, namespacePrefix []string, start, e
 	}
 
 	// Sort timestamps oldest -> newest
-	sort.Slice(timestamps, func(i, j int) bool {
-		return timestamps[i].Before(timestamps[j])
+	slices.SortFunc(timestamps, func(timestampA, timestampB time.Time) int {
+		return timestampA.Compare(timestampB)
 	})
 
 	// Iterate timestamps in order
@@ -275,11 +275,11 @@ func (registry *Registry) Discover(name, description string, namespacePrefix []s
 		results = append(results, metric)
 	}
 
-	sort.Slice(results, func(i, j int) bool {
-		if results[i].Name != results[j].Name {
-			return results[i].Name < results[j].Name
+	slices.SortFunc(results, func(metricA, metricB Metric) int {
+		if metricA.Name != metricB.Name {
+			return strings.Compare(metricA.Name, metricB.Name)
 		}
-		return strings.Join(results[i].Namespace, "/") < strings.Join(results[j].Namespace, "/")
+		return strings.Compare(strings.Join(metricA.Namespace, "/"), strings.Join(metricB.Namespace, "/"))
 	})
 
 	return

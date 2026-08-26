@@ -70,8 +70,8 @@ func (mod *OutModule) FlushBuffer() (flushedCnt int, err error) {
 		timeA := getTime(lineA)
 		timeB := getTime(lineB)
 
-		// Newest first
-		return timeB.Compare(timeA)
+		// Oldest first
+		return timeA.Compare(timeB)
 	})
 
 	for _, line := range *mod.batchBuffer {

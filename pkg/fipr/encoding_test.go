@@ -59,7 +59,7 @@ func TestEncodeDecode(t *testing.T) {
 				seq:        8,
 				state:      stateClosed,
 			},
-			payload:         []byte(encodeSeq(8)),
+			payload:         encodeSeq(8),
 			expectEncodeErr: ErrSessionClosed,
 		},
 		{
@@ -71,7 +71,7 @@ func TestEncodeDecode(t *testing.T) {
 				seq:        maxSequence,
 				state:      stateStarted,
 			},
-			payload:         []byte(encodeSeq(8)),
+			payload:         encodeSeq(8),
 			expectEncodeErr: ErrBadSequence,
 		},
 		{

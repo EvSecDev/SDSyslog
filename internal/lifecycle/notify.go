@@ -19,7 +19,7 @@ func NotifyReload(ctx context.Context) (err error) {
 		return
 	}
 
-	usec := ts.Sec*1_000_000 + int64(ts.Nsec)/1_000
+	usec := ts.Sec*1_000_000 + ts.Nsec/1_000
 
 	err = notify(ctx, fmt.Sprintf("RELOADING=1\nMONOTONIC_USEC=%d", usec))
 	return

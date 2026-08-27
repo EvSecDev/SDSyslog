@@ -18,6 +18,7 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "receiver success",
 			run: func(t *testing.T) {
+				t.Helper()
 				reader, writer, _ := os.Pipe()
 				defer func() {
 					err := reader.Close()
@@ -46,6 +47,7 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "receiver wrong message",
 			run: func(t *testing.T) {
+				t.Helper()
 				reader, writer, _ := os.Pipe()
 				defer func() {
 					err := reader.Close()
@@ -73,6 +75,7 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "receiver short read",
 			run: func(t *testing.T) {
+				t.Helper()
 				reader, writer, _ := os.Pipe()
 				defer func() {
 					err := reader.Close()
@@ -100,6 +103,7 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender no env",
 			run: func(t *testing.T) {
+				t.Helper()
 				err := os.Unsetenv(EnvNameReadinessFD)
 				if err != nil {
 					t.Fatalf("unexpected error setting environment variable: %v", err)
@@ -112,6 +116,7 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender invalid env",
 			run: func(t *testing.T) {
+				t.Helper()
 				err := os.Setenv(EnvNameReadinessFD, "bad")
 				if err != nil {
 					t.Fatalf("unexpected error setting environment variable: %v", err)
@@ -131,6 +136,7 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender bad fd",
 			run: func(t *testing.T) {
+				t.Helper()
 				err := os.Setenv(EnvNameReadinessFD, "999999")
 				if err != nil {
 					t.Fatalf("unexpected error setting environment variable: %v", err)
@@ -150,6 +156,7 @@ func TestReadinessHandshake(t *testing.T) {
 		{
 			name: "sender success",
 			run: func(t *testing.T) {
+				t.Helper()
 				reader, writer, _ := os.Pipe()
 				defer func() {
 					err := reader.Close()

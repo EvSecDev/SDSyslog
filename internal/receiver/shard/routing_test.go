@@ -517,6 +517,7 @@ func TestRoutePerformance(t *testing.T) {
 		}
 
 		b := testing.Benchmark(func(b *testing.B) {
+			t.Helper()
 			for range b.N {
 				routeSelect(key, candidates)
 			}

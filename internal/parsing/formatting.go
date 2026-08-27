@@ -18,23 +18,23 @@ func TrimDurationPrecision(duration time.Duration, numDecimals int) (formatted s
 	}
 
 	// find where the numeric fraction ends
-	i := dot + 1
-	for i < len(formatted) && formatted[i] >= '0' && formatted[i] <= '9' {
-		i++
+	index := dot + 1
+	for index < len(formatted) && formatted[index] >= '0' && formatted[index] <= '9' {
+		index++
 	}
 
 	if numDecimals == 0 {
 		// remove fractional part completely
-		formatted = formatted[:dot] + formatted[i:]
+		formatted = formatted[:dot] + formatted[index:]
 		return
 	}
 
-	fraction := formatted[dot+1 : i]
+	fraction := formatted[dot+1 : index]
 	if len(fraction) <= numDecimals {
 		return
 	}
 
-	formatted = formatted[:dot+1+numDecimals] + formatted[i:]
+	formatted = formatted[:dot+1+numDecimals] + formatted[index:]
 	return
 }
 

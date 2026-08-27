@@ -184,7 +184,7 @@ func deepestCommonNamespace(input [][]string) (common []string) {
 	}
 }
 
-func toFloat64(v interface{}) (float64, bool) {
+func toFloat64(v any) (float64, bool) {
 	switch t := v.(type) {
 	case float64:
 		return t, true
@@ -203,9 +203,9 @@ func toFloat64(v interface{}) (float64, bool) {
 	case uint32:
 		return float64(t), true
 	case string:
-		f, err := strconv.ParseFloat(t, 64)
+		floatVal, err := strconv.ParseFloat(t, 64)
 		if err == nil {
-			return f, true
+			return floatVal, true
 		}
 	}
 	return 0, false

@@ -184,17 +184,17 @@ func TestQueueThroughput(t *testing.T) {
 	}
 
 	// Simulate high throughput
-	for i := range 10000000 {
-		err := queue.Push(i, 8)
+	for value := range 10000000 {
+		err := queue.Push(value, 8)
 		if err != nil {
-			t.Fatalf("Push failed for value %d: %v", i, err)
+			t.Fatalf("Push failed for value %d: %v", value, err)
 		}
 	}
 
-	for i := range 10000000 {
+	for value := range 10000000 {
 		_, success := queue.Pop(context.Background())
 		if !success {
-			t.Fatalf("Pop failed for index %d", i)
+			t.Fatalf("Pop failed for index %d", value)
 		}
 	}
 }

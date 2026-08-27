@@ -9,8 +9,8 @@ func Trend(bucketCounts []uint64) (scaleUp bool, scaleDown bool) {
 
 	// Compute deltas
 	deltas := make([]float64, numBuckets-1)
-	for i := 1; i < numBuckets; i++ {
-		delta := float64(bucketCounts[i]) - float64(bucketCounts[i-1])
+	for index := 1; index < numBuckets; index++ {
+		delta := float64(bucketCounts[index]) - float64(bucketCounts[index-1])
 		// Clamp delta to ignore spikes
 		const maxDelta = 10.0
 		if delta > maxDelta {
@@ -18,7 +18,7 @@ func Trend(bucketCounts []uint64) (scaleUp bool, scaleDown bool) {
 		} else if delta < -maxDelta {
 			delta = -maxDelta
 		}
-		deltas[i-1] = delta
+		deltas[index-1] = delta
 	}
 
 	// Weighted smoothing (linear weights)

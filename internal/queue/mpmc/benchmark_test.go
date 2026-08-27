@@ -44,10 +44,10 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 	}
 
 	// per-op time should be stable as we scale up
-	for i := 1; i < len(perOp); i++ {
-		if perOp[i] > perOp[i-1]*2.0 {
+	for index := 1; index < len(perOp); index++ {
+		if perOp[index] > perOp[index-1]*2.0 {
 			b.Fatalf("scaling regression: per-op cost jumped %.2fx (%.2f - %.2f ns/op)",
-				perOp[i]/perOp[i-1], perOp[i-1], perOp[i])
+				perOp[index]/perOp[index-1], perOp[index-1], perOp[index])
 		}
 	}
 }

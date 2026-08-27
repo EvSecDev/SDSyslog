@@ -99,6 +99,7 @@ func TestProcessor_Basic(t *testing.T) {
 		futureCutoffTime     time.Duration
 		expectedMgrError     string
 		expectedValidCount   uint64
+		expectedValidMax     uint64
 		expectedErrorMessage string
 	}{
 		{
@@ -121,7 +122,10 @@ func TestProcessor_Basic(t *testing.T) {
 			},
 			pastCutoffTime:     10 * time.Minute,
 			futureCutoffTime:   10 * time.Minute,
+			// Fragment count varies with the random per-fragment padding
+			// (10-60 bytes), so this message size yields 11 or 12 packets
 			expectedValidCount: 11,
+			expectedValidMax:   12,
 		},
 		{
 			name:             "invalid timestamp window",
@@ -261,8 +265,13 @@ func TestProcessor_Basic(t *testing.T) {
 				if !ok {
 					t.Fatalf("metric value is not type uint64")
 				}
-				if metric.Name == MTValidPayloads && value != tt.expectedValidCount {
-					t.Errorf("expected metric valid payloads count to be %d, but got %d", tt.expectedValidCount, value)
+				validMax := tt.expectedValidCount
+				if tt.expectedValidMax > 0 {
+					validMax = tt.expectedValidMax
+				}
+				if metric.Name == MTValidPayloads && (value < tt.expectedValidCount || value > validMax) {
+					t.Errorf("expected metric valid payloads count to be between %d and %d, but got %d",
+						tt.expectedValidCount, validMax, value)
 				}
 				if metric.Name == MTMaxWorkTime && value <= 0 {
 					t.Errorf("expected metric elapsed max work time to be greater than zero, but got %d", value)

@@ -113,6 +113,7 @@ func publishRelease(ctx *context) (err error) {
 		err = fmt.Errorf("failed to send release request to github: %w", err)
 		return
 	}
+	defer releaseHTTPResp.Body.Close()
 	wholeBody, err := helpers.HTTPCheckResp(releaseHTTPResp)
 	if err != nil {
 		err = fmt.Errorf("create release: %w", err)
@@ -195,6 +196,11 @@ func publishRelease(ctx *context) (err error) {
 
 		var wholeBody []byte
 		wholeBody, err = helpers.HTTPCheckResp(uploadRawResp)
+
+		closeErr := uploadRawResp.Body.Close()
+		if err == nil && closeErr != nil {
+			err = fmt.Errorf("asset %s: failed to close response body: %w", stagingItem.Name(), closeErr)
+		}
 		if err != nil {
 			err = fmt.Errorf("asset %s: %w", stagingItem.Name(), err)
 			return

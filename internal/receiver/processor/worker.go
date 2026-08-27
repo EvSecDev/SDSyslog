@@ -64,8 +64,8 @@ func (instance *Instance) run() {
 				// Record busy time when worker is done processing this packet (valid or not)
 				durNs := time.Since(processingStartTime).Nanoseconds()
 				instance.Metrics.SumNs.Add(uint64(durNs))
-				oldMax := int64(instance.Metrics.MaxNs.Load())
-				for durNs <= oldMax {
+			oldMax := int64(instance.Metrics.MaxNs.Load())
+			for durNs > oldMax {
 					if instance.Metrics.MaxNs.CompareAndSwap(uint64(oldMax), uint64(durNs)) {
 						break
 					}

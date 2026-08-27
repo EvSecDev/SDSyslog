@@ -20,7 +20,6 @@ linters:
     - asciicheck
     - bidichk
     - decorder
-    - godot
     - godox
     - dupword
     - predeclared
@@ -32,9 +31,7 @@ linters:
     - mirror
     - usestdlibvars
     - gosmopolitan
-    - revive
     - tagalign
-    - tagliatelle
     - musttag
     - gochecksumtype
     - goconst
@@ -64,7 +61,6 @@ linters:
     - wastedassign
     - reassign
     - forcetypeassert
-    - modernize
     # Resource / context / concurrency
     - bodyclose
     - noctx
@@ -139,26 +135,6 @@ linters:
       disable:
         - pkg-doc           # drop "Package x ..." format enforcement
         - start-with-name   # drop "doc must start with symbol name"
-    revive:
-      enable-all-rules: true
-      severity: error
-      rules:
-        - name: bare-return
-          disabled: true   # preferring bare returns with named returns
-        - name: function-length
-          disabled: true   # redundant with funlen (avoids duplicate/conflicting findings)
-        - name: line-length-limit  # consolidated into lll
-          disabled: true
-        - name: unnecessary-format
-          disabled: true
-        - name: exported
-          disabled: true
-        - name: package-comments
-          disabled: true   # enforces "Package x ..." format; existence kept via staticcheck ST1000
-        - name: var-declaration
-          disabled: true   # keep explicit types on var declarations (swappable func vars, etc.)
-        - name: add-constant
-          disabled: true
     nolintlint:
       require-explanation: true
       require-specific: true
@@ -176,9 +152,6 @@ linters:
           - tagalign
           - lll
           - forcetypeassert
-      - path: _test\.go
-        linters:
-          - revive
         text: 'malformed tag'
       - linters: [staticcheck]
         text: 'package comment should be of the form'

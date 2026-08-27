@@ -43,10 +43,7 @@ func (gatherer *Gatherer) Run(ctx context.Context) {
 		nextSlice := currentSlice.Add(interval)
 
 		// Sleep only until next boundary
-		sleep := time.Until(nextSlice)
-		if sleep < 0 {
-			sleep = 0
-		}
+		sleep := max(time.Until(nextSlice), 0)
 
 		select {
 		case <-ctx.Done():

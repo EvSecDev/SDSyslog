@@ -93,7 +93,6 @@ linters:
     - testableexamples
     - ginkgolinter
     # Misc
-    - forbidigo
     - unqueryvet
 
   settings:

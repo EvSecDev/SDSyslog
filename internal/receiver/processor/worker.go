@@ -65,11 +65,7 @@ func (instance *Instance) run() {
 				durNs := time.Since(processingStartTime).Nanoseconds()
 				instance.Metrics.SumNs.Add(uint64(durNs))
 				oldMax := int64(instance.Metrics.MaxNs.Load())
-				for {
-					if durNs <= oldMax {
-						break
-					}
-
+				for durNs <= oldMax {
 					if instance.Metrics.MaxNs.CompareAndSwap(uint64(oldMax), uint64(durNs)) {
 						break
 					}

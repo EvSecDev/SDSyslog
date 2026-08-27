@@ -59,7 +59,7 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 
 	values := make([]float64, pastNIntervals)
 
-	for i := 0; i < pastNIntervals; i++ {
+	for i := range pastNIntervals {
 		column := make([]float64, 0, len(instValues))
 		for _, inst := range instValues {
 			column = append(column, inst[i])

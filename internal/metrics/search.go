@@ -17,7 +17,7 @@ func matchesNamespace(metricNS, queryNS []string) (matches bool) {
 	if len(metricNS) < len(queryNS) {
 		return
 	}
-	for i := 0; i < len(queryNS); i++ {
+	for i := range len(queryNS) {
 		if metricNS[i] != queryNS[i] {
 			return
 		}
@@ -185,25 +185,25 @@ func deepestCommonNamespace(input [][]string) (common []string) {
 }
 
 func toFloat64(v any) (float64, bool) {
-	switch t := v.(type) {
+	switch value := v.(type) {
 	case float64:
-		return t, true
+		return value, true
 	case float32:
-		return float64(t), true
+		return float64(value), true
 	case int:
-		return float64(t), true
+		return float64(value), true
 	case int64:
-		return float64(t), true
+		return float64(value), true
 	case int32:
-		return float64(t), true
+		return float64(value), true
 	case uint:
-		return float64(t), true
+		return float64(value), true
 	case uint64:
-		return float64(t), true
+		return float64(value), true
 	case uint32:
-		return float64(t), true
+		return float64(value), true
 	case string:
-		floatVal, err := strconv.ParseFloat(t, 64)
+		floatVal, err := strconv.ParseFloat(value, 64)
 		if err == nil {
 			return floatVal, true
 		}

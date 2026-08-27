@@ -154,9 +154,9 @@ func newMockConn(inner net.Conn, secret []byte) *mockConn {
 	mockedConn.corruptNext.Store(true)
 	return mockedConn
 }
-func (c *mockConn) Write(b []byte) (n int, err error) {
-	if !c.corruptNext.Load() {
-		n, err = c.Conn.Write(b)
+func (mockedConn *mockConn) Write(b []byte) (n int, err error) {
+	if !mockedConn.corruptNext.Load() {
+		n, err = mockedConn.Conn.Write(b)
 		if err != nil {
 			err = fmt.Errorf("write corrupted: %w", err)
 			return
@@ -165,7 +165,7 @@ func (c *mockConn) Write(b []byte) (n int, err error) {
 	}
 
 	if len(b) < minDataLength {
-		n, err = c.Conn.Write(b)
+		n, err = mockedConn.Conn.Write(b)
 		if err != nil {
 			err = fmt.Errorf("write: %w", err)
 			return
@@ -173,13 +173,13 @@ func (c *mockConn) Write(b []byte) (n int, err error) {
 		return
 	}
 
-	c.corruptNext.Store(false)
+	mockedConn.corruptNext.Store(false)
 
 	// Since we are mutating, we want the writer to think they wrote exactly their payload
 	n = len(b)
 
 	// Happens once
-	tempSession, err := New(c.Conn, c.hmacSecret) // Only need for encode/decode easy access, discarded after this
+	tempSession, err := New(mockedConn.Conn, mockedConn.hmacSecret) // Only need for encode/decode easy access, discarded after this
 	if err != nil {
 		err = fmt.Errorf("TEST-WIREMUTATOR: failed to make temp session: %w", err)
 		return
@@ -196,6 +196,6 @@ func (c *mockConn) Write(b []byte) (n int, err error) {
 		return
 	}
 
-	_, err = c.Conn.Write(fakeFrame) // Now send on the mutated frame
+	_, err = mockedConn.Conn.Write(fakeFrame) // Now send on the mutated frame
 	return
 }

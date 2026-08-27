@@ -88,7 +88,7 @@ func Defragment(payloads []*Payload) (primaryPayload *Payload, err error) {
 
 	// Detect missing start (missing seq 0)
 	if len(payloads) > 0 && payloads[0].MessageSeq > 0 {
-		for missing := 0; missing < payloads[0].MessageSeq; missing++ {
+		for range payloads[0].MessageSeq {
 			reassemblyBuffer.WriteString(MissingFragmentPlaceholder)
 		}
 	}

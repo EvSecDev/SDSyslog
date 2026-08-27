@@ -128,11 +128,11 @@ func findLocalTestIP(ifaces []net.Interface) (testIP string) {
 		for _, addr := range addrs {
 			var ip net.IP
 
-			switch v := addr.(type) {
+			switch networkAddr := addr.(type) {
 			case *net.IPNet:
-				ip = v.IP
+				ip = networkAddr.IP
 			case *net.IPAddr:
-				ip = v.IP
+				ip = networkAddr.IP
 			}
 
 			// Pick the first valid IPv4

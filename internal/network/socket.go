@@ -24,9 +24,9 @@ func ReuseUDPPort(sourceSocket *net.UDPAddr) (conn *net.UDPConn, err error) {
 
 	// Using x/sys/unix package for more up-to-date syscall numbers
 	cfg := net.ListenConfig{
-		Control: func(network, address string, c syscall.RawConn) error {
+		Control: func(network, address string, rawConn syscall.RawConn) error {
 			var ctrlErr error
-			ctrlErr = c.Control(func(fd uintptr) {
+			ctrlErr = rawConn.Control(func(fd uintptr) {
 				// Always set SO_REUSEADDR and SO_REUSEPORT
 				err := unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
 				if err != nil {
@@ -81,9 +81,9 @@ func ReuseUDPPort(sourceSocket *net.UDPAddr) (conn *net.UDPConn, err error) {
 func ReuseTCPPort(addr string) (conn net.Listener, err error) {
 	// Using x/sys/unix package for more up-to-date syscall numbers
 	cfg := net.ListenConfig{
-		Control: func(network, address string, c syscall.RawConn) error {
+		Control: func(network, address string, rawConn syscall.RawConn) error {
 			var err error
-			err = c.Control(func(fd uintptr) {
+			err = rawConn.Control(func(fd uintptr) {
 				// Allow port reuse
 				err = unix.SetsockoptInt(
 					int(fd),
@@ -163,7 +163,7 @@ func WaitUntilEmptySocket(conn *net.UDPConn) (remainingBytes int, err error) {
 	}
 
 	// Retry loop with exponential backoff
-	for i := 0; i < maxIterations; i++ {
+	for range maxIterations {
 		remainingBytes, err = unix.IoctlGetInt(fd, fionread)
 		if err != nil {
 			return

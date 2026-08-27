@@ -327,7 +327,7 @@ func TestInvalidNextLengthByte(t *testing.T) {
 
 	// Find a position where a length byte likely resides.
 	// Flip that byte to an unrealistic value
-	for i := 0; i < len(corrupted)-len(fields.Hostname); i++ {
+	for i := range len(corrupted) - len(fields.Hostname) {
 		if bytes.HasPrefix(corrupted[i+1:], fields.Hostname) {
 			corrupted[i] = 255 // corrupt the "length" byte before hostname
 			break

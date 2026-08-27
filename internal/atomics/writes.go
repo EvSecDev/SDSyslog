@@ -11,7 +11,7 @@ import (
 func Subtract(source *atomic.Uint64, value uint64, maxRetries int) (success bool) {
 	retryInterval := time.Microsecond * 10
 
-	for i := 0; i < maxRetries; i++ {
+	for range maxRetries {
 		current := source.Load()
 
 		if current == 0 {

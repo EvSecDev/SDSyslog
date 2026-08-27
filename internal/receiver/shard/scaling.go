@@ -54,7 +54,7 @@ func TrendLatency(sumSpacing, totalFragments, timedOutFragments []uint64) (stepU
 	timeoutRatios := make([]float64, numFragments)
 	avgSpacings := make([]float64, numFragments)
 
-	for i := 0; i < numFragments; i++ {
+	for i := range numFragments {
 		if totalFragments[i] == 0 {
 			timeoutRatios[i] = 0
 			avgSpacings[i] = 0
@@ -66,7 +66,7 @@ func TrendLatency(sumSpacing, totalFragments, timedOutFragments []uint64) (stepU
 
 	// Compute average timeout ratio and spacing trend
 	var sumRatio float64
-	for i := 0; i < numFragments; i++ {
+	for i := range numFragments {
 		sumRatio += timeoutRatios[i]
 	}
 	avgTimeoutRatio := sumRatio / float64(numFragments)

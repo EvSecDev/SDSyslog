@@ -120,8 +120,8 @@ func TestProcessor_Basic(t *testing.T) {
 				},
 				Data: bytes.Repeat([]byte("o"), mockMaxPayloadSize*8),
 			},
-			pastCutoffTime:     10 * time.Minute,
-			futureCutoffTime:   10 * time.Minute,
+			pastCutoffTime:   10 * time.Minute,
+			futureCutoffTime: 10 * time.Minute,
 			// Fragment count varies with the random per-fragment padding
 			// (10-60 bytes), so this message size yields 11 or 12 packets
 			expectedValidCount: 11,

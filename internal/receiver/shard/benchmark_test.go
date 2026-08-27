@@ -40,7 +40,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 	queue := New([]string{logctx.NSTest}, int(global.DefaultMinQueueSize), &mockDeadline)
 
 	// Warm-up to stabilize caches, allocator, CPU frequency, etc.
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		payloadTemplate.Data = append(payloadTemplate.Data, []byte(strconv.Itoa(i))...)
 		queue.push(mockCtx, "key"+strconv.Itoa(i), payloadTemplate, time.Now())
 		key, ok := queue.PopKey(context.Background())
@@ -87,7 +87,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 	)
 
 	// Sub-linear growth
-	for i := 0; i < len(msgSizes); i++ {
+	for i := range len(msgSizes) {
 		for j := i + 1; j < len(msgSizes); j++ {
 			n1, n2 := msgSizes[i], msgSizes[j]
 			t1, t2 := results[n1], results[n2]
@@ -105,7 +105,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 	}
 
 	// No cliffs
-	for i := 0; i < len(msgSizes)-1; i++ {
+	for i := range len(msgSizes) - 1 {
 		n1, n2 := msgSizes[i], msgSizes[i+1]
 		t1, t2 := results[n1], results[n2]
 
@@ -119,7 +119,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 
 	// Slope stability
 	prevSlope := -1.0
-	for i := 0; i < len(msgSizes)-1; i++ {
+	for i := range len(msgSizes) - 1 {
 		n1, n2 := msgSizes[i], msgSizes[i+1]
 		t1, t2 := results[n1], results[n2]
 

@@ -77,7 +77,7 @@ func valueSizeApprox(v reflect.Value) (byteSize int) {
 		byteSize = int(v.Type().Size())
 	case reflect.Slice:
 		size := 24 // slice header: ptr + len + cap
-		for i := 0; i < v.Len(); i++ {
+		for i := range v.Len() {
 			size += valueSizeApprox(v.Index(i))
 		}
 		byteSize = size
@@ -102,7 +102,7 @@ func valueSizeApprox(v reflect.Value) (byteSize int) {
 		}
 	case reflect.Struct:
 		size := 0
-		for i := 0; i < v.NumField(); i++ {
+		for i := range v.NumField() {
 			size += valueSizeApprox(v.Field(i))
 		}
 		byteSize = size

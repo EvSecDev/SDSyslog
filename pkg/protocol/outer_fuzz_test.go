@@ -43,7 +43,7 @@ func FuzzDeconstructOuterPayload(f *testing.F) {
 	f.Add(minHeaderBlob)
 
 	truncatedBlob := make([]byte, minHeaderLength-1)
-	for eachIndex := 0; eachIndex < len(truncatedBlob); eachIndex++ {
+	for eachIndex := range len(truncatedBlob) {
 		truncatedBlob[eachIndex] = 0x01
 	}
 	f.Add(truncatedBlob)

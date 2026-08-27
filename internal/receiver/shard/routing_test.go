@@ -469,7 +469,7 @@ func TestRouteDistribution(t *testing.T) {
 		distribution := make(map[string]int)
 
 		candidateList := make([]string, size)
-		for i := 0; i < size; i++ {
+		for i := range size {
 			candidateList[i] = fmt.Sprintf("A-%d", i)
 		}
 
@@ -512,7 +512,7 @@ func TestRoutePerformance(t *testing.T) {
 
 	for size := 2; size <= 128; size *= 2 {
 		candidates := make([]string, size)
-		for i := 0; i < size; i++ {
+		for i := range size {
 			candidates[i] = fmt.Sprintf("A-%d", i)
 		}
 

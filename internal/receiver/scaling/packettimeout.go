@@ -49,7 +49,7 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 		timeoutsMetrics = timeoutsMetrics[len(timeoutsMetrics)-pastNIntervals:]
 
 		// Aggregate per interval
-		for i := 0; i < pastNIntervals; i++ {
+		for i := range pastNIntervals {
 			if v, ok := sumSpacingMetrics[i].Value.Raw.(uint64); ok {
 				aggSumSpacing[i] = append(aggSumSpacing[i], v)
 			}
@@ -67,7 +67,7 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	finalFragments := make([]uint64, pastNIntervals)
 	finalTimeouts := make([]uint64, pastNIntervals)
 
-	for i := 0; i < pastNIntervals; i++ {
+	for i := range pastNIntervals {
 		if len(aggSumSpacing[i]) > 0 {
 			finalSumSpacing[i] = calc.TrimmedMeanUint64(aggSumSpacing[i], 0.10)
 		}

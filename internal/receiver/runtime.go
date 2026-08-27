@@ -96,7 +96,7 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Stage 3 - Shard+Assembler Instances
-	for i := 0; i < int(daemon.opts.AutoScaling.MinDefrags); i++ {
+	for range int(daemon.opts.AutoScaling.MinDefrags) {
 		_ = daemon.Mgrs.Assembler.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
@@ -122,7 +122,7 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Stage 2 - Processor Instances
-	for i := 0; i < int(daemon.opts.AutoScaling.MinProcessors); i++ {
+	for range int(daemon.opts.AutoScaling.MinProcessors) {
 		daemon.Mgrs.Proc.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
@@ -143,7 +143,7 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Stage 1 - Listener Instances
-	for i := 0; i < int(daemon.opts.AutoScaling.MinListeners); i++ {
+	for range int(daemon.opts.AutoScaling.MinListeners) {
 		_, err = daemon.Mgrs.Input.AddInstance()
 		if err != nil {
 			err = fmt.Errorf("failed adding new listener instance: %w", err)

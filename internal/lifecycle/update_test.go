@@ -14,7 +14,6 @@ import (
 )
 
 func TestPostUpdateActions_ErrorPaths(t *testing.T) {
-
 	type testCase struct {
 		name string
 

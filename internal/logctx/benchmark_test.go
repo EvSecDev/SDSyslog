@@ -21,7 +21,7 @@ func BenchmarkLogEvent_SingleProducer(b *testing.B) {
 	b.SetBytes(1)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		LogStdInfo(ctx, "benchmark message %d", i)
 	}
 }

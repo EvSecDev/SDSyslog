@@ -81,12 +81,12 @@ func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []
 	recordTime := time.Now()
 
 	// Helper to add metrics
-	add := func(name string, raw interface{}, unit string, t metrics.MetricType, description string) {
+	add := func(name string, raw interface{}, unit string, metricType metrics.MetricType, description string) {
 		collection = append(collection, metrics.Metric{
 			Name:        name,
 			Description: description,
 			Namespace:   queues[0].Namespace,
-			Type:        t,
+			Type:        metricType,
 			Timestamp:   recordTime,
 			Value: metrics.MetricValue{
 				Raw:      raw,

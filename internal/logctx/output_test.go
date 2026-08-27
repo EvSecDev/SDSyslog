@@ -44,7 +44,7 @@ func TestWatcher_WaitWakeAndDedup(t *testing.T) {
 	const repeats = 11
 	msg := "duplicate-message"
 
-	for i := 0; i < repeats; i++ {
+	for range repeats {
 		LogEvent(ctx, 1, InfoLog, msg)
 	}
 

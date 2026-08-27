@@ -314,37 +314,37 @@ func deserializeAnyValue(valType uint8, data []byte) (value any, err error) {
 // Creates user-readable string from various types.
 // If type is unsupported, returned string will be empty
 func FormatValue(value any) (text string) {
-	switch x := value.(type) {
+	switch typedValue := value.(type) {
 	case string:
-		text = x
+		text = typedValue
 	case []byte:
-		text = hex.EncodeToString(x)
+		text = hex.EncodeToString(typedValue)
 	case int:
-		text = strconv.Itoa(x)
+		text = strconv.Itoa(typedValue)
 	case int8:
-		text = strconv.FormatInt(int64(x), 10)
+		text = strconv.FormatInt(int64(typedValue), 10)
 	case int16:
-		text = strconv.FormatInt(int64(x), 10)
+		text = strconv.FormatInt(int64(typedValue), 10)
 	case int32:
-		text = strconv.FormatInt(int64(x), 10)
+		text = strconv.FormatInt(int64(typedValue), 10)
 	case int64:
-		text = strconv.FormatInt(x, 10)
+		text = strconv.FormatInt(typedValue, 10)
 	case uint:
-		text = strconv.FormatUint(uint64(x), 10)
+		text = strconv.FormatUint(uint64(typedValue), 10)
 	case uint8:
-		text = strconv.FormatUint(uint64(x), 10)
+		text = strconv.FormatUint(uint64(typedValue), 10)
 	case uint16:
-		text = strconv.FormatUint(uint64(x), 10)
+		text = strconv.FormatUint(uint64(typedValue), 10)
 	case uint32:
-		text = strconv.FormatUint(uint64(x), 10)
+		text = strconv.FormatUint(uint64(typedValue), 10)
 	case uint64:
-		text = strconv.FormatUint(x, 10)
+		text = strconv.FormatUint(typedValue, 10)
 	case float32:
-		text = strconv.FormatFloat(float64(x), 'g', -1, 32)
+		text = strconv.FormatFloat(float64(typedValue), 'g', -1, 32)
 	case float64:
-		text = strconv.FormatFloat(x, 'g', -1, 64)
+		text = strconv.FormatFloat(typedValue, 'g', -1, 64)
 	case bool:
-		if x {
+		if typedValue {
 			text = "true"
 		} else {
 			text = "false"

@@ -12,7 +12,7 @@ func newReplayCacheWithShards(numShards int, ttlSeconds int64) (newCache *replay
 		shards: make([]*replayCacheShard, numShards),
 		ttl:    ttlSeconds,
 	}
-	for i := 0; i < numShards; i++ {
+	for i := range numShards {
 		newCache.shards[i] = &replayCacheShard{
 			store: make(map[string]int64, 4096),
 		}

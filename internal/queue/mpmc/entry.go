@@ -98,7 +98,7 @@ func newQueueInst[T any](namespace []string, capacity uint64) (new *QueueInst[T]
 	}
 
 	buf := make([]cell[T], capacity)
-	for i := uint64(0); i < capacity; i++ {
+	for i := range capacity {
 		buf[i].seq.Store(i)
 	}
 

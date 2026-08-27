@@ -52,7 +52,7 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Stage 3 - Output Instances
-	for i := 0; i < int(daemon.opts.AutoScaling.MinOutputs); i++ {
+	for range int(daemon.opts.AutoScaling.MinOutputs) {
 		_ = daemon.Mgrs.Out.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
@@ -79,7 +79,7 @@ func (daemon *Daemon) Start() (err error) {
 	}
 
 	// Stage 2 - Assembler Instance
-	for i := 0; i < int(daemon.opts.AutoScaling.MinAssemblers); i++ {
+	for range int(daemon.opts.AutoScaling.MinAssemblers) {
 		_ = daemon.Mgrs.Assem.AddInstance()
 	}
 	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,

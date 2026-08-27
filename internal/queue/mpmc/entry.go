@@ -51,15 +51,38 @@ func (container *Queue[T]) mutateSize(newCapacity uint64) (err error) {
 		return
 	}
 
-	// Create a fresh migration channel
-	container.migrateCh.Store(make(chan struct{}, 1))
+	oldQueue := container.ActiveWrite.Load()
+
+	oldSignal, ok := container.migrateCh.Load().(chan struct{})
+	if !ok {
+		err = fmt.Errorf("migration channel is not a struct{} channel")
+		return
+	}
 
 	// Set old queue to draining (triggers producer to reload pointer)
-	container.ActiveWrite.Load().draining.Store(true)
+	oldQueue.draining.Store(true)
 
 	// Assign ActiveWrite to new size queue instance
 	// Migration is handled automatically by consumers
 	container.ActiveWrite.Store(qInst)
+
+	// Create a fresh migration channel
+	newSignal := make(chan struct{}, 1)
+	container.migrateCh.Store(newSignal)
+
+	// If the old queue is already empty, the "last pop" migration signal
+	// can never fire, so wake consumers directly on both the old and new
+	// channels (blocked consumers may be waiting on either one)
+	if oldQueue.head.Load() == oldQueue.tail.Load() {
+		select {
+		case oldSignal <- struct{}{}:
+		default:
+		}
+		select {
+		case newSignal <- struct{}{}:
+		default:
+		}
+	}
 	return
 }
 

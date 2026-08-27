@@ -107,7 +107,8 @@ func TestHandleDiscovery(t *testing.T) {
 
 			if tt.wantError {
 				var je Jerror
-				if err := json.NewDecoder(rr.Body).Decode(&je); err != nil {
+				err := json.NewDecoder(rr.Body).Decode(&je)
+				if err != nil {
 					t.Fatalf("failed decoding JSON error: %v", err)
 				}
 				if je.Msg == "" {

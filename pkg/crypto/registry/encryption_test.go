@@ -61,7 +61,8 @@ func TestCryptoSuites(t *testing.T) {
 			}
 
 			// Key validation
-			if err := info.ValidateKey(priv); err != nil {
+			err = info.ValidateKey(priv)
+			if err != nil {
 				t.Fatalf("ValidateKey failed: %v", err)
 			}
 

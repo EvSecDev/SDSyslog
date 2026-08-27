@@ -42,7 +42,8 @@ func parseLine(rawLine string, localHostname string) (message *protocol.Message)
 					if lb := strings.IndexByte(header, '['); lb > 0 {
 						message.Fields[iomodules.CFappname] = header[:lb]
 						if rb := strings.IndexByte(header, ']'); rb > lb+1 {
-							if pid, err := strconv.Atoi(header[lb+1 : rb]); err == nil {
+							pid, err := strconv.Atoi(header[lb+1 : rb])
+							if err == nil {
 								message.Fields[iomodules.CFprocessid] = pid
 							}
 						}
@@ -83,7 +84,8 @@ func parseLine(rawLine string, localHostname string) (message *protocol.Message)
 					pidStr := rest[pidStart+1 : pidEnd]
 
 					// Convert PID to an integer
-					if pid, err := strconv.Atoi(pidStr); err == nil {
+					pid, err := strconv.Atoi(pidStr)
+					if err == nil {
 						message.Fields[iomodules.CFprocessid] = pid
 					}
 
@@ -120,7 +122,8 @@ func parseLine(rawLine string, localHostname string) (message *protocol.Message)
 
 					if hash := strings.Index(rest, "#"); hash > 0 {
 						if colon := strings.Index(rest, ":"); colon > hash {
-							if pid, err := strconv.Atoi(rest[:hash]); err == nil {
+							pid, err := strconv.Atoi(rest[:hash])
+							if err == nil {
 								message.Fields[iomodules.CFprocessid] = pid
 							}
 							data := strings.TrimSpace(rest[colon+1:])
@@ -137,7 +140,8 @@ func parseLine(rawLine string, localHostname string) (message *protocol.Message)
 
 	// Format: Debian dpkg
 	if len(line) >= 19 {
-		if ts, err := time.Parse("2006-01-02 15:04:05", line[:19]); err == nil {
+		ts, err := time.Parse("2006-01-02 15:04:05", line[:19])
+		if err == nil {
 			message.Timestamp = ts
 			data := strings.TrimSpace(line[19:])
 			message.Data = []byte(data)
@@ -150,7 +154,8 @@ func parseLine(rawLine string, localHostname string) (message *protocol.Message)
 	if lb := strings.Index(line, "["); lb >= 0 {
 		if rb := strings.Index(line[lb:], "]"); rb > 0 {
 			tsStr := line[lb+1 : lb+rb]
-			if ts, err := time.Parse("02/Jan/2006:15:04:05 -0700", tsStr); err == nil {
+			ts, err := time.Parse("02/Jan/2006:15:04:05 -0700", tsStr)
+			if err == nil {
 				message.Timestamp = ts
 			}
 		}
@@ -160,7 +165,8 @@ func parseLine(rawLine string, localHostname string) (message *protocol.Message)
 	if strings.HasPrefix(line, "[") {
 		if rb := strings.Index(line, "]"); rb > 0 {
 			tsStr := line[1:rb]
-			if ts, err := time.Parse("02-Jan-2006 15:04:05", tsStr); err == nil {
+			ts, err := time.Parse("02-Jan-2006 15:04:05", tsStr)
+			if err == nil {
 				rest := strings.TrimSpace(line[rb+1:])
 				if colon := strings.Index(rest, ":"); colon > 0 {
 					data := strings.TrimSpace(rest[colon+1:])

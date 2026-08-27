@@ -39,7 +39,8 @@ func TestReadinessHandshake(t *testing.T) {
 					}
 				}()
 
-				if err := readinessReceiver(reader); err != nil {
+				err := readinessReceiver(reader)
+				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			},
@@ -67,7 +68,8 @@ func TestReadinessHandshake(t *testing.T) {
 					}
 				}()
 
-				if err := readinessReceiver(reader); err == nil {
+				err := readinessReceiver(reader)
+				if err == nil {
 					t.Fatal("expected error")
 				}
 			},
@@ -95,7 +97,8 @@ func TestReadinessHandshake(t *testing.T) {
 					}
 				}()
 
-				if err := readinessReceiver(reader); err == nil {
+				err := readinessReceiver(reader)
+				if err == nil {
 					t.Fatal("expected error")
 				}
 			},
@@ -108,7 +111,8 @@ func TestReadinessHandshake(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error setting environment variable: %v", err)
 				}
-				if err := ReadinessSender(); err != nil {
+				err = ReadinessSender()
+				if err != nil {
 					t.Fatalf("expected nil, got %v", err)
 				}
 			},
@@ -128,7 +132,8 @@ func TestReadinessHandshake(t *testing.T) {
 					}
 				}()
 
-				if err := ReadinessSender(); err == nil {
+				err = ReadinessSender()
+				if err == nil {
 					t.Fatal("expected error")
 				}
 			},
@@ -148,7 +153,8 @@ func TestReadinessHandshake(t *testing.T) {
 					}
 				}()
 
-				if err := ReadinessSender(); err == nil {
+				err = ReadinessSender()
+				if err == nil {
 					t.Fatal("expected error")
 				}
 			},
@@ -176,12 +182,14 @@ func TestReadinessHandshake(t *testing.T) {
 					}
 				}()
 
-				if err := ReadinessSender(); err != nil {
+				err = ReadinessSender()
+				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
 				buf := make([]byte, len(ReadyMessage))
-				if _, err := io.ReadFull(reader, buf); err != nil {
+				_, err = io.ReadFull(reader, buf)
+				if err != nil {
 					t.Fatalf("read failed: %v", err)
 				}
 

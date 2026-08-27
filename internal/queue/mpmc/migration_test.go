@@ -102,7 +102,8 @@ func TestQueueMigration(t *testing.T) {
 
 			// Trigger resize after some items have been pushed
 			time.Sleep(10 * time.Millisecond)
-			if err := queue.mutateSize(tt.newSize); err != nil {
+			err = queue.mutateSize(tt.newSize)
+			if err != nil {
 				t.Fatalf("failed to mutate size: %v", err)
 			}
 			time.Sleep(10 * time.Millisecond)

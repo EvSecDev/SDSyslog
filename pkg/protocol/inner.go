@@ -16,26 +16,31 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 	var buf bytes.Buffer
 
 	// HEADER
-	if err = binary.Write(&buf, binary.BigEndian, fields.HostID); err != nil {
+	err = binary.Write(&buf, binary.BigEndian, fields.HostID)
+	if err != nil {
 		err = fmt.Errorf("%w: HostID: %w", ErrSerialization, err)
 		return
 	}
-	if err = binary.Write(&buf, binary.BigEndian, fields.MsgID); err != nil {
+	err = binary.Write(&buf, binary.BigEndian, fields.MsgID)
+	if err != nil {
 		err = fmt.Errorf("%w: MsgID: %w", ErrSerialization, err)
 		return
 	}
-	if err = binary.Write(&buf, binary.BigEndian, fields.MessageSeq); err != nil {
+	err = binary.Write(&buf, binary.BigEndian, fields.MessageSeq)
+	if err != nil {
 		err = fmt.Errorf("%w: MessageSeq: %w", ErrSerialization, err)
 		return
 	}
-	if err = binary.Write(&buf, binary.BigEndian, fields.MessageSeqMax); err != nil {
+	err = binary.Write(&buf, binary.BigEndian, fields.MessageSeqMax)
+	if err != nil {
 		err = fmt.Errorf("%w: MessageSeqMax: %w", ErrSerialization, err)
 		return
 	}
 
 	// METADATA
 	// Timestamp
-	if err = binary.Write(&buf, binary.BigEndian, fields.Timestamp); err != nil {
+	err = binary.Write(&buf, binary.BigEndian, fields.Timestamp)
+	if err != nil {
 		err = fmt.Errorf("%w: Timestamp: %w", ErrSerialization, err)
 		return
 	}
@@ -75,7 +80,8 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 	for _, ctxField := range fields.ContextFields {
 		// Key
 		contextBuffer.WriteByte(uint8(len(ctxField.Key)))
-		if err = writeFixedLength(&contextBuffer, ctxField.Key, len(ctxField.Key)); err != nil {
+		err = writeFixedLength(&contextBuffer, ctxField.Key, len(ctxField.Key))
+		if err != nil {
 			err = fmt.Errorf("%w: Context field key: %w", ErrSerialization, err)
 			return
 		}
@@ -86,7 +92,8 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 
 		// Value
 		contextBuffer.WriteByte(uint8(len(ctxField.Value)))
-		if err = writeFixedLength(&contextBuffer, ctxField.Value, len(ctxField.Value)); err != nil {
+		err = writeFixedLength(&contextBuffer, ctxField.Value, len(ctxField.Value))
+		if err != nil {
 			err = fmt.Errorf("%w: Context field value: %w", ErrSerialization, err)
 			return
 		}
@@ -99,17 +106,20 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 		return
 	}
 	if contextBuffer.Len() > 0 {
-		if err = writeUint16(&buf, uint16(contextBuffer.Len())); err != nil {
+		err = writeUint16(&buf, uint16(contextBuffer.Len()))
+		if err != nil {
 			err = fmt.Errorf("%w: Context section length: %w", ErrSerialization, err)
 			return
 		}
 
-		if err = writeFixedLength(&buf, contextBuffer.Bytes(), contextBuffer.Len()); err != nil {
+		err = writeFixedLength(&buf, contextBuffer.Bytes(), contextBuffer.Len())
+		if err != nil {
 			err = fmt.Errorf("%w: Context section: %w", ErrSerialization, err)
 			return
 		}
 	} else {
-		if err = writeUint16(&buf, customFieldsEmptyMarker); err != nil {
+		err = writeUint16(&buf, customFieldsEmptyMarker)
+		if err != nil {
 			err = fmt.Errorf("%w: Context section marker length: %w", ErrSerialization, err)
 			return
 		}
@@ -126,11 +136,13 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 			ErrProtocolViolation, len(fields.Data), maxDataLen)
 		return
 	}
-	if err = writeUint16(&buf, uint16(len(fields.Data))); err != nil {
+	err = writeUint16(&buf, uint16(len(fields.Data)))
+	if err != nil {
 		err = fmt.Errorf("%w: Data length: %w", ErrSerialization, err)
 		return
 	}
-	if err = writeFixedLength(&buf, fields.Data, len(fields.Data)); err != nil {
+	err = writeFixedLength(&buf, fields.Data, len(fields.Data))
+	if err != nil {
 		err = fmt.Errorf("%w: Data: %w", ErrSerialization, err)
 		return
 	}
@@ -191,31 +203,37 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 	buf := bytes.NewReader(payload)
 
 	// HEADER
-	if err = binary.Read(buf, binary.BigEndian, &fields.HostID); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &fields.HostID)
+	if err != nil {
 		err = fmt.Errorf("%w: HostID: %w", ErrSerialization, err)
 		return
 	}
-	if err = binary.Read(buf, binary.BigEndian, &fields.MsgID); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &fields.MsgID)
+	if err != nil {
 		err = fmt.Errorf("%w: MsgID: %w", ErrSerialization, err)
 		return
 	}
-	if err = binary.Read(buf, binary.BigEndian, &fields.MessageSeq); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &fields.MessageSeq)
+	if err != nil {
 		err = fmt.Errorf("%w: MessageSeq: %w", ErrSerialization, err)
 		return
 	}
-	if err = binary.Read(buf, binary.BigEndian, &fields.MessageSeqMax); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &fields.MessageSeqMax)
+	if err != nil {
 		err = fmt.Errorf("%w: MessageSeqMax: %w", ErrSerialization, err)
 		return
 	}
 
 	// METADATA
-	if err = binary.Read(buf, binary.BigEndian, &fields.Timestamp); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &fields.Timestamp)
+	if err != nil {
 		err = fmt.Errorf("%w: Timestamp: %w", ErrSerialization, err)
 		return
 	}
 	// Hostname
 	var hostnameLen uint8
-	if err = binary.Read(buf, binary.BigEndian, &hostnameLen); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &hostnameLen)
+	if err != nil {
 		err = fmt.Errorf("%w: Hostname length: %w", ErrSerialization, err)
 		return
 	}
@@ -229,7 +247,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 		return
 	}
 	fields.Hostname = make([]byte, hostnameLen)
-	if _, err = io.ReadFull(buf, fields.Hostname); err != nil {
+	_, err = io.ReadFull(buf, fields.Hostname)
+	if err != nil {
 		err = fmt.Errorf("%w: Hostname: %w", ErrSerialization, err)
 		return
 	}
@@ -239,7 +258,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 	}
 	// Signature
 	var sigID uint8
-	if err = binary.Read(buf, binary.BigEndian, &sigID); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &sigID)
+	if err != nil {
 		err = fmt.Errorf("%w: signature ID: %w", ErrSerialization, err)
 		return
 	}
@@ -249,7 +269,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 		return
 	}
 	var sigLen uint8
-	if err = binary.Read(buf, binary.BigEndian, &sigLen); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &sigLen)
+	if err != nil {
 		err = fmt.Errorf("%w: signature length: %w", ErrSerialization, err)
 		return
 	}
@@ -271,7 +292,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 			return
 		}
 		fields.Signature = make([]byte, sigLen)
-		if _, err = io.ReadFull(buf, fields.Signature); err != nil {
+		_, err = io.ReadFull(buf, fields.Signature)
+		if err != nil {
 			err = fmt.Errorf("%w: Signature field: %w", ErrSerialization, err)
 			return
 		}
@@ -280,7 +302,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 
 	// CONTEXT
 	var ctxSecLen uint16
-	if err = binary.Read(buf, binary.BigEndian, &ctxSecLen); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &ctxSecLen)
+	if err != nil {
 		err = fmt.Errorf("%w: Context section length: %w", ErrSerialization, err)
 		return
 	}
@@ -291,7 +314,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 	if ctxSecLen != customFieldsEmptyMarker {
 		// Custom fields present, extract
 		rawContextSection := make([]byte, ctxSecLen)
-		if _, err = io.ReadFull(buf, rawContextSection); err != nil {
+		_, err = io.ReadFull(buf, rawContextSection)
+		if err != nil {
 			err = fmt.Errorf("%w: Context section: %w", ErrSerialization, err)
 			return
 		}
@@ -309,7 +333,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 			}
 
 			fieldKey := make([]byte, keyLen)
-			if _, err = io.ReadFull(contextReader, fieldKey); err != nil {
+			_, err = io.ReadFull(contextReader, fieldKey)
+			if err != nil {
 				err = fmt.Errorf("%w: context field key: %w", ErrSerialization, err)
 				return
 			}
@@ -332,7 +357,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 				return
 			}
 			fieldValue := make([]byte, valLen)
-			if _, err = io.ReadFull(contextReader, fieldValue); err != nil {
+			_, err = io.ReadFull(contextReader, fieldValue)
+			if err != nil {
 				err = fmt.Errorf("%w: context field value: %w", ErrSerialization, err)
 				return
 			}
@@ -362,7 +388,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 
 	// Data
 	var dataLen uint16
-	if err = binary.Read(buf, binary.BigEndian, &dataLen); err != nil {
+	err = binary.Read(buf, binary.BigEndian, &dataLen)
+	if err != nil {
 		err = fmt.Errorf("%w: data field length: %w", ErrSerialization, err)
 		return
 	}
@@ -381,7 +408,8 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 		return
 	}
 	fields.Data = make([]byte, dataLen)
-	if _, err = io.ReadFull(buf, fields.Data); err != nil {
+	_, err = io.ReadFull(buf, fields.Data)
+	if err != nil {
 		err = fmt.Errorf("%w: data field: %w", ErrSerialization, err)
 		return
 	}

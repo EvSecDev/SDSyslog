@@ -12,7 +12,6 @@ linters:
     - gocognit
     - gocyclo
     - cyclop
-    - nestif
     - lll
     - maintidx
     - dupl

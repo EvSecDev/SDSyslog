@@ -516,16 +516,16 @@ func TestRoutePerformance(t *testing.T) {
 			candidates[i] = fmt.Sprintf("A-%d", i)
 		}
 
-		b := testing.Benchmark(func(b *testing.B) {
+		result := testing.Benchmark(func(b *testing.B) {
 			t.Helper()
 			for range b.N {
 				routeSelect(key, candidates)
 			}
 		})
 
-		nsPerOp := float64(b.NsPerOp())
-		allocsPerOp := b.AllocsPerOp()
-		bytesPerOp := b.AllocedBytesPerOp()
+		nsPerOp := float64(result.NsPerOp())
+		allocsPerOp := result.AllocsPerOp()
+		bytesPerOp := result.AllocedBytesPerOp()
 
 		t.Logf("size=%3d: ns/op=%.2f, allocs/op=%d, bytes/op=%.2f",
 			size, nsPerOp, allocsPerOp, float64(bytesPerOp))

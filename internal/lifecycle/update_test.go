@@ -59,16 +59,7 @@ func TestPostUpdateActions_ErrorPaths(t *testing.T) {
 			baseCtx := context.Background()
 			ctx := logctx.New(baseCtx, "test", logctx.VerbosityStandard, nil)
 
-			err := os.Setenv(EnvNameSelfUpdate, tt.envValue)
-			if err != nil {
-				t.Fatalf("unexpected error setting env var: %v", err)
-			}
-			defer func() {
-				err := os.Unsetenv(EnvNameSelfUpdate)
-				if err != nil {
-					t.Fatalf("failed unsetting env var: %v", err)
-				}
-			}()
+			t.Setenv(EnvNameSelfUpdate, tt.envValue)
 
 			origKill := syscallKill
 			syscallKill = func(int, unix.Signal) error {
@@ -89,7 +80,7 @@ func TestPostUpdateActions_ErrorPaths(t *testing.T) {
 			PostUpdateActions(ctx, mock, 10*time.Millisecond)
 
 			// Gather any logs from ctx logger
-			_, err = utils.MatchLogCtxErrors(ctx, tt.expectedErr, nil)
+			_, err := utils.MatchLogCtxErrors(ctx, tt.expectedErr, nil)
 			if err != nil {
 				t.Errorf("%v", err)
 			}

@@ -107,11 +107,7 @@ func TestReadinessHandshake(t *testing.T) {
 			name: "sender no env",
 			run: func(t *testing.T) {
 				t.Helper()
-				err := os.Unsetenv(EnvNameReadinessFD)
-				if err != nil {
-					t.Fatalf("unexpected error setting environment variable: %v", err)
-				}
-				err = ReadinessSender()
+				err := ReadinessSender()
 				if err != nil {
 					t.Fatalf("expected nil, got %v", err)
 				}
@@ -121,18 +117,8 @@ func TestReadinessHandshake(t *testing.T) {
 			name: "sender invalid env",
 			run: func(t *testing.T) {
 				t.Helper()
-				err := os.Setenv(EnvNameReadinessFD, "bad")
-				if err != nil {
-					t.Fatalf("unexpected error setting environment variable: %v", err)
-				}
-				defer func() {
-					err := os.Unsetenv(EnvNameReadinessFD)
-					if err != nil {
-						t.Fatalf("failed unsetting env variable: %v", err)
-					}
-				}()
-
-				err = ReadinessSender()
+				t.Setenv(EnvNameReadinessFD, "bad")
+				err := ReadinessSender()
 				if err == nil {
 					t.Fatal("expected error")
 				}
@@ -142,18 +128,8 @@ func TestReadinessHandshake(t *testing.T) {
 			name: "sender bad fd",
 			run: func(t *testing.T) {
 				t.Helper()
-				err := os.Setenv(EnvNameReadinessFD, "999999")
-				if err != nil {
-					t.Fatalf("unexpected error setting environment variable: %v", err)
-				}
-				defer func() {
-					err := os.Unsetenv(EnvNameReadinessFD)
-					if err != nil {
-						t.Fatalf("failed unsetting env variable: %v", err)
-					}
-				}()
-
-				err = ReadinessSender()
+				t.Setenv(EnvNameReadinessFD, "999999")
+				err := ReadinessSender()
 				if err == nil {
 					t.Fatal("expected error")
 				}
@@ -171,18 +147,9 @@ func TestReadinessHandshake(t *testing.T) {
 					}
 				}()
 
-				err := os.Setenv(EnvNameReadinessFD, strconv.Itoa(int(writer.Fd())))
-				if err != nil {
-					t.Fatalf("unexpected error setting environment variable: %v", err)
-				}
-				defer func() {
-					err := os.Unsetenv(EnvNameReadinessFD)
-					if err != nil {
-						t.Fatalf("failed unsetting env variable: %v", err)
-					}
-				}()
+				t.Setenv(EnvNameReadinessFD, strconv.Itoa(int(writer.Fd())))
 
-				err = ReadinessSender()
+				err := ReadinessSender()
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}

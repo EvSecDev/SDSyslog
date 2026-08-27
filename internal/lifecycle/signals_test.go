@@ -107,16 +107,7 @@ func TestSignalHandling(t *testing.T) {
 			// Setup real notify socket
 			socketPath, msgChan, cleanup := setupNotifySocket(t)
 			defer cleanup()
-			err := os.Setenv("NOTIFY_SOCKET", socketPath)
-			if err != nil {
-				t.Fatalf("unexpected error setting env variable: %v", err)
-			}
-			defer func() {
-				err := os.Unsetenv("NOTIFY_SOCKET")
-				if err != nil {
-					t.Fatalf("failed unsetting env var: %v", err)
-				}
-			}()
+			t.Setenv("NOTIFY_SOCKET", socketPath)
 
 			// Mock low-level dependencies
 			mockReader, mockWriter, err := os.Pipe()

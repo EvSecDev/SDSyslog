@@ -99,7 +99,7 @@ func publishRelease(ctx *context) (err error) {
 		return
 	}
 
-	releaseHTTPReq, err := http.NewRequest("POST", parsedURL.String(), releaseBodyReader)
+	releaseHTTPReq, err := http.NewRequest(http.MethodPost, parsedURL.String(), releaseBodyReader)
 	if err != nil {
 		err = fmt.Errorf("failed to create release HTTP request: %w", err)
 		return
@@ -113,7 +113,9 @@ func publishRelease(ctx *context) (err error) {
 		err = fmt.Errorf("failed to send release request to github: %w", err)
 		return
 	}
-	defer releaseHTTPResp.Body.Close()
+	defer func() {
+		_ = releaseHTTPResp.Body.Close()
+	}()
 	wholeBody, err := helpers.HTTPCheckResp(releaseHTTPResp)
 	if err != nil {
 		err = fmt.Errorf("create release: %w", err)
@@ -177,7 +179,7 @@ func publishRelease(ctx *context) (err error) {
 		parsedUploadURL.RawQuery = queryParams.Encode()
 
 		var uploadRequest *http.Request
-		uploadRequest, err = http.NewRequest("POST", parsedUploadURL.String(), assetFile)
+		uploadRequest, err = http.NewRequest(http.MethodPost, parsedUploadURL.String(), assetFile)
 		if err != nil {
 			err = fmt.Errorf("failed to create release HTTP request: %w", err)
 			return

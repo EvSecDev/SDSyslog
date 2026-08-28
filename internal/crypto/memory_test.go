@@ -51,7 +51,6 @@ func TestMemzero(t *testing.T) {
 			var addressBefore uintptr
 			if tt.input != nil {
 				// Grab input address before zero
-				//nolint:gosec // G103: deliberate for testing
 				addressBefore = uintptr(unsafe.Pointer(&tt.input))
 			}
 
@@ -76,7 +75,6 @@ func TestMemzero(t *testing.T) {
 			}
 
 			// Verify memory address after has not changed
-			//nolint:gosec // G103: deliberate for testing
 			addressAfter := uintptr(unsafe.Pointer(&tt.input))
 			if addressBefore != addressAfter {
 				t.Errorf("expected memory address to remain the same, but got different addresses: before=%x, after=%x", addressBefore, addressAfter)
@@ -84,7 +82,6 @@ func TestMemzero(t *testing.T) {
 
 			// Use unsafe to verify the contents of the slice have been zeroed in memory
 			for index := range tt.input {
-				//nolint:gosec // G103: deliberate for testing
 				if *(*byte)(unsafe.Pointer(&tt.input[index])) != 0 {
 					t.Errorf("memory at index %d was not zeroed, expected 0, got %d", index, tt.input[index])
 				}

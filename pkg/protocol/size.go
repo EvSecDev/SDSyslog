@@ -59,51 +59,51 @@ func (msg *Message) Size() (bytes int) {
 	return
 }
 
-func valueSizeApprox(v reflect.Value) (byteSize int) {
-	if !v.IsValid() {
+func valueSizeApprox(value reflect.Value) (byteSize int) {
+	if !value.IsValid() {
 		return 0
 	}
 	const ptrSize = 8 // 64-bit pointer size
 
-	switch v.Kind() {
+	switch value.Kind() {
 	case reflect.String:
-		byteSize = 16 + v.Len() // header + bytes
+		byteSize = 16 + value.Len() // header + bytes
 	case reflect.Bool:
 		byteSize = 1 + 1 // 1 byte for value + 1 byte padding overhead
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		byteSize = int(v.Type().Size())
+		byteSize = int(value.Type().Size())
 	case reflect.Float32, reflect.Float64:
-		byteSize = int(v.Type().Size())
+		byteSize = int(value.Type().Size())
 	case reflect.Slice:
 		size := 24 // slice header: ptr + len + cap
-		for i := range v.Len() {
-			size += valueSizeApprox(v.Index(i))
+		for i := range value.Len() {
+			size += valueSizeApprox(value.Index(i))
 		}
 		byteSize = size
 	case reflect.Map:
 		size := 8 // map header pointer
-		for _, key := range v.MapKeys() {
+		for _, key := range value.MapKeys() {
 			size += valueSizeApprox(key)
-			size += valueSizeApprox(v.MapIndex(key))
+			size += valueSizeApprox(value.MapIndex(key))
 		}
 		byteSize = size
 	case reflect.Interface:
-		if v.IsNil() {
+		if value.IsNil() {
 			byteSize = 16 // empty interface header
 		} else {
-			byteSize = 16 + valueSizeApprox(v.Elem()) // header + value
+			byteSize = 16 + valueSizeApprox(value.Elem()) // header + value
 		}
 	case reflect.Pointer:
-		if v.IsNil() {
+		if value.IsNil() {
 			byteSize = ptrSize
 		} else {
-			byteSize = ptrSize + valueSizeApprox(v.Elem())
+			byteSize = ptrSize + valueSizeApprox(value.Elem())
 		}
 	case reflect.Struct:
 		size := 0
-		for i := range v.NumField() {
-			size += valueSizeApprox(v.Field(i))
+		for i := range value.NumField() {
+			size += valueSizeApprox(value.Field(i))
 		}
 		byteSize = size
 	default:

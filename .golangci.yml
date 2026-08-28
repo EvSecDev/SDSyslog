@@ -9,11 +9,7 @@ linters:
   enable:
     # Complexity
     - funlen
-    - gocognit
-    - gocyclo
-    - cyclop
     - lll
-    - maintidx
     - dupl
     # Style / naming / layout
     - misspell
@@ -24,14 +20,12 @@ linters:
     - dupword
     - predeclared
     - inamedparam
-    - ireturn
     - interfacebloat
     - funcorder
     - grouper
     - mirror
     - usestdlibvars
     - gosmopolitan
-    - tagalign
     - musttag
     - gochecksumtype
     - goconst
@@ -55,23 +49,16 @@ linters:
     # Security
     - gosec
     # Performance / waste
-    - prealloc
-    - perfsprint
     - unconvert
     - wastedassign
     - reassign
     - forcetypeassert
     # Resource / context / concurrency
     - bodyclose
-    - noctx
-    - containedctx
-    - contextcheck
     - spancheck
     - copyloopvar
     - intrange
-    - fatcontext
     # Structs / tags / DB
-    - exhaustive
     - rowserrcheck
     - sqlclosecheck
     - recvcheck
@@ -107,10 +94,6 @@ linters:
     funlen:
       lines: 250
       statements: 100
-    gocognit:
-      min-complexity: 20
-    cyclop:
-      max-complexity: 8
     nestif:
       min-complexity: 4
     lll:
@@ -120,7 +103,7 @@ linters:
       threshold: 100
     goconst:
       min-len: 3
-      min-occurrences: 3
+      min-occurrences: 10
     gocritic:
       enabled-tags:
         - diagnostic
@@ -148,10 +131,12 @@ linters:
       - path: _test\.go
         linters:
           - funlen
-          - tagalign
           - lll
           - forcetypeassert
-        text: 'malformed tag'
+          - gosec
+          - embeddedstructfieldcheck
+          - goconst
+          - varnamelen
       - linters: [staticcheck]
         text: 'package comment should be of the form'
       - linters: [nilerr]

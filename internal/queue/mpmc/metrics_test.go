@@ -79,10 +79,10 @@ func TestMetricsPresence(t *testing.T) {
 
 			// Pop items (consume some/all)
 			popCount := tt.expectPop
-			for i := range int(popCount) {
+			for popIndex := range int(popCount) {
 				val, success := queue.Pop(ctx)
 				if !success {
-					t.Fatalf("pop %d failed unexpectedly", i)
+					t.Fatalf("pop %d failed unexpectedly", popIndex)
 				}
 				_ = val
 			}

@@ -59,13 +59,13 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 
 	values := make([]uint64, pastNIntervals)
 
-	for i := range pastNIntervals {
+	for intervalIndex := range pastNIntervals {
 		column := make([]uint64, 0, len(instValues))
 		for _, inst := range instValues {
-			column = append(column, inst[i])
+			column = append(column, inst[intervalIndex])
 		}
 
-		values[i] = calc.TrimmedMeanUint64(column, 0.10)
+		values[intervalIndex] = calc.TrimmedMeanUint64(column, 0.10)
 	}
 
 	// Determine scaling direction

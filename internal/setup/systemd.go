@@ -19,15 +19,6 @@ type InstallSystemdStep struct {
 	backupCreated    bool
 }
 
-func (step *InstallSystemdStep) applyTemplateMacros(unitFile []byte) (file []byte) {
-	// Inject variables into file
-	newUnitFile := strings.Replace(string(unitFile), "$executableFilePath", global.DefaultBinaryPath, 1)
-	newUnitFile = strings.Replace(newUnitFile, "$receiveConfigFilePath", global.DefaultConfigRecv, 1)
-	newUnitFile = strings.Replace(newUnitFile, "$sendConfigFilePath", global.DefaultConfigSend, 1)
-	file = []byte(newUnitFile)
-	return
-}
-
 func (step *InstallSystemdStep) Name() string {
 	return "Systemd Service"
 }
@@ -274,5 +265,14 @@ func (step *InstallSystemdStep) Uninstall(ctx *context) (err error) {
 	}
 
 	ctx.logger.Success("Successfully uninstalled systemd service")
+	return
+}
+
+func (step *InstallSystemdStep) applyTemplateMacros(unitFile []byte) (file []byte) {
+	// Inject variables into file
+	newUnitFile := strings.Replace(string(unitFile), "$executableFilePath", global.DefaultBinaryPath, 1)
+	newUnitFile = strings.Replace(newUnitFile, "$receiveConfigFilePath", global.DefaultConfigRecv, 1)
+	newUnitFile = strings.Replace(newUnitFile, "$sendConfigFilePath", global.DefaultConfigSend, 1)
+	file = []byte(newUnitFile)
 	return
 }

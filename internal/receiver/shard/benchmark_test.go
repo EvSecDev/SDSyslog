@@ -40,16 +40,16 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 	queue := New([]string{logctx.NSTest}, int(global.DefaultMinQueueSize), &mockDeadline)
 
 	// Warm-up to stabilize caches, allocator, CPU frequency, etc.
-	for i := range 1000 {
-		payloadTemplate.Data = append(payloadTemplate.Data, []byte(strconv.Itoa(i))...)
-		queue.push(mockCtx, "key"+strconv.Itoa(i), payloadTemplate, time.Now())
+	for iteration := range 1000 {
+		payloadTemplate.Data = append(payloadTemplate.Data, []byte(strconv.Itoa(iteration))...)
+		queue.push(mockCtx, "key"+strconv.Itoa(iteration), payloadTemplate, time.Now())
 		key, ok := queue.PopKey(context.Background())
 		if !ok {
-			b.Fatalf("expected no error while warming, but failed to pop key at iteration %d", i)
+			b.Fatalf("expected no error while warming, but failed to pop key at iteration %d", iteration)
 		}
 		_, notExist := queue.DrainBucket(mockCtx, key)
 		if notExist {
-			b.Fatalf("expected no error while warming, but bucket drain failed at iteration %d", i)
+			b.Fatalf("expected no error while warming, but bucket drain failed at iteration %d", iteration)
 		}
 	}
 

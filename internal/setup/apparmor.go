@@ -19,21 +19,6 @@ type InstallAppArmorStep struct {
 	profileApplied    bool
 }
 
-func (step *InstallAppArmorStep) applyTemplateMacros(appArmorProfile []byte) (file []byte) {
-	// Inject variables into config
-	replacer := strings.NewReplacer(
-		"=$executableFilePath", "="+global.DefaultBinaryPath,
-		"=$configurationDirPath", "="+global.DefaultConfigDir,
-		"=$privateKeyFilePath", "="+encryptionPrivKeyPath,
-		"=$progStateDirPath", "="+global.DefaultStateDir,
-		"=$drainingSocketsMapPinPath", "="+ebpf.KernelDrainMapPath,
-		"=$drainingSocketsFuncPinPath", "="+ebpf.KernelSocketRouteFunc,
-		"$includeExtraLocalPath", appArmorExtrasPath,
-	)
-	file = []byte(replacer.Replace(string(appArmorProfile)))
-	return
-}
-
 func (step *InstallAppArmorStep) Name() string {
 	return "AppArmor Profile"
 }
@@ -217,5 +202,20 @@ func (step *InstallAppArmorStep) Uninstall(ctx *context) (err error) {
 	err = nil
 
 	ctx.logger.Success("Successfully uninstalled AppArmor Profile")
+	return
+}
+
+func (step *InstallAppArmorStep) applyTemplateMacros(appArmorProfile []byte) (file []byte) {
+	// Inject variables into config
+	replacer := strings.NewReplacer(
+		"=$executableFilePath", "="+global.DefaultBinaryPath,
+		"=$configurationDirPath", "="+global.DefaultConfigDir,
+		"=$privateKeyFilePath", "="+encryptionPrivKeyPath,
+		"=$progStateDirPath", "="+global.DefaultStateDir,
+		"=$drainingSocketsMapPinPath", "="+ebpf.KernelDrainMapPath,
+		"=$drainingSocketsFuncPinPath", "="+ebpf.KernelSocketRouteFunc,
+		"$includeExtraLocalPath", appArmorExtrasPath,
+	)
+	file = []byte(replacer.Replace(string(appArmorProfile)))
 	return
 }

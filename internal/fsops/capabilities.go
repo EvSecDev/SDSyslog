@@ -116,9 +116,9 @@ func decodeVfsCapDataV2(payload []byte) (mode CapMode, caps []uint, err error) {
 	inheritableHigh := binary.LittleEndian.Uint32(payload[16:20])
 
 	addCaps := func(mask uint32, base uint) {
-		for i := range 32 {
-			if mask&(1<<i) != 0 {
-				caps = append(caps, base+uint(i))
+		for index := range 32 {
+			if mask&(1<<index) != 0 {
+				caps = append(caps, base+uint(index))
 			}
 		}
 	}

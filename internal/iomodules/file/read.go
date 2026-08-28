@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -126,7 +127,7 @@ func (mod *InModule) fileReadAll(ctx context.Context, lineBuf *[]byte, buf []byt
 
 		var bytesRead int
 		bytesRead, err = mod.sink.Read(buf)
-		if bytesRead == 0 || err == io.EOF {
+		if bytesRead == 0 || errors.Is(err, io.EOF) {
 			// no more bytes available, break to outer select for blocking
 			err = nil
 			break

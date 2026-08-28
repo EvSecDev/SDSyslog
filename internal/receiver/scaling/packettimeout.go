@@ -49,15 +49,15 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 		timeoutsMetrics = timeoutsMetrics[len(timeoutsMetrics)-pastNIntervals:]
 
 		// Aggregate per interval
-		for i := range pastNIntervals {
-			if v, ok := sumSpacingMetrics[i].Value.Raw.(uint64); ok {
-				aggSumSpacing[i] = append(aggSumSpacing[i], v)
+		for intervalIndex := range pastNIntervals {
+			if v, ok := sumSpacingMetrics[intervalIndex].Value.Raw.(uint64); ok {
+				aggSumSpacing[intervalIndex] = append(aggSumSpacing[intervalIndex], v)
 			}
-			if v, ok := fragmentsMetrics[i].Value.Raw.(uint64); ok {
-				aggFragments[i] = append(aggFragments[i], v)
+			if v, ok := fragmentsMetrics[intervalIndex].Value.Raw.(uint64); ok {
+				aggFragments[intervalIndex] = append(aggFragments[intervalIndex], v)
 			}
-			if v, ok := timeoutsMetrics[i].Value.Raw.(uint64); ok {
-				aggTimeouts[i] = append(aggTimeouts[i], v)
+			if v, ok := timeoutsMetrics[intervalIndex].Value.Raw.(uint64); ok {
+				aggTimeouts[intervalIndex] = append(aggTimeouts[intervalIndex], v)
 			}
 		}
 	}
@@ -67,15 +67,15 @@ func scaleTimeouts(ctx context.Context, metricStore *metrics.Registry, interval 
 	finalFragments := make([]uint64, pastNIntervals)
 	finalTimeouts := make([]uint64, pastNIntervals)
 
-	for i := range pastNIntervals {
-		if len(aggSumSpacing[i]) > 0 {
-			finalSumSpacing[i] = calc.TrimmedMeanUint64(aggSumSpacing[i], 0.10)
+	for intervalIndex := range pastNIntervals {
+		if len(aggSumSpacing[intervalIndex]) > 0 {
+			finalSumSpacing[intervalIndex] = calc.TrimmedMeanUint64(aggSumSpacing[intervalIndex], 0.10)
 		}
-		if len(aggFragments[i]) > 0 {
-			finalFragments[i] = calc.TrimmedMeanUint64(aggFragments[i], 0.10)
+		if len(aggFragments[intervalIndex]) > 0 {
+			finalFragments[intervalIndex] = calc.TrimmedMeanUint64(aggFragments[intervalIndex], 0.10)
 		}
-		if len(aggTimeouts[i]) > 0 {
-			finalTimeouts[i] = calc.TrimmedMeanUint64(aggTimeouts[i], 0.10)
+		if len(aggTimeouts[intervalIndex]) > 0 {
+			finalTimeouts[intervalIndex] = calc.TrimmedMeanUint64(aggTimeouts[intervalIndex], 0.10)
 		}
 	}
 

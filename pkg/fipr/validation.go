@@ -21,7 +21,7 @@ func (session *Session) validateFrame(frame *framebody) (err error) {
 			session.Close()
 			err = ErrOutOfOrderStart
 		}
-		if len(frame.payload) <= 0 {
+		if len(frame.payload) == 0 {
 			err = ErrFrameHasNoPayload
 		}
 	case opOBO:

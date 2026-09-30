@@ -34,7 +34,7 @@ func Subtract(source *atomic.Uint64, value uint64, maxRetries int) (success bool
 
 		// CAS failed due to contention, retry
 		time.Sleep(retryInterval)
-		retryInterval = retryInterval * 2
+		retryInterval *= 2
 	}
 
 	success = false // gave up after max attempts

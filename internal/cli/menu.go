@@ -217,10 +217,8 @@ func printFlagOptions(fs *flag.FlagSet, baseIndentSpaces int) {
 			if leftLen > maxLen {
 				maxLen = leftLen
 			}
-		} else {
-			if len(left) > maxLen {
-				maxLen = len(left)
-			}
+		} else if len(left) > maxLen {
+			maxLen = len(left)
 		}
 	}
 

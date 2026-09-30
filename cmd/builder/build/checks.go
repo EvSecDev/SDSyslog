@@ -183,6 +183,7 @@ func checkDevArtifacts(ctx *context) (err error) {
 }
 
 func runStaticAnalysis(ctx *context) (err error) {
+	_ = ctx
 	printInfo(0, "Running static analysis...")
 
 	// Lint 1

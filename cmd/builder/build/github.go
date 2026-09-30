@@ -92,51 +92,10 @@ func publishRelease(ctx *context) (err error) {
 	}
 	releaseBodyReader := bytes.NewReader(releaseJSON)
 
-	createURL := "https://" + baseAPI + "/repos/" + ctx.cfg.RemoteGitUsername + "/" + ctx.cfg.RemoteGitRepo + "/releases"
-	parsedURL, err := url.Parse(createURL)
+	releaseID, finalReleaseURL, err := submitRelease(ctx, releaseBodyReader, githubAPIToken)
 	if err != nil {
-		err = fmt.Errorf("invalid release create endpoint URL: %w", err)
 		return
 	}
-
-	releaseHTTPReq, err := http.NewRequest(http.MethodPost, parsedURL.String(), releaseBodyReader)
-	if err != nil {
-		err = fmt.Errorf("failed to create release HTTP request: %w", err)
-		return
-	}
-	releaseHTTPReq.Header.Add("Accept", "application/vnd.github+json")
-	releaseHTTPReq.Header.Add("Authorization", "Bearer "+githubAPIToken)
-	releaseHTTPReq.Header.Add("X-GitHub-Api-Version", "2022-11-28")
-
-	releaseHTTPResp, err := http.DefaultClient.Do(releaseHTTPReq)
-	if err != nil {
-		err = fmt.Errorf("failed to send release request to github: %w", err)
-		return
-	}
-	defer func() {
-		_ = releaseHTTPResp.Body.Close()
-	}()
-	wholeBody, err := helpers.HTTPCheckResp(releaseHTTPResp)
-	if err != nil {
-		err = fmt.Errorf("create release: %w", err)
-		return
-	}
-
-	var releaseResp createReleaseResp
-	err = json.Unmarshal(wholeBody, &releaseResp)
-	if err != nil {
-		err = fmt.Errorf("failed to parse release response JSON body: %w", err)
-		return
-	}
-
-	if releaseResp.ID == nil || *releaseResp.ID == 0 {
-		err = fmt.Errorf("unable to extract release ID from release create response: (%s) %s",
-			releaseResp.Status, releaseResp.Message)
-		return
-	}
-	releaseID := *releaseResp.ID
-
-	finalReleaseURL := releaseResp.HTMLURL
 
 	printSuccess(0, "Successfully created new Github release - ID: %d", releaseID)
 
@@ -231,5 +190,54 @@ func publishRelease(ctx *context) (err error) {
 		printWarn(0, "Failed to remove release staging: %w", err)
 		err = nil
 	}
+	return
+}
+
+func submitRelease(ctx *context, releaseBodyReader *bytes.Reader, githubAPIToken string) (releaseID int64, finalReleaseURL string, err error) {
+	createURL := "https://" + baseAPI + "/repos/" + ctx.cfg.RemoteGitUsername + "/" + ctx.cfg.RemoteGitRepo + "/releases"
+	parsedURL, err := url.Parse(createURL)
+	if err != nil {
+		err = fmt.Errorf("invalid release create endpoint URL: %w", err)
+		return
+	}
+
+	releaseHTTPReq, err := http.NewRequest(http.MethodPost, parsedURL.String(), releaseBodyReader)
+	if err != nil {
+		err = fmt.Errorf("failed to create release HTTP request: %w", err)
+		return
+	}
+	releaseHTTPReq.Header.Add("Accept", "application/vnd.github+json")
+	releaseHTTPReq.Header.Add("Authorization", "Bearer "+githubAPIToken)
+	releaseHTTPReq.Header.Add("X-GitHub-Api-Version", "2022-11-28")
+
+	releaseHTTPResp, err := http.DefaultClient.Do(releaseHTTPReq)
+	if err != nil {
+		err = fmt.Errorf("failed to send release request to github: %w", err)
+		return
+	}
+	defer func() {
+		_ = releaseHTTPResp.Body.Close()
+	}()
+	wholeBody, err := helpers.HTTPCheckResp(releaseHTTPResp)
+	if err != nil {
+		err = fmt.Errorf("create release: %w", err)
+		return
+	}
+
+	var releaseResp createReleaseResp
+	err = json.Unmarshal(wholeBody, &releaseResp)
+	if err != nil {
+		err = fmt.Errorf("failed to parse release response JSON body: %w", err)
+		return
+	}
+
+	if releaseResp.ID == nil || *releaseResp.ID == 0 {
+		err = fmt.Errorf("unable to extract release ID from release create response: (%s) %s",
+			releaseResp.Status, releaseResp.Message)
+		return
+	}
+	releaseID = *releaseResp.ID
+
+	finalReleaseURL = releaseResp.HTMLURL
 	return
 }

@@ -113,6 +113,59 @@ func prepareReleaseChangelog(ctx *context, releaseDir string) (err error) {
 		return
 	}
 
+	changeLog := createReleaseNotesFromCommits(commitMsgsSinceLastRelease)
+
+	err = os.WriteFile(releaseChangeLogFile, []byte(changeLog.String()), 0o600)
+	if err != nil {
+		err = fmt.Errorf("failed to write change log file: %w", err)
+		return
+	}
+
+	// Save commit that this release was made for to track file
+	cmd = exec.Command("git", "show", "HEAD", "--pretty=format:%H", "--no-patch")
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("git show: %w: %s", err, string(out))
+		return
+	}
+	currentReleaseCommitHash := bytes.Trim(out, "\n")
+
+	err = os.WriteFile(releaseTrackerFile, currentReleaseCommitHash, 0o600)
+	if err != nil {
+		err = fmt.Errorf("failed to save commit hash for this release: %w", err)
+		return
+	}
+
+	fmt.Printf(`=====================================================================
+RELEASE MESSAGE in %s - CHECK BEFORE PUBLISHING:
+=====================================================================
+%s
+=====================================================================
+RELEASE ATTACHMENTS in %s
+=====================================================================
+`, releaseChangeLogFile, changeLog.String(), releaseDir)
+
+	entries, err := os.ReadDir(releaseDir)
+	if err != nil {
+		err = fmt.Errorf("failed to read release staging directory: %w", err)
+		return
+	}
+
+	for _, dirEntry := range entries {
+		if dirEntry.IsDir() {
+			continue
+		}
+		if dirEntry.Name() == filepath.Base(releaseChangeLogFile) {
+			continue
+		}
+		fmt.Printf("%s\n", dirEntry.Name())
+	}
+	fmt.Println()
+	printSuccess(0, "Done")
+	return
+}
+
+func createReleaseNotesFromCommits(commitMsgsSinceLastRelease string) (changeLog strings.Builder) {
 	commitMsgs := strings.Split(commitMsgsSinceLastRelease, "\n")
 
 	// Separate messages into categories based on prefix
@@ -172,7 +225,6 @@ func prepareReleaseChangelog(ctx *context, releaseDir string) (err error) {
 	const trailerHeader string = "### :information_source: Instructions"
 	const trailerComment string = " - Please refer to the README.md file for instructions"
 
-	var changeLog strings.Builder
 	if len(added) > 0 {
 		changeLog.WriteString(addedHeader)
 		changeLog.WriteString("\n")
@@ -202,53 +254,5 @@ func prepareReleaseChangelog(ctx *context, releaseDir string) (err error) {
 	changeLog.WriteString("\n")
 	changeLog.WriteString(trailerComment)
 	changeLog.WriteString("\n")
-
-	err = os.WriteFile(releaseChangeLogFile, []byte(changeLog.String()), 0o600)
-	if err != nil {
-		err = fmt.Errorf("failed to write change log file: %w", err)
-		return
-	}
-
-	// Save commit that this release was made for to track file
-	cmd = exec.Command("git", "show", "HEAD", "--pretty=format:%H", "--no-patch")
-	out, err = cmd.CombinedOutput()
-	if err != nil {
-		err = fmt.Errorf("git show: %w: %s", err, string(out))
-		return
-	}
-	currentReleaseCommitHash := bytes.Trim(out, "\n")
-
-	err = os.WriteFile(releaseTrackerFile, currentReleaseCommitHash, 0o600)
-	if err != nil {
-		err = fmt.Errorf("failed to save commit hash for this release: %w", err)
-		return
-	}
-
-	fmt.Printf(`=====================================================================
-RELEASE MESSAGE in %s - CHECK BEFORE PUBLISHING:
-=====================================================================
-%s
-=====================================================================
-RELEASE ATTACHMENTS in %s
-=====================================================================
-`, releaseChangeLogFile, changeLog.String(), releaseDir)
-
-	entries, err := os.ReadDir(releaseDir)
-	if err != nil {
-		err = fmt.Errorf("failed to read release staging directory: %w", err)
-		return
-	}
-
-	for _, dirEntry := range entries {
-		if dirEntry.IsDir() {
-			continue
-		}
-		if dirEntry.Name() == filepath.Base(releaseChangeLogFile) {
-			continue
-		}
-		fmt.Printf("%s\n", dirEntry.Name())
-	}
-	fmt.Println()
-	printSuccess(0, "Done")
 	return
 }

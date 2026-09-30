@@ -34,7 +34,7 @@ func decryptInnerSafeFail(ciphertext, ephemeralPub, nonce []byte, suiteID uint8)
 // Sets up encryption wrapper function injecting the public key to the local scope.
 // Does not set the function if key is empty. Will throw error if function is not initialized and no key is provided.
 func SetupEncryptInnerPayload(serverPub []byte) (err error) {
-	if len(serverPub) <= 0 {
+	if len(serverPub) == 0 {
 		if EncryptInnerPayload == nil {
 			err = fmt.Errorf("provided no public key and encryption function is not already initialized")
 		}
@@ -67,7 +67,7 @@ func SetupEncryptInnerPayload(serverPub []byte) (err error) {
 // Sets up decryption wrapper function injecting the private key to the local scope.
 // Does not set the function if key is empty. Will throw error if function is not initialized and no key is provided.
 func SetupDecryptInnerPayload(privateKey []byte) (err error) {
-	if len(privateKey) <= 0 {
+	if len(privateKey) == 0 {
 		if DecryptInnerPayload == nil {
 			err = fmt.Errorf("provided no private key and encryption function is not already initialized")
 		}

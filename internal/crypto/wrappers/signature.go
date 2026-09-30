@@ -36,7 +36,7 @@ func verifySignatureSafeFail(publicKey, data, signature []byte, sigID uint8) (va
 // Sets up signature creation wrapper function injecting the private key to the local scope.
 // Does not set the function if key is empty. Will throw error if function is not initialized and no key is provided.
 func SetupCreateSignature(privateKey []byte) (err error) {
-	if len(privateKey) <= 0 {
+	if len(privateKey) == 0 {
 		if CreateSignature == nil {
 			err = fmt.Errorf("provided no private key and create signature function is not already initialized")
 		}

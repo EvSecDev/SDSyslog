@@ -301,6 +301,47 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 	fields.SignatureID = sigID
 
 	// CONTEXT
+	err = deconstructContextSection(buf, fields)
+	if err != nil {
+		return
+	}
+
+	// Data
+	var dataLen uint16
+	err = binary.Read(buf, binary.BigEndian, &dataLen)
+	if err != nil {
+		err = fmt.Errorf("%w: data field length: %w", ErrSerialization, err)
+		return
+	}
+	if dataLen == 0 {
+		err = fmt.Errorf("%w: data field cannot be empty", ErrProtocolViolation)
+		return
+	}
+	if len(fields.Data) > maxDataLen {
+		err = fmt.Errorf("%w: data field length (%d) exceeds maximum field length: %d",
+			ErrProtocolViolation, len(fields.Data), maxDataLen)
+		return
+	}
+	if int(dataLen) > buf.Len() {
+		err = fmt.Errorf("%w: declared data field length exceeds remaining available payload buffer bytes",
+			ErrProtocolViolation)
+		return
+	}
+	fields.Data = make([]byte, dataLen)
+	_, err = io.ReadFull(buf, fields.Data)
+	if err != nil {
+		err = fmt.Errorf("%w: data field: %w", ErrSerialization, err)
+		return
+	}
+
+	// TRAILER
+	// Length should be all left over bytes in the reader
+	fields.PaddingLen = buf.Len()
+
+	return
+}
+
+func deconstructContextSection(buf *bytes.Reader, fields *innerWireFormat) (err error) {
 	var ctxSecLen uint16
 	err = binary.Read(buf, binary.BigEndian, &ctxSecLen)
 	if err != nil {
@@ -385,39 +426,6 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 	if err != nil {
 		return
 	}
-
-	// Data
-	var dataLen uint16
-	err = binary.Read(buf, binary.BigEndian, &dataLen)
-	if err != nil {
-		err = fmt.Errorf("%w: data field length: %w", ErrSerialization, err)
-		return
-	}
-	if dataLen == 0 {
-		err = fmt.Errorf("%w: data field cannot be empty", ErrProtocolViolation)
-		return
-	}
-	if len(fields.Data) > maxDataLen {
-		err = fmt.Errorf("%w: data field length (%d) exceeds maximum field length: %d",
-			ErrProtocolViolation, len(fields.Data), maxDataLen)
-		return
-	}
-	if int(dataLen) > buf.Len() {
-		err = fmt.Errorf("%w: declared data field length exceeds remaining available payload buffer bytes",
-			ErrProtocolViolation)
-		return
-	}
-	fields.Data = make([]byte, dataLen)
-	_, err = io.ReadFull(buf, fields.Data)
-	if err != nil {
-		err = fmt.Errorf("%w: data field: %w", ErrSerialization, err)
-		return
-	}
-
-	// TRAILER
-	// Length should be all left over bytes in the reader
-	fields.PaddingLen = buf.Len()
-
 	return
 }
 

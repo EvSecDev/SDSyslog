@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func New(ingestMgr *ingest.Manager, asmMgr *assembler.Manager, outputMgr *output.Manager, interval time.Duration, maximumMetricAge time.Duration) (new *Gatherer) {
+func New(ingestMgr *ingest.Manager, asmMgr *assembler.Manager, outputMgr *output.Manager, interval, maximumMetricAge time.Duration) (new *Gatherer) {
 	new = &Gatherer{
 		Registry:  metrics.New(),
 		Ingest:    ingestMgr,

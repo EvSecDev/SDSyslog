@@ -99,7 +99,7 @@ func runFuzzTests() (err error) {
 		stdoutReader := bufio.NewReader(stdout)
 		for {
 			line, err := stdoutReader.ReadString('\n')
-			if len(line) > 0 {
+			if line != "" {
 				fmt.Print(line)
 			}
 			if err != nil {
@@ -137,9 +137,6 @@ func runUnitTests(ctx *context, testArgs []string) (err error) {
 	// Run the tests
 	for testName, testInfo := range tests {
 		coverProfileOut := filepath.Join(ctx.repositoryRoot, ".coverprofile_"+testName+".out")
-		defer func() {
-			_ = os.Remove(coverProfileOut)
-		}()
 
 		args := make([]string, 5+len(testArgs))
 		args = append(args, "test", "-C", testInfo.absolutePath)
@@ -150,6 +147,7 @@ func runUnitTests(ctx *context, testArgs []string) (err error) {
 		cmd := exec.Command("go", args...)
 		err = helpers.RunTestCommand(cmd)
 		if err != nil {
+			_ = os.Remove(coverProfileOut)
 			return
 		}
 
@@ -157,6 +155,7 @@ func runUnitTests(ctx *context, testArgs []string) (err error) {
 		var coveragePercent string
 		coveragePercent, err = extractTestCoverage(coverProfileOut)
 		if err != nil {
+			_ = os.Remove(coverProfileOut)
 			return
 		}
 
@@ -187,7 +186,7 @@ func runUnitTests(ctx *context, testArgs []string) (err error) {
 }
 
 func runIntegTests(ctx *context, testArgs []string) (err error) {
-	integrationDir := filepath.Join(ctx.repositoryRoot, "internal/tests/integration")
+	integrationDir := filepath.Join(ctx.repositoryRoot, "internal", "tests", "integration")
 
 	baseModName := ctx.cfg.ProgramOutputName
 
@@ -200,17 +199,17 @@ func runIntegTests(ctx *context, testArgs []string) (err error) {
 	tests := map[string]testInfo{
 		"SendReceivePipeline": {
 			functionName: "TestSendReceivePipeline",
-			absolutePath: filepath.Join(integrationDir),
+			absolutePath: integrationDir,
 			coverAgainst: []string{baseModName + "/internal/receiver", baseModName + "/internal/sender"},
 		},
 		"ReceivePipeline": {
 			functionName: "TestRecvConstantFlow",
-			absolutePath: filepath.Join(integrationDir),
+			absolutePath: integrationDir,
 			coverAgainst: []string{baseModName + "/internal/receiver"},
 		},
 		"ConcurrentSenders": {
 			functionName: "TestMultipleSenders",
-			absolutePath: filepath.Join(integrationDir),
+			absolutePath: integrationDir,
 			coverAgainst: []string{baseModName + "/internal/receiver", baseModName + "/internal/sender"},
 		},
 	}
@@ -218,9 +217,6 @@ func runIntegTests(ctx *context, testArgs []string) (err error) {
 	// Run the tests
 	for testName, testInfo := range tests {
 		coverProfileOut := filepath.Join(ctx.repositoryRoot, ".coverprofile_"+testName+".out")
-		defer func() {
-			_ = os.Remove(coverProfileOut)
-		}()
 
 		printInfo(0, "Running Integration Test %s%s%s", colorBlue, testName, noColor)
 
@@ -235,6 +231,7 @@ func runIntegTests(ctx *context, testArgs []string) (err error) {
 		cmd := exec.Command("go", args...)
 		err = helpers.RunTestCommand(cmd)
 		if err != nil {
+			_ = os.Remove(coverProfileOut)
 			return
 		}
 
@@ -242,6 +239,7 @@ func runIntegTests(ctx *context, testArgs []string) (err error) {
 		var coveragePercent string
 		coveragePercent, err = extractTestCoverage(coverProfileOut)
 		if err != nil {
+			_ = os.Remove(coverProfileOut)
 			return
 		}
 

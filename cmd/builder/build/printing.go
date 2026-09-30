@@ -17,7 +17,7 @@ func printWarn(indent int, message string, vars ...any) {
 }
 
 func printSuccess(indent int, message string, vars ...any) {
-	if strings.ToLower(message) == "done" {
+	if strings.EqualFold(message, "done") {
 		message = colorGreen + colorBold + "DONE" + noColor
 	}
 	_, _ = fmt.Fprintf(os.Stdout, "%s%s[+]%s %s\n",

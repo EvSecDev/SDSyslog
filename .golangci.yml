@@ -89,7 +89,7 @@ linters:
       max-distance: 1
       check-receiver: true
       check-return: true
-      check-type-param: true
+      check-type-param: false
     funlen:
       lines: 250
       statements: 100
@@ -145,6 +145,10 @@ linters:
         text: 'may want to remove commented-out code'
       - linters: [gocritic]
         text: 'shadowing of predeclared identifier'
+      - linters: [gocritic]
+        text: 'appendCombine: can combine chain'
+      - linters: [gocritic]
+        text: 'unlambda:'
 
 formatters:
   enable:

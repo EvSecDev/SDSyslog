@@ -3,7 +3,6 @@ package setup
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"sdsyslog/internal/fsops"
 	"sdsyslog/internal/global"
 )
@@ -86,37 +85,7 @@ func (step *InstallBinaryStep) Apply(ctx *context) (err error) {
 }
 
 func (step *InstallBinaryStep) Rollback(ctx *context) {
-	ctx.logger.Indent()
-	defer ctx.logger.Dedent()
-
-	// Remove installed binary if we installed one
-	if step.installedNew {
-		err := os.Remove(global.DefaultBinaryPath)
-		if err != nil && !os.IsNotExist(err) {
-			ctx.logger.Error("failed to remove target executable path: %v", err)
-		}
-	}
-
-	// Previous a file at target path, move back into place
-	if step.replacedExisting {
-		ctx.logger.Verbose("Restoring previous executable from '%s' to '%s'", step.backupTgtPath, global.DefaultBinaryPath)
-
-		err := os.Rename(step.backupTgtPath, global.DefaultBinaryPath)
-		if err != nil {
-			ctx.logger.Error("failed to restore backup: %v", err)
-		} else {
-			dir, err := os.Open(filepath.Dir(global.DefaultBinaryPath))
-			if err != nil {
-				ctx.logger.Error("failed to open target executable directory: %v", err)
-			} else {
-				err = dir.Sync()
-				if err != nil {
-					ctx.logger.Error("failed to sync target executable directory: %v", err)
-				}
-				_ = dir.Close()
-			}
-		}
-	}
+	restoreBkpFile(ctx, step.backupTgtPath, global.DefaultBinaryPath, step.installedNew, step.replacedExisting)
 }
 
 func (step *InstallBinaryStep) PostApply(ctx *context) {

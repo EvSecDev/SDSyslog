@@ -104,37 +104,7 @@ func (step *InstallSystemdStep) Apply(ctx *context) (err error) {
 }
 
 func (step *InstallSystemdStep) Rollback(ctx *context) {
-	ctx.logger.Indent()
-	defer ctx.logger.Dedent()
-
-	// Remove installed unit file if we installed one
-	if step.installedNew {
-		err := os.Remove(step.serviceUnitFile)
-		if err != nil && !os.IsNotExist(err) {
-			ctx.logger.Error("failed to remove service unit file: %v", err)
-		}
-	}
-
-	// Previous a file at target path, move back into place
-	if step.backupCreated {
-		ctx.logger.Verbose("Restoring previous unit file from '%s' to '%s'", step.backupUnitFile, step.serviceUnitFile)
-
-		err := os.Rename(step.backupUnitFile, step.serviceUnitFile)
-		if err != nil {
-			ctx.logger.Error("failed to restore backup: %v", err)
-		} else {
-			dir, err := os.Open(filepath.Dir(step.serviceUnitFile))
-			if err != nil {
-				ctx.logger.Error("failed to open unit file directory: %v", err)
-			} else {
-				err = dir.Sync()
-				if err != nil {
-					ctx.logger.Error("failed to sync unit file directory: %v", err)
-				}
-				_ = dir.Close()
-			}
-		}
-	}
+	restoreBkpFile(ctx, step.backupUnitFile, step.serviceUnitFile, step.installedNew, step.backupCreated)
 }
 
 // Enabling service if install succeeded (don't want service enabled if install fails somewhere)
@@ -175,7 +145,7 @@ func (step *InstallSystemdStep) PostApply(ctx *context) {
 		// Disabled status is exit code 1
 	}
 
-	if strings.ToLower(enableStatus) != "enabled" {
+	if !strings.EqualFold(enableStatus, "enabled") {
 		command := exec.Command("systemctl", "enable", unitName)
 		output, err = command.CombinedOutput()
 		if err != nil {
@@ -215,7 +185,7 @@ func (step *InstallSystemdStep) Uninstall(ctx *context) (err error) {
 	}
 	enableStatus := strings.Trim(string(output), "\n")
 
-	if strings.ToLower(enableStatus) == "enabled" {
+	if strings.EqualFold(enableStatus, "enabled") {
 		command := exec.Command("systemctl", "disable", unitName)
 		output, err = command.CombinedOutput()
 		if err != nil {

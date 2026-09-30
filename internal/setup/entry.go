@@ -119,7 +119,7 @@ func (inst *Installer) RunUninstall() (err error) {
 		}
 		input = strings.TrimSpace(input)
 
-		if strings.ToLower(input) != "yes" {
+		if !strings.EqualFold(input, "yes") {
 			fmt.Printf("Aborting uninstall\n")
 			return
 		}

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func New(mgrs shared.Managers, interval time.Duration, maximumMetricAge time.Duration) (new *Gatherer) {
+func New(mgrs shared.Managers, interval, maximumMetricAge time.Duration) (new *Gatherer) {
 	new = &Gatherer{
 		Registry:  metrics.New(),
 		Mgrs:      mgrs,

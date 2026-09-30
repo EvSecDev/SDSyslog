@@ -18,7 +18,6 @@ func New[valueType any](
 	initialCapacity uint64,
 	minCapacity global.MinValue,
 	maxCapacity global.MaxValue) (new *Queue[valueType], err error) {
-
 	qInst, err := newQueueInst[valueType](namespace, initialCapacity)
 	if err != nil {
 		return

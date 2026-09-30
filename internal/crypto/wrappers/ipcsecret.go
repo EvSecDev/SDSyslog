@@ -20,7 +20,7 @@ func getSharedSecretSafeFail() (programSecret []byte, err error) {
 // Sets up shared secret getter function injecting the derived secret from the private key to the local scope.
 // Does not set the function if key is empty. Will throw error if function is not initialized and no key is provided.
 func SetupGetSharedSecret(serverPriv []byte) (err error) {
-	if len(serverPriv) <= 0 {
+	if len(serverPriv) == 0 {
 		if GetSharedSecret == nil {
 			err = fmt.Errorf("provided no private key and shared secret function is not already initialized")
 		}

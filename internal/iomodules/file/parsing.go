@@ -201,7 +201,7 @@ func withCurrentYear(old time.Time) (new time.Time) {
 }
 
 // Replaces empty fields with expected defaults
-func setDefaults(old *protocol.Message, raw string, localHostname string) (new *protocol.Message) {
+func setDefaults(old *protocol.Message, raw, localHostname string) (new *protocol.Message) {
 	new = old
 	if new.Timestamp.IsZero() {
 		new.Timestamp = time.Now()

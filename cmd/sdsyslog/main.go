@@ -39,12 +39,12 @@ func main() {
 
 	// Program-wide context
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	// Cache our executable path
 	exePath, err := os.Executable()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to get executable path: %v\n", err)
+		cancel()
 		os.Exit(1)
 	}
 	ctx = context.WithValue(ctx, global.CtxExePathKey, exePath)
@@ -73,6 +73,7 @@ func main() {
 		}
 	default:
 		cli.PrintHelpMenu(commandFlags, "root", cliOpts)
+		cancel()
 		os.Exit(1)
 	}
 

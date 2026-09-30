@@ -129,7 +129,7 @@ func (step *InstallConfigStep) Apply(ctx *context) (err error) {
 			}()
 			step.privKeyCreated = true
 
-			_, err = privKeyFile.Write([]byte(base64.StdEncoding.EncodeToString(private)))
+			_, err = privKeyFile.WriteString(base64.StdEncoding.EncodeToString(private))
 			if err != nil {
 				err = fmt.Errorf("failed to write new private key: %w", err)
 				return

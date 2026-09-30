@@ -17,7 +17,7 @@ func matchesNamespace(metricNS, queryNS []string) (matches bool) {
 	if len(metricNS) < len(queryNS) {
 		return
 	}
-	for i := range len(queryNS) {
+	for i := range queryNS {
 		if metricNS[i] != queryNS[i] {
 			return
 		}

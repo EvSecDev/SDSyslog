@@ -144,7 +144,7 @@ func (mod *InModule) fileReadAll(ctx context.Context, lineBuf *[]byte, buf []byt
 
 // Steps through raw data from file and extracts lines
 func (mod *InModule) processFileChunk(ctx context.Context, lineBuf *[]byte, buf []byte) {
-	for i := range len(buf) {
+	for i := range buf {
 		char := buf[i]
 
 		if char != '\n' {

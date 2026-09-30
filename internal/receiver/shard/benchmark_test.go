@@ -87,7 +87,7 @@ func BenchmarkQueue_Scaling(b *testing.B) {
 	)
 
 	// Sub-linear growth
-	for i := range len(msgSizes) {
+	for i := range msgSizes {
 		for j := i + 1; j < len(msgSizes); j++ {
 			n1, n2 := msgSizes[i], msgSizes[j]
 			t1, t2 := results[n1], results[n2]

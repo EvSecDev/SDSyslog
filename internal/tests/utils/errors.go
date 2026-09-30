@@ -46,16 +46,17 @@ func MatchLogCtxErrors(ctx context.Context, searchFilter string, excludeFilters 
 
 	// Create specific errors for each possible condition
 	if searchFilter != "" {
-		if !foundMatch && len(extraErrors) == 0 {
+		switch {
+		case !foundMatch && len(extraErrors) == 0:
 			err = fmt.Errorf("expected error '%s', but got none", searchFilter)
 			return
-		} else if !foundMatch && len(extraErrors) > 0 {
+		case !foundMatch && len(extraErrors) > 0:
 			err = fmt.Errorf("expected error '%s', but only found:\n%v", searchFilter, extraErrors)
 			return
-		} else if foundMatch && len(extraErrors) == 0 {
+		case foundMatch && len(extraErrors) == 0:
 			matches = true
 			return
-		} else if foundMatch && len(extraErrors) > 0 {
+		case foundMatch && len(extraErrors) > 0:
 			err = fmt.Errorf("expected only error '%s', but also found:\n%v", searchFilter, extraErrors)
 			return
 		}
@@ -71,11 +72,12 @@ func MatchLogCtxErrors(ctx context.Context, searchFilter string, excludeFilters 
 // Matches is true when gotError contains expectedError
 func MatchErrorString(gotError error, expectedError string) (matches bool, err error) {
 	if gotError != nil {
-		if expectedError == "" {
+		switch {
+		case expectedError == "":
 			err = fmt.Errorf("expected no error, but got '%w'", gotError)
-		} else if strings.Contains(gotError.Error(), expectedError) {
+		case strings.Contains(gotError.Error(), expectedError):
 			matches = true
-		} else {
+		default:
 			err = fmt.Errorf("expected error '%s', but got error '%w'", expectedError, gotError)
 		}
 	} else {
@@ -90,11 +92,12 @@ func MatchErrorString(gotError error, expectedError string) (matches bool, err e
 // Matches is true when  present. Mismatches reported in err
 func MatchWrappedError(gotError error, expectedError error) (matches bool, err error) {
 	if gotError != nil {
-		if expectedError == nil {
+		switch {
+		case expectedError == nil:
 			err = fmt.Errorf("expected no error, but got '%w'", gotError)
-		} else if errors.Is(gotError, expectedError) {
+		case errors.Is(gotError, expectedError):
 			matches = true
-		} else {
+		default:
 			err = fmt.Errorf("expected error '%w', but got error '%w'", expectedError, gotError)
 		}
 	} else {

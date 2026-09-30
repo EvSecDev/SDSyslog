@@ -125,11 +125,12 @@ func (session *Session) WaitShardCheck() (err error) {
 // Sends current shard status to client
 func (session *Session) SendShardStatus(running bool, draining bool) (err error) {
 	var body byte
-	if running && !draining {
+	switch {
+	case running && !draining:
 		body = byte(shardRunning)
-	} else if draining {
+	case draining:
 		body = byte(shardDraining)
-	} else {
+	default:
 		body = byte(shardShutdown)
 	}
 

@@ -18,11 +18,12 @@ func getTransportOverhead(destination string, protocol string) (overhead int, er
 		transportLayerOverhead = udpOverhead
 	}
 
-	if strings.Contains(destination, ":") {
+	switch {
+	case strings.Contains(destination, ":"):
 		overhead = ip6Overhead + transportLayerOverhead
-	} else if strings.Contains(destination, ".") {
+	case strings.Contains(destination, "."):
 		overhead = ip4Overhead + transportLayerOverhead
-	} else {
+	default:
 		err = fmt.Errorf("unsupported destination address '%v'", destination)
 		return
 	}

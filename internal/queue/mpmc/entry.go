@@ -178,19 +178,24 @@ func (container *Queue[T]) Push(value T, size uint64) (err error) {
 		cell = &queue.buf[pos&queue.mask.Load()]
 		seq = cell.seq.Load()
 
-		if seq == pos {
+		done := false
+		switch {
+		case seq == pos:
 			if queue.tail.CompareAndSwap(pos, pos+1) {
 				queue.Metrics.PushSuccess.Add(1)
-				break
+				done = true
 			}
 			queue.Metrics.PushCASRetries.Add(1)
-		} else if seq < pos {
+		case seq < pos:
 			queue.Metrics.PushSeqBehindTail.Add(1)
 			err = fmt.Errorf("queue is full (size %d)", queue.Size)
 			return
-		} else {
+		default:
 			queue.Metrics.PushStaleRetries.Add(1)
 			runtime.Gosched() // yield then retry
+		}
+		if done {
+			break
 		}
 	}
 

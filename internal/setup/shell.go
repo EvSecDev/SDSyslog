@@ -98,14 +98,15 @@ func (step *InstallAutocompleteStep) Uninstall(ctx *context) (err error) {
 	autoCompleteFilePath := filepath.Join(sysAutocompleteDir, global.ProgBaseName)
 
 	_, err = os.Stat(autoCompleteFilePath)
-	if err != nil && !os.IsNotExist(err) {
+	switch {
+	case err != nil && !os.IsNotExist(err):
 		// Unable to stat
 		err = fmt.Errorf("failed to stat system autocomplete file: %w", err)
 		return
-	} else if err != nil && os.IsNotExist(err) {
+	case err != nil && os.IsNotExist(err):
 		// File already removed
 		err = nil
-	} else {
+	default:
 		// File present
 		err = os.Remove(autoCompleteFilePath)
 		if err != nil && !os.IsNotExist(err) {

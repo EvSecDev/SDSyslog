@@ -239,11 +239,12 @@ func setDefaults(old *protocol.Message, raw string, localHostname string) (new *
 // Fmt: '2020-01-01T10:10:10.123456789Z Server01 MyApp[1234]: Daemon: [INFO]: this is a log message'
 func formatAsText(ctx context.Context, msg *protocol.Payload) (text string) {
 	var remoteID string
-	if msg.RemoteIP.IsValid() && msg.Hostname != "" {
+	switch {
+	case msg.RemoteIP.IsValid() && msg.Hostname != "":
 		remoteID = msg.RemoteIP.String() + "/" + msg.Hostname
-	} else if !msg.RemoteIP.IsValid() {
+	case !msg.RemoteIP.IsValid():
 		remoteID = msg.Hostname
-	} else if msg.Hostname == "" {
+	case msg.Hostname == "":
 		remoteID = msg.RemoteIP.String()
 	}
 

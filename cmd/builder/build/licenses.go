@@ -34,13 +34,14 @@ func checkPackageLicenses(ctx *context, verboseMode bool) (err error) {
 		var licenseName string
 		var license, warning string
 		license, warning, err = getModuleLicense(module)
-		if err != nil {
+		switch {
+		case err != nil:
 			err = fmt.Errorf("module %s: %w", module, err)
 			return
-		} else if warning != "" {
+		case warning != "":
 			printWarn(2, "module %s: %s", module, warning)
 			licenseName = "UNKNOWN"
-		} else {
+		default:
 			// Got a license, extract name
 			licenseName = extractLicenseName(license)
 		}
@@ -50,16 +51,17 @@ func checkPackageLicenses(ctx *context, verboseMode bool) (err error) {
 		// Policy enforcement
 		isPermitted := slices.Contains(ctx.cfg.License.Permitted, licenseName)
 		isDisallowed := slices.Contains(ctx.cfg.License.Disallowed, licenseName)
-		if isDisallowed {
+		switch {
+		case isDisallowed:
 			fmt.Printf("  %s[-] DISALLOWED%s   : %s%s- %s\n",
 				colorRed, noColor, module, strings.Repeat(" ", spaceDelimiterLen), licenseName)
 			foundDisallowed = true
-		} else if isPermitted {
+		case isPermitted:
 			if verboseMode {
 				fmt.Printf("  %s[+] VALID     %s   : %s%s- %s\n",
 					colorGreen, noColor, module, strings.Repeat(" ", spaceDelimiterLen), licenseName)
 			}
-		} else {
+		default:
 			fmt.Printf("  %s[?] UNCLASSIFIED%s : %s%s- %s\n",
 				colorYellow, noColor, module, strings.Repeat(" ", spaceDelimiterLen), licenseName)
 			foundDisallowed = true

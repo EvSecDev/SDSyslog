@@ -231,18 +231,19 @@ func DeconstructPayload(proto *innerWireFormat) (validated *Payload, err error) 
 	validated.Hostname = string(proto.Hostname)
 
 	pubKey, knownHost := wrappers.LookupPinnedSender(validated.Hostname)
-	if knownHost && proto.SignatureID == 0 {
+	switch {
+	case knownHost && proto.SignatureID == 0:
 		// Pinned key without signature - Drop
 		err = fmt.Errorf("%w: sender has a pinned key but received packet has no signature",
 			ErrInvalidPayload)
 		return
-	} else if !knownHost && proto.SignatureID == 0 {
+	case !knownHost && proto.SignatureID == 0:
 		// No pinned key and no signature - allow and mark untrusted
 		validated.Hostname = HostPrefixUnverified + validated.Hostname
-	} else if !knownHost && proto.SignatureID != 0 {
+	case !knownHost && proto.SignatureID != 0:
 		// No pinned key and gratuitous signature - no verification attempt, mark as unknown
 		validated.Hostname = HostPrefixUnkSig + validated.Hostname
-	} else if knownHost && proto.SignatureID != 0 {
+	case knownHost && proto.SignatureID != 0:
 		// Pinned key with signature: verify timestamp and hostname
 		bytesToVerify := SerializeSignature(proto.Hostname, proto.HostID, proto.Timestamp)
 		var valid bool

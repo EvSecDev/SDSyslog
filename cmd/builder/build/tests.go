@@ -390,20 +390,24 @@ func (testCoverages *testCoverageStore) formatCoverageInfo(ctx *context, testNam
 
 	// Build diff line
 	var commitDiff, buildDiff string
-	if diffSinceCommit > 0 {
+	switch {
+	case diffSinceCommit > 0:
 		commitDiff = fmt.Sprintf("%s%+.2f%%%s", colorGreen, diffSinceCommit, noColor)
-	} else if diffSinceCommit < 0 {
+	case diffSinceCommit < 0:
 		commitDiff = fmt.Sprintf("%s%+.2f%%%s", colorRed, diffSinceCommit, noColor)
-	} else if diffSinceCommit == 0 {
+	case diffSinceCommit == 0:
 		commitDiff = fmt.Sprintf("%sno change%s", colorBold, noColor)
 	}
-	if diffSinceBuild > 0 {
+
+	switch {
+	case diffSinceBuild > 0:
 		buildDiff = fmt.Sprintf("%s%+.2f%%%s", colorGreen, diffSinceBuild, noColor)
-	} else if diffSinceBuild < 0 {
+	case diffSinceBuild < 0:
 		buildDiff = fmt.Sprintf("%s%+.2f%%%s", colorRed, diffSinceBuild, noColor)
-	} else if diffSinceBuild == 0 {
+	case diffSinceBuild == 0:
 		buildDiff = fmt.Sprintf("%sno change%s", colorBold, noColor)
 	}
+
 	covDiff := fmt.Sprintf("(Coverage Diff Since Last: build=%s; commit=%s)", buildDiff, commitDiff)
 
 	covInfo = fmt.Sprintf("%s Coverage: %s%s%s%s %s",

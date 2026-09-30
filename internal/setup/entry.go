@@ -152,13 +152,14 @@ func (inst *Installer) RunUninstall() (err error) {
 		log.Dedent()
 	}
 
-	if inst.ctx.dryRun && failureCount > 0 {
+	switch {
+	case inst.ctx.dryRun && failureCount > 0:
 		log.Info("Uninstall dry-run completed with problems")
-	} else if inst.ctx.dryRun && failureCount == 0 {
+	case inst.ctx.dryRun && failureCount == 0:
 		log.Success("Uninstall dry-run completed successfully")
-	} else if failureCount > 0 {
+	case failureCount > 0:
 		log.Info("Uninstall completed with problems")
-	} else if failureCount == 0 {
+	case failureCount == 0:
 		log.Success("Uninstall completed successfully")
 	}
 	return

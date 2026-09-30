@@ -52,40 +52,40 @@ func SetupMode(cliOpts *CommandSet, commandname string, args []string) {
 	}
 
 	var defaultSuiteID uint8 = 1
-
-	if newKeyPair {
+	switch {
+	case newKeyPair:
 		err = setup.GeneratePrivateKeys(defaultSuiteID)
-	} else if newSigningKeys {
+	case newSigningKeys:
 		err = setup.GenerateSigningKeys(defaultSuiteID)
-	} else if newSendConf {
+	case newSendConf:
 		err = setup.CreateSendTemplateConfig(confPath)
-	} else if newRecvConf {
+	case newRecvConf:
 		err = setup.CreateRecvTemplateConfig(confPath)
-	} else if installSender {
+	case installSender:
 		var inst *setup.Installer
 		inst, err = setup.NewInstaller(global.SendMode, defaultSuiteID, dryRun, verbose)
 		if err == nil {
 			err = inst.RunInstall()
 		}
-	} else if installReceiver {
+	case installReceiver:
 		var inst *setup.Installer
 		inst, err = setup.NewInstaller(global.RecvMode, defaultSuiteID, dryRun, verbose)
 		if err == nil {
 			err = inst.RunInstall()
 		}
-	} else if uninstallSender {
+	case uninstallSender:
 		var inst *setup.Installer
 		inst, err = setup.NewInstaller(global.SendMode, defaultSuiteID, dryRun, verbose)
 		if err == nil {
 			err = inst.RunUninstall()
 		}
-	} else if uninstallReceiver {
+	case uninstallReceiver:
 		var inst *setup.Installer
 		inst, err = setup.NewInstaller(global.RecvMode, defaultSuiteID, dryRun, verbose)
 		if err == nil {
 			err = inst.RunUninstall()
 		}
-	} else {
+	default:
 		PrintHelpMenu(commandFlags, commandname, cliOpts)
 		os.Exit(1)
 	}

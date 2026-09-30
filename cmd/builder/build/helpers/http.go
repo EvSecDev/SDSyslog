@@ -15,11 +15,12 @@ func HTTPCheckResp(response *http.Response) (body []byte, err error) {
 
 	if response.StatusCode < 200 && response.StatusCode > 299 {
 		var respDetails string
-		if len(body) == 0 {
+		switch {
+		case len(body) == 0:
 			respDetails = "[empty body]"
-		} else if len(body) > 1000 {
+		case len(body) > 1000:
 			respDetails = "[body too large for display]"
-		} else {
+		default:
 			respDetails = string(body)
 		}
 		err = fmt.Errorf("remote sent non-200 status: %d: %s",

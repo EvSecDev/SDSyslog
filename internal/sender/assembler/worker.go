@@ -5,6 +5,7 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/pkg/protocol"
 	"time"
 )
@@ -58,7 +59,7 @@ func (instance *Instance) run() {
 				return
 			}
 			// Subtract data size from sum
-			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(container.Size()), 4)
+			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, parsing.ToUint64(container.Size()), 4)
 
 			// In-module added fields
 			customFields := make(map[string]any)

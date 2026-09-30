@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/queue/mpmc"
 )
 
@@ -30,7 +31,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context) (new *Manager, err 
 
 	// Setup input queue
 	inQueue, err := mpmc.New[[]byte](logctx.GetTagList(ctx),
-		uint64(config.MinQueueCapacity),
+		parsing.ToUint64(int(config.MinQueueCapacity)),
 		config.MinQueueCapacity,
 		config.MaxQueueCapacity)
 	if err != nil {

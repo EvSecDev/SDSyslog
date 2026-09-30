@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/pkg/protocol"
 	"sync/atomic"
 	"time"
@@ -96,7 +97,7 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 
 	// Store fragment by sequence number
 	bucket.Fragments[fragment.MessageSeq] = fragment
-	queue.Metrics.Bytes.Add(uint64(fragment.Size()))
+	queue.Metrics.Bytes.Add(parsing.ToUint64(fragment.Size()))
 
 	// Check if bucket is now filled
 	if len(bucket.Fragments) == bucket.maxSeq+1 {

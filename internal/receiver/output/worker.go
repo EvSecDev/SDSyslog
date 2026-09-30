@@ -6,6 +6,7 @@ import (
 	"runtime/debug"
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/pkg/protocol"
 	"syscall"
 	"time"
@@ -45,7 +46,7 @@ func (instance *Instance) run(ctx context.Context) {
 			popCh <- msg
 			// Subtract data size from sum
 			size := msg.Size()
-			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(size), 4)
+			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, parsing.ToUint64(size), 4)
 		}
 	}()
 

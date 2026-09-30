@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 )
 
 // Sender: Starts background writer to pull events from logger, format, and write to destination queue
@@ -26,7 +27,7 @@ func (injector *SenderInjector) run(eventChan <-chan logctx.Event) {
 				fmt.Fprintf(os.Stderr, "Failed to format log event: %v", err)
 				continue
 			}
-			err = injector.outbox.Push(newMsg, uint64(newMsg.Size()))
+			err = injector.outbox.Push(newMsg, parsing.ToUint64(newMsg.Size()))
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to push log event to queue: %v", err)
 				continue
@@ -68,7 +69,7 @@ func (injector *ReceiverInjector) run(eventChan <-chan logctx.Event) {
 				fmt.Fprintf(os.Stderr, "Failed to format log event: %v", err)
 				continue
 			}
-			err = injector.outbox.Push(newMsg, uint64(newMsg.Size()))
+			err = injector.outbox.Push(newMsg, parsing.ToUint64(newMsg.Size()))
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to push log event to queue: %v", err)
 				continue

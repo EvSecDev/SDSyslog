@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/protocol"
 )
@@ -22,7 +23,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context) (new *Manager, err 
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	inbox, err := mpmc.New[*protocol.Payload](logctx.GetTagList(ctx),
-		uint64(config.MinQueueCapacity),
+		parsing.ToUint64(int(config.MinQueueCapacity)),
 		config.MinQueueCapacity,
 		config.MaxQueueCapacity)
 	if err != nil {

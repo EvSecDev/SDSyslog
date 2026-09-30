@@ -2,6 +2,7 @@
 package calc
 
 import (
+	"sdsyslog/internal/parsing"
 	"slices"
 )
 
@@ -37,7 +38,7 @@ func TrimmedMeanUint64(values []uint64, trimPercent float64) (mean uint64) {
 		sum += v
 	}
 
-	mean = sum / uint64(count)
+	mean = sum / parsing.ToUint64(count)
 	return
 }
 

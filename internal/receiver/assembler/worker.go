@@ -4,6 +4,7 @@ import (
 	"context"
 	"runtime/debug"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/receiver/shard"
 	"sdsyslog/pkg/protocol"
 	"time"
@@ -78,7 +79,7 @@ func (instance *Instance) run() {
 			}
 
 			// Push combined message to Stage 4 queue
-			err = instance.outbox.PushWithRetry(finalMsg, uint64(finalMsg.Size()), 10)
+			err = instance.outbox.PushWithRetry(finalMsg, parsing.ToUint64(finalMsg.Size()), 10)
 			if err != nil {
 				logctx.LogStdErr(ctx,
 					"Failed to push message to output queue: host id %d, message id %d, hostname %s: %w\n",

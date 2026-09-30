@@ -7,6 +7,7 @@ import (
 	"sdsyslog/internal/crypto/random"
 	"sdsyslog/internal/logctx"
 	"sdsyslog/internal/network"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/pkg/crypto/registry"
 	"sdsyslog/pkg/protocol"
@@ -46,7 +47,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context, outbox *mpmc.Queue[
 	}
 
 	inbox, err := mpmc.New[*protocol.Message](logctx.GetTagList(ctx),
-		uint64(config.MinQueueCapacity),
+		parsing.ToUint64(int(config.MinQueueCapacity)),
 		config.MinQueueCapacity,
 		config.MaxQueueCapacity)
 	if err != nil {

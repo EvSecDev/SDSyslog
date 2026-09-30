@@ -3,6 +3,7 @@ package mpmc
 import (
 	"context"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 
 	"github.com/pbnjay/memory"
 )
@@ -25,7 +26,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 	// Check memory usage
 	availMem := memory.FreeMemory()
 	currentByteSize := activeQueue.Metrics.Bytes.Load()
-	currentSizePerItem := currentByteSize / uint64(currentCapacity)
+	currentSizePerItem := currentByteSize / parsing.ToUint64(currentCapacity)
 
 	// Estimate new queue maximum memory size in bytes
 	expectedMaxNewQueueMemSize := uint64((nextPowerOfTwo(currentCapacity)) * int(currentSizePerItem))
@@ -45,7 +46,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 	}
 
 	if scaleUp {
-		newSize := uint64(nextPowerOfTwo(currentCapacity + 1))
+		newSize := parsing.ToUint64(nextPowerOfTwo(currentCapacity + 1))
 
 		err := container.mutateSize(newSize)
 		if err != nil {
@@ -56,7 +57,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 		logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.InfoLog,
 			"Scaled up queue from %d to %d capacity\n", currentCapacity, nextPowerOfTwo(currentCapacity))
 	} else if scaleDown {
-		newSize := uint64(prevPowerOfTwo(currentCapacity))
+		newSize := parsing.ToUint64(prevPowerOfTwo(currentCapacity))
 
 		err := container.mutateSize(newSize)
 		if err != nil {

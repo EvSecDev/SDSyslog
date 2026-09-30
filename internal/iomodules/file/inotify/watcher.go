@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"sdsyslog/internal/logctx"
 	"time"
 
@@ -156,6 +157,10 @@ func (watcher *Watcher) rotateInode() (err error) {
 		var newFileFD int
 		newFileFD, err = unix.InotifyAddWatch(watcher.instanceFD, watcher.path, unix.IN_MODIFY|unix.IN_CLOSE_WRITE)
 		if err == nil {
+			if newFileFD > math.MaxInt32 {
+				err = fmt.Errorf("fd number too large: newFileFD")
+				return
+			}
 			watcher.fileFD.Store(int32(newFileFD))
 			return
 		}

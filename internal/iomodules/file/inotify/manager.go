@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"path/filepath"
 	"sdsyslog/internal/logctx"
 
@@ -41,6 +42,12 @@ func New(ctx context.Context, fileToWatch string) (new *Watcher, err error) {
 		err = fmt.Errorf("failed to create epoll: %w", err)
 		return
 	}
+
+	if new.instanceFD > math.MaxInt32 {
+		err = fmt.Errorf("fd number too large: instanceFD")
+		return
+	}
+
 	err = unix.EpollCtl(new.epollFD, unix.EPOLL_CTL_ADD, new.instanceFD,
 		&unix.EpollEvent{
 			Events: unix.EPOLLIN | unix.EPOLLERR | unix.EPOLLHUP,
@@ -48,6 +55,11 @@ func New(ctx context.Context, fileToWatch string) (new *Watcher, err error) {
 		})
 	if err != nil {
 		err = fmt.Errorf("failed to add inotify fd to epoll: %w", err)
+		return
+	}
+
+	if new.wakeFD > math.MaxInt32 {
+		err = fmt.Errorf("fd number too large: wakeFD")
 		return
 	}
 
@@ -70,6 +82,10 @@ func New(ctx context.Context, fileToWatch string) (new *Watcher, err error) {
 		err = fmt.Errorf("failed to add log file '%s' to inotify watcher: %w", new.path, err)
 		return
 	}
+	if watchDescriptorFile > math.MaxInt32 {
+		err = fmt.Errorf("fd number too large: watchDescriptorFile")
+		return
+	}
 	new.fileFD.Store(int32(watchDescriptorFile))
 
 	// Add watcher for the log dir
@@ -79,6 +95,10 @@ func New(ctx context.Context, fileToWatch string) (new *Watcher, err error) {
 		unix.IN_MOVED_TO|unix.IN_DELETE|unix.IN_CREATE)
 	if err != nil {
 		err = fmt.Errorf("failed to add directory '%s' to inotify watcher: %w", logDirectory, err)
+		return
+	}
+	if watchDescriptorDir > math.MaxInt32 {
+		err = fmt.Errorf("fd number too large: watchDescriptorDir")
 		return
 	}
 	new.dirFD.Store(int32(watchDescriptorDir))

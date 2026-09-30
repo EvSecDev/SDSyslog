@@ -8,6 +8,7 @@ import (
 	"sdsyslog/internal/atomics"
 	"sdsyslog/internal/global"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sync/atomic"
 	"time"
 )
@@ -128,7 +129,7 @@ func (container *Queue[T]) PushBlocking(ctx context.Context, value T, size int) 
 		case <-ctx.Done():
 			return
 		default:
-			err := container.Push(value, uint64(size)) // try once
+			err := container.Push(value, parsing.ToUint64(size)) // try once
 			if err == nil {
 				return
 			}

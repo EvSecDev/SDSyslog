@@ -2,6 +2,7 @@ package output
 
 import (
 	"sdsyslog/internal/metrics"
+	"sdsyslog/internal/parsing"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -38,7 +39,7 @@ func (instance *Instance) writeModuleMetrics(moduleName string, msgsWritten int)
 	if !ok {
 		return
 	}
-	atomicVal.Add(uint64(msgsWritten))
+	atomicVal.Add(parsing.ToUint64(msgsWritten))
 	instance.Metrics.successfulWrites[moduleName] = atomicVal
 }
 

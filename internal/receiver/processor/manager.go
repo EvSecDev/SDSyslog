@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sdsyslog/internal/logctx"
+	"sdsyslog/internal/parsing"
 	"sdsyslog/internal/queue/mpmc"
 	"sdsyslog/internal/receiver/listener"
 	"sdsyslog/internal/receiver/shard"
@@ -23,7 +24,7 @@ func (config *ManagerConfig) NewManager(ctx context.Context, shardRouting shard.
 	defer func() { ctx = logctx.RemoveLastCtxTag(ctx) }()
 
 	inQueue, err := mpmc.New[listener.Container](logctx.GetTagList(ctx),
-		uint64(config.MinQueueCapacity),
+		parsing.ToUint64(int(config.MinQueueCapacity)),
 		config.MinQueueCapacity,
 		config.MaxQueueCapacity)
 	if err != nil {

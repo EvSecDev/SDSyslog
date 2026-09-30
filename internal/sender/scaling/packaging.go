@@ -23,7 +23,12 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 	const pastNIntervals = 5
 
 	// Get the last x scaling polling intervals worth of load data and average
-	metricResults := metricStore.Search(mpmc.MTDepth, []string{logctx.NSRecv, logctx.NSmPack}, time.Now().Add(-time.Duration(pastNIntervals)*interval), time.Now())
+	metricResults := metricStore.Search(
+		mpmc.MTDepth,
+		[]string{logctx.NSRecv, logctx.NSmPack},
+		time.Now().Add(-time.Duration(pastNIntervals)*interval),
+		time.Now(),
+	)
 	if len(metricResults) < pastNIntervals {
 		// Not enough data, ignoring
 		return

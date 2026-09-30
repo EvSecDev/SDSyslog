@@ -12,7 +12,12 @@ import (
 )
 
 // Handles metric search requests based on time for data
-func handleBulk(baseCtx context.Context, search DataSearcher, aggregate AggSearcher, serverResponder http.ResponseWriter, clientRequest *http.Request) {
+func handleBulk(baseCtx context.Context,
+	search DataSearcher,
+	aggregate AggSearcher,
+	serverResponder http.ResponseWriter,
+	clientRequest *http.Request,
+) {
 	baseCtx = logctx.AppendCtxTag(baseCtx, logctx.NSMetricBulk)
 	baseCtx = logctx.AppendCtxTag(baseCtx, clientRequest.RemoteAddr)
 

@@ -137,10 +137,13 @@ linters:
           - embeddedstructfieldcheck
           - goconst
           - varnamelen
+          - gocritic
       - linters: [staticcheck]
         text: 'package comment should be of the form'
       - linters: [nilerr]
         text: 'error is nil \(.*\) but it returns error'
+      - linters: [gocritic]
+        text: 'may want to remove commented-out code'
 
 formatters:
   enable:

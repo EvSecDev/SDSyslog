@@ -26,7 +26,7 @@ func (mf MessageFilter) Match(msg *Message) (msgMatch bool) {
 	if mf.FieldsValue != nil {
 		valMatched := false
 		for _, val := range msg.Fields {
-			textVal := []byte(fmt.Sprint(val))
+			textVal := fmt.Append(nil, val)
 			valMatched = mf.FieldsValue.Match(textVal)
 			if valMatched {
 				break

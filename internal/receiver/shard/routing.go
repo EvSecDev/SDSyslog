@@ -17,7 +17,12 @@ import (
 
 // Route a fragment to a shard/process. Deterministic for all fragments of a message.
 // Dynamically reroutes and tracks when targeted shard/process is shutdown.
-func RouteFragment(ctx context.Context, rv RoutingView, remoteAddress netip.Addr, fragment *protocol.Payload, processingStartTime time.Time) (success bool) {
+func RouteFragment(ctx context.Context,
+	rv RoutingView,
+	remoteAddress netip.Addr,
+	fragment *protocol.Payload,
+	processingStartTime time.Time,
+) (success bool) {
 	// Identifier for all fragments within a given message per host
 	var builder strings.Builder
 	builder.Grow(len(remoteAddress.String()) + 32)

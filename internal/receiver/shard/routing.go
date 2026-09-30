@@ -209,7 +209,7 @@ func routeSelect(key string, candidates []string) (primary, secondary string) {
 	hashID := binary.BigEndian.Uint64(sum[:8]) % uint64(candidateNum)
 
 	// Map to primary index
-	idx := int(hashID % uint64(candidateNum))
+	idx := int(hashID % uint64(candidateNum)) //nolint:gosec // G115: hashID < candidateNum which is a small int
 	primary = candidates[idx]
 
 	// Deterministic secondary fallback: pick the next candidate (wrap around)

@@ -29,7 +29,7 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 		valType = ContextSliceBytes
 
 		valueSize := rv.Bytes()
-		err = binary.Write(&buf, binary.BigEndian, uint32(len(valueSize)))
+		err = binary.Write(&buf, binary.BigEndian, uint32(len(valueSize))) //nolint:gosec // G115: slice length bounded by protocol
 		if err != nil {
 			return
 		}
@@ -45,7 +45,7 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 			err = fmt.Errorf("failed to assert any value as int8: value=%+v type=%T", value, value)
 			return
 		}
-		buf.WriteByte(byte(val))
+		buf.WriteByte(byte(val)) //nolint:gosec // G115: int8 to byte is safe reinterpretation
 	case reflect.Int16:
 		valType = ContextInt16
 		val, ok := value.(int16)
@@ -128,6 +128,8 @@ func serializeAnyValue(value any) (valType uint8, data []byte, err error) {
 }
 
 // Converts byte format and associated type back to any value
+//
+//nolint:funlen // intentionally long function to handle variety
 func deserializeAnyValue(valType uint8, data []byte) (value any, err error) {
 	buf := bytes.NewReader(data)
 
@@ -183,7 +185,7 @@ func deserializeAnyValue(valType uint8, data []byte) (value any, err error) {
 		if err != nil {
 			return
 		}
-		num := int8(singleByte)
+		num := int8(singleByte) //nolint:gosec // G115: byte to int8 is safe reinterpretation
 		value = num
 	case ContextInt16:
 		if len(data) != 2 {

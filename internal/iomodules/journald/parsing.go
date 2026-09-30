@@ -69,6 +69,10 @@ func parseFields(fields map[string]string, localHostname string) (message *proto
 		err = fmt.Errorf("journal message priority '%s' is invalid: %w", journalPriority, err)
 		return
 	}
+	if jrnlPriInt < 0 || jrnlPriInt > 255 {
+		err = fmt.Errorf("journal message priority '%d' out of range", jrnlPriInt)
+		return
+	}
 	message.Fields[iomodules.CFseverity], err = syslog.CodeToSeverity(uint16(jrnlPriInt))
 	if err != nil {
 		err = fmt.Errorf("invalid severity '%d': %w", jrnlPriInt, err)
@@ -103,6 +107,10 @@ func parseFields(fields map[string]string, localHostname string) (message *proto
 	jrnlSeverityInt, err := strconv.Atoi(journalFacility)
 	if err != nil {
 		err = fmt.Errorf("journal message priority '%s' is invalid: %w", journalFacility, err)
+		return
+	}
+	if jrnlSeverityInt < 0 || jrnlSeverityInt > 255 {
+		err = fmt.Errorf("journal message facility '%d' out of range", jrnlSeverityInt)
 		return
 	}
 	message.Fields[iomodules.CFfacility], err = syslog.CodeToFacility(uint16(jrnlSeverityInt))

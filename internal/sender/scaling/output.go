@@ -1,3 +1,4 @@
+//nolint:dupl // intentionally mirrors packaging.go structure
 package scaling
 
 import (

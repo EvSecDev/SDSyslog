@@ -28,7 +28,10 @@ func Create(sendMsg *Message, hostID, maxPayloadSize int, cryptoSuite, signature
 	// Create signature pre-fragmentation (signature validation is done in payload construction)
 	if signatureSuite > 0 {
 		bitTime := uint64(newMsg.Timestamp.UnixMilli())
-		bytesToSign := SerializeSignature([]byte(newMsg.Hostname), uint32(newMsg.HostID), bitTime)
+		bytesToSign := SerializeSignature(
+			[]byte(newMsg.Hostname),
+			uint32(newMsg.HostID), bitTime, //nolint:gosec // G115: host ID is a small positive int
+		)
 		newMsg.Signature, err = wrappers.CreateSignature(bytesToSign, signatureSuite)
 		if err != nil {
 			err = fmt.Errorf("%w: %w", ErrCryptoFailure, err)

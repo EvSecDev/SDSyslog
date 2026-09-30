@@ -27,6 +27,8 @@ import (
 )
 
 // Starts pipeline worker threads in background - gracefully shuts down if startup error is encountered
+//
+//nolint:funlen // deferred work - intentionally long for now
 func (daemon *Daemon) Start() (err error) {
 	if !daemon.initSuccess {
 		err = fmt.Errorf("daemon initialization was not called, refusing to start")
@@ -68,8 +70,7 @@ func (daemon *Daemon) Start() (err error) {
 		err = fmt.Errorf("failed starting output: %w", err)
 		return
 	}
-	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
-		"1 output instance started successfully\n")
+	logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog, "1 output instance started successfully\n")
 
 	// Swap internal logger to output if requested
 	if daemon.opts.Outputs.InternalLogs {
@@ -86,8 +87,8 @@ func (daemon *Daemon) Start() (err error) {
 	dfrgMgrConf := &assembler.ManagerConfig{
 		FIPRSocketDirectory: daemon.opts.State.IPCSocketDirectory,
 	}
-	dfrgMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinDefrags))
-	dfrgMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxDefrags))
+	dfrgMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinDefrags)) //nolint:gosec // G115: config value bounded
+	dfrgMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxDefrags)) //nolint:gosec // G115: config value bounded
 	daemon.Mgrs.Assembler, err = dfrgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Output.Inbox)
 	if err != nil {
 		err = fmt.Errorf("failed creating defrag manager: %w", err)
@@ -112,8 +113,8 @@ func (daemon *Daemon) Start() (err error) {
 		PastMsgCutoff:    time.Duration(daemon.opts.ReplayProtection.PastValidityWindow),
 		FutureMsgCutoff:  time.Duration(daemon.opts.ReplayProtection.FutureValidityWindow),
 	}
-	procMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinProcessors))
-	procMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxProcessors))
+	procMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinProcessors)) //nolint:gosec // G115: config value bounded
+	procMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxProcessors)) //nolint:gosec // G115: config value bounded
 	daemon.Mgrs.Proc, err = procMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Assembler.RoutingView)
 	if err != nil {
 		err = fmt.Errorf("failed creating processor manager: %w", err)
@@ -133,8 +134,8 @@ func (daemon *Daemon) Start() (err error) {
 		ListenSocket:           daemon.cfg.sourceSocket,
 		ReplayProtectionWindow: time.Duration(daemon.opts.ReplayProtection.ProtectionWindow),
 	}
-	inMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxListeners))
-	inMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinListeners))
+	inMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxListeners)) //nolint:gosec // G115: config value bounded
+	inMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinListeners)) //nolint:gosec // G115: config value bounded
 	daemon.Mgrs.Input, err = inMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Proc.Inbox)
 	if err != nil {
 		err = fmt.Errorf("failed creating listener manager: %w", err)
@@ -159,9 +160,7 @@ func (daemon *Daemon) Start() (err error) {
 		time.Duration(daemon.opts.Metrics.Interval),
 		time.Duration(daemon.opts.Metrics.MaxAge))
 	workerCtx := daemon.ctx
-	daemon.wg.Go(func() {
-		daemon.metricsCollector.Run(workerCtx)
-	})
+	daemon.wg.Go(func() { daemon.metricsCollector.Run(workerCtx) })
 	daemon.MetricDataSearcher = daemon.metricsCollector.Registry.Search
 	daemon.MetricDiscoverer = daemon.metricsCollector.Registry.Discover
 	daemon.MetricAggregator = daemon.metricsCollector.Registry.Aggregate
@@ -200,9 +199,7 @@ func (daemon *Daemon) Start() (err error) {
 			return
 		}
 
-		daemon.wg.Go(func() {
-			server.Start(serverCtx, daemon.MetricServer)
-		})
+		daemon.wg.Go(func() { server.Start(serverCtx, daemon.MetricServer) })
 	}
 
 	// For update hot-swap/systemd
@@ -223,8 +220,7 @@ func (daemon *Daemon) Start() (err error) {
 	parsedListenAddr := net.JoinHostPort(daemon.cfg.sourceSocket.IP.String(), strconv.Itoa(daemon.cfg.sourceSocket.Port))
 
 	startupElapsed := parsing.TrimDurationPrecision(time.Since(daemon.startTime), 2)
-	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s)\n",
-		startupElapsed, global.ProgVersion)
+	logctx.LogStdInfo(daemon.ctx, "Startup complete in %s (%s)\n", startupElapsed, global.ProgVersion)
 	logctx.LogStdInfo(daemon.ctx, "Listening for messages on %s\n", parsedListenAddr)
 	daemon.startSuccess = true
 	return

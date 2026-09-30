@@ -86,7 +86,7 @@ func (watcher *Watcher) run() {
 // Processes inotify event and sends signals if applicable
 func (watcher *Watcher) processEvent(buf []byte, readEndIndex int) (err error) {
 	var offset uint32
-	for offset+watcher.eventSize <= uint32(readEndIndex) {
+	for offset+watcher.eventSize <= uint32(readEndIndex) { //nolint:gosec // G115: bounded by buffer size
 		// Retrieve the event
 		var event unix.InotifyEvent
 		eventBytes := buf[offset : offset+watcher.eventSize]
@@ -123,7 +123,7 @@ func (watcher *Watcher) processEvent(buf []byte, readEndIndex int) (err error) {
 		//   We only care about when something moved to our file or it was created
 		if isDirEvent && name == watcher.fileName && (isCreate || isMovedTo) {
 			// Cleanup watcher for old inode
-			_, err = unix.InotifyRmWatch(watcher.instanceFD, uint32(watcher.fileFD.Load()))
+			_, err = unix.InotifyRmWatch(watcher.instanceFD, uint32(watcher.fileFD.Load())) //nolint:gosec // G115: fd number is small
 			if err != nil && !errors.Is(err, unix.EINVAL) {
 				logctx.LogStdWarn(watcher.ctx, "failed to remove previous inotify watcher for '%s': %w\n", watcher.path, err)
 			}
@@ -161,7 +161,7 @@ func (watcher *Watcher) rotateInode() (err error) {
 				err = fmt.Errorf("fd number too large: newFileFD")
 				return
 			}
-			watcher.fileFD.Store(int32(newFileFD))
+			watcher.fileFD.Store(int32(newFileFD)) //nolint:gosec // G115: bounded by MaxInt32 check above
 			return
 		}
 

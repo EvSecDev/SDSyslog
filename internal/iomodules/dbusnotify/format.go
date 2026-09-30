@@ -90,7 +90,7 @@ func formatAsNotification(msg *protocol.Payload) (newNotification *notification,
 			"urgency":  dbus.MakeVariant(urgencyLevel),
 			"category": dbus.MakeVariant(global.ProgBaseName + "." + facility + ".alert"),
 		},
-		popupDuration: int32(defaultPopupTime.Milliseconds()),
+		popupDuration: int32(defaultPopupTime.Milliseconds()), //nolint:gosec // G115: constant duration bounded to 10s
 	}
 	return
 }

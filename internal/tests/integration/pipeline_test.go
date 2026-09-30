@@ -60,45 +60,17 @@ func TestSendReceivePipeline(t *testing.T) {
 	testDir := t.TempDir()
 
 	// Daemon config
-	newRecvJSONCfg := receiver.JSONOptions{
-		Network: struct {
-			Address string "json:\"address\""
-			Port    int    "json:\"port\""
-		}{
-			Address: testIP,
-			Port:    global.DefaultReceiverPort,
-		},
-		Metrics: struct {
-			Interval          parsing.Duration "json:\"collectionInterval\""
-			MaxAge            parsing.Duration "json:\"maximumRetention,omitempty\""
-			EnableQueryServer bool             "json:\"enableHTTPQueryServer\""
-			QueryServerPort   int              "json:\"HTTPQueryServerPort\""
-		}{
-			Interval:          parsing.Duration(100 * time.Millisecond), // Setting super fast just for test data collection
-			MaxAge:            parsing.Duration(5 * time.Minute),
-			EnableQueryServer: false,
-		},
-		AutoScaling: struct {
-			Enabled          bool             "json:\"enabled\""
-			PollInterval     parsing.Duration "json:\"pollInterval\""
-			MinListeners     global.MinValue  "json:\"minListeners,omitempty\""
-			MaxListeners     global.MaxValue  "json:\"maxListeners,omitempty\""
-			MinProcessors    global.MinValue  "json:\"minProcessors,omitempty\""
-			MaxProcessors    global.MaxValue  "json:\"maxProcessors,omitempty\""
-			MinProcQueueSize global.MinValue  "json:\"minProcQueueSize,omitempty\""
-			MaxProcQueueSize global.MaxValue  "json:\"maxProcQueueSize,omitempty\""
-			MinDefrags       global.MinValue  "json:\"minAssemblers,omitempty\""
-			MaxDefrags       global.MaxValue  "json:\"maxAssemblers,omitempty\""
-			MinOutQueueSize  global.MinValue  "json:\"minOutQueueSize,omitempty\""
-			MaxOutQueueSize  global.MaxValue  "json:\"maxOutQueueSize,omitempty\""
-		}{
-			Enabled:       true,
-			PollInterval:  parsing.Duration(200 * time.Millisecond),
-			MinListeners:  1,
-			MinProcessors: 1,
-			MinDefrags:    1,
-		},
-	}
+	var newRecvJSONCfg receiver.JSONOptions
+	newRecvJSONCfg.Network.Address = testIP
+	newRecvJSONCfg.Network.Port = global.DefaultReceiverPort
+	newRecvJSONCfg.Metrics.Interval = parsing.Duration(100 * time.Millisecond) // Setting super fast just for test data collection
+	newRecvJSONCfg.Metrics.MaxAge = parsing.Duration(5 * time.Minute)
+	newRecvJSONCfg.Metrics.EnableQueryServer = false
+	newRecvJSONCfg.AutoScaling.Enabled = true
+	newRecvJSONCfg.AutoScaling.PollInterval = parsing.Duration(200 * time.Millisecond)
+	newRecvJSONCfg.AutoScaling.MinListeners = 1
+	newRecvJSONCfg.AutoScaling.MinProcessors = 1
+	newRecvJSONCfg.AutoScaling.MinDefrags = 1
 	daemon, err := setupRecvDaemon(globalCtx, newRecvJSONCfg, testDir, priv, recvOutput)
 	if err != nil {
 		t.Fatalf("%v", err)

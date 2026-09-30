@@ -68,14 +68,16 @@ func (instance *Instance) run() {
 			}
 
 			// Record time metrics post-validation
-			durNs := time.Since(start).Nanoseconds()
-			instance.Metrics.SumNs.Add(uint64(durNs))
-			oldMax := int64(instance.Metrics.MaxNs.Load())
-			for durNs > oldMax {
-				if instance.Metrics.MaxNs.CompareAndSwap(uint64(oldMax), uint64(durNs)) {
+			elapsedNs := uint64(time.Since(start).Nanoseconds()) //nolint:gosec // G115: duration is non-negative
+			instance.Metrics.SumNs.Add(elapsedNs)
+			for {
+				currentMax := instance.Metrics.MaxNs.Load()
+				if elapsedNs <= currentMax {
 					break
 				}
-				oldMax = int64(instance.Metrics.MaxNs.Load())
+				if instance.Metrics.MaxNs.CompareAndSwap(currentMax, elapsedNs) {
+					break
+				}
 			}
 
 			// Push combined message to Stage 4 queue

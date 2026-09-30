@@ -40,7 +40,7 @@ func (session *Session) encodeFrame(op opCode, payload []byte) (wireFrame []byte
 	wireFrame = make([]byte, lenFieldFrameLen+bodyLen)
 
 	// Field: Frame Length
-	binary.BigEndian.PutUint32(wireFrame[0:lenFieldFrameLen], uint32(bodyLen))
+	binary.BigEndian.PutUint32(wireFrame[0:lenFieldFrameLen], uint32(bodyLen)) //nolint:gosec // G115: bounded by maxDataLength
 
 	// Field: Sequence
 	seqStart := lenFieldFrameLen

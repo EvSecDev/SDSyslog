@@ -109,6 +109,7 @@ func NewOutput(filePath string, batchSize int) (module *OutModule, err error) {
 		batchSize = defaultBatchSize
 	}
 
+	//nolint:gosec // intentionally keeping output file readable by group
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o640)
 	if err != nil {
 		return

@@ -26,7 +26,7 @@ func (cache *replayCache) getShard(publicKey []byte) (shard *replayCacheShard) {
 	_, _ = hasher.Write(publicKey) // fnv doesn't actually return an error internally (interface satisfy only)
 	id := hasher.Sum32()
 
-	shardNum := uint32(len(cache.shards))
+	shardNum := uint32(len(cache.shards)) //nolint:gosec // G115: shard count is small
 
 	shard = cache.shards[id%shardNum]
 	return

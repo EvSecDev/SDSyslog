@@ -67,7 +67,7 @@ func (instance *Instance) run() {
 
 				// Otherwise, regular error
 				logctx.LogStdErr(ctx, "Failed reading data from socket: %w\n", err)
-				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
+				instance.Metrics.BusyNs.Add(uint64(time.Since(start))) //nolint:gosec // G115: duration is non-negative
 				return
 			}
 
@@ -82,7 +82,7 @@ func (instance *Instance) run() {
 			suiteInfo, validSuiteID := registry.GetSuiteInfo(payload[0])
 			if len(payload) < instance.minLen || !validSuiteID {
 				instance.Metrics.InvalidPackets.Add(1)
-				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
+				instance.Metrics.BusyNs.Add(uint64(time.Since(start))) //nolint:gosec // G115: duration is non-negative
 				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog,
 					"Received invalid outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
 				return
@@ -93,7 +93,7 @@ func (instance *Instance) run() {
 			pubKey := payload[registry.SuiteIDLen : registry.SuiteIDLen+suiteInfo.KeySize]
 			if instance.isReplayed(pubKey) {
 				instance.Metrics.InvalidPackets.Add(1)
-				instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
+				instance.Metrics.BusyNs.Add(uint64(time.Since(start))) //nolint:gosec // G115: duration is non-negative
 				logctx.LogEvent(ctx, logctx.VerbosityProgress, logctx.WarnLog,
 					"Received replayed outer payload from %s (crypto id %d)\n", remoteAddr.String(), payload[0])
 				return
@@ -104,14 +104,16 @@ func (instance *Instance) run() {
 			newQueueEntry.Meta.RemoteIP = remoteAddr.AddrPort().Addr()
 
 			// Record time metrics post-validation
-			durNs := time.Since(start).Nanoseconds()
-			instance.Metrics.SumNs.Add(uint64(durNs))
-			oldMax := int64(instance.Metrics.MaxNs.Load())
-			for durNs > oldMax {
-				if instance.Metrics.MaxNs.CompareAndSwap(uint64(oldMax), uint64(durNs)) {
+			elapsedNs := uint64(time.Since(start).Nanoseconds()) //nolint:gosec // G115: duration is non-negative
+			instance.Metrics.SumNs.Add(elapsedNs)
+			for {
+				currentMax := instance.Metrics.MaxNs.Load()
+				if elapsedNs <= currentMax {
 					break
 				}
-				oldMax = int64(instance.Metrics.MaxNs.Load())
+				if instance.Metrics.MaxNs.CompareAndSwap(currentMax, elapsedNs) {
+					break
+				}
 			}
 
 			size := len(newQueueEntry.Data) + netipAddrSize
@@ -123,8 +125,8 @@ func (instance *Instance) run() {
 				instance.Metrics.Dropped.Add(1)
 				return
 			}
-			instance.Metrics.ValidPackets.Add(1) // increment pkt count after push (success or not)
-			instance.Metrics.BusyNs.Add(uint64(time.Since(start)))
+			instance.Metrics.ValidPackets.Add(1)                   // increment pkt count after push (success or not)
+			instance.Metrics.BusyNs.Add(uint64(time.Since(start))) //nolint:gosec // G115: duration is non-negative
 		}()
 	}
 }

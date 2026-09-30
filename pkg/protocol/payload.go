@@ -21,10 +21,10 @@ func ConstructPayload(request *Payload, sigID uint8) (proto *innerWireFormat, er
 		err = fmt.Errorf("%w: host ID cannot be zero", ErrInvalidPayload)
 		return
 	}
-	proto.HostID = uint32(request.HostID)
+	proto.HostID = uint32(request.HostID) //nolint:gosec // G115: host ID is a small positive int
 
 	// MessageID
-	proto.MsgID = uint32(request.MsgID)
+	proto.MsgID = uint32(request.MsgID) //nolint:gosec // G115: message ID is a small positive int
 	if request.MsgID == 0 {
 		err = fmt.Errorf("%w: message ID cannot be zero", ErrInvalidPayload)
 		return
@@ -35,8 +35,8 @@ func ConstructPayload(request *Payload, sigID uint8) (proto *innerWireFormat, er
 		err = fmt.Errorf("%w: message sequence cannot be larger than maximum sequence", ErrInvalidPayload)
 		return
 	}
-	proto.MessageSeq = uint16(request.MessageSeq)
-	proto.MessageSeqMax = uint16(request.MessageSeqMax)
+	proto.MessageSeq = uint16(request.MessageSeq)       //nolint:gosec // G115: fragment sequence bounded by protocol
+	proto.MessageSeqMax = uint16(request.MessageSeqMax) //nolint:gosec // G115: fragment sequence bounded by protocol
 
 	// Timestamp: Convert time.Time to epoch milliseconds
 	proto.Timestamp = uint64(request.Timestamp.UnixMilli())
@@ -208,7 +208,7 @@ func DeconstructPayload(proto *innerWireFormat) (validated *Payload, err error) 
 	validated.MessageSeqMax = int(proto.MessageSeqMax)
 
 	// Validate Timestamp: Convert from milliseconds back to time.Time
-	validated.Timestamp = time.UnixMilli(int64(proto.Timestamp))
+	validated.Timestamp = time.UnixMilli(int64(proto.Timestamp)) //nolint:gosec // G115: epoch millis fits in int64
 
 	// Validate Hostname length and convert back to string
 	if len(proto.Hostname) == 0 {

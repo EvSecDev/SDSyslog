@@ -29,7 +29,7 @@ func (container *Queue[T]) ScaleCapacity(ctx context.Context) {
 	currentSizePerItem := currentByteSize / parsing.ToUint64(currentCapacity)
 
 	// Estimate new queue maximum memory size in bytes
-	expectedMaxNewQueueMemSize := uint64((nextPowerOfTwo(currentCapacity)) * int(currentSizePerItem))
+	expectedMaxNewQueueMemSize := parsing.ToUint64(nextPowerOfTwo(currentCapacity)) * currentSizePerItem
 
 	utilization := float64(currentDepth) / float64(currentCapacity) * 100
 	// Decide direction
@@ -114,13 +114,11 @@ func Trend(depthValues []uint64, queueSize int) (scaleUp, scaleDown bool) {
 	consistentTrendCount := 1
 
 	for index := valueCount - 2; index >= 0 && consistentTrendCount < requireConsistent; index-- {
-		diff := int64(depthValues[index+1]) - int64(depthValues[index])
-
 		var direction int
 		switch {
-		case diff > 0:
+		case depthValues[index+1] > depthValues[index]:
 			direction = 1
-		case diff < 0:
+		case depthValues[index+1] < depthValues[index]:
 			direction = -1
 		default:
 			direction = 0

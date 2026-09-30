@@ -51,7 +51,7 @@ func New(ctx context.Context, fileToWatch string) (new *Watcher, err error) {
 	err = unix.EpollCtl(new.epollFD, unix.EPOLL_CTL_ADD, new.instanceFD,
 		&unix.EpollEvent{
 			Events: unix.EPOLLIN | unix.EPOLLERR | unix.EPOLLHUP,
-			Fd:     int32(new.instanceFD),
+			Fd:     int32(new.instanceFD), //nolint:gosec // G115: bounded by MaxInt32 check above
 		})
 	if err != nil {
 		err = fmt.Errorf("failed to add inotify fd to epoll: %w", err)
@@ -67,7 +67,7 @@ func New(ctx context.Context, fileToWatch string) (new *Watcher, err error) {
 	err = unix.EpollCtl(new.epollFD, unix.EPOLL_CTL_ADD, new.wakeFD,
 		&unix.EpollEvent{
 			Events: unix.EPOLLIN,
-			Fd:     int32(new.wakeFD),
+			Fd:     int32(new.wakeFD), //nolint:gosec // G115: bounded by MaxInt32 check above
 		})
 	if err != nil {
 		err = fmt.Errorf("failed to add wake fd to epoll: %w", err)
@@ -86,7 +86,7 @@ func New(ctx context.Context, fileToWatch string) (new *Watcher, err error) {
 		err = fmt.Errorf("fd number too large: watchDescriptorFile")
 		return
 	}
-	new.fileFD.Store(int32(watchDescriptorFile))
+	new.fileFD.Store(int32(watchDescriptorFile)) //nolint:gosec // G115: bounded by MaxInt32 check above
 
 	// Add watcher for the log dir
 	logDirectory := filepath.Dir(new.path)
@@ -101,7 +101,7 @@ func New(ctx context.Context, fileToWatch string) (new *Watcher, err error) {
 		err = fmt.Errorf("fd number too large: watchDescriptorDir")
 		return
 	}
-	new.dirFD.Store(int32(watchDescriptorDir))
+	new.dirFD.Store(int32(watchDescriptorDir)) //nolint:gosec // G115: bounded by MaxInt32 check above
 
 	return
 }

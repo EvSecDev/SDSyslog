@@ -104,7 +104,7 @@ func newQueueInst[T any](namespace []string, capacity uint64) (new *QueueInst[T]
 
 	new = &QueueInst[T]{
 		Namespace: append(namespace, logctx.NSQueue),
-		Size:      int(capacity),
+		Size:      int(capacity), //nolint:gosec // G115: capacity bounded by min/max config values
 		mask:      atomic.Uint64{},
 		buf:       buf,
 		notEmpty:  make(chan struct{}, 1),

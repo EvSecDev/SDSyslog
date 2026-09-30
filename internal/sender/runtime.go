@@ -43,8 +43,8 @@ func (daemon *Daemon) Start() (err error) {
 		SourceAddress:    daemon.cfg.sourceSocket,
 		DestAddress:      daemon.cfg.destSocket,
 	}
-	outMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinOutputs))
-	outMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxOutputs))
+	outMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinOutputs)) //nolint:gosec // G115: config value bounded
+	outMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxOutputs)) //nolint:gosec // G115: config value bounded
 	daemon.Mgrs.Out, err = outMgrConf.NewManager(daemon.ctx)
 	if err != nil {
 		err = fmt.Errorf("error creating new output instance manager: %w", err)
@@ -70,8 +70,8 @@ func (daemon *Daemon) Start() (err error) {
 		OutputThrottlingThreshold: daemon.opts.Throttling.MinFragmentThreshold,
 		OutputThrottlingTime:      time.Duration(daemon.opts.Throttling.PerFragmentDelay),
 	}
-	pkgMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinAssemblers))
-	pkgMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxAssemblers))
+	pkgMgrConf.MinInstanceCount.Store(uint32(daemon.opts.AutoScaling.MinAssemblers)) //nolint:gosec // G115: config value bounded
+	pkgMgrConf.MaxInstanceCount.Store(uint32(daemon.opts.AutoScaling.MaxAssemblers)) //nolint:gosec // G115: config value bounded
 	daemon.Mgrs.Assem, err = pkgMgrConf.NewManager(daemon.ctx, daemon.Mgrs.Out.InQueue)
 	if err != nil {
 		err = fmt.Errorf("error creating new assembly instance manager: %w", err)
@@ -291,6 +291,7 @@ func (daemon *Daemon) Shutdown() {
 	}
 
 	// Stop assemblers
+	//nolint:dupl // deferred work - intentionally identical to output shutdown for now
 	if daemon.Mgrs.Assem != nil {
 		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 			"Draining assembler worker queue...\n")
@@ -321,6 +322,7 @@ func (daemon *Daemon) Shutdown() {
 	}
 
 	// Stop output workers
+	//nolint:dupl // deferred work - intentionally identical to assembler shutdown for now
 	if daemon.Mgrs.Out != nil {
 		logctx.LogEvent(daemon.ctx, logctx.VerbosityProgress, logctx.InfoLog,
 			"Draining output worker queue...\n")

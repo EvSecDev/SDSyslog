@@ -49,7 +49,7 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 		err = fmt.Errorf("%w: Hostname: field cannot be empty", ErrProtocolViolation)
 		return
 	}
-	buf.WriteByte(uint8(len(fields.Hostname)))
+	buf.WriteByte(uint8(len(fields.Hostname))) //nolint:gosec // G115: bounded by maxHostnameLen
 	err = writeFixedLength(&buf, fields.Hostname, len(fields.Hostname))
 	if err != nil {
 		err = fmt.Errorf("%w: Hostname: %w", ErrSerialization, err)
@@ -62,7 +62,7 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 		err = fmt.Errorf("%w: signature ID", ErrSerialization)
 		return
 	}
-	err = buf.WriteByte(uint8(len(fields.Signature)))
+	err = buf.WriteByte(uint8(len(fields.Signature))) //nolint:gosec // G115: bounded by maxSignatureLen
 	if err != nil {
 		err = fmt.Errorf("%w: signature length", ErrSerialization)
 		return
@@ -79,7 +79,7 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 	var contextBuffer bytes.Buffer // temporary buffer to gather all the fields
 	for _, ctxField := range fields.ContextFields {
 		// Key
-		contextBuffer.WriteByte(uint8(len(ctxField.Key)))
+		contextBuffer.WriteByte(uint8(len(ctxField.Key))) //nolint:gosec // G115: bounded by maxCtxKeyLen
 		err = writeFixedLength(&contextBuffer, ctxField.Key, len(ctxField.Key))
 		if err != nil {
 			err = fmt.Errorf("%w: Context field key: %w", ErrSerialization, err)
@@ -91,7 +91,7 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 		contextBuffer.WriteByte(ctxField.valType)
 
 		// Value
-		contextBuffer.WriteByte(uint8(len(ctxField.Value)))
+		contextBuffer.WriteByte(uint8(len(ctxField.Value))) //nolint:gosec // G115: bounded by MaxCtxValLen
 		err = writeFixedLength(&contextBuffer, ctxField.Value, len(ctxField.Value))
 		if err != nil {
 			err = fmt.Errorf("%w: Context field value: %w", ErrSerialization, err)
@@ -106,7 +106,7 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 		return
 	}
 	if contextBuffer.Len() > 0 {
-		err = writeUint16(&buf, uint16(contextBuffer.Len()))
+		err = writeUint16(&buf, uint16(contextBuffer.Len())) //nolint:gosec // G115: bounded by maxCtxSectionLen check above
 		if err != nil {
 			err = fmt.Errorf("%w: Context section length: %w", ErrSerialization, err)
 			return
@@ -136,7 +136,7 @@ func ConstructInnerPayload(fields *innerWireFormat) (payload []byte, err error) 
 			ErrProtocolViolation, len(fields.Data), maxDataLen)
 		return
 	}
-	err = writeUint16(&buf, uint16(len(fields.Data)))
+	err = writeUint16(&buf, uint16(len(fields.Data))) //nolint:gosec // G115: bounded by maxDataLen check above
 	if err != nil {
 		err = fmt.Errorf("%w: Data length: %w", ErrSerialization, err)
 		return
@@ -286,7 +286,7 @@ func DeconstructInnerPayload(payload []byte) (fields *innerWireFormat, err error
 	}
 	// Empty sig lengths skip signature field
 	if sigLen > 0 {
-		if sigLen > uint8(suite.MaxSignatureLength) || sigLen < uint8(suite.MinSignatureLength) {
+		if sigLen > uint8(suite.MaxSignatureLength) || sigLen < uint8(suite.MinSignatureLength) { //nolint:gosec // G115: suite constants are small
 			err = fmt.Errorf("%w: signature length %d for id %d must be between %d and %d bytes",
 				ErrProtocolViolation, sigLen, sigID, suite.MinSignatureLength, suite.MaxSignatureLength)
 			return

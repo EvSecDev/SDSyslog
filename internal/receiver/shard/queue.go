@@ -25,11 +25,9 @@ func New(namespace []string, buffer int, packetDeadlinePtr *atomic.Int64) (new *
 
 // Add fragment to bucket
 func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *protocol.Payload, processingStartTime time.Time) {
-	queue.Mu.Lock()
-	defer queue.Mu.Unlock()
-
 	queue.Metrics.PushCount.Add(1)
 
+	queue.Mu.Lock()
 	bucket, ok := queue.Buckets[bucketKey]
 	if !ok {
 		bucket = &Bucket{
@@ -47,6 +45,7 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 			}
 			logctx.LogStdWarn(ctx, "Received fragment with sequence %d after bucket %d was filled (bucket already has sequences %v)\n",
 				fragment.MessageSeq, bucketKey, haveSeq)
+			queue.Mu.Unlock()
 			return
 		}
 
@@ -56,9 +55,11 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 			detail := fmt.Sprintf("fragment has maximum sequence %d but bucket %s is set for maximum sequence %d\n",
 				fragment.MessageSeqMax, bucketKey, bucket.maxSeq)
 			logctx.LogStdWarn(ctx, "Received invalid maximum sequence: %s", detail)
+			queue.Mu.Unlock()
 			return
 		}
 	}
+	queue.Mu.Unlock()
 
 	// Record time spacing between fragments
 	var elapsed int64

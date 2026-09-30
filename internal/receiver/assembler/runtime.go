@@ -115,7 +115,18 @@ func (manager *Manager) removeInstance(instanceID string) {
 		instance.cancel()
 	}
 
-	instance.wg.Wait()
+	shutdownTimeout := 10 * time.Second
+	done := make(chan struct{})
+	go func() {
+		instance.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(shutdownTimeout):
+		logctx.LogStdErr(manager.ctx,
+			"assembler instance %d did not exit within %s of cancel\n", instanceID, shutdownTimeout.String())
+	}
 
 	// Create new routing snapshot
 	for {

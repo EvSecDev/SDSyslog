@@ -3,6 +3,7 @@ package processor
 import (
 	"sdsyslog/internal/logctx"
 	"strconv"
+	"time"
 )
 
 // Create additional ingest instance
@@ -71,6 +72,17 @@ func (manager *Manager) RemoveLastInstance() (removedID int) {
 		processor.cancel()
 	}
 
-	processor.wg.Wait()
+	shutdownTimeout := 10 * time.Second
+	done := make(chan struct{})
+	go func() {
+		processor.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(shutdownTimeout):
+		logctx.LogStdErr(manager.ctx,
+			"processor instance %d did not exit within %s of cancel\n", removedID, shutdownTimeout.String())
+	}
 	return
 }

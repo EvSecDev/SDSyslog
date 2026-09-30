@@ -64,7 +64,19 @@ func (manager *Manager) RemoveWorkers() {
 	if manager.cancel != nil {
 		manager.cancel()
 	}
-	manager.wg.Wait()
+
+	shutdownTimeout := 10 * time.Second
+	done := make(chan struct{})
+	go func() {
+		manager.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(shutdownTimeout):
+		logctx.LogStdErr(manager.ctx,
+			"output instance did not exit within %s of cancel\n", shutdownTimeout.String())
+	}
 
 	if manager.Instance.outModules == nil {
 		return

@@ -138,7 +138,7 @@ func runUnitTests(ctx *context, testArgs []string) (err error) {
 	for testName, testInfo := range tests {
 		coverProfileOut := filepath.Join(ctx.repositoryRoot, ".coverprofile_"+testName+".out")
 
-		args := make([]string, 5+len(testArgs))
+		args := make([]string, 0, 5+len(testArgs))
 		args = append(args, "test", "-C", testInfo.absolutePath)
 		args = append(args, testArgs...)
 		args = append(args, "-coverprofile="+coverProfileOut)

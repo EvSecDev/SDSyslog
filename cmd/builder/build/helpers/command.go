@@ -3,6 +3,7 @@ package helpers
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
@@ -17,6 +18,9 @@ func RunTestCommand(cmd *exec.Cmd) (err error) {
 		err = fmt.Errorf("failed to get stdout pipe for test command: %w", err)
 		return
 	}
+
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
 
 	err = cmd.Start()
 	if err != nil {
@@ -50,6 +54,7 @@ func RunTestCommand(cmd *exec.Cmd) (err error) {
 	}
 	err = cmd.Wait()
 	if err != nil {
+		fmt.Print(stderrBuf.String())
 		err = fmt.Errorf("failed to run test: %w", err)
 		return
 	}

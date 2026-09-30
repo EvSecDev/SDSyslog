@@ -143,6 +143,8 @@ linters:
         text: 'error is nil \(.*\) but it returns error'
       - linters: [gocritic]
         text: 'may want to remove commented-out code'
+      - linters: [gocritic]
+        text: 'shadowing of predeclared identifier'
 
 formatters:
   enable:

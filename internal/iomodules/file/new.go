@@ -16,7 +16,11 @@ import (
 )
 
 // Creates new file input module. Returns nil, nil if no path.
-func NewInput(ctx context.Context, filePath, baseStateFile string, filters []protocol.MessageFilter, queue *mpmc.Queue[*protocol.Message]) (module *InModule, err error) {
+func NewInput(ctx context.Context,
+	filePath, baseStateFile string,
+	filters []protocol.MessageFilter,
+	queue *mpmc.Queue[*protocol.Message],
+) (module *InModule, err error) {
 	if filePath == "" {
 		return
 	}
@@ -105,7 +109,7 @@ func NewOutput(filePath string, batchSize int) (module *OutModule, err error) {
 		batchSize = defaultBatchSize
 	}
 
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0640)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o640)
 	if err != nil {
 		return
 	}

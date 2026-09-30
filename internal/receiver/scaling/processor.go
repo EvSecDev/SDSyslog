@@ -36,11 +36,11 @@ func scaleProcessor(ctx context.Context, metricStore *metrics.Registry, interval
 
 	// Extract values in order
 	values := make([]uint64, 0, len(metricResults))
-	for _, m := range metricResults {
-		val, ok := m.Value.Raw.(uint64)
+	for _, metric := range metricResults {
+		val, ok := metric.Value.Raw.(uint64)
 		if !ok {
 			logctx.LogStdErr(ctx, "Failed to type assert metric %s (%s) to uint64: value=%+v type=%T\n",
-				m.Name, strings.Join(m.Namespace, "/"), m.Value.Raw, m.Value.Raw)
+				metric.Name, strings.Join(metric.Namespace, "/"), metric.Value.Raw, metric.Value.Raw)
 			return
 		}
 		values = append(values, val)

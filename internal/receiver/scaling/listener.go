@@ -44,12 +44,12 @@ func scaleListener(ctx context.Context, metricStore *metrics.Registry, interval 
 
 		// Extract raw float64 values for this instance
 		vals := make([]float64, pastNIntervals)
-		for i, m := range metricResults {
+		for index, metric := range metricResults {
 			var ok bool
-			vals[i], ok = m.Value.Raw.(float64)
+			vals[index], ok = metric.Value.Raw.(float64)
 			if !ok {
 				logctx.LogStdErr(ctx, "Failed to type assert metric %s (%s) to float64: value=%+v type=%T\n",
-					m.Name, strings.Join(m.Namespace, "/"), m.Value.Raw, m.Value.Raw)
+					metric.Name, strings.Join(metric.Namespace, "/"), metric.Value.Raw, metric.Value.Raw)
 				return
 			}
 		}

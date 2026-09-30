@@ -44,12 +44,12 @@ func scaleAssembler(ctx context.Context, metricStore *metrics.Registry, interval
 
 		// Extract raw uint64 values for this instance
 		vals := make([]uint64, pastNIntervals)
-		for i, m := range metricResults {
+		for index, metric := range metricResults {
 			var ok bool
-			vals[i], ok = m.Value.Raw.(uint64)
+			vals[index], ok = metric.Value.Raw.(uint64)
 			if !ok {
 				logctx.LogStdErr(ctx, "Failed to type assert metric %s (%s) to uint64: value=%+v type=%T\n",
-					m.Name, strings.Join(m.Namespace, "/"), m.Value.Raw, m.Value.Raw)
+					metric.Name, strings.Join(metric.Namespace, "/"), metric.Value.Raw, metric.Value.Raw)
 				return
 			}
 		}

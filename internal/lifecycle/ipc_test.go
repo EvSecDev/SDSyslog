@@ -33,7 +33,7 @@ func TestReadinessHandshake(t *testing.T) {
 
 				go func() {
 					time.Sleep(10 * time.Millisecond)
-					_, err := writer.Write([]byte(ReadyMessage))
+					_, err := writer.WriteString(ReadyMessage)
 					if err != nil {
 						t.Logf("unexpected error writing to pipe: %v", err)
 					}
@@ -62,7 +62,7 @@ func TestReadinessHandshake(t *testing.T) {
 				}()
 
 				go func() {
-					_, err := writer.Write([]byte("WRONGMSG"))
+					_, err := writer.WriteString("WRONGMSG")
 					if err != nil {
 						t.Logf("unexpected error writing to pipe: %v", err)
 					}
@@ -87,7 +87,7 @@ func TestReadinessHandshake(t *testing.T) {
 				}()
 
 				go func() {
-					_, err := writer.Write([]byte(ReadyMessage[:1]))
+					_, err := writer.WriteString(ReadyMessage[:1])
 					if err != nil {
 						t.Logf("unexpected error writing to pipe: %v", err)
 					}

@@ -18,7 +18,6 @@ linters:
     - decorder
     - godox
     - dupword
-    - predeclared
     - inamedparam
     - interfacebloat
     - funcorder

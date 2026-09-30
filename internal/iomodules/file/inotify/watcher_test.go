@@ -61,7 +61,7 @@ func TestInotify(t *testing.T) {
 						err = lerr
 					}
 				}()
-				_, err = file.Write([]byte("test message"))
+				_, err = file.WriteString("test message")
 				if err != nil {
 					return
 				}

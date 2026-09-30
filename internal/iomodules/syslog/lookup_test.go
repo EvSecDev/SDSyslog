@@ -10,6 +10,7 @@ type lookupTestCase struct {
 }
 
 func runLookupMappingTest(t *testing.T, toCode func(string) (uint16, error), toName func(uint16) (string, error), cases []lookupTestCase) {
+	t.Helper()
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			code, err := toCode(tt.input)

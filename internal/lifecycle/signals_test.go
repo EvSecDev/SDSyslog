@@ -158,7 +158,7 @@ func TestSignalHandling(t *testing.T) {
 			if tt.fail.startFIPRErr == nil && tt.fail.cmdStartErr == nil {
 				go func() {
 					time.Sleep(50 * time.Millisecond)
-					_, err := mockWriter.Write([]byte(ReadyMessage))
+					_, err := mockWriter.WriteString(ReadyMessage)
 					if err != nil {
 						t.Logf("unexpected error writing to mock writer: %v", err)
 					}

@@ -16,7 +16,7 @@ func getLastPosition(ctx context.Context, stateFilePath string) (cursor string, 
 
 	_, err = os.Stat(stateDirectory)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(stateDirectory, 0700)
+		err = os.MkdirAll(stateDirectory, 0o700)
 		if err != nil {
 			err = fmt.Errorf("failed to create missing state directory '%s': %w", stateDirectory, err)
 			return
@@ -26,7 +26,7 @@ func getLastPosition(ctx context.Context, stateFilePath string) (cursor string, 
 		return
 	}
 
-	stateFile, err := os.OpenFile(stateFilePath, os.O_RDWR|os.O_CREATE, 0600)
+	stateFile, err := os.OpenFile(stateFilePath, os.O_RDWR|os.O_CREATE, 0o600)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return
@@ -77,7 +77,7 @@ func savePosition(cursor string, stateFilePath string) (err error) {
 
 	_, err = os.Stat(stateDirectory)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(stateDirectory, 0700)
+		err = os.MkdirAll(stateDirectory, 0o700)
 		if err != nil {
 			err = fmt.Errorf("failed to create missing state directory '%s': %w", stateDirectory, err)
 			return
@@ -87,7 +87,7 @@ func savePosition(cursor string, stateFilePath string) (err error) {
 		return
 	}
 
-	stateFile, err := os.OpenFile(stateFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	stateFile, err := os.OpenFile(stateFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to open state file: %w", err)
 		return

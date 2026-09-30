@@ -11,7 +11,7 @@ func TestGetLastPosition_FreshState(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "log")
 	statePath := filepath.Join(tmpDir, "state", "statefile")
 
-	err := os.WriteFile(logPath, []byte("hello"), 0600)
+	err := os.WriteFile(logPath, []byte("hello"), 0o600)
 	if err != nil {
 		t.Fatalf("write log: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestState_RoundTrip(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "log")
 	statePath := filepath.Join(tmpDir, "state", "statefile")
 
-	err := os.WriteFile(logPath, []byte("hello world"), 0600)
+	err := os.WriteFile(logPath, []byte("hello world"), 0o600)
 	if err != nil {
 		t.Fatalf("write log: %v", err)
 	}
@@ -83,17 +83,17 @@ func TestGetLastPosition_InvalidStateTruncates(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "log")
 	statePath := filepath.Join(tmpDir, "state", "statefile")
 
-	err := os.WriteFile(logPath, []byte("hello"), 0600)
+	err := os.WriteFile(logPath, []byte("hello"), 0o600)
 	if err != nil {
 		t.Fatalf("write log: %v", err)
 	}
 
-	err = os.MkdirAll(filepath.Dir(statePath), 0700)
+	err = os.MkdirAll(filepath.Dir(statePath), 0o700)
 	if err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
-	err = os.WriteFile(statePath, []byte("invalid data"), 0600)
+	err = os.WriteFile(statePath, []byte("invalid data"), 0o600)
 	if err != nil {
 		t.Fatalf("write state: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestGetLastPosition_InodeMismatch(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "log")
 	statePath := filepath.Join(tmpDir, "state", "statefile")
 
-	err := os.WriteFile(logPath, []byte("hello"), 0600)
+	err := os.WriteFile(logPath, []byte("hello"), 0o600)
 	if err != nil {
 		t.Fatalf("write log: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestGetLastPosition_ClampsToFileSize(t *testing.T) {
 	statePath := filepath.Join(tmpDir, "state", "statefile")
 
 	content := []byte("hello")
-	err := os.WriteFile(logPath, content, 0600)
+	err := os.WriteFile(logPath, content, 0o600)
 	if err != nil {
 		t.Fatalf("write log: %v", err)
 	}
@@ -193,18 +193,18 @@ func TestGetLastPosition_CorruptedStateMissingValue(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "log")
 	statePath := filepath.Join(tmpDir, "state", "statefile")
 
-	err := os.WriteFile(logPath, []byte("hello"), 0600)
+	err := os.WriteFile(logPath, []byte("hello"), 0o600)
 	if err != nil {
 		t.Fatalf("write log: %v", err)
 	}
 
-	err = os.MkdirAll(filepath.Dir(statePath), 0700)
+	err = os.MkdirAll(filepath.Dir(statePath), 0o700)
 	if err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
 	// corrupted: only one field
-	err = os.WriteFile(statePath, []byte("12345"), 0600)
+	err = os.WriteFile(statePath, []byte("12345"), 0o600)
 	if err != nil {
 		t.Fatalf("write state: %v", err)
 	}

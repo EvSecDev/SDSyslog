@@ -83,7 +83,7 @@ func (step *InstallSystemdStep) Apply(ctx *context) (err error) {
 	}
 
 	//nolint:gosec // G306: systemd service units are world-readable (generates noise logs otherwise)
-	err = os.WriteFile(step.serviceUnitFile, unitFile, 0644)
+	err = os.WriteFile(step.serviceUnitFile, unitFile, 0o644)
 	if err != nil {
 		err = fmt.Errorf("failed to write new unit file: %w", err)
 		return

@@ -28,7 +28,7 @@ func setupRecvDaemon(ctx context.Context, newJSONCfg receiver.JSONOptions, testT
 	recvJSONConfFile := filepath.Join(testTempDir, fmt.Sprintf("sdsyslog%x.json", privKeyRaw[:4]))
 	newJSONCfg.PrivateKeyFile = filepath.Join(testTempDir, fmt.Sprintf("priv%x.key", privKeyRaw[:4]))
 
-	err = os.WriteFile(newJSONCfg.PrivateKeyFile, []byte(base64.StdEncoding.EncodeToString(privKeyRaw)), 0600)
+	err = os.WriteFile(newJSONCfg.PrivateKeyFile, []byte(base64.StdEncoding.EncodeToString(privKeyRaw)), 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write private key file: %w", err)
 		return
@@ -39,7 +39,7 @@ func setupRecvDaemon(ctx context.Context, newJSONCfg receiver.JSONOptions, testT
 		err = fmt.Errorf("failed to parse test recv daemon config: %w", err)
 		return
 	}
-	err = os.WriteFile(recvJSONConfFile, rawJSONCfg, 0600)
+	err = os.WriteFile(recvJSONConfFile, rawJSONCfg, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to create test recv daemon config file: %w", err)
 		return
@@ -80,7 +80,7 @@ func setupSendDaemon(ctx context.Context, newJSONCfg sender.JSONOptions, testTem
 		err = fmt.Errorf("failed to parse test send daemon config: %w", err)
 		return
 	}
-	err = os.WriteFile(sendJSONConfFile, rawJSONCfg, 0600)
+	err = os.WriteFile(sendJSONConfFile, rawJSONCfg, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to create test send daemon config file: %w", err)
 		return

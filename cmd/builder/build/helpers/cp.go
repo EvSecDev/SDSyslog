@@ -32,7 +32,7 @@ func copyDirCore(srcDir, dstDir string, exclude []string) (totalCopiedBytes int6
 	}
 
 	// Create destination root if needed
-	err = os.MkdirAll(dstDir, 0750)
+	err = os.MkdirAll(dstDir, 0o750)
 	if err != nil {
 		return
 	}
@@ -70,7 +70,7 @@ func copyDirCore(srcDir, dstDir string, exclude []string) (totalCopiedBytes int6
 
 		if dirEntry.IsDir() {
 			// Create directory in destination
-			retErr = os.MkdirAll(targetPath, 0750)
+			retErr = os.MkdirAll(targetPath, 0o750)
 			return
 		}
 
@@ -98,7 +98,7 @@ func copyFile(src, dst string) (written int64, err error) {
 	}()
 
 	// Ensure parent directory exists
-	err = os.MkdirAll(filepath.Dir(dst), 0750)
+	err = os.MkdirAll(filepath.Dir(dst), 0o750)
 	if err != nil {
 		return
 	}

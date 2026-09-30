@@ -345,7 +345,7 @@ func (testCoverages *testCoverageStore) saveStore(ctx *context) (err error) {
 		err = fmt.Errorf("failed to marshal new test coverages: %w", err)
 		return
 	}
-	err = os.WriteFile(mainTestCovStore, newTestCovFile, 0600)
+	err = os.WriteFile(mainTestCovStore, newTestCovFile, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write new test coverage file: %w", err)
 		return

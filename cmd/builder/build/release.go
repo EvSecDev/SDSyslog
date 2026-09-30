@@ -47,7 +47,7 @@ func createReleaseStagingDir() (releaseDir string, err error) {
 		return
 	}
 
-	err = os.Mkdir(releaseDir, 0700)
+	err = os.Mkdir(releaseDir, 0o700)
 	if err != nil {
 		err = fmt.Errorf("failed to create release staging directory: %w", err)
 		return
@@ -203,7 +203,7 @@ func prepareReleaseChangelog(ctx *context, releaseDir string) (err error) {
 	changeLog.WriteString(trailerComment)
 	changeLog.WriteString("\n")
 
-	err = os.WriteFile(releaseChangeLogFile, []byte(changeLog.String()), 0600)
+	err = os.WriteFile(releaseChangeLogFile, []byte(changeLog.String()), 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write change log file: %w", err)
 		return
@@ -218,7 +218,7 @@ func prepareReleaseChangelog(ctx *context, releaseDir string) (err error) {
 	}
 	currentReleaseCommitHash := bytes.Trim(out, "\n")
 
-	err = os.WriteFile(releaseTrackerFile, currentReleaseCommitHash, 0600)
+	err = os.WriteFile(releaseTrackerFile, currentReleaseCommitHash, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to save commit hash for this release: %w", err)
 		return

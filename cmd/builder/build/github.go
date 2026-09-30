@@ -168,7 +168,7 @@ func publishRelease(ctx *context) (err error) {
 
 		path := filepath.Join(localReleaseDir, stagingItem.Name())
 		var assetFile *os.File
-		assetFile, err = os.OpenFile(path, os.O_RDONLY, 0600)
+		assetFile, err = os.OpenFile(path, os.O_RDONLY, 0o600)
 		if err != nil {
 			err = fmt.Errorf("failed to read asset file: %w", err)
 			return

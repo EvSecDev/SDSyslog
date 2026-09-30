@@ -23,7 +23,7 @@ func TestInotify(t *testing.T) {
 		{
 			name: "File write",
 			changeFunc: func(filePath string) (err error) {
-				err = os.WriteFile(filePath, []byte("test message"), 0600)
+				err = os.WriteFile(filePath, []byte("test message"), 0o600)
 				return
 			},
 			expectedChangeSignals: 2,

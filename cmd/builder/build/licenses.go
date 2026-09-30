@@ -289,7 +289,7 @@ func generateThirdPartLicenses(ctx *context, outputFile string) (err error) {
 This distribution includes third-party software components.
 `
 
-	output, err := os.OpenFile(outputFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	output, err := os.OpenFile(outputFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to open output file: %w", err)
 		return

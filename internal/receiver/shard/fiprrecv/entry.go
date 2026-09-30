@@ -52,7 +52,7 @@ func (instance *Instance) Start() (err error) {
 	socketDir := filepath.Dir(instance.socketPath)
 	_, err = os.Stat(socketDir)
 	if err != nil && os.IsNotExist(err) {
-		err = os.MkdirAll(socketDir, 0700)
+		err = os.MkdirAll(socketDir, 0o700)
 		if err != nil {
 			err = fmt.Errorf("failed to create missing socket parent directory: %w", err)
 			return

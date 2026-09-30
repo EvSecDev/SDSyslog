@@ -56,7 +56,7 @@ func preCompile(ctx *context) (err error) {
 			err = fmt.Errorf("bpftool: %w: %s", err, string(out))
 			return
 		}
-		err = os.WriteFile(headerFile, out, 0600)
+		err = os.WriteFile(headerFile, out, 0o600)
 		if err != nil {
 			err = fmt.Errorf("failed to write new header file to repo: %w", err)
 			return
@@ -232,7 +232,7 @@ func compile(ctx *context, longName bool) (err error) {
 
 		hash := helpers.Hash(binaryContents)
 		//nolint:gosec // G703: input is trusted
-		err = os.WriteFile(newBinaryFile+".sha256", []byte(hash), 0600)
+		err = os.WriteFile(newBinaryFile+".sha256", []byte(hash), 0o600)
 		if err != nil {
 			err = fmt.Errorf("failed to write binary hash to file: %w", err)
 			return
@@ -329,7 +329,7 @@ func postCompile(ctx *context, outFileName string) (err error) {
 
 	newReadme := bytes.Join(updatedLines, []byte("\n"))
 	//nolint:gosec // G703: content is derived from the same README file being updated (read-modify-write), not user input
-	err = os.WriteFile(readmePath, newReadme, 0600)
+	err = os.WriteFile(readmePath, newReadme, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write updated README file: %w", err)
 		return

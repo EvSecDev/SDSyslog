@@ -79,7 +79,7 @@ func (step *InstallConfigStep) Apply(ctx *context) (err error) {
 	_, err = os.Stat(global.DefaultConfigDir)
 	if err != nil && os.IsNotExist(err) {
 		step.dirCreated = true
-		err = os.Mkdir(global.DefaultConfigDir, 0750)
+		err = os.Mkdir(global.DefaultConfigDir, 0o750)
 		if err != nil {
 			err = fmt.Errorf("failed to create configuration directory: %w", err)
 			return
@@ -119,7 +119,7 @@ func (step *InstallConfigStep) Apply(ctx *context) (err error) {
 			}
 
 			var privKeyFile *os.File
-			privKeyFile, err = os.OpenFile(encryptionPrivKeyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+			privKeyFile, err = os.OpenFile(encryptionPrivKeyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 			if err != nil {
 				err = fmt.Errorf("failed to open private key file: %w", err)
 				return
@@ -222,7 +222,7 @@ func CreateSendTemplateConfig(filepath string) (err error) {
 		return
 	}
 
-	newConfFile, err := os.OpenFile(filepath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	newConfFile, err := os.OpenFile(filepath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return
 	}
@@ -348,7 +348,7 @@ func CreateRecvTemplateConfig(filepath string) (err error) {
 		return
 	}
 
-	newConfFile, err := os.OpenFile(filepath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	newConfFile, err := os.OpenFile(filepath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return
 	}

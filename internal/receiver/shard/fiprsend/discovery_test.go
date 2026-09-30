@@ -76,7 +76,7 @@ func TestGetSocketFileList(t *testing.T) {
 					})
 				} else {
 					// non-socket file
-					err := os.WriteFile(path, []byte{}, 0600)
+					err := os.WriteFile(path, []byte{}, 0o600)
 					if err != nil {
 						t.Fatalf("unexpected error writing file contents: %v", err)
 					}

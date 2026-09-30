@@ -180,12 +180,12 @@ func diffModuleSource(moduleName string, versionDifference versionDiff, tmpDir s
 	oldSrc := filepath.Join(tmpOld, "src")
 	newSrc := filepath.Join(tmpNew, "src")
 
-	err = os.MkdirAll(oldSrc, 0700)
+	err = os.MkdirAll(oldSrc, 0o700)
 	if err != nil {
 		err = fmt.Errorf("failed to create temp source directory for old module: %w", err)
 		return
 	}
-	err = os.MkdirAll(newSrc, 0700)
+	err = os.MkdirAll(newSrc, 0o700)
 	if err != nil {
 		err = fmt.Errorf("failed to create temp source directory for new module: %w", err)
 		return
@@ -245,12 +245,12 @@ func diffModuleSource(moduleName string, versionDifference versionDiff, tmpDir s
 		return
 	}
 
-	err = os.MkdirAll(filepath.Join(tmpOld, "filtered"), 0700)
+	err = os.MkdirAll(filepath.Join(tmpOld, "filtered"), 0o700)
 	if err != nil {
 		err = fmt.Errorf("failed to create temp filtering directory for old module: %w", err)
 		return
 	}
-	err = os.MkdirAll(filepath.Join(tmpNew, "filtered"), 0700)
+	err = os.MkdirAll(filepath.Join(tmpNew, "filtered"), 0o700)
 	if err != nil {
 		err = fmt.Errorf("failed to create temp filtering directory for new module: %w", err)
 		return

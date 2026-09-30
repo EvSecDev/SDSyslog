@@ -59,7 +59,7 @@ func (step *InstallAutocompleteStep) Apply(ctx *context) (err error) {
 	}
 
 	step.autoCompleteFilePath = filepath.Join(sysAutocompleteDir, global.ProgBaseName)
-	err = os.WriteFile(step.autoCompleteFilePath, autoCompleteFunc, 0600)
+	err = os.WriteFile(step.autoCompleteFilePath, autoCompleteFunc, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write autocompletion file: %w", err)
 		return

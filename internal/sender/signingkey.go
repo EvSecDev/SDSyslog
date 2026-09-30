@@ -61,7 +61,7 @@ func WriteNewSigningKey(configPath string) (err error) {
 	encodedSigningKey := base64.StdEncoding.EncodeToString(newSigningKey)
 
 	// Signing private key resides in dedicated file
-	err = os.WriteFile(opts.SigningKeyFile, []byte(encodedSigningKey), 0600)
+	err = os.WriteFile(opts.SigningKeyFile, []byte(encodedSigningKey), 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write new signing key file: %w", err)
 		return
@@ -73,7 +73,7 @@ func WriteNewSigningKey(configPath string) (err error) {
 		err = fmt.Errorf("failed to marshal updated main config: %w", err)
 		return
 	}
-	err = os.WriteFile(configPath, newConfig, 0600)
+	err = os.WriteFile(configPath, newConfig, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write updated main config file: %w", err)
 		return

@@ -62,7 +62,7 @@ func (step *InstallBinaryStep) Apply(ctx *context) (err error) {
 		return
 	}
 
-	err = fsops.AtomicFileReplace(step.normalizedSourcePath, global.DefaultBinaryPath, 0755)
+	err = fsops.AtomicFileReplace(step.normalizedSourcePath, global.DefaultBinaryPath, 0o755)
 	if err != nil {
 		err = fmt.Errorf("failed to move self executable file to target executable path: %w", err)
 		return

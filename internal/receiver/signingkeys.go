@@ -105,7 +105,7 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 		err = fmt.Errorf("failed to marshal new pinned key map: %w", err)
 		return
 	}
-	err = os.WriteFile(opts.PinnedSigningKeysPath, newPinKeyFile, 0600)
+	err = os.WriteFile(opts.PinnedSigningKeysPath, newPinKeyFile, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write new pinned keys: %w", err)
 		return
@@ -118,7 +118,7 @@ func AddPinnedKey(confPath, addRequest string) (err error) {
 			err = fmt.Errorf("failed to marshal updated config: %w", err)
 			return
 		}
-		err = os.WriteFile(confPath, newConfFile, 0600)
+		err = os.WriteFile(confPath, newConfFile, 0o600)
 		if err != nil {
 			err = fmt.Errorf("failed to write updated config: %w", err)
 			return
@@ -227,7 +227,7 @@ func RemovePinnedKey(confPath, removeHostname string) (err error) {
 		err = fmt.Errorf("failed to marshal new pinned key map: %w", err)
 		return
 	}
-	err = os.WriteFile(opts.PinnedSigningKeysPath, newPinKeyFile, 0600)
+	err = os.WriteFile(opts.PinnedSigningKeysPath, newPinKeyFile, 0o600)
 	if err != nil {
 		err = fmt.Errorf("failed to write new pinned keys: %w", err)
 		return

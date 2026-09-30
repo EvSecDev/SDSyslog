@@ -108,7 +108,6 @@ func TestNoImports(t *testing.T) {
 		global.ProgBaseName + "/internal/logctx",
 		global.ProgBaseName + "/internal/filtering",
 		global.ProgBaseName + "/internal/atomics",
-		global.ProgBaseName + "/internal/calc",
 	}
 
 	cfg := &packages.Config{

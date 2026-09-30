@@ -95,14 +95,21 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 	// Update process time always, acts as modified time
 	bucket.lastProcessStartTime = processingStartTime
 
-	// Store fragment by sequence number
-	bucket.Fragments[fragment.MessageSeq] = fragment
 	queue.Metrics.Bytes.Add(parsing.ToUint64(fragment.Size()))
 
-	// Check if bucket is now filled
+	// Store fragment by sequence number
+	var isFilled bool
+	bucket.Mutex.Lock()
+	bucket.lastProcessStartTime = processingStartTime
+	bucket.Fragments[fragment.MessageSeq] = fragment
 	if len(bucket.Fragments) == bucket.maxSeq+1 {
 		bucket.filled = true
+		isFilled = true
+	}
+	bucket.Mutex.Unlock()
 
+	// Check if bucket is now filled
+	if isFilled {
 		select {
 		case <-ctx.Done():
 			return
@@ -145,7 +152,6 @@ func (queue *Instance) DrainBucket(ctx context.Context, key string) (bucket *Buc
 	// Retrieve bucket
 	bucket, ok := queue.Buckets[key]
 	if !ok {
-		queue.Mu.Unlock()
 		bucketNotExist = true
 		return
 	}

@@ -9,6 +9,7 @@ import (
 
 type Bucket struct {
 	filled               bool                      // Marker for done bucket awaiting assembly
+	Mutex                sync.Mutex                // Protect concurrent changes to this bucket
 	Fragments            map[int]*protocol.Payload // keyed by sequence number
 	maxSeq               int                       // max sequence number expected
 	lastProcessStartTime time.Time                 // when processor last started processing a fragment

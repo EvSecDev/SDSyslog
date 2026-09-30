@@ -46,15 +46,15 @@ func ScanRepo(
 			return nil
 		}
 
-		f, err := os.Open(path)
+		file, err := os.Open(path) //nolint:gosec // G122: walks own repo source, no untrusted symlinks
 		if err != nil {
 			return fmt.Errorf("failed to open file: %w", err)
 		}
 		defer func() {
-			_ = f.Close()
+			_ = file.Close()
 		}()
 
-		scanner := bufio.NewScanner(f)
+		scanner := bufio.NewScanner(file)
 		lineNum := 0
 
 		buf := make([]byte, 0, 1024*1024)
@@ -81,7 +81,7 @@ func ScanRepo(
 			return fmt.Errorf("scanner failed at file '%s': %w", path, scanner.Err())
 		}
 
-		err = f.Close()
+		err = file.Close()
 		if err != nil {
 			return fmt.Errorf("file close: %w", err)
 		}

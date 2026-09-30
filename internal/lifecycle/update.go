@@ -60,7 +60,7 @@ func preUpdate(ctx context.Context) (childProc *exec.Cmd, err error) {
 	}
 
 	// Temporary executable
-	cmd := exec.Command(exePath, args[1:]...)
+	cmd := exec.Command(exePath, args[1:]...) //nolint:gosec // G702: re-exec with own args from init system
 	cmd.Dir = workingDir
 	cmd.Stdin = nil
 	cmd.Stdout = os.Stdout

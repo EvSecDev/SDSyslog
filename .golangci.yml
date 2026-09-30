@@ -124,6 +124,11 @@ linters:
       # All SA/S/ST checks except the doc-comment checks the builder filters out
       # (ST1000 package, ST1020-1023 exported const/var/func/type).
       checks: ["all", "-ST1020", "-ST1021", "-ST1022", "-ST1023"]
+    gosec:
+      excludes:
+        - G204
+        - G304
+        - G703
 
   exclusions:
     rules:

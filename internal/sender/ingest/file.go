@@ -7,7 +7,7 @@ import (
 )
 
 // Create file ingest instance
-func (manager *Manager) AddFileInstance(filePath string, stateFile string) (err error) {
+func (manager *Manager) AddFileInstance(filePath, stateFile string) (err error) {
 	manager.FileSourceMu.Lock()
 	defer manager.FileSourceMu.Unlock()
 

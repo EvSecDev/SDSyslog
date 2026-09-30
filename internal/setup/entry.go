@@ -16,7 +16,7 @@ import (
 //go:embed static-files/*
 var installationFiles embed.FS
 
-func NewInstaller(mode string, suiteID uint8, dryRun bool, verbose bool) (inst *Installer, err error) {
+func NewInstaller(mode string, suiteID uint8, dryRun, verbose bool) (inst *Installer, err error) {
 	// Must run as root
 	if os.Geteuid() != 0 {
 		err = fmt.Errorf("installation must be run as root. Please execute with elevated privileges")

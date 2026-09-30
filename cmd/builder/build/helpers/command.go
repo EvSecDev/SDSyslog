@@ -28,7 +28,7 @@ func RunTestCommand(cmd *exec.Cmd) (err error) {
 	stdoutReader := bufio.NewReader(stdout)
 	for {
 		line, err := stdoutReader.ReadString('\n')
-		if len(line) > 0 {
+		if line != "" {
 			if strings.Contains(line, "[no test files]") {
 				continue
 			}

@@ -36,9 +36,9 @@ func syscallWait4Real(pid int, wstatus *unix.WaitStatus, options int, rusage *un
 }
 
 // Execute new binary replacing current running program (execve(2) system call)
-var syscallExec func(argv0 string, argv []string, envv []string) (err error) = syscallExecReal
+var syscallExec func(argv0 string, argv, envv []string) (err error) = syscallExecReal
 
-func syscallExecReal(argv0 string, argv []string, envv []string) (err error) {
+func syscallExecReal(argv0 string, argv, envv []string) (err error) {
 	err = unix.Exec(argv0, argv, envv)
 	return
 }
@@ -68,9 +68,9 @@ func cmdStartReal(cmd *exec.Cmd) (err error) {
 }
 
 // Pipe returns a connected pair of Files; reads from reader return bytes written to writer.
-var osPipe func() (reader *os.File, writer *os.File, err error) = osPipeReal
+var osPipe func() (reader, writer *os.File, err error) = osPipeReal
 
-func osPipeReal() (reader *os.File, writer *os.File, err error) {
+func osPipeReal() (reader, writer *os.File, err error) {
 	reader, writer, err = os.Pipe()
 	return
 }

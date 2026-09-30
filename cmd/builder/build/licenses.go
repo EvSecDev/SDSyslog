@@ -110,7 +110,7 @@ func getModuleList() (modules []string, err error) {
 	return
 }
 
-func getModuleLicense(moduleName string) (license string, warning string, err error) {
+func getModuleLicense(moduleName string) (license, warning string, err error) {
 	if moduleName == "" {
 		err = fmt.Errorf("cannot get license for empty module name")
 		return
@@ -160,7 +160,7 @@ func getModuleLicense(moduleName string) (license string, warning string, err er
 	return
 }
 
-func findLicenseFile(moduleDirectory string) (licenseFilePath string, warning string, err error) {
+func findLicenseFile(moduleDirectory string) (licenseFilePath, warning string, err error) {
 	if moduleDirectory == "" {
 		err = fmt.Errorf("cannot find license file for empty module directory path")
 		return

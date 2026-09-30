@@ -8,7 +8,7 @@ import (
 )
 
 // Main Entry Point: Takes in a new message to be sent and creates packets (transport layer payload)
-func Create(sendMsg *Message, hostID int, maxPayloadSize int, cryptoSuite, signatureSuite uint8) (packets [][]byte, err error) {
+func Create(sendMsg *Message, hostID, maxPayloadSize int, cryptoSuite, signatureSuite uint8) (packets [][]byte, err error) {
 	newMessageID, err := random.FourByte()
 	if err != nil {
 		err = fmt.Errorf("failed to generate random message identifier: %w", err)

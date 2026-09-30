@@ -94,7 +94,7 @@ func prevPowerOfTwo(start int) (prev int) {
 }
 
 // Decides whether to scale up or down based on depth metric values (metric=depth)
-func Trend(depthValues []uint64, queueSize int) (scaleUp bool, scaleDown bool) {
+func Trend(depthValues []uint64, queueSize int) (scaleUp, scaleDown bool) {
 	valueCount := len(depthValues)
 	if valueCount < 3 {
 		return

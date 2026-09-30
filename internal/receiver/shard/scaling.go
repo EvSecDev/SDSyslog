@@ -1,7 +1,7 @@
 package shard
 
 // Decides whether to scale up or down based on total buckets in shard (metric=total_buckets)
-func Trend(bucketCounts []uint64) (scaleUp bool, scaleDown bool) {
+func Trend(bucketCounts []uint64) (scaleUp, scaleDown bool) {
 	numBuckets := len(bucketCounts)
 	if numBuckets < 2 {
 		return
@@ -45,7 +45,7 @@ func Trend(bucketCounts []uint64) (scaleUp bool, scaleDown bool) {
 }
 
 // Decides whether to increase or decrease timeout value for buckets (account for high latency network links)
-func TrendLatency(sumSpacing, totalFragments, timedOutFragments []uint64) (stepUp bool, stepDown bool) {
+func TrendLatency(sumSpacing, totalFragments, timedOutFragments []uint64) (stepUp, stepDown bool) {
 	numFragments := len(totalFragments)
 	if numFragments == 0 {
 		return

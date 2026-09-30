@@ -72,7 +72,7 @@ func (registry *Registry) Search(name string, namespacePrefix []string, start, e
 
 // Finds and aggregates all data for a given metric for the aggregation type (global consts prefixed by Metric*).
 // Start/end time if not provided will default to past minute.
-func (registry *Registry) Aggregate(aggType string, name string, namespace []string, start, end time.Time) (result *Metric, err error) {
+func (registry *Registry) Aggregate(aggType, name string, namespace []string, start, end time.Time) (result *Metric, err error) {
 	if start.IsZero() && end.IsZero() {
 		start = time.Now().Add(-1 * time.Minute)
 		end = time.Now()

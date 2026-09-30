@@ -1,7 +1,7 @@
 package listener
 
 // Decides whether to scale up or down based on how much time the worker spent doing anything (metric=busy_time_percent)
-func Trend(busyTimes []float64) (scaleUp bool, scaleDown bool) {
+func Trend(busyTimes []float64) (scaleUp, scaleDown bool) {
 	// Heuristics:
 	// slope > 0.5 = trending upward
 	// slope < -0.5 = trending downward

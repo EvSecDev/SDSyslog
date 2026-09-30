@@ -7,7 +7,7 @@ import (
 )
 
 // Retrieves total overhead for given IP and protocol
-func getTransportOverhead(destination string, protocol string) (overhead int, err error) {
+func getTransportOverhead(destination, protocol string) (overhead int, err error) {
 	const ip4Overhead int = 60
 	const ip6Overhead int = 80
 	const udpOverhead int = 8

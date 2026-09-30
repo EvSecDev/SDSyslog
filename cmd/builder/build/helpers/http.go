@@ -13,7 +13,7 @@ func HTTPCheckResp(response *http.Response) (body []byte, err error) {
 		return
 	}
 
-	if response.StatusCode < 200 && response.StatusCode > 299 {
+	if response.StatusCode < 200 || response.StatusCode > 299 {
 		var respDetails string
 		switch {
 		case len(body) == 0:

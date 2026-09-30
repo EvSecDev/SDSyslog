@@ -40,7 +40,7 @@ func (rs *RoutingState) GetNonDrainingIDs() (availShardIDs []string) {
 }
 
 // Checks if shard contains a particular bucket
-func (rs *RoutingState) BucketExists(shardID string, bucketKey string) (present bool) {
+func (rs *RoutingState) BucketExists(shardID, bucketKey string) (present bool) {
 	instances := rs.manager.routing.Load().instances
 	instance, ok := instances[shardID]
 	if !ok {

@@ -90,7 +90,7 @@ func MatchErrorString(gotError error, expectedError string) (matches bool, err e
 
 // Checks if provided error contains the wrapped expected error somewhere in the tree.
 // Matches is true when  present. Mismatches reported in err
-func MatchWrappedError(gotError error, expectedError error) (matches bool, err error) {
+func MatchWrappedError(gotError, expectedError error) (matches bool, err error) {
 	if gotError != nil {
 		switch {
 		case expectedError == nil:

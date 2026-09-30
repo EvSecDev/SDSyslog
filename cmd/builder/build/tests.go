@@ -355,7 +355,7 @@ func (testCoverages *testCoverageStore) saveStore(ctx *context) (err error) {
 }
 
 // Creates current test coverage and coverage diff string
-func (testCoverages *testCoverageStore) formatCoverageInfo(ctx *context, testName string, currentCoveragePercent string) (covInfo string) {
+func (testCoverages *testCoverageStore) formatCoverageInfo(ctx *context, testName, currentCoveragePercent string) (covInfo string) {
 	currentCoverage, err := strconv.ParseFloat(strings.TrimRight(currentCoveragePercent, "%"), 64)
 	if err != nil {
 		currentCoverage = 0

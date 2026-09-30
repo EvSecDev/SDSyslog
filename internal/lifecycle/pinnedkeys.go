@@ -11,7 +11,7 @@ import (
 )
 
 // Finds running process via program name and config path and issues signal to reload signing keys config file
-func IssueLiveSigningKeyReload(configPath string, programName string) (err error) {
+func IssueLiveSigningKeyReload(configPath, programName string) (err error) {
 	programName = filepath.Base(programName)
 
 	cmd := exec.Command("ps", "-axo", "pid,comm,args")

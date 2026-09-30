@@ -67,7 +67,7 @@ func getLastPosition(ctx context.Context, stateFilePath string) (cursor string, 
 	return
 }
 
-func savePosition(cursor string, stateFilePath string) (err error) {
+func savePosition(cursor, stateFilePath string) (err error) {
 	// Don't nuke existing cursor
 	if cursor == "" {
 		return

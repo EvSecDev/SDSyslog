@@ -13,7 +13,7 @@ import (
 )
 
 // Parses file line text for common formats and extracts metadata. (The Monstrosity of Assumption TM)
-func parseLine(rawLine string, localHostname string) (message *protocol.Message) {
+func parseLine(rawLine, localHostname string) (message *protocol.Message) {
 	line := strings.TrimSpace(rawLine)
 
 	message = &protocol.Message{}

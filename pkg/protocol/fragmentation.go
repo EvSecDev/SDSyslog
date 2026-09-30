@@ -10,7 +10,7 @@ import (
 
 // Creates payload objects based on main payload and the transports maximum payload size
 // Sets random padding length per fragment
-func Fragment(primaryPayload *Payload, maxPayloadSize int, fixedProtocolSize int) (payloads []*Payload, err error) {
+func Fragment(primaryPayload *Payload, maxPayloadSize, fixedProtocolSize int) (payloads []*Payload, err error) {
 	if maxPayloadSize <= 0 {
 		err = fmt.Errorf("%w: maxPayloadSize must be greater than 0", ErrFragmentation)
 		return

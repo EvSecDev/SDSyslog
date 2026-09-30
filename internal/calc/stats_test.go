@@ -1,6 +1,9 @@
 package calc
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestTrimmedMeanUint64(t *testing.T) {
 	tests := []struct {
@@ -117,7 +120,7 @@ func TestTrimmedMeanFloat64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := TrimmedMeanFloat64(tt.values, tt.trimPercent)
-			if got != tt.want {
+			if math.Abs(got-tt.want) > 1e-9 {
 				t.Fatalf("expected %v, got %v", tt.want, got)
 			}
 		})

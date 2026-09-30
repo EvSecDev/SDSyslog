@@ -7,7 +7,7 @@ import (
 )
 
 // Stringify full event
-func (event Event) Format() (text string) {
+func (event *Event) Format() (text string) {
 	// Only print parts that are present
 	var parts []string
 	if !event.Timestamp.IsZero() {

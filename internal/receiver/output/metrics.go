@@ -42,7 +42,7 @@ func (instance *Instance) writeModuleMetrics(moduleName string, msgsWritten int)
 	instance.Metrics.successfulWrites[moduleName] = atomicVal
 }
 
-func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (instance *Instance) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Read and clear
 	recvMsgs := instance.Metrics.ReceivedMessages.Swap(0)
 	dropped := instance.Metrics.Dropped.Swap(0)
@@ -50,7 +50,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTRecvMsgs,
 			Description: "Total messages received from assemblers",
@@ -84,7 +84,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	for moduleName, moduleWritten := range instance.Metrics.successfulWrites {
 		numWritten := moduleWritten.Swap(0)
 
-		collection = append(collection, metrics.Metric{
+		collection = append(collection, &metrics.Metric{
 			Name:        "success_" + moduleName + "_writes",
 			Description: "Total writes to any " + moduleName + " outputs",
 			Namespace:   instance.namespace,
@@ -99,7 +99,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 		totalWrites += numWritten
 	}
 
-	collection = append(collection, metrics.Metric{
+	collection = append(collection, &metrics.Metric{
 		Name:        MTWrittenMsgs,
 		Description: "Sum of messages successfully written to all outputs",
 		Namespace:   instance.namespace,

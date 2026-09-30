@@ -99,7 +99,7 @@ type Daemon struct {
 	Mgrs               shared.Managers
 	metricsCollector   *metrics.Gatherer
 	MetricServer       *http.Server
-	MetricDataSearcher func(name string, namespacePrefix []string, start, end time.Time) []metricGlb.Metric
-	MetricDiscoverer   func(name, description string, namespacePrefix []string, unit string, metricType metricGlb.MetricType) []metricGlb.Metric
-	MetricAggregator   func(aggType string, name string, namespace []string, start, end time.Time) (result metricGlb.Metric, err error)
+	MetricDataSearcher func(name string, namespacePrefix []string, start, end time.Time) []*metricGlb.Metric
+	MetricDiscoverer   func(name, description string, namespacePrefix []string, unit string, metricType metricGlb.MetricType) []*metricGlb.Metric
+	MetricAggregator   func(aggType string, name string, namespace []string, start, end time.Time) (result *metricGlb.Metric, err error)
 }

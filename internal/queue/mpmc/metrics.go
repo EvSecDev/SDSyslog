@@ -43,7 +43,7 @@ const (
 	MTPopStaleRetries string = "pop_stale_retries"
 )
 
-func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	queues := []*QueueInst[T]{container.ActiveWrite.Load()}
 	readQueue := container.ActiveRead.Load()
 	// If different, include read queue for aggregation
@@ -82,7 +82,7 @@ func (container *Queue[T]) CollectMetrics(interval time.Duration) (collection []
 
 	// Helper to add metrics
 	add := func(name string, raw interface{}, unit string, metricType metrics.MetricType, description string) {
-		collection = append(collection, metrics.Metric{
+		collection = append(collection, &metrics.Metric{
 			Name:        name,
 			Description: description,
 			Namespace:   queues[0].Namespace,

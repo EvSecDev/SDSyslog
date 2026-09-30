@@ -17,7 +17,7 @@ const (
 	MTSuc         string = "success_processed"
 )
 
-func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (mod *InModule) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Read and clear
 	read := mod.metrics.CompleteReads.Swap(0)
 	suc := mod.metrics.Success.Swap(0)
@@ -27,7 +27,7 @@ func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metric
 
 	namespace := logctx.GetTagList(mod.ctx)
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTBatchesRead,
 			Description: "Total read chunks from raw source in the interval",

@@ -26,7 +26,7 @@ const (
 	MTInstanceCount string = "instance_count"
 )
 
-func (manager *Manager) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (manager *Manager) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Record read time
 	recordTime := time.Now()
 
@@ -38,7 +38,7 @@ func (manager *Manager) CollectMetrics(interval time.Duration) (collection []met
 
 	namespace := logctx.GetTagList(manager.ctx)
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTInstanceCount,
 			Description: "Number of running instances at the time of metric collection",
@@ -55,7 +55,7 @@ func (manager *Manager) CollectMetrics(interval time.Duration) (collection []met
 	return
 }
 
-func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (instance *Instance) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	if instance == nil {
 		return
 	}
@@ -76,7 +76,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Percent worker was busy
 	busyPct := (float64(busyNs) / float64(interval.Nanoseconds())) * 100
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTBusyPct,
 			Description: "Total time spent doing anything in the interval",

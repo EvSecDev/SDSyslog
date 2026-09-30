@@ -30,7 +30,7 @@ func TestHandleDataAndAggregation(t *testing.T) {
 			name: "data supplied times",
 			path: DataPath + "?name=test&starttime=-5m&endttime=now",
 			handler: func(writer http.ResponseWriter, reader *http.Request) {
-				handleData(ctx, mockDataSearcher([]metrics.Metric{{Name: "test"}}), writer, reader)
+				handleData(ctx, mockDataSearcher([]*metrics.Metric{{Name: "test"}}), writer, reader)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -47,7 +47,7 @@ func TestHandleDataAndAggregation(t *testing.T) {
 			path: AggregationPath + "?name=test&starttime=-5m&endttime=now",
 			handler: func(writer http.ResponseWriter, reader *http.Request) {
 				handleAggregation(ctx,
-					mockAggSearcher(metrics.Metric{Name: "test"}, nil),
+					mockAggSearcher(&metrics.Metric{Name: "test"}, nil),
 					writer, reader)
 			},
 			wantStatus: http.StatusOK,
@@ -57,7 +57,7 @@ func TestHandleDataAndAggregation(t *testing.T) {
 			path: AggregationPath + "?starttime=badtime",
 			handler: func(writer http.ResponseWriter, reader *http.Request) {
 				handleAggregation(ctx,
-					mockAggSearcher(metrics.Metric{}, nil), writer, reader,
+					mockAggSearcher(&metrics.Metric{}, nil), writer, reader,
 				)
 			},
 			wantStatus: http.StatusBadRequest,
@@ -67,7 +67,7 @@ func TestHandleDataAndAggregation(t *testing.T) {
 			path: AggregationPath + "?aggregation=sum",
 			handler: func(writer http.ResponseWriter, reader *http.Request) {
 				handleAggregation(ctx,
-					mockAggSearcher(metrics.Metric{}, errors.New("boom")), writer, reader,
+					mockAggSearcher(&metrics.Metric{}, errors.New("boom")), writer, reader,
 				)
 			},
 			wantStatus: http.StatusOK,

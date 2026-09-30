@@ -21,7 +21,7 @@ func (injector *SenderInjector) run(eventChan <-chan logctx.Event) {
 	for {
 		select {
 		case event := <-eventChan:
-			newMsg, err := loggerToProtocolMessage(event)
+			newMsg, err := loggerToProtocolMessage(&event)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to format log event: %v", err)
 				continue
@@ -63,7 +63,7 @@ func (injector *ReceiverInjector) run(eventChan <-chan logctx.Event) {
 	for {
 		select {
 		case event := <-eventChan:
-			newMsg, err := loggerToProtocolPayload(event, injector.hostID)
+			newMsg, err := loggerToProtocolPayload(&event, injector.hostID)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to format log event: %v", err)
 				continue

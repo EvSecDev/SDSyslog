@@ -12,7 +12,7 @@ type MetricStorage struct {
 	Success   atomic.Uint64 // number of messages processed successfully
 }
 
-func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (mod *InModule) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Read and clear
 	lines := mod.metrics.LinesRead.Swap(0)
 	suc := mod.metrics.Success.Swap(0)
@@ -22,7 +22,7 @@ func (mod *InModule) CollectMetrics(interval time.Duration) (collection []metric
 
 	namespace := logctx.GetTagList(mod.ctx)
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        "lines_read",
 			Description: "Total lines read from journald in the interval",

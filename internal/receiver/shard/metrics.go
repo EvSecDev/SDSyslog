@@ -27,7 +27,7 @@ const (
 	MTPopCnt           string = "pop_ctn"
 )
 
-func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (queue *Instance) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Read and clear
 	totalBytes := queue.Metrics.Bytes.Load()
 	totalBuckets := queue.Metrics.TotalBuckets.Load()
@@ -40,7 +40,7 @@ func (queue *Instance) CollectMetrics(interval time.Duration) (collection []metr
 	// Record read time
 	recordTime := time.Now()
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTBytes,
 			Description: "Total bytes currently in the queue (includes internal structure overheads)",

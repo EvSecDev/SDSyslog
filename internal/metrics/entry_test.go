@@ -16,7 +16,7 @@ func setupRegistryWithData(t *testing.T) (mockRegistry *Registry, mockedTimeSlic
 	ts2 := mockRegistry.NewTimeSlice(base.Add(1*time.Minute), interval)
 	ts3 := mockRegistry.NewTimeSlice(base.Add(2*time.Minute), interval)
 
-	mockRegistry.Add(ts1, []Metric{
+	mockRegistry.Add(ts1, []*Metric{
 		// Base gauge
 		{
 			Name:        "queue_depth",
@@ -82,7 +82,7 @@ func setupRegistryWithData(t *testing.T) (mockRegistry *Registry, mockedTimeSlic
 		},
 	})
 
-	mockRegistry.Add(ts2, []Metric{
+	mockRegistry.Add(ts2, []*Metric{
 		// Gauge increases
 		{
 			Name:        "queue_depth",
@@ -147,7 +147,7 @@ func setupRegistryWithData(t *testing.T) (mockRegistry *Registry, mockedTimeSlic
 		},
 	})
 
-	mockRegistry.Add(ts3, []Metric{
+	mockRegistry.Add(ts3, []*Metric{
 		// Negative gauge
 		{
 			Name:        "queue_depth",

@@ -86,10 +86,10 @@ func getModuleList() (modules []string, err error) {
 
 	dec := json.NewDecoder(bytes.NewReader(out))
 
-	var modInfos []goDownloadJSON
+	var modInfos []*goDownloadJSON
 	for {
-		var modInfo goDownloadJSON
-		err = dec.Decode(&modInfo)
+		var modInfo *goDownloadJSON
+		err = dec.Decode(modInfo)
 		if errors.Is(err, io.EOF) {
 			err = nil
 			break

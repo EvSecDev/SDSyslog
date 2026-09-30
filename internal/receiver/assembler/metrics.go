@@ -23,13 +23,13 @@ const (
 	MTPacketDeadline string = "packet_deadline"
 )
 
-func (manager *Manager) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (manager *Manager) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Record read time
 	recordTime := time.Now()
 
 	namespace := logctx.GetTagList(manager.ctx)
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTInstanceCount,
 			Description: "Number of running instances at the time of metric collection",
@@ -58,7 +58,7 @@ func (manager *Manager) CollectMetrics(interval time.Duration) (collection []met
 	return
 }
 
-func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (instance *Instance) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Read and clear
 	valid := instance.Metrics.ProcessedBuckets.Swap(0)
 	sumNs := instance.Metrics.SumNs.Swap(0)
@@ -70,7 +70,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTProcessBuckets,
 			Description: "Number of buckets successfully processed in the interval",

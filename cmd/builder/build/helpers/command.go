@@ -10,7 +10,7 @@ import (
 )
 
 // Runs a go test command streaming and filtering output
-func RunTestCommand(cmd exec.Cmd) (err error) {
+func RunTestCommand(cmd *exec.Cmd) (err error) {
 	var stdout io.ReadCloser
 	stdout, err = cmd.StdoutPipe()
 	if err != nil {

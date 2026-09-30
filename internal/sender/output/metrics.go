@@ -21,7 +21,7 @@ const (
 	MTMaxPktSize  string = "maximum_packet_size"
 )
 
-func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (instance *Instance) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	if instance == nil {
 		return
 	}
@@ -37,7 +37,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTSentPackets,
 			Description: "Total packets sent in the interval",

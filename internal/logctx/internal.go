@@ -31,7 +31,7 @@ func (logger *Logger) log(eventLevel int, eventSeverity string, tags []string, f
 // Deduplication logic
 // Duplicate events older than the deduplication window are not considered duplicates.
 // Purely meant for highly repetitive message suppression to prevent excessive noise.
-func (state *dedupState) handleDuplication(latestEvent Event) (newEvent Event, printEvent bool) {
+func (state *dedupState) handleDuplication(latestEvent *Event) (newEvent *Event, printEvent bool) {
 	now := time.Now()
 
 	if latestEvent.Message != "" &&
@@ -40,7 +40,7 @@ func (state *dedupState) handleDuplication(latestEvent Event) (newEvent Event, p
 		state.repeatCount++
 		if state.repeatCount >= minRepeats && now.Sub(state.lastSuppressTime) >= suppressCooldown {
 			// Suppression message once per minute max
-			newEvent = Event{
+			newEvent = &Event{
 				Timestamp: latestEvent.Timestamp,
 				Tags:      latestEvent.Tags,
 				Severity:  latestEvent.Severity,

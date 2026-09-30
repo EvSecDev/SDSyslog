@@ -105,7 +105,7 @@ func (logger *Logger) outputWriter() {
 		logger.outMutex.Unlock()
 
 		// Pop one event from the front of the queue
-		event := logger.queue[0]
+		event := &logger.queue[0]
 		logger.queue = logger.queue[1:]
 		logger.mutex.Unlock()
 
@@ -120,7 +120,7 @@ func (logger *Logger) outputWriter() {
 			// Attempt to push to channel, but give up after retries
 			for range maxOutputWriteFailures {
 				select {
-				case logger.rawOutput <- event:
+				case logger.rawOutput <- *event:
 				default:
 					time.Sleep(100 * time.Microsecond)
 					continue

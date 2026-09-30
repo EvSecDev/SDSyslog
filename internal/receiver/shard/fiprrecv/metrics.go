@@ -12,7 +12,7 @@ type MetricStorage struct {
 	RejectedFragments atomic.Uint64 // Number of remote inbound fragments rejected
 }
 
-func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (instance *Instance) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Read and clear
 	totalConns := instance.Metrics.Connections.Swap(0)
 	totalAccepted := instance.Metrics.AcceptedFragments.Swap(0)
@@ -21,7 +21,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        "total_connections",
 			Description: "Total connections from any remote shard",

@@ -70,7 +70,7 @@ func handleBulk(baseCtx context.Context,
 		reqNamespace := strings.Split(searchFilter.Namespace, "/")
 
 		// Query internal metric registry
-		var rawResults []metrics.Metric
+		var rawResults []*metrics.Metric
 		if searchFilter.AggregationType != "" {
 			agg, err := aggregate(searchFilter.AggregationType, searchFilter.Name, reqNamespace, reqStartTime, reqEndTime)
 			if err != nil {

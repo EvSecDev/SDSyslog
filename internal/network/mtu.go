@@ -13,8 +13,7 @@ func getTransportOverhead(destination string, protocol string) (overhead int, er
 	const udpOverhead int = 8
 
 	var transportLayerOverhead int
-	switch protocol {
-	case "udp":
+	if protocol == "udp" {
 		transportLayerOverhead = udpOverhead
 	}
 

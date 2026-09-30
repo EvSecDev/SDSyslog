@@ -7,7 +7,7 @@ import (
 
 type Registry struct {
 	mu      sync.RWMutex
-	metrics map[time.Time]map[string]map[string]Metric // key0=timestamp, key1=namespace, key2=name
+	metrics map[time.Time]map[string]map[string]*Metric // key0=timestamp, key1=namespace, key2=name
 }
 
 type MetricType string

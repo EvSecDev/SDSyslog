@@ -30,7 +30,7 @@ func matchesNamespace(metricNS, queryNS []string) (matches bool) {
 // If name is empty, returns all names.
 // If namespacePrefix is empty, returns all namespaces.
 // Optional: start/end time window filter.
-func (registry *Registry) Search(name string, namespacePrefix []string, start, end time.Time) (results []Metric) {
+func (registry *Registry) Search(name string, namespacePrefix []string, start, end time.Time) (results []*Metric) {
 	registry.mu.RLock()
 	defer registry.mu.RUnlock()
 
@@ -72,7 +72,7 @@ func (registry *Registry) Search(name string, namespacePrefix []string, start, e
 
 // Finds and aggregates all data for a given metric for the aggregation type (global consts prefixed by Metric*).
 // Start/end time if not provided will default to past minute.
-func (registry *Registry) Aggregate(aggType string, name string, namespace []string, start, end time.Time) (result Metric, err error) {
+func (registry *Registry) Aggregate(aggType string, name string, namespace []string, start, end time.Time) (result *Metric, err error) {
 	if start.IsZero() && end.IsZero() {
 		start = time.Now().Add(-1 * time.Minute)
 		end = time.Now()
@@ -144,7 +144,7 @@ func (registry *Registry) Aggregate(aggType string, name string, namespace []str
 
 	aggNamespace := deepestCommonNamespace(allNamespaces)
 
-	result = Metric{
+	result = &Metric{
 		Name:        metricsResults[0].Name,
 		Description: fmt.Sprintf("Aggregation (%s) of metric %q for namespace %q", aggType, name, strings.Join(namespace, "/")),
 		Namespace:   aggNamespace,
@@ -212,11 +212,11 @@ func toFloat64(v any) (float64, bool) {
 }
 
 // Finds all metric types that match given search filters (time-independent). Returns all when all filters are empty.
-func (registry *Registry) Discover(name, description string, namespacePrefix []string, unit string, metricType MetricType) (results []Metric) {
+func (registry *Registry) Discover(name, description string, namespacePrefix []string, unit string, metricType MetricType) (results []*Metric) {
 	registry.mu.RLock()
 	defer registry.mu.RUnlock()
 
-	seen := make(map[string]Metric)
+	seen := make(map[string]*Metric)
 
 	for _, nsMap := range registry.metrics {
 		for nsStr, metricsMap := range nsMap {
@@ -253,7 +253,7 @@ func (registry *Registry) Discover(name, description string, namespacePrefix []s
 				}
 
 				// Strip time + raw value
-				discovered := Metric{
+				discovered := &Metric{
 					Name:        metric.Name,
 					Description: metric.Description,
 					Namespace:   metric.Namespace,
@@ -270,12 +270,12 @@ func (registry *Registry) Discover(name, description string, namespacePrefix []s
 	}
 
 	// Stable output
-	results = make([]Metric, 0, len(seen))
+	results = make([]*Metric, 0, len(seen))
 	for _, metric := range seen {
 		results = append(results, metric)
 	}
 
-	slices.SortFunc(results, func(metricA, metricB Metric) int {
+	slices.SortFunc(results, func(metricA, metricB *Metric) int {
 		if metricA.Name != metricB.Name {
 			return strings.Compare(metricA.Name, metricB.Name)
 		}

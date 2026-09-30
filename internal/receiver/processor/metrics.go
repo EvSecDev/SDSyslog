@@ -24,7 +24,7 @@ const (
 	MTInstanceCount   string = "instance_count"
 )
 
-func (manager *Manager) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (manager *Manager) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	// Record read time
 	recordTime := time.Now()
 
@@ -36,7 +36,7 @@ func (manager *Manager) CollectMetrics(interval time.Duration) (collection []met
 
 	namespace := logctx.GetTagList(manager.ctx)
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTInstanceCount,
 			Description: "Number of running instances at the time of metric collection",
@@ -53,7 +53,7 @@ func (manager *Manager) CollectMetrics(interval time.Duration) (collection []met
 	return
 }
 
-func (instance *Instance) CollectMetrics(interval time.Duration) (collection []metrics.Metric) {
+func (instance *Instance) CollectMetrics(interval time.Duration) (collection []*metrics.Metric) {
 	if instance == nil {
 		return
 	}
@@ -70,7 +70,7 @@ func (instance *Instance) CollectMetrics(interval time.Duration) (collection []m
 	// Record read time
 	recordTime := time.Now()
 
-	collection = []metrics.Metric{
+	collection = []*metrics.Metric{
 		{
 			Name:        MTValidPayloads,
 			Description: "Total validated payloads in the interval",

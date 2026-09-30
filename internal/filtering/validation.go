@@ -3,7 +3,7 @@ package filtering
 import "fmt"
 
 // Ensures filter configuration is valid
-func (filter Filter) Validate() (err error) {
+func (filter *Filter) Validate() (err error) {
 	// Count how many fields are set
 	count := 0
 	if len(filter.And) > 0 {

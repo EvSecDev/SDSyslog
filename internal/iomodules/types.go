@@ -19,7 +19,7 @@ type Output interface {
 
 // Input Module Methods - For reading messages into the send daemon pipeline
 type Input interface {
-	Start() (err error)                                                  // Starts reader
-	Shutdown() (err error)                                               // Gracefully stops reader
-	CollectMetrics(interval time.Duration) (collection []metrics.Metric) // Collects any domain-specific metrics within the given past interval
+	Start() (err error)                                                   // Starts reader
+	Shutdown() (err error)                                                // Gracefully stops reader
+	CollectMetrics(interval time.Duration) (collection []*metrics.Metric) // Collects any domain-specific metrics within the given past interval
 }

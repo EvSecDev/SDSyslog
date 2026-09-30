@@ -97,7 +97,7 @@ func TestSetupListener_RoutingAndHTML(t *testing.T) {
 				8080,
 				mockDataSearcher(nil),
 				mockDiscoverer(nil),
-				mockAggSearcher(metrics.Metric{}, nil),
+				mockAggSearcher(&metrics.Metric{}, nil),
 			)
 			if err != nil {
 				t.Fatalf("SetupListener error: %v", err)

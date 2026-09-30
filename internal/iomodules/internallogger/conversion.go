@@ -14,7 +14,7 @@ import (
 )
 
 // Converts internal logger event to a protocol message
-func loggerToProtocolMessage(event logctx.Event) (msg *protocol.Message, err error) {
+func loggerToProtocolMessage(event *logctx.Event) (msg *protocol.Message, err error) {
 	var syslogSeverity string
 	switch event.Severity {
 	case logctx.FatalLog:
@@ -51,7 +51,7 @@ func loggerToProtocolMessage(event logctx.Event) (msg *protocol.Message, err err
 }
 
 // Converts internal logger event to a protocol payload
-func loggerToProtocolPayload(event logctx.Event, hostID int) (payload *protocol.Payload, err error) {
+func loggerToProtocolPayload(event *logctx.Event, hostID int) (payload *protocol.Payload, err error) {
 	msg, err := loggerToProtocolMessage(event)
 	if err != nil {
 		return

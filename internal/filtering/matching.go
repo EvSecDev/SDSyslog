@@ -6,7 +6,7 @@ import (
 )
 
 // Checks if supplied string matches the filter
-func (filter Filter) Match(input []byte) (matches bool) {
+func (filter *Filter) Match(input []byte) (matches bool) {
 	if len(filter.And) > 0 {
 		for _, sub := range filter.And {
 			if !sub.Match(input) {

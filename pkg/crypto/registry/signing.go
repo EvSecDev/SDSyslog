@@ -88,7 +88,7 @@ func GetSignatureInfo(id uint8) (info SigInfo, valid bool) {
 
 // Signature Name to Suite ID
 func SignatureNameToID(name string) (id uint8, valid bool) {
-	for suiteID, suiteInfo := range signatureSuites {
+	for suiteID, suiteInfo := range &signatureSuites {
 		if suiteInfo == nil {
 			continue
 		}

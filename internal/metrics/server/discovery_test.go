@@ -15,7 +15,7 @@ func TestHandleDiscovery(t *testing.T) {
 	tests := []struct {
 		name       string
 		query      string
-		results    []metrics.Metric
+		results    []*metrics.Metric
 		wantStatus int
 		wantError  bool
 	}{
@@ -29,7 +29,7 @@ func TestHandleDiscovery(t *testing.T) {
 		{
 			name:  "valid results name only",
 			query: "?name=test",
-			results: []metrics.Metric{
+			results: []*metrics.Metric{
 				{
 					Name: "test",
 				},
@@ -39,7 +39,7 @@ func TestHandleDiscovery(t *testing.T) {
 		{
 			name:  "valid results with namespace",
 			query: "Receiver/Defrag/?name=test",
-			results: []metrics.Metric{
+			results: []*metrics.Metric{
 				{
 					Name:      "test",
 					Namespace: []string{"Receiver", "Defrag"},
@@ -50,7 +50,7 @@ func TestHandleDiscovery(t *testing.T) {
 		{
 			name:  "valid results with type",
 			query: "Receiver/Defrag/?name=test&type=counter",
-			results: []metrics.Metric{
+			results: []*metrics.Metric{
 				{
 					Name:      "test",
 					Namespace: []string{"Receiver", "Defrag"},
@@ -62,7 +62,7 @@ func TestHandleDiscovery(t *testing.T) {
 		{
 			name:  "valid results with type 2",
 			query: "Receiver/Defrag/?name=test&type=gauge",
-			results: []metrics.Metric{
+			results: []*metrics.Metric{
 				{
 					Name:      "test",
 					Namespace: []string{"Receiver", "Defrag"},
@@ -74,7 +74,7 @@ func TestHandleDiscovery(t *testing.T) {
 		{
 			name:  "valid results with type 3",
 			query: "Receiver/Defrag/?name=test&type=summary",
-			results: []metrics.Metric{
+			results: []*metrics.Metric{
 				{
 					Name:      "test",
 					Namespace: []string{"Receiver", "Defrag"},

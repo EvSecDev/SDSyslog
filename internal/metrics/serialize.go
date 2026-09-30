@@ -7,7 +7,7 @@ import (
 )
 
 // Converts internal metric type to export (JSON) metric
-func (inMetric Metric) Convert() (outMetric JMetric) {
+func (inMetric *Metric) Convert() (outMetric JMetric) {
 	// One to one conversions
 	outMetric.Name = inMetric.Name
 	outMetric.Description = inMetric.Description

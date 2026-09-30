@@ -99,7 +99,7 @@ func (gatherer *Gatherer) runIntervalTasks(ctx context.Context, timeSlice time.T
 	gatherer.Registry.Add(timeSlice, m3)
 
 	// Defrag
-	var collection []metrics.Metric // collection for all pairs
+	var collection []*metrics.Metric // collection for all pairs
 	for _, instancePair := range gatherer.Mgrs.Assembler.RoutingView.GetInstancePairs() {
 		if instancePair == nil {
 			continue

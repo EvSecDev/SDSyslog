@@ -162,7 +162,7 @@ func GetSuiteInfo(id uint8) (info SuiteInfo, valid bool) {
 
 // Suite Name to Suite ID
 func SuiteNameToID(name string) (id uint8, valid bool) {
-	for suiteID, suiteInfo := range cryptoSuites {
+	for suiteID, suiteInfo := range &cryptoSuites {
 		if suiteInfo == nil {
 			continue
 		}

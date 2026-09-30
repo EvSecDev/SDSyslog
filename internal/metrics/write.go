@@ -13,14 +13,14 @@ func (registry *Registry) NewTimeSlice(now time.Time, interval time.Duration) (t
 	// Round down for this interval
 	timeSlice = now.Truncate(interval)
 	if registry.metrics[timeSlice] == nil {
-		registry.metrics[timeSlice] = make(map[string]map[string]Metric)
+		registry.metrics[timeSlice] = make(map[string]map[string]*Metric)
 	}
 	return
 }
 
 // Adds batch of metrics to an existing time slice.
 // Ignores add if timeslice was not created.
-func (registry *Registry) Add(timeSlice time.Time, metrics []Metric) {
+func (registry *Registry) Add(timeSlice time.Time, metrics []*Metric) {
 	registry.mu.Lock()
 	defer registry.mu.Unlock()
 
@@ -33,7 +33,7 @@ func (registry *Registry) Add(timeSlice time.Time, metrics []Metric) {
 
 		// Ensure namespace map is initialized
 		if registry.metrics[timeSlice][namespace] == nil {
-			registry.metrics[timeSlice][namespace] = make(map[string]Metric)
+			registry.metrics[timeSlice][namespace] = make(map[string]*Metric)
 		}
 
 		// Write metric to map

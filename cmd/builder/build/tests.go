@@ -148,7 +148,7 @@ func runUnitTests(ctx *context, testArgs []string) (err error) {
 		args = append(args, "./...")
 
 		cmd := exec.Command("go", args...)
-		err = helpers.RunTestCommand(*cmd)
+		err = helpers.RunTestCommand(cmd)
 		if err != nil {
 			return
 		}
@@ -233,7 +233,7 @@ func runIntegTests(ctx *context, testArgs []string) (err error) {
 		args = append(args, "./")
 
 		cmd := exec.Command("go", args...)
-		err = helpers.RunTestCommand(*cmd)
+		err = helpers.RunTestCommand(cmd)
 		if err != nil {
 			return
 		}

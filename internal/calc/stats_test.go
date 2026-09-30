@@ -16,16 +16,22 @@ func TestTrimmedMeanUint64(t *testing.T) {
 			want:        0,
 		},
 		{
-			name:        "no trimming",
-			values:      []uint64{1, 2, 3, 4},
+			name:        "no trimming exact division",
+			values:      []uint64{1, 2, 3},
 			trimPercent: 0,
-			want:        2, // (1+2+3+4)/4 = 2
+			want:        2, // (1+2+3)/3 = 2
 		},
 		{
-			name:        "simple trimming",
+			name:        "truncates fractional result",
+			values:      []uint64{1, 2},
+			trimPercent: 0,
+			want:        1, // (1+2)/2 = 1 (truncated from 1.5)
+		},
+		{
+			name:        "trimming with truncation",
 			values:      []uint64{1, 2, 3, 100},
 			trimPercent: 0.25,
-			want:        2, // trim 1 from each side -> {2,3}
+			want:        2, // trim 1 from each side -> {2,3} -> 5/2 = 2 (truncated from 2.5)
 		},
 		{
 			name:        "trim percent too large",
@@ -35,15 +41,15 @@ func TestTrimmedMeanUint64(t *testing.T) {
 		},
 		{
 			name:        "negative trim percent treated as zero",
-			values:      []uint64{5, 5, 5},
+			values:      []uint64{7, 8, 9},
 			trimPercent: -1,
-			want:        5,
+			want:        8, // (7+8+9)/3 = 8
 		},
 		{
-			name:        "outlier removed",
-			values:      []uint64{10, 11, 12, 1000},
+			name:        "large values overflow-safe",
+			values:      []uint64{1000000, 2000000, 3000000, 4000000},
 			trimPercent: 0.25,
-			want:        11,
+			want:        2500000, // {2000000, 3000000} -> 5000000/2
 		},
 	}
 
@@ -74,31 +80,37 @@ func TestTrimmedMeanFloat64(t *testing.T) {
 			name:        "no trimming",
 			values:      []float64{1, 2, 3, 4},
 			trimPercent: 0,
-			want:        2.5,
+			want:        2.5, // (1+2+3+4)/4 = 2.5
 		},
 		{
-			name:        "simple trimming",
+			name:        "fractional inputs",
+			values:      []float64{1.5, 2.5, 3.5, 4.5},
+			trimPercent: 0,
+			want:        3, // (1.5+2.5+3.5+4.5)/4 = 3.0
+		},
+		{
+			name:        "fractional trim result",
 			values:      []float64{1, 2, 3, 100},
 			trimPercent: 0.25,
-			want:        2.5,
+			want:        2.5, // trim 1 from each side -> {2,3} -> 5/2 = 2.5
 		},
 		{
 			name:        "trim percent too large",
-			values:      []float64{10, 20, 30},
+			values:      []float64{10.5, 20.5, 30.5},
 			trimPercent: 0.5,
-			want:        20,
+			want:        20.5, // only middle remains
 		},
 		{
 			name:        "negative trim percent treated as zero",
-			values:      []float64{5, 5, 5},
+			values:      []float64{1.1, 2.2, 3.3},
 			trimPercent: -1,
-			want:        5,
+			want:        2.2, // (1.1+2.2+3.3)/3 = 2.2
 		},
 		{
-			name:        "outlier removed",
+			name:        "outlier removed fractional mean",
 			values:      []float64{10, 11, 12, 1000},
 			trimPercent: 0.25,
-			want:        11.5,
+			want:        11.5, // {11,12} -> 23/2 = 11.5
 		},
 	}
 

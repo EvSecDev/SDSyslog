@@ -2,35 +2,19 @@ package syslog
 
 import "testing"
 
-func TestSeverityMappings(t *testing.T) {
-	tests := []struct {
-		name      string
-		severity  string
-		code      uint16
-		expectErr bool
-	}{
-		{
-			name:     "valid severity emerg",
-			severity: "emerg",
-			code:     0,
-		},
-		{
-			name:     "valid severity info",
-			severity: "info",
-			code:     6,
-		},
-		{
-			name:      "unknown severity string",
-			severity:  "nope",
-			expectErr: true,
-		},
-	}
+type lookupTestCase struct {
+	name    string
+	input   string
+	code    uint16
+	wantErr bool
+}
 
-	for _, tt := range tests {
+func runLookupMappingTest(t *testing.T, toCode func(string) (uint16, error), toName func(uint16) (string, error), cases []lookupTestCase) {
+	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			code, err := SeverityToCode(tt.severity)
+			code, err := toCode(tt.input)
 
-			if tt.expectErr {
+			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
 				}
@@ -45,19 +29,25 @@ func TestSeverityMappings(t *testing.T) {
 				t.Fatalf("expected code %d, got %d", tt.code, code)
 			}
 
-			// Round-trip: code -> severity
-			roundTrip, err := CodeToSeverity(code)
+			roundTrip, err := toName(code)
 			if err != nil {
 				t.Fatalf("round-trip failed: %v", err)
 			}
 
-			if roundTrip != tt.severity {
-				t.Fatalf("round-trip mismatch: expected %q, got %q", tt.severity, roundTrip)
+			if roundTrip != tt.input {
+				t.Fatalf("round-trip mismatch: expected %q, got %q", tt.input, roundTrip)
 			}
 		})
 	}
+}
 
-	// Test unknown code explicitly
+func TestSeverityMappings(t *testing.T) {
+	runLookupMappingTest(t, SeverityToCode, CodeToSeverity, []lookupTestCase{
+		{name: "valid severity emerg", input: "emerg", code: 0},
+		{name: "valid severity info", input: "info", code: 6},
+		{name: "unknown severity string", input: "nope", wantErr: true},
+	})
+
 	t.Run("unknown severity code", func(t *testing.T) {
 		_, err := CodeToSeverity(999)
 		if err == nil {
@@ -67,61 +57,12 @@ func TestSeverityMappings(t *testing.T) {
 }
 
 func TestFacilityMappings(t *testing.T) {
-	tests := []struct {
-		name      string
-		facility  string
-		code      uint16
-		expectErr bool
-	}{
-		{
-			name:     "valid facility kern",
-			facility: "kern",
-			code:     0,
-		},
-		{
-			name:     "valid facility local7",
-			facility: "local7",
-			code:     23,
-		},
-		{
-			name:      "unknown facility string",
-			facility:  "bogus",
-			expectErr: true,
-		},
-	}
+	runLookupMappingTest(t, FacilityToCode, CodeToFacility, []lookupTestCase{
+		{name: "valid facility kern", input: "kern", code: 0},
+		{name: "valid facility local7", input: "local7", code: 23},
+		{name: "unknown facility string", input: "bogus", wantErr: true},
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			code, err := FacilityToCode(tt.facility)
-
-			if tt.expectErr {
-				if err == nil {
-					t.Fatalf("expected error, got nil")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if code != tt.code {
-				t.Fatalf("expected code %d, got %d", tt.code, code)
-			}
-
-			// Round-trip: code -> facility
-			roundTrip, err := CodeToFacility(code)
-			if err != nil {
-				t.Fatalf("round-trip failed: %v", err)
-			}
-
-			if roundTrip != tt.facility {
-				t.Fatalf("round-trip mismatch: expected %q, got %q", tt.facility, roundTrip)
-			}
-		})
-	}
-
-	// Test unknown code explicitly
 	t.Run("unknown facility code", func(t *testing.T) {
 		_, err := CodeToFacility(999)
 		if err == nil {

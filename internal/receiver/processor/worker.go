@@ -58,7 +58,7 @@ func (instance *Instance) run() {
 
 			size := len(queueEntry.Data) + 24 // netip.Addr obj size
 			// Subtract data size from sum
-			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(size), 4)
+			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(size))
 
 			defer func() {
 				// Record busy time when worker is done processing this packet (valid or not)

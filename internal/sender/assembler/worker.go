@@ -59,7 +59,7 @@ func (instance *Instance) run() {
 				return
 			}
 			// Subtract data size from sum
-			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, parsing.ToUint64(container.Size()), 4)
+			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, parsing.ToUint64(container.Size()))
 
 			// In-module added fields
 			customFields := make(map[string]any)

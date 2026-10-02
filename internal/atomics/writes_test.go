@@ -10,7 +10,6 @@ func TestSubtract(t *testing.T) {
 		name        string
 		initial     uint64
 		subtract    uint64
-		maxRetries  int
 		mutate      func(value *atomic.Uint64)
 		wantSuccess bool
 		wantFinal   uint64
@@ -19,7 +18,6 @@ func TestSubtract(t *testing.T) {
 			name:        "already zero",
 			initial:     0,
 			subtract:    5,
-			maxRetries:  1,
 			wantSuccess: true,
 			wantFinal:   0,
 		},
@@ -27,7 +25,6 @@ func TestSubtract(t *testing.T) {
 			name:        "simple subtraction",
 			initial:     10,
 			subtract:    3,
-			maxRetries:  3,
 			wantSuccess: true,
 			wantFinal:   7,
 		},
@@ -35,7 +32,6 @@ func TestSubtract(t *testing.T) {
 			name:        "subtract more than available",
 			initial:     5,
 			subtract:    10,
-			maxRetries:  3,
 			wantSuccess: true,
 			wantFinal:   0,
 		},
@@ -50,7 +46,7 @@ func TestSubtract(t *testing.T) {
 				tt.mutate(&value)
 			}
 
-			ok := Subtract(&value, tt.subtract, tt.maxRetries)
+			ok := Subtract(&value, tt.subtract)
 			final := value.Load()
 
 			if ok != tt.wantSuccess {

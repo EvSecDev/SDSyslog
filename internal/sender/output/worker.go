@@ -48,7 +48,7 @@ func (instance *Instance) run() {
 				return
 			}
 			// Subtract data size from sum
-			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(len(frag)), 4)
+			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, uint64(len(frag)))
 
 			_, err := instance.conn.Write(frag)
 			if err != nil {

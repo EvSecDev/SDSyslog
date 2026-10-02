@@ -37,30 +37,31 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 		}
 		queue.Buckets[bucketKey] = bucket
 		queue.Metrics.TotalBuckets.Add(1)
-	} else {
-		// Discard newest fragment if duplicate keys exist within the deadline
-		if bucket.filled {
-			haveSeq := make([]int, len(bucket.Fragments))
-			for _, fragment := range bucket.Fragments {
-				haveSeq = append(haveSeq, fragment.MessageSeq)
-			}
-			logctx.LogStdWarn(ctx, "Received fragment with sequence %d after bucket %d was filled (bucket already has sequences %v)\n",
-				fragment.MessageSeq, bucketKey, haveSeq)
-			queue.Mu.Unlock()
-			return
-		}
-
-		// Discard newest fragment if message sequence doesn't match last
-		// Root of trust is first fragment received
-		if bucket.maxSeq != fragment.MessageSeqMax {
-			detail := fmt.Sprintf("fragment has maximum sequence %d but bucket %s is set for maximum sequence %d\n",
-				fragment.MessageSeqMax, bucketKey, bucket.maxSeq)
-			logctx.LogStdWarn(ctx, "Received invalid maximum sequence: %s", detail)
-			queue.Mu.Unlock()
-			return
-		}
 	}
+	bucket.Mutex.Lock()
 	queue.Mu.Unlock()
+
+	// Discard newest fragment if duplicate keys exist within the deadline
+	if bucket.filled {
+		haveSeq := make([]int, len(bucket.Fragments))
+		for _, fragment := range bucket.Fragments {
+			haveSeq = append(haveSeq, fragment.MessageSeq)
+		}
+		logctx.LogStdWarn(ctx, "Received fragment with sequence %d after bucket %d was filled (bucket already has sequences %v)\n",
+			fragment.MessageSeq, bucketKey, haveSeq)
+		bucket.Mutex.Unlock()
+		return
+	}
+
+	// Discard newest fragment if message sequence doesn't match last
+	// Root of trust is first fragment received
+	if bucket.maxSeq != fragment.MessageSeqMax {
+		detail := fmt.Sprintf("fragment has maximum sequence %d but bucket %s is set for maximum sequence %d\n",
+			fragment.MessageSeqMax, bucketKey, bucket.maxSeq)
+		logctx.LogStdWarn(ctx, "Received invalid maximum sequence: %s", detail)
+		bucket.Mutex.Unlock()
+		return
+	}
 
 	// Record time spacing between fragments
 	var elapsed int64
@@ -76,31 +77,32 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 	// Even though this should never occur, evaluate deadline anyways in case a remote end tries to sneak a false packet in
 	if elapsed > queue.packetDeadline.Load() {
 		bucket.filled = true
+		bucket.Mutex.Unlock()
 
 		logctx.LogStdWarn(ctx, "Late fragment arrived in %s, exceeding maximum time %s (bucket %s - late fragment sequence %d\n",
 			time.Duration(elapsed).String(), time.Duration(queue.packetDeadline.Load()).String(),
 			bucketKey, fragment.MessageSeq)
 
+		queue.Metrics.WaitingBuckets.Add(1)
+		queue.Metrics.TimedOutBuckets.Add(1)
 		select {
 		case <-ctx.Done():
+			if !atomics.Subtract(&queue.Metrics.WaitingBuckets, 1) {
+				logctx.LogStdWarn(ctx, "Context cancelled, failed to decrement false waiting bucket metric for bucket %s (from %s)\n",
+					bucketKey, fragment.RemoteIP)
+			}
 			return
 		case queue.keyQueue <- bucketKey:
 			// success
-			queue.Metrics.WaitingBuckets.Add(1)
-			queue.Metrics.TimedOutBuckets.Add(1)
 			return
 		}
 	}
-
-	// Update process time always, acts as modified time
-	bucket.lastProcessStartTime = processingStartTime
 
 	queue.Metrics.Bytes.Add(parsing.ToUint64(fragment.Size()))
 
 	// Store fragment by sequence number
 	var isFilled bool
-	bucket.Mutex.Lock()
-	bucket.lastProcessStartTime = processingStartTime
+	bucket.lastProcessStartTime = processingStartTime // Update process time always, acts as modified time
 	bucket.Fragments[fragment.MessageSeq] = fragment
 	if len(bucket.Fragments) == bucket.maxSeq+1 {
 		bucket.filled = true
@@ -110,12 +112,16 @@ func (queue *Instance) push(ctx context.Context, bucketKey string, fragment *pro
 
 	// Check if bucket is now filled
 	if isFilled {
+		queue.Metrics.WaitingBuckets.Add(1)
 		select {
 		case <-ctx.Done():
+			if !atomics.Subtract(&queue.Metrics.WaitingBuckets, 1) {
+				logctx.LogStdWarn(ctx, "Context cancelled, failed to decrement false waiting bucket metric for bucket %s (from %s)\n",
+					bucketKey, fragment.RemoteIP)
+			}
 			return
 		case queue.keyQueue <- bucketKey:
 			// success
-			queue.Metrics.WaitingBuckets.Add(1)
 			return
 		}
 	}
@@ -130,11 +136,7 @@ func (queue *Instance) PopKey(ctx context.Context) (key string, ok bool) {
 		return
 	case key, ok = <-queue.keyQueue:
 		if ok {
-			// Protecting subtract - will get out of sync without explicit sync between assembler and processors
-			queue.Mu.Lock()
-			success := atomics.Subtract(&queue.Metrics.WaitingBuckets, 1, 1) // max retries set low due to single consumer (assembler itself)
-			queue.Mu.Unlock()
-			if !success {
+			if !atomics.Subtract(&queue.Metrics.WaitingBuckets, 1) {
 				logctx.LogStdWarn(ctx,
 					"failed to decrement waiting bucket metric after successful bucket key retrieval\n")
 			}
@@ -146,29 +148,28 @@ func (queue *Instance) PopKey(ctx context.Context) (key string, ok bool) {
 
 // Retrieve (remove) bucket from shard's storage
 func (queue *Instance) DrainBucket(ctx context.Context, key string) (bucket *Bucket, bucketNotExist bool) {
-	queue.Mu.Lock()
-	defer queue.Mu.Unlock()
-
 	// Retrieve bucket
+	queue.Mu.Lock()
 	bucket, ok := queue.Buckets[key]
 	if !ok {
 		bucketNotExist = true
+		queue.Mu.Unlock()
 		return
 	}
-
-	// Remove bucket from storage
-	delete(queue.Buckets, key)
+	delete(queue.Buckets, key) // Remove bucket from storage
+	queue.Mu.Unlock()
 
 	// Subtract data size from sum
 	var size int
+	bucket.Mutex.RLock()
 	for _, frag := range bucket.Fragments {
 		size += frag.Size()
 	}
-	atomics.Subtract(&queue.Metrics.Bytes, uint64(size), 1)
+	bucket.Mutex.RUnlock()
+	atomics.Subtract(&queue.Metrics.Bytes, uint64(size))
 
 	// Decrement bucket count
-	success := atomics.Subtract(&queue.Metrics.TotalBuckets, 1, 1) // max retries set low due to single consumer (assembler itself)
-	if !success {
+	if !atomics.Subtract(&queue.Metrics.TotalBuckets, 1) {
 		logctx.LogStdWarn(ctx,
 			"failed to decrement total bucket metric after successful bucket deletion\n")
 	}

@@ -46,7 +46,7 @@ func (instance *Instance) run(ctx context.Context) {
 			popCh <- msg
 			// Subtract data size from sum
 			size := msg.Size()
-			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, parsing.ToUint64(size), 4)
+			atomics.Subtract(&instance.inbox.ActiveWrite.Load().Metrics.Bytes, parsing.ToUint64(size))
 		}
 	}()
 

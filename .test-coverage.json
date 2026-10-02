@@ -1,8 +1,8 @@
 {
   "tests": {
     "ConcurrentSenders": {
-      "lastCommitPct": 38.1,
-      "lastBuildPct": 38.1
+      "lastCommitPct": 45.2,
+      "lastBuildPct": 45.2
     },
     "Internal": {
       "lastCommitPct": 34.8,
@@ -13,12 +13,12 @@
       "lastBuildPct": 81.3
     },
     "ReceivePipeline": {
-      "lastCommitPct": 39.6,
-      "lastBuildPct": 39.6
+      "lastCommitPct": 47.5,
+      "lastBuildPct": 47.5
     },
     "SendReceivePipeline": {
-      "lastCommitPct": 38.2,
-      "lastBuildPct": 38.2
+      "lastCommitPct": 45.3,
+      "lastBuildPct": 45.3
     }
   }
 }

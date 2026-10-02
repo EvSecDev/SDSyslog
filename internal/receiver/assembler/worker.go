@@ -56,10 +56,12 @@ func (instance *Instance) run() {
 				return
 			}
 
+			bucket.Mutex.RLock()
 			var fragSlice []*protocol.Payload
 			for _, fragment := range bucket.Fragments {
 				fragSlice = append(fragSlice, fragment)
 			}
+			bucket.Mutex.RUnlock()
 
 			finalMsg, err := protocol.Defragment(fragSlice)
 			if err != nil {

@@ -235,12 +235,12 @@ func (container *Queue[T]) Pop(ctx context.Context) (out T, success bool) {
 				cell.seq.Store(pos + queue.mask.Load() + 1)
 
 				queue.Metrics.PopSuccess.Add(1)
-				ok := atomics.Subtract(&queue.Metrics.Depth, 1, 4) // max retries set at 4
+				ok := atomics.Subtract(&queue.Metrics.Depth, 1)
 				if !ok {
 					logctx.LogStdWarn(ctx,
 						"failed to decrement queue depth metric after successful pop\n")
 				}
-				ok = atomics.Subtract(&queue.Metrics.Bytes, cell.size.Swap(0), 4) // max retries set at 4
+				ok = atomics.Subtract(&queue.Metrics.Bytes, cell.size.Swap(0))
 				if !ok {
 					logctx.LogStdWarn(ctx,
 						"failed to decrement queue byte size metric after successful pop\n")

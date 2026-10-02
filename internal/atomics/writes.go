@@ -6,10 +6,14 @@ import (
 )
 
 // Tries to subtract value from the atomic source. Success if already 0.
-// It retries up to maxRetries times if the CAS fails due to contention.
-// Has exponential backoff, unbounded (use wisely).
-func Subtract(source *atomic.Uint64, value uint64, maxRetries int) (success bool) {
+// It retries up to 128 times if the CAS fails due to contention.
+// Has exponential backoff, bounded to 1 millisecond per retry.
+func Subtract(source *atomic.Uint64, value uint64) (success bool) {
+	const maxSleep time.Duration = 1 * time.Millisecond
 	retryInterval := time.Microsecond * 10
+
+	// Contention is transient.
+	const maxRetries = 128
 
 	for range maxRetries {
 		current := source.Load()
@@ -33,6 +37,9 @@ func Subtract(source *atomic.Uint64, value uint64, maxRetries int) (success bool
 		}
 
 		// CAS failed due to contention, retry
+		if retryInterval > maxSleep {
+			retryInterval = maxSleep
+		}
 		time.Sleep(retryInterval)
 		retryInterval *= 2
 	}

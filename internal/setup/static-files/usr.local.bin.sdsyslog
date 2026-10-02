@@ -45,6 +45,7 @@ profile SDSyslog @{exelocation} flags=(enforce attach_disconnected) {
   capability sys_resource,
   capability sys_admin,
   capability perfmon,
+  /sys/fs/bpf/{,*} r,
   /sys/kernel/btf/{,*} r,
 
   # eBPF Custom Paths (pins)
